@@ -1,36 +1,35 @@
 ---
 name: auth-security
-description: Authentication flows, session management, token lifecycle, MFA, password hashing, brute force prevention, account recovery safety, SSO integration, OAuth scopes, session invalidation
+description: OAuth2.1, PKCE, Argon2id password hashing, token lifecycle, session revocation, MFA, and brute-force prevention
 ---
-# Auth Security
+# Authentication & Authorization Security
 
-## 1. Authentication Flows
-Implementation and rigorous validation of Authentication flows is essential for auth-security. Engineers must ensure that Authentication flows is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Authentication flows. Furthermore, edge cases regarding Authentication flows must be explicitly documented and guarded against in the codebase. Failure to address Authentication flows properly leads to systemic vulnerabilities or architectural decay.
+## 1. Zero Trust & Secure Authentication Flows
+Implement PKCE for OAuth 2.1 authorization code flows. Mandate cryptographically random state and nonce parameters to prevent authorization injection. Reject HTTP redirects to unverified origins. Require authentication at every API boundary rather than trusting network perimeters.
 
-## 2. Session Management
-Implementation and rigorous validation of session management is essential for auth-security. Engineers must ensure that session management is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in session management. Furthermore, edge cases regarding session management must be explicitly documented and guarded against in the codebase. Failure to address session management properly leads to systemic vulnerabilities or architectural decay.
+## 2. Modern Password Hashing
+Use Argon2id as the default password hashing algorithm (minimum memory 64MB, time cost 3, parallelism 4). For legacy compatibility, use bcrypt with work factor >= 12. Never use MD5, SHA1, or raw SHA256 for password storage. Enforce password complexity via entropy checks rather than restrictive character set rules.
 
-## 3. Token Lifecycle
-Implementation and rigorous validation of token lifecycle is essential for auth-security. Engineers must ensure that token lifecycle is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in token lifecycle. Furthermore, edge cases regarding token lifecycle must be explicitly documented and guarded against in the codebase. Failure to address token lifecycle properly leads to systemic vulnerabilities or architectural decay.
+## 3. Ephemeral Token Lifecycle
+Keep JWT access tokens short-lived (maximum 15 minutes). Implement secure refresh token rotation where the previous refresh token is invalidated upon single use. If an invalidated refresh token is reused, treat it as token theft and immediately revoke all refresh tokens associated with that family/session.
 
-## 4. Mfa
-Implementation and rigorous validation of MFA is essential for auth-security. Engineers must ensure that MFA is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in MFA. Furthermore, edge cases regarding MFA must be explicitly documented and guarded against in the codebase. Failure to address MFA properly leads to systemic vulnerabilities or architectural decay.
+## 4. Session Invalidation & State Revocation
+Maintain a server-side session revocation denylist (e.g. Redis bloom filter or distributed cache) for rapid token invalidation. On password change or account compromise, revoke all active sessions immediately. Support global sign-out across all client devices.
 
-## 5. Password Hashing
-Implementation and rigorous validation of password hashing is essential for auth-security. Engineers must ensure that password hashing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in password hashing. Furthermore, edge cases regarding password hashing must be explicitly documented and guarded against in the codebase. Failure to address password hashing properly leads to systemic vulnerabilities or architectural decay.
+## 5. Multi-Factor Authentication (MFA)
+Implement TOTP (RFC 6238) with SHA-1/SHA-256 and 30-second time steps. Provide single-use cryptographically random backup codes hashed in storage. Support WebAuthn / FIDO2 passkeys for phishing-resistant authentication.
 
-## 6. Brute Force Prevention
-Implementation and rigorous validation of brute force prevention is essential for auth-security. Engineers must ensure that brute force prevention is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in brute force prevention. Furthermore, edge cases regarding brute force prevention must be explicitly documented and guarded against in the codebase. Failure to address brute force prevention properly leads to systemic vulnerabilities or architectural decay.
+## 6. Brute Force Prevention & Adaptive Rate Limiting
+Enforce progressive rate limiting using a leaky bucket algorithm on all login and password reset endpoints. Apply per-IP limits and per-account limits. Escalate with exponential delays or CAPTCHA after 5 failed attempts within 10 minutes.
 
-## 7. Account Recovery Safety
-Implementation and rigorous validation of account recovery safety is essential for auth-security. Engineers must ensure that account recovery safety is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in account recovery safety. Furthermore, edge cases regarding account recovery safety must be explicitly documented and guarded against in the codebase. Failure to address account recovery safety properly leads to systemic vulnerabilities or architectural decay.
+## 7. Secure Account Recovery
+Generate single-use, time-limited (max 30 minutes) recovery tokens using HMAC-SHA256. Send recovery links strictly to verified primary contact channels. Never reveal whether an email or username exists in recovery response messages (prevent account enumeration).
 
-## 8. Sso Integration
-Implementation and rigorous validation of SSO integration is essential for auth-security. Engineers must ensure that SSO integration is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in SSO integration. Furthermore, edge cases regarding SSO integration must be explicitly documented and guarded against in the codebase. Failure to address SSO integration properly leads to systemic vulnerabilities or architectural decay.
+## 8. SSO & Federated Identity
+Enforce strict OIDC validation: verify JWT signature, issuer (iss), audience (aud), expiration (exp), and not-before (nbf) claims. Enforce clock skew tolerance of at most 60 seconds. Require PKCE on federated broker handshakes.
 
-## 9. Oauth Scopes
-Implementation and rigorous validation of OAuth scopes is essential for auth-security. Engineers must ensure that OAuth scopes is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in OAuth scopes. Furthermore, edge cases regarding OAuth scopes must be explicitly documented and guarded against in the codebase. Failure to address OAuth scopes properly leads to systemic vulnerabilities or architectural decay.
+## 9. Minimal Scopes & Granular Claims
+Adhere to the Principle of Least Privilege: issue tokens with the minimal scopes required for the specific client operation. Validate scope claims on every protected endpoint before granting access. Separate administrative capabilities into dedicated, re-authenticated scopes.
 
-## 10. Session Invalidation
-Implementation and rigorous validation of session invalidation is essential for auth-security. Engineers must ensure that session invalidation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in session invalidation. Furthermore, edge cases regarding session invalidation must be explicitly documented and guarded against in the codebase. Failure to address session invalidation properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Audit Logging & Security Event Tracing
+Record structured security audit logs for all authentication events: LOGIN_SUCCESS, LOGIN_FAIL, TOKEN_ISSUED, TOKEN_REVOKED, PASSWORD_RESET_REQUEST, and MFA_FAILED. Include timestamp, actor ID, client IP, user agent, and correlation ID. Never write credentials or tokens to logs.

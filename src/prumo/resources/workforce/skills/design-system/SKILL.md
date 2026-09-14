@@ -1,36 +1,35 @@
 ---
 name: design-system
-description: Color, typography, spacing, radius, elevation, motion, icons, components, variants, states, responsive rules, design tokens
+description: Semantic design tokens, component contract specifications, Storybook documentation, responsive typography scales, and a11y tokens
 ---
-# Design System
+# Design System Architecture & Tokens
 
-## 1. Color
-Implementation and rigorous validation of Color is essential for design-system. Engineers must ensure that Color is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Color. Furthermore, edge cases regarding Color must be explicitly documented and guarded against in the codebase. Failure to address Color properly leads to systemic vulnerabilities or architectural decay.
+## 1. Semantic Design Tokens
+Structure design tokens in three tiers: Global (raw values: blue-500: #3b82f6), Semantic (intent-based: color-primary: var(--blue-500)), and Component-scoped (button-bg: var(--color-primary)).
 
-## 2. Typography
-Implementation and rigorous validation of typography is essential for design-system. Engineers must ensure that typography is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in typography. Furthermore, edge cases regarding typography must be explicitly documented and guarded against in the codebase. Failure to address typography properly leads to systemic vulnerabilities or architectural decay.
+## 2. Format-Agnostic Token Distribution
+Maintain tokens in JSON format and compile them to platform targets: CSS custom properties, SCSS variables, JavaScript/TypeScript objects, and iOS/Android tokens via Style Dictionary.
 
-## 3. Spacing
-Implementation and rigorous validation of spacing is essential for design-system. Engineers must ensure that spacing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in spacing. Furthermore, edge cases regarding spacing must be explicitly documented and guarded against in the codebase. Failure to address spacing properly leads to systemic vulnerabilities or architectural decay.
+## 3. Component API Contract Specification
+Define strict props, slots, and events for every design system component. Enforce variant constraints via TypeScript union types (e.g. variant: 'primary' | 'secondary' | 'ghost').
 
-## 4. Radius
-Implementation and rigorous validation of radius is essential for design-system. Engineers must ensure that radius is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in radius. Furthermore, edge cases regarding radius must be explicitly documented and guarded against in the codebase. Failure to address radius properly leads to systemic vulnerabilities or architectural decay.
+## 4. Accessibility (A11y) Token Integration
+Ensure color tokens strictly satisfy WCAG 2.2 AA contrast ratios (4.5:1 for normal text, 3:1 for large text). Provide high-contrast and reduced-motion token overrides.
 
-## 5. Elevation
-Implementation and rigorous validation of elevation is essential for design-system. Engineers must ensure that elevation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in elevation. Furthermore, edge cases regarding elevation must be explicitly documented and guarded against in the codebase. Failure to address elevation properly leads to systemic vulnerabilities or architectural decay.
+## 5. Spacing & Fluid Typography Scales
+Use a 4px or 8px baseline grid system for all margin, padding, and layout dimensions. Implement fluid typography using clamp() to scale text smoothly across viewports.
 
-## 6. Motion
-Implementation and rigorous validation of motion is essential for design-system. Engineers must ensure that motion is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in motion. Furthermore, edge cases regarding motion must be explicitly documented and guarded against in the codebase. Failure to address motion properly leads to systemic vulnerabilities or architectural decay.
+## 6. Component Composition & Headless Architecture
+Separate component logic/state from styling. Build on accessible headless primitives (Radix UI, Headless UI, React Aria) to guarantee robust keyboard navigation and ARIA patterns.
 
-## 7. Icons
-Implementation and rigorous validation of icons is essential for design-system. Engineers must ensure that icons is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in icons. Furthermore, edge cases regarding icons must be explicitly documented and guarded against in the codebase. Failure to address icons properly leads to systemic vulnerabilities or architectural decay.
+## 7. Living Documentation & Storybook Catalog
+Document every component in Storybook with interactive states (default, hover, active, focus, disabled, error). Document component usage guidelines and anti-patterns.
 
-## 8. Components
-Implementation and rigorous validation of components is essential for design-system. Engineers must ensure that components is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in components. Furthermore, edge cases regarding components must be explicitly documented and guarded against in the codebase. Failure to address components properly leads to systemic vulnerabilities or architectural decay.
+## 8. Visual Regression Testing Gates
+Automate visual regression tests on Storybook stories in CI (using Chromatic or Playwright) to catch unintended styling regressions before merging.
 
-## 9. Variants
-Implementation and rigorous validation of variants is essential for design-system. Engineers must ensure that variants is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in variants. Furthermore, edge cases regarding variants must be explicitly documented and guarded against in the codebase. Failure to address variants properly leads to systemic vulnerabilities or architectural decay.
+## 9. Semantic Versioning & Deprecation Lifecycle
+Follow strict semver for design system releases. Provide codemods and migration guides whenever component API signatures change or deprecations occur.
 
-## 10. States
-Implementation and rigorous validation of states is essential for design-system. Engineers must ensure that states is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in states. Furthermore, edge cases regarding states must be explicitly documented and guarded against in the codebase. Failure to address states properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Theme Switching & Dark Mode Support
+Implement dark mode and custom white-label themes via CSS class or data-theme attributes, switching semantic token variables with zero page refresh.

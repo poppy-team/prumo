@@ -6,7 +6,11 @@
   "purpose": "Perform thorough automated and manual code review on pull requests.",
   "risk_level": "low",
   "modes": [
-    "review"
+    "implementation",
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Repository context",
@@ -28,7 +32,9 @@
   "templates": [
     "templates/issue-template.md"
   ],
-  "checks": [],
+  "checks": [
+    "checks/github-pr-review-checklist.md"
+  ],
   "scripts": [],
   "examples": [],
   "required_evidence": [
@@ -54,5 +60,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: github-pr-review\ndescription: Rigorous code review heuristics, architectural conformance, security inspection, constructive feedback, and gh pr review automation\n---\n# GitHub Pull Request Review & Quality Assessment\n\n## 1. Architectural Alignment & Clean Code\nVerify that proposed changes conform to repository design invariants, dependency directions, and domain boundaries. Reject premature abstractions and unneeded architectural complexity.\n\n## 2. Exhaustive Test Coverage Verification\nEnsure every new code path, error handling branch, and edge case is backed by deterministic automated unit or integration tests. Reject PRs claiming completion without tests.\n\n## 3. Security & Boundary Inspection\nScrutinize inputs, data sanitization, authentication boundaries, and secret handling. Verify that no escape hatches or unchecked suppressions are introduced.\n\n## 4. Constructive & Actionable Feedback\nFormat review comments clearly: state the concern, explain the architectural why, and provide a concrete proposed code suggestion using GitHub suggestion blocks.\n\n## 5. Performance & Resource Management\nIdentify potential memory leaks, N+1 database queries, unindexed queries, blocking I/O calls in event loops, and missing timeouts on external network requests.\n\n## 6. Backward Compatibility & Contract Safety\nVerify that public APIs, database schemas, and configuration contracts maintain compatibility or provide safe, versioned migration paths.\n\n## 7. Automated gh CLI Review Operations\nExecute review operations via CLI: gh pr review --comment -b 'Feedback', gh pr review --request-changes -b 'Blocking concerns', or gh pr review --approve -b 'Approved with evidence'.\n\n## 8. Review Gate Enforcement\nStrictly enforce repository governance review rules: verify that independent security verifiers approve High/Critical risk PRs before merge.\n\n## 9. Conversation Resolution Discipline\nRequire all review comments and inline threads to be explicitly resolved before approving. Do not resolve threads with pending unresolved technical concerns.\n\n## 10. Evidence-Based Approval Verdict\nIssue approval only when build artifacts, CI green gates, test reports, and review criteria are documented and satisfied.\n"
 }

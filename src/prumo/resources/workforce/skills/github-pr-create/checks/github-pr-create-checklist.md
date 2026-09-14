@@ -1,21 +1,9 @@
-# GitHub PR Authoring — Verification Checklist
+# GitHub Pull Request Authoring & Creation Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
-
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
-
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
-
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+- [ ] PR scope isolated to a single objective; unrelated changes excluded
+- [ ] Title follows Conventional Commits format with explicit scope
+- [ ] Description includes technical context, evidence of testing, and issue links
+- [ ] Linters, formatting, and automated tests passing locally
+- [ ] Git diff free of debug artifacts, console logs, and unintended files
+- [ ] Breaking changes explicitly documented with migration steps
+- [ ] Appropriate reviewers and code owners assigned

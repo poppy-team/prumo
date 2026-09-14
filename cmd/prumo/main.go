@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/raillen/prumo/internal/cliops"
 	"github.com/raillen/prumo/internal/project"
@@ -44,6 +45,12 @@ func repoRoot() string {
 				break
 			}
 			candidate = parent
+		}
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		devPath := filepath.Join(home, "Documentos", "Projetos", "prumo")
+		if exists(devPath, "go.mod") && exists(devPath, "schemas") {
+			return devPath
 		}
 	}
 	return "."
@@ -183,6 +190,8 @@ func run(args []string) int {
 		return runDocumentation(asJSON, rest)
 	case "run", "continue", "budget", "debug", "tool", "model", "env", "runtime":
 		return runRuntime(asJSON, rest)
+	case "agent":
+		return runAgent(asJSON, rest[1:])
 	case "package", "automation":
 		return runPlatform(asJSON, rest)
 	case "workforce":

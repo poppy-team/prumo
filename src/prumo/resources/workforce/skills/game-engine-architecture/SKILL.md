@@ -1,36 +1,35 @@
 ---
 name: game-engine-architecture
-description: ECS patterns, tick loop, fixed timestep, system ordering, memory arenas, data locality, event buses, resource management, multithreaded rendering, deterministic physics
+description: Entity Component System (ECS), fixed delta time game loops, subsystem decoupling, memory pools, and multi-threaded task graphs
 ---
-# Game Engine Architecture
+# Game Engine Architecture & Subsystems
 
-## 1. Ecs Patterns
-Implementation and rigorous validation of ECS patterns is essential for game-engine-architecture. Engineers must ensure that ECS patterns is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in ECS patterns. Furthermore, edge cases regarding ECS patterns must be explicitly documented and guarded against in the codebase. Failure to address ECS patterns properly leads to systemic vulnerabilities or architectural decay.
+## 1. Entity Component System (ECS) Architecture
+Organize game state using data-oriented design: Entities as lightweight IDs, Components as pure plain-old-data (POD) structs stored contiguously in memory, and Systems as stateless logic iterating over component arrays.
 
-## 2. Tick Loop
-Implementation and rigorous validation of tick loop is essential for game-engine-architecture. Engineers must ensure that tick loop is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in tick loop. Furthermore, edge cases regarding tick loop must be explicitly documented and guarded against in the codebase. Failure to address tick loop properly leads to systemic vulnerabilities or architectural decay.
+## 2. Deterministic Game Loop with Fixed Delta Time
+Implement a semi-fixed or fixed timestep game loop (accumulator pattern) for physics and gameplay logic to ensure identical behavior across diverse monitor refresh rates. Separate render interpolation from physics simulation.
 
-## 3. Fixed Timestep
-Implementation and rigorous validation of fixed timestep is essential for game-engine-architecture. Engineers must ensure that fixed timestep is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in fixed timestep. Furthermore, edge cases regarding fixed timestep must be explicitly documented and guarded against in the codebase. Failure to address fixed timestep properly leads to systemic vulnerabilities or architectural decay.
+## 3. Subsystem Decoupling & Interfaces
+Decouple core engine subsystems (Rendering, Physics, Audio, Input, Animation) using explicit interfaces or event buses. Prevent circular dependencies between gameplay logic and lower-level graphics hardware drivers.
 
-## 4. System Ordering
-Implementation and rigorous validation of system ordering is essential for game-engine-architecture. Engineers must ensure that system ordering is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in system ordering. Furthermore, edge cases regarding system ordering must be explicitly documented and guarded against in the codebase. Failure to address system ordering properly leads to systemic vulnerabilities or architectural decay.
+## 4. Memory Allocation & Pooling Strategies
+Ban frequent dynamic allocations (new/malloc) during active gameplay frames. Use custom memory allocators: stack allocators for per-frame scratch memory, and object/pool allocators for projectiles and particles.
 
-## 5. Memory Arenas
-Implementation and rigorous validation of memory arenas is essential for game-engine-architecture. Engineers must ensure that memory arenas is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in memory arenas. Furthermore, edge cases regarding memory arenas must be explicitly documented and guarded against in the codebase. Failure to address memory arenas properly leads to systemic vulnerabilities or architectural decay.
+## 5. Multi-Threaded Task Graphs
+Execute engine subsystems concurrently using a job system / task graph with work-stealing thread pools. Isolate rendering command submission from gameplay state simulation.
 
-## 6. Data Locality
-Implementation and rigorous validation of data locality is essential for game-engine-architecture. Engineers must ensure that data locality is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in data locality. Furthermore, edge cases regarding data locality must be explicitly documented and guarded against in the codebase. Failure to address data locality properly leads to systemic vulnerabilities or architectural decay.
+## 6. Asset Lifecycle & Virtual Resource Management
+Manage textures, meshes, and sound banks using handle-based resource systems with reference counting. Support background asynchronous streaming and level loading.
 
-## 7. Event Buses
-Implementation and rigorous validation of event buses is essential for game-engine-architecture. Engineers must ensure that event buses is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in event buses. Furthermore, edge cases regarding event buses must be explicitly documented and guarded against in the codebase. Failure to address event buses properly leads to systemic vulnerabilities or architectural decay.
+## 7. Coordinate Systems & Spatial Partitioning
+Standardize engine coordinate conventions (right-handed vs. left-handed, Y-up vs. Z-up). Accelerate spatial queries and frustum culling using BVH, octrees, or spatial hashing.
 
-## 8. Resource Management
-Implementation and rigorous validation of resource management is essential for game-engine-architecture. Engineers must ensure that resource management is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in resource management. Furthermore, edge cases regarding resource management must be explicitly documented and guarded against in the codebase. Failure to address resource management properly leads to systemic vulnerabilities or architectural decay.
+## 8. State Machine & Scene Graph Hierarchies
+Model game progression with a pushdown finite state machine (FSM). Implement scene hierarchies with dirty flags to minimize redundant global matrix computations.
 
-## 9. Multithreaded Rendering
-Implementation and rigorous validation of multithreaded rendering is essential for game-engine-architecture. Engineers must ensure that multithreaded rendering is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in multithreaded rendering. Furthermore, edge cases regarding multithreaded rendering must be explicitly documented and guarded against in the codebase. Failure to address multithreaded rendering properly leads to systemic vulnerabilities or architectural decay.
+## 9. Developer Tooling & Debug Overlays
+Embed real-time diagnostic overlays: frame time graph, draw call counters, memory allocation trackers, and collision wireframe renderers.
 
-## 10. Deterministic Physics
-Implementation and rigorous validation of deterministic physics is essential for game-engine-architecture. Engineers must ensure that deterministic physics is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in deterministic physics. Furthermore, edge cases regarding deterministic physics must be explicitly documented and guarded against in the codebase. Failure to address deterministic physics properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Deterministic Replay & Save State Architecture
+Design engine state serialization to support byte-for-byte deterministic replays and atomic snapshot saving/loading.

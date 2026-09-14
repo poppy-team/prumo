@@ -6,8 +6,11 @@
   "purpose": "Safely inspect, analyze, and operate within third-party or untrusted repositories without executing arbitrary code.",
   "risk_level": "high",
   "modes": [
+    "implementation",
+    "review",
     "audit",
-    "research"
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Security policy",
@@ -58,5 +61,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: untrusted-project-security\ndescription: Zero-trust ingestion, no-execution static analysis, network egress quarantine, hidden hook scanning, and read-only container sandbox\n---\n# Untrusted Codebase & Repository Quarantine\n\n## 1. Zero-Trust Ingestion Policy\nTreat any foreign or newly cloned repository as potentially malicious untrusted data. Suspend automated task execution until formal quarantine inspection is complete.\n\n## 2. No-Execution Static Analysis\nInspect untrusted repositories exclusively using static parsers, AST analyzers, and text scanners. Never run make, build scripts, test suites, or package install commands during initial triage.\n\n## 3. Network Egress Quarantine\nIsolate the analysis environment from all outbound internet connectivity. Prevent untrusted code from exfiltrating local environment data or downloading secondary malware stages.\n\n## 4. Malicious Hook & Trigger Scanning\nScan the repository structure for hidden execution triggers: .git/hooks/, .vscode/tasks.json, .devcontainer/devcontainer.json, GitHub Actions workflows, and suspicious Makefile targets.\n\n## 5. Obfuscation & Payload Detection\nDetect high-entropy strings, long base64/hex encoded blobs, hidden Unicode zero-width spaces, and binary executables disguised with text file extensions.\n\n## 6. Sandboxed Container Exploration\nWhen dynamic execution or building is required, run the untrusted project inside an ephemeral, non-root Docker container or microVM (gVisor / Firecracker) with memory and CPU bounds.\n\n## 7. Read-Only Root Filesystem\nMount the untrusted project directory with read-only permissions (ro). Provide only an isolated, ephemeral tmpfs scratchpad for temporary compilation artifacts.\n\n## 8. Manual Human Authorization Barrier\nRequire explicit, human-confirmed consent before executing any build command or installing dependencies discovered in an untrusted project.\n\n## 9. Safe Dependency Graph Inspection\nParse package manifests (go.mod, package.json, requirements.txt) statically. Never run package manager commands that automatically resolve or download remote packages.\n\n## 10. Formal Clearance Certification\nEmit a structured security assessment report (.prumo/history/quarantine-report.json) detailing findings, risk score, and clearance status before onboarding the repository to active development.\n"
 }

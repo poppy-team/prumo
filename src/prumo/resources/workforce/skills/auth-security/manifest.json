@@ -7,7 +7,10 @@
   "risk_level": "high",
   "modes": [
     "implementation",
-    "review"
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Security policy",
@@ -59,5 +62,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: auth-security\ndescription: OAuth2.1, PKCE, Argon2id password hashing, token lifecycle, session revocation, MFA, and brute-force prevention\n---\n# Authentication & Authorization Security\n\n## 1. Zero Trust & Secure Authentication Flows\nImplement PKCE for OAuth 2.1 authorization code flows. Mandate cryptographically random state and nonce parameters to prevent authorization injection. Reject HTTP redirects to unverified origins. Require authentication at every API boundary rather than trusting network perimeters.\n\n## 2. Modern Password Hashing\nUse Argon2id as the default password hashing algorithm (minimum memory 64MB, time cost 3, parallelism 4). For legacy compatibility, use bcrypt with work factor >= 12. Never use MD5, SHA1, or raw SHA256 for password storage. Enforce password complexity via entropy checks rather than restrictive character set rules.\n\n## 3. Ephemeral Token Lifecycle\nKeep JWT access tokens short-lived (maximum 15 minutes). Implement secure refresh token rotation where the previous refresh token is invalidated upon single use. If an invalidated refresh token is reused, treat it as token theft and immediately revoke all refresh tokens associated with that family/session.\n\n## 4. Session Invalidation & State Revocation\nMaintain a server-side session revocation denylist (e.g. Redis bloom filter or distributed cache) for rapid token invalidation. On password change or account compromise, revoke all active sessions immediately. Support global sign-out across all client devices.\n\n## 5. Multi-Factor Authentication (MFA)\nImplement TOTP (RFC 6238) with SHA-1/SHA-256 and 30-second time steps. Provide single-use cryptographically random backup codes hashed in storage. Support WebAuthn / FIDO2 passkeys for phishing-resistant authentication.\n\n## 6. Brute Force Prevention & Adaptive Rate Limiting\nEnforce progressive rate limiting using a leaky bucket algorithm on all login and password reset endpoints. Apply per-IP limits and per-account limits. Escalate with exponential delays or CAPTCHA after 5 failed attempts within 10 minutes.\n\n## 7. Secure Account Recovery\nGenerate single-use, time-limited (max 30 minutes) recovery tokens using HMAC-SHA256. Send recovery links strictly to verified primary contact channels. Never reveal whether an email or username exists in recovery response messages (prevent account enumeration).\n\n## 8. SSO & Federated Identity\nEnforce strict OIDC validation: verify JWT signature, issuer (iss), audience (aud), expiration (exp), and not-before (nbf) claims. Enforce clock skew tolerance of at most 60 seconds. Require PKCE on federated broker handshakes.\n\n## 9. Minimal Scopes & Granular Claims\nAdhere to the Principle of Least Privilege: issue tokens with the minimal scopes required for the specific client operation. Validate scope claims on every protected endpoint before granting access. Separate administrative capabilities into dedicated, re-authenticated scopes.\n\n## 10. Audit Logging & Security Event Tracing\nRecord structured security audit logs for all authentication events: LOGIN_SUCCESS, LOGIN_FAIL, TOKEN_ISSUED, TOKEN_REVOKED, PASSWORD_RESET_REQUEST, and MFA_FAILED. Include timestamp, actor ID, client IP, user agent, and correlation ID. Never write credentials or tokens to logs.\n"
 }

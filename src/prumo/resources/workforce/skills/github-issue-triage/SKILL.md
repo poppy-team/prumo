@@ -1,36 +1,35 @@
 ---
 name: github-issue-triage
-description: Duplicate detection, severity/priority classification, milestone assignment, label application, routing to teams, stale issue management, closing criteria, request for information, impact assessment, capacity planning
+description: Issue qualification, reproduction verification, deduplication, SLA monitoring, component routing, and automated triage workflows
 ---
-# Github Issue Triage
+# GitHub Issue Triage & Prioritization
 
-## 1. Duplicate Detection
-Implementation and rigorous validation of Duplicate detection is essential for github-issue-triage. Engineers must ensure that Duplicate detection is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Duplicate detection. Furthermore, edge cases regarding Duplicate detection must be explicitly documented and guarded against in the codebase. Failure to address Duplicate detection properly leads to systemic vulnerabilities or architectural decay.
+## 1. Initial Issue Qualification
+Review newly incoming issues for completeness: verify that all mandatory template fields, reproduction steps, and error logs are present. Request missing details promptly.
 
-## 2. Severity/Priority Classification
-Implementation and rigorous validation of severity/priority classification is essential for github-issue-triage. Engineers must ensure that severity/priority classification is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in severity/priority classification. Furthermore, edge cases regarding severity/priority classification must be explicitly documented and guarded against in the codebase. Failure to address severity/priority classification properly leads to systemic vulnerabilities or architectural decay.
+## 2. Reproduction Verification
+Attempt to reproduce reported defects in a clean local environment or CI container. Mark verified bugs with the 'verified' label and link reproduction tests.
 
-## 3. Milestone Assignment
-Implementation and rigorous validation of milestone assignment is essential for github-issue-triage. Engineers must ensure that milestone assignment is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in milestone assignment. Furthermore, edge cases regarding milestone assignment must be explicitly documented and guarded against in the codebase. Failure to address milestone assignment properly leads to systemic vulnerabilities or architectural decay.
+## 3. Deduplication & Search
+Search existing open and closed issues before triaging. When an issue duplicates an existing report, link the canonical issue and close the duplicate politely with an explanation.
 
-## 4. Label Application
-Implementation and rigorous validation of label application is essential for github-issue-triage. Engineers must ensure that label application is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in label application. Furthermore, edge cases regarding label application must be explicitly documented and guarded against in the codebase. Failure to address label application properly leads to systemic vulnerabilities or architectural decay.
+## 4. Severity & Impact Assessment
+Evaluate impact on users and systems: distinguish security vulnerabilities (route to private advisory immediately) from data loss, broken workflows, or cosmetic bugs.
 
-## 5. Routing To Teams
-Implementation and rigorous validation of routing to teams is essential for github-issue-triage. Engineers must ensure that routing to teams is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in routing to teams. Furthermore, edge cases regarding routing to teams must be explicitly documented and guarded against in the codebase. Failure to address routing to teams properly leads to systemic vulnerabilities or architectural decay.
+## 5. Component & Team Routing
+Apply accurate subsystem labels (area/backend, area/frontend, area/infra) and assign qualified domain owners based on CODEOWNERS.
 
-## 6. Stale Issue Management
-Implementation and rigorous validation of stale issue management is essential for github-issue-triage. Engineers must ensure that stale issue management is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in stale issue management. Furthermore, edge cases regarding stale issue management must be explicitly documented and guarded against in the codebase. Failure to address stale issue management properly leads to systemic vulnerabilities or architectural decay.
+## 6. SLA & Stale Issue Management
+Monitor response times against project SLAs. Identify stale or abandoned issues needing user response and configure automated lifecycle reminders.
 
-## 7. Closing Criteria
-Implementation and rigorous validation of closing criteria is essential for github-issue-triage. Engineers must ensure that closing criteria is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in closing criteria. Furthermore, edge cases regarding closing criteria must be explicitly documented and guarded against in the codebase. Failure to address closing criteria properly leads to systemic vulnerabilities or architectural decay.
+## 7. Converting Discussions & Questions
+When issues are general questions or support requests rather than actionable engineering tasks, convert them to GitHub Discussions.
 
-## 8. Request For Information
-Implementation and rigorous validation of request for information is essential for github-issue-triage. Engineers must ensure that request for information is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in request for information. Furthermore, edge cases regarding request for information must be explicitly documented and guarded against in the codebase. Failure to address request for information properly leads to systemic vulnerabilities or architectural decay.
+## 8. Automated CLI Triage Operations
+Triage issues via CLI: gh issue edit 123 --add-label 'bug,verified' --add-assignee 'developer'.
 
-## 9. Impact Assessment
-Implementation and rigorous validation of impact assessment is essential for github-issue-triage. Engineers must ensure that impact assessment is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in impact assessment. Furthermore, edge cases regarding impact assessment must be explicitly documented and guarded against in the codebase. Failure to address impact assessment properly leads to systemic vulnerabilities or architectural decay.
+## 9. Security Triage & Disclosure Protocol
+If an issue reports a security vulnerability publicly, immediately contact repository maintainers, move discussion to private advisory, and hide sensitive comments.
 
-## 10. Capacity Planning
-Implementation and rigorous validation of capacity planning is essential for github-issue-triage. Engineers must ensure that capacity planning is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in capacity planning. Furthermore, edge cases regarding capacity planning must be explicitly documented and guarded against in the codebase. Failure to address capacity planning properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Backlog Health & Milestone Planning
+Assign qualified and verified issues to upcoming project milestones or active phases (P00, P01) to keep the project roadmap actionable.

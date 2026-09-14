@@ -28,6 +28,19 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 - [Runtime Control Plane](runtime/control-plane.md)
 - [Trust model](security/trust-model.md)
 
+## Harness (headless, Prumo-native)
+
+- [Harness overview](../harness/overview.md)
+- [Agent runtime](../harness/agent-runtime.md)
+- [Providers + Gateway](../harness/providers.md)
+- [Security](../harness/security.md)
+- [Context + Knowledge](../harness/context-knowledge.md)
+- [Workforce + Handoff](../harness/workforce-handoff.md)
+- [Daemon](../harness/daemon.md)
+- [Human docs](../harness/human-docs.md)
+- [Roadmap status](../harness/roadmap-status.md)
+- [Promotion report](../harness/promotion-report.md)
+
 ## Development
 
 - [Implementation blueprint](development/implementation-blueprint.md)

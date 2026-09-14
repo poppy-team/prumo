@@ -1,6 +1,9 @@
-# Web Application Security Security Checklist
-- [ ] Trust boundaries clearly defined and documented
-- [ ] All untrusted inputs validated against strict schema
-- [ ] Principle of least privilege enforced
-- [ ] No hardcoded secrets or credentials
-- [ ] Automated security tests pass with 100% success
+# Web Application Security & Hardening Checklist
+
+- [ ] Strict nonce-based CSP header active; unsafe-eval and inline scripts banned
+- [ ] Output encoding verified; DOMPurify used for user HTML; innerHTML prohibited
+- [ ] Cookies set with Secure, HttpOnly, SameSite=Lax/Strict, and __Host- prefix
+- [ ] SSRF protection validates IP addresses against private/cloud metadata ranges
+- [ ] File uploads validate magic bytes, randomize names, and disable in-browser execution
+- [ ] CORS configured with explicit domain whitelist; wildcard with credentials banned
+- [ ] Open redirects blocked via strict relative path validation

@@ -6,304 +6,528 @@
     {
       "local_path": "docs/product/vision.md",
       "notion_pages": [
-        { "title": "Prumo — Livro Vivo v0.4 (hub)", "role": "vision summary, fundamental decisions, macro-architecture" }
+        {
+          "title": "Prumo — Livro Vivo v0.4 (hub)",
+          "role": "vision summary, fundamental decisions, macro-architecture"
+        }
       ],
       "semantic_role": "product vision, scope, non-goals, operational target"
     },
     {
       "local_path": "docs/product/scope-v0.4.md",
       "notion_pages": [
-        { "title": "Prumo — Livro Vivo v0.4 (hub)", "role": "macro-architecture, objective" },
-        { "title": "01 — Stack Go, Clean Code e Migração do Core Python", "role": "target stack, migration phases, deprecation criteria" },
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "milestones, dependency ordering, release strategy, amendments" },
-        { "title": "16 — Gap Analysis v0.3 → v0.4", "role": "component classification, corrections, doc updates" }
+        {
+          "title": "Prumo — Livro Vivo v0.4 (hub)",
+          "role": "macro-architecture, objective"
+        },
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "target stack, migration phases, deprecation criteria"
+        },
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "milestones, dependency ordering, release strategy, amendments"
+        },
+        {
+          "title": "16 — Gap Analysis v0.3 → v0.4",
+          "role": "component classification, corrections, doc updates"
+        }
       ],
       "semantic_role": "detailed in-scope/out-of-scope, migration boundary"
     },
     {
       "local_path": "docs/architecture/overview.md",
       "notion_pages": [
-        { "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core", "role": "planes, boundaries, internal interfaces, dependency direction, design rules" }
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "planes, boundaries, internal interfaces, dependency direction, design rules"
+        }
       ],
       "semantic_role": "high-level topology, plane boundaries, dependency rules, design principles"
     },
     {
       "local_path": "docs/architecture/dependency-rules.md",
       "notion_pages": [
-        { "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core", "role": "internal boundaries, rules of dependency, interface placement" },
-        { "title": "17 — Estrutura Canônica de Repositório Alvo", "role": "package layout, internal vs integration, embedding strategy" }
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "internal boundaries, rules of dependency, interface placement"
+        },
+        {
+          "title": "17 — Estrutura Canônica de Repositório Alvo",
+          "role": "package layout, internal vs integration, embedding strategy"
+        }
       ],
       "semantic_role": "package dependency graph, hard rules, interface placement, import hygiene"
     },
     {
       "local_path": "docs/development/implementation-blueprint.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "milestones, dependency DAG, gates, dogfooding, releases, required docs" },
-        { "title": "01 — Stack Go, Clean Code e Migração do Core Python", "role": "Go rules, migration phases, criteria" },
-        { "title": "16 — Gap Analysis v0.3 → v0.4", "role": "migration boundary" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "milestones, dependency DAG, gates, dogfooding, releases, required docs"
+        },
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "Go rules, migration phases, criteria"
+        },
+        {
+          "title": "16 — Gap Analysis v0.3 → v0.4",
+          "role": "migration boundary"
+        }
       ],
       "semantic_role": "objective, non-goals, architecture summary, migration strategy, macro-phases, DAG, gates, dogfooding, releases"
     },
     {
       "local_path": "docs/development/phases.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M0–M12 detail, dependencies, scope, non-goals, deliverables, acceptance criteria, exit gates" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M0–M12 detail, dependencies, scope, non-goals, deliverables, acceptance criteria, exit gates"
+        }
       ],
       "semantic_role": "fully detailed M0+M1; M2–M4 sufficient for planning; M5+ architectural"
     },
     {
       "local_path": "docs/development/repository-layout.md",
       "notion_pages": [
-        { "title": "17 — Estrutura Canônica de Repositório Alvo", "role": "target tree, package rules, embedding strategy, canonical vs derived" }
+        {
+          "title": "17 — Estrutura Canônica de Repositório Alvo",
+          "role": "target tree, package rules, embedding strategy, canonical vs derived"
+        }
       ],
       "semantic_role": "canonical tree, directory responsibilities, go:embed strategy, package rules"
     },
     {
       "local_path": "docs/development/coding-standards.md",
       "notion_pages": [
-        { "title": "00 — Princípios, Governança e Regras de Engenharia", "role": "Clean Code rules, Definition of Done, anti-overengineering guardrail, portability rule" }
+        {
+          "title": "00 — Princípios, Governança e Regras de Engenharia",
+          "role": "Clean Code rules, Definition of Done, anti-overengineering guardrail, portability rule"
+        }
       ],
       "semantic_role": "naming, functions, packages, errors, interfaces, dependencies, I/O, testing, DoD, guardrails"
     },
     {
       "local_path": "docs/development/testing-strategy.md",
       "notion_pages": [
-        { "title": "13 — Testes, Conformance, Evals e Quality Gates", "role": "pyramid, quality gates, conformance fixtures, provider contract, failure taxonomy, evals, budgets" },
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "test provider foundation, security foundation, dogfooding" }
+        {
+          "title": "13 — Testes, Conformance, Evals e Quality Gates",
+          "role": "pyramid, quality gates, conformance fixtures, provider contract, failure taxonomy, evals, budgets"
+        },
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "test provider foundation, security foundation, dogfooding"
+        }
       ],
       "semantic_role": "unit/integration/conformance/connector/E2E/LLM evals, quality gates, fixtures, provider contract, failure taxonomy, eval corpus, dogfooding"
     },
     {
       "local_path": "docs/migration/protocol-inventory.md",
       "notion_pages": [
-        { "title": "16 — Gap Analysis v0.3 → v0.4", "role": "component classification, canonical schemas, root scripts, doc updates" },
-        { "title": "01 — Stack Go, Clean Code e Migração do Core Python", "role": "migration phases, criteria" }
+        {
+          "title": "16 — Gap Analysis v0.3 → v0.4",
+          "role": "component classification, canonical schemas, root scripts, doc updates"
+        },
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "migration phases, criteria"
+        }
       ],
       "semantic_role": "Python module map, CLI surface, schemas, resources, scripts, baseline, critical contracts, open questions"
     },
     {
       "local_path": "docs/migration/conformance-strategy.md",
       "notion_pages": [
-        { "title": "13 — Testes, Conformance, Evals e Quality Gates", "role": "conformance approach, migration gate" },
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "conformance 100% gate" }
+        {
+          "title": "13 — Testes, Conformance, Evals e Quality Gates",
+          "role": "conformance approach, migration gate"
+        },
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "conformance 100% gate"
+        }
       ],
       "semantic_role": "comparison contract, fixture layout, golden generation, determinism, gate progression, differential runner"
     },
     {
       "local_path": "docs/runtime/control-plane.md",
       "notion_pages": [
-        { "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core", "role": "control plane boundary, dependency direction, new application boundaries" },
-        { "title": "48 — Agent Runtime Control Plane: Arquitetura e Princípios", "role": "planes, governance rule, success criteria" },
-        { "title": "49 — Budget Manager, Cost Governance e Rate Limits", "role": "budget envelope, scopes, limits, cost manager, rate limits, evidence" },
-        { "title": "50 — Context Compiler, Token Budget, Cache e Compaction", "role": "compiler pipeline, manifest, window distinction, tool-output budgets, pressure, retrieval, evals" },
-        { "title": "51 — Run Engine, Checkpoints, Retry, Resume e Cancellation", "role": "run state machine, checkpoint, retry taxonomy, idempotency, resume, cancellation, livelock" },
-        { "title": "52 — Tool Gateway, MCP Governance e Lazy Tool Discovery", "role": "gateway pipeline, descriptor, lazy discovery, side-effect journal, MCP governance, policy, evals" },
-        { "title": "53 — Model Registry, Router, Drift, Fallback e Provider Health", "role": "registry metadata, router inputs/outputs, eval-driven, drift, fallback, health, verification" },
-        { "title": "55 — Observability Plane, Run Explainability e Incident Bundles", "role": "telemetry, explainability commands, storage, OTLP, incident bundles, privacy" },
-        { "title": "56 — Automation Engine, Event Rules, DLQ e Safety", "role": "automation model, contract, idempotency, retry, DLQ, scheduler deferral" },
-        { "title": "57 — Prumo Package & Runtime Manager, prumo.lock e Provider Isolation", "role": "package types, manifest, lockfile, runtime manager, installation ownership, offline bundles" },
-        { "title": "58 — Migration Engine, Unified Review Queue e State Evolution", "role": "migration contract, safety, journal, review queue, rule" },
-        { "title": "60 — Secrets, Data Classification e Egress Governance", "role": "data classes, egress policy, secret provider, scopes, redaction, injection boundary, audit" }
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "control plane boundary, dependency direction, new application boundaries"
+        },
+        {
+          "title": "48 — Agent Runtime Control Plane: Arquitetura e Princípios",
+          "role": "planes, governance rule, success criteria"
+        },
+        {
+          "title": "49 — Budget Manager, Cost Governance e Rate Limits",
+          "role": "budget envelope, scopes, limits, cost manager, rate limits, evidence"
+        },
+        {
+          "title": "50 — Context Compiler, Token Budget, Cache e Compaction",
+          "role": "compiler pipeline, manifest, window distinction, tool-output budgets, pressure, retrieval, evals"
+        },
+        {
+          "title": "51 — Run Engine, Checkpoints, Retry, Resume e Cancellation",
+          "role": "run state machine, checkpoint, retry taxonomy, idempotency, resume, cancellation, livelock"
+        },
+        {
+          "title": "52 — Tool Gateway, MCP Governance e Lazy Tool Discovery",
+          "role": "gateway pipeline, descriptor, lazy discovery, side-effect journal, MCP governance, policy, evals"
+        },
+        {
+          "title": "53 — Model Registry, Router, Drift, Fallback e Provider Health",
+          "role": "registry metadata, router inputs/outputs, eval-driven, drift, fallback, health, verification"
+        },
+        {
+          "title": "55 — Observability Plane, Run Explainability e Incident Bundles",
+          "role": "telemetry, explainability commands, storage, OTLP, incident bundles, privacy"
+        },
+        {
+          "title": "56 — Automation Engine, Event Rules, DLQ e Safety",
+          "role": "automation model, contract, idempotency, retry, DLQ, scheduler deferral"
+        },
+        {
+          "title": "57 — Prumo Package & Runtime Manager, prumo.lock e Provider Isolation",
+          "role": "package types, manifest, lockfile, runtime manager, installation ownership, offline bundles"
+        },
+        {
+          "title": "58 — Migration Engine, Unified Review Queue e State Evolution",
+          "role": "migration contract, safety, journal, review queue, rule"
+        },
+        {
+          "title": "60 — Secrets, Data Classification e Egress Governance",
+          "role": "data classes, egress policy, secret provider, scopes, redaction, injection boundary, audit"
+        }
       ],
       "semantic_role": "Run, Budget, Context, Model, Tool, Environment, Automation, Observability, Package/Runtime, Migration, Review, Secrets/Egress"
     },
     {
       "local_path": "docs/runtime/living-plan.md",
       "notion_pages": [
-        { "title": "05 — Living Plan Mode e Interview Engine", "role": "incremental interview, answer types, open questions registry, coverage model, modes" },
-        { "title": "70 — Fase E: Living Plan & Interview Engine (M6)", "role": "pipeline, planning scopes, question priority, decision model, authority, confidence, goal decomposition, exit gate" }
+        {
+          "title": "05 — Living Plan Mode e Interview Engine",
+          "role": "incremental interview, answer types, open questions registry, coverage model, modes"
+        },
+        {
+          "title": "70 — Fase E: Living Plan & Interview Engine (M6)",
+          "role": "pipeline, planning scopes, question priority, decision model, authority, confidence, goal decomposition, exit gate"
+        }
       ],
       "semantic_role": "M6 Living Plan: interview pipeline, question priority, answer classification, decision/authority/confidence model, open questions registry, decision preview, readiness feedback, exit gate"
     },
     {
       "local_path": "docs/runtime/adoption-engine.md",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "pipeline, discovery sources/output, classification, semantic mapping, confidence ledger, profile proposal, adoption report, modes, migration proposals, security, goal decomposition, exit gate" },
-        { "title": "06 — Adoption Engine para Projetos Existentes", "role": "inference confidence + evidence pointers, adoption report, candidate bindings" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "pipeline, discovery sources/output, classification, semantic mapping, confidence ledger, profile proposal, adoption report, modes, migration proposals, security, goal decomposition, exit gate"
+        },
+        {
+          "title": "06 — Adoption Engine para Projetos Existentes",
+          "role": "inference confidence + evidence pointers, adoption report, candidate bindings"
+        }
       ],
       "semantic_role": "M7 Adoption Engine: discovery pipeline, observed facts vs inference, classification, semantic mapping, confidence ledger, adoption report, migration proposals, brownfield boundary, exit gate"
     },
     {
       "local_path": "docs/governance/m7-exit-gate.md",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "M7 Exit Gate — ADOPTION READY validation, evidence, brownfield corpus results" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "M7 Exit Gate — ADOPTION READY validation, evidence, brownfield corpus results"
+        }
       ],
       "semantic_role": "M7 exit gate formal validation: zero forced layout, facts vs inferences, confidence ledger, M5 bindings, Living Plan uncertainty, review governed migration proposals, incremental scanner, security"
     },
     {
       "local_path": "docs/governance/m8-exit-gate.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M8 Exit Gate — History and Traceability validation and criteria" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M8 Exit Gate — History and Traceability validation and criteria"
+        }
       ],
       "semantic_role": "M8 exit gate formal validation: implementation journal, experiment/rejection/debt registers, typed graph, trace CLI"
     },
     {
       "local_path": "docs/governance/m9-exit-gate.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M9 Exit Gate — Experience Layer validation and criteria" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M9 Exit Gate — Experience Layer validation and criteria"
+        }
       ],
       "semantic_role": "M9 exit gate formal validation: session events, summaries, handoff protocol, experience proposals, retention"
     },
     {
       "local_path": "docs/governance/m10-exit-gate.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M10 Exit Gate — OpenCode Native Harness validation and criteria" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M10 Exit Gate — OpenCode Native Harness validation and criteria"
+        }
       ],
       "semantic_role": "M10 exit gate formal validation: native compiler, TS plugin, tool guards, session hooks, and cleanup"
     },
     {
       "local_path": "docs/governance/m11-exit-gate.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M11 Exit Gate — Connector SDK validation and criteria" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M11 Exit Gate — Connector SDK validation and criteria"
+        }
       ],
       "semantic_role": "M11 exit gate formal validation: capability negotiation, test kit, Gemini connector, Claude Code/Codex elevation"
     },
     {
       "local_path": "docs/governance/m12-exit-gate.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M12 Governance Assessment — Team/Advanced Runtime deferred status" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M12 Governance Assessment — Team/Advanced Runtime deferred status"
+        }
       ],
       "semantic_role": "M12 governance assessment: architectural justification for deferred runtime and team daemon status"
     },
     {
       "local_path": "docs/integration/connector-contract.md",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "Connector Contract Specification" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "Connector Contract Specification"
+        }
       ],
       "semantic_role": "Connector contract specification: capabilities, enforcement primitives, lifecycle operations"
     },
     {
       "local_path": "docs/security/trust-model.md",
       "notion_pages": [
-        { "title": "12 — Segurança, Trust, Permissions e Supply Chain", "role": "trust layers, rules, connector trust, config merge, artifact markers, supply chain, docs contract, safe mode, classification, egress, secrets, redaction, injection boundary, audit" }
+        {
+          "title": "12 — Segurança, Trust, Permissions e Supply Chain",
+          "role": "trust layers, rules, connector trust, config merge, artifact markers, supply chain, docs contract, safe mode, classification, egress, secrets, redaction, injection boundary, audit"
+        }
       ],
       "semantic_role": "trust layers, connector primitives, config safety, artifact markers, supply chain, security contracts, safe mode, classification, egress, secrets, redaction, audit"
     },
     {
       "local_path": "schemas/observed-fact.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "ObservedFact schema — F-G01 scanner output contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "ObservedFact schema — F-G01 scanner output contract"
+        }
       ],
       "semantic_role": "schema contract for adoption scanner observed facts"
     },
     {
       "local_path": "schemas/scan-result.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "ScanResult schema — F-G01 complete scanner output envelope" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "ScanResult schema — F-G01 complete scanner output envelope"
+        }
       ],
       "semantic_role": "schema contract for adoption scanner complete output"
     },
     {
       "local_path": "schemas/repository-classification.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "RepositoryClassification schema — F-G02 classification output contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "RepositoryClassification schema — F-G02 classification output contract"
+        }
       ],
       "semantic_role": "schema contract for repository classification output"
     },
     {
       "local_path": "schemas/capability-proposal.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "CapabilityProposal schema — F-G03 capability and profile proposals contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "CapabilityProposal schema — F-G03 capability and profile proposals contract"
+        }
       ],
       "semantic_role": "schema contract for candidate capability and profile proposals"
     },
     {
       "local_path": "schemas/mapping-candidate.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "MappingCandidate schema — F-G04 semantic document mapping and candidate bindings contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "MappingCandidate schema — F-G04 semantic document mapping and candidate bindings contract"
+        }
       ],
       "semantic_role": "schema contract for semantic document mapping candidates and bindings"
     },
     {
       "local_path": "schemas/confidence-ledger.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "ConfidenceLedger schema — F-G05 confidence ledger contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "ConfidenceLedger schema — F-G05 confidence ledger contract"
+        }
       ],
       "semantic_role": "schema contract for adoption engine confidence ledger"
     },
     {
       "local_path": "schemas/adoption-report.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "AdoptionReport schema — F-G06 canonical adoption report contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "AdoptionReport schema — F-G06 canonical adoption report contract"
+        }
       ],
       "semantic_role": "schema contract for canonical adoption report"
     },
     {
       "local_path": "schemas/adoption-resolution.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "AdoptionResolution schema — F-G07 uncertainty resolution contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "AdoptionResolution schema — F-G07 uncertainty resolution contract"
+        }
       ],
       "semantic_role": "schema contract for adoption uncertainty questions and resolution choices"
     },
     {
       "local_path": "schemas/adoption-migration-proposal.schema.json",
       "notion_pages": [
-        { "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)", "role": "AdoptionMigrationProposal schema — F-G08 adoption migration proposal contract" }
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "AdoptionMigrationProposal schema — F-G08 adoption migration proposal contract"
+        }
       ],
       "semantic_role": "schema contract for formal adoption migration proposals"
     },
     {
       "local_path": "schemas/trace-graph.schema.json",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M8 History & Traceability — typed traceability graph schema" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M8 History & Traceability — typed traceability graph schema"
+        }
       ],
       "semantic_role": "schema contract for typed traceability graph"
     },
     {
       "local_path": "schemas/journal-entry.schema.json",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M8 History & Traceability — implementation journal entry schema" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M8 History & Traceability — implementation journal entry schema"
+        }
       ],
       "semantic_role": "schema contract for implementation journal entries"
     },
     {
       "local_path": "schemas/experience-event.schema.json",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M9 Experience Layer — session event schema" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M9 Experience Layer — session event schema"
+        }
       ],
       "semantic_role": "schema contract for structured session events"
     },
     {
       "local_path": "schemas/experience-handoff.schema.json",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M9 Experience Layer — handoff protocol schema" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M9 Experience Layer — handoff protocol schema"
+        }
       ],
       "semantic_role": "schema contract for structured agent state handoff"
     },
     {
       "local_path": "schemas/connector-contract.schema.json",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M10 OpenCode Native Harness — connector contract schema" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M10 OpenCode Native Harness — connector contract schema"
+        }
       ],
       "semantic_role": "schema contract for connector capabilities and lifecycle"
     },
     {
       "local_path": "schemas/connector-negotiation.schema.json",
       "notion_pages": [
-        { "title": "14 — Roadmap de Implementação v0.4", "role": "M11 Connector SDK — capability negotiation schema" }
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M11 Connector SDK — capability negotiation schema"
+        }
       ],
       "semantic_role": "schema contract for connector capability negotiation results and degradations"
     },
     {
       "local_path": "docs/adr/001-go-core.md",
       "notion_pages": [
-        { "title": "01 — Stack Go, Clean Code e Migração do Core Python", "role": "ADR 001 Go Core architecture decision" }
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "ADR 001 Go Core architecture decision"
+        }
       ],
       "semantic_role": "architectural decision record: pure Go core and CLI architecture"
     },
     {
       "local_path": "docs/adr/002-retire-python-runtime.md",
       "notion_pages": [
-        { "title": "01 — Stack Go, Clean Code e Migração do Core Python", "role": "ADR 002 Python runtime retirement decision" }
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "ADR 002 Python runtime retirement decision"
+        }
       ],
       "semantic_role": "architectural decision record: retirement of Python v0.3 runtime, test suite, and packaging"
     },
     {
       "local_path": "docs/adr/003-language-engineering-safety-subsystem.md",
       "notion_pages": [
-        { "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core", "role": "ADR 003 Language Engineering & Safety Skills Subsystem" }
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "ADR 003 Language Engineering & Safety Skills Subsystem"
+        }
       ],
       "semantic_role": "architectural decision record: executable contracts, escape hatch registry, and systems language skills"
+    },
+    {
+      "local_path": "docs/harness/overview.md",
+      "notion_pages": [
+        {
+          "title": "03 — Arquitetura Alvo do Agent Harness",
+          "role": "target architecture"
+        },
+        {
+          "title": "35 — Harness Build Strategy",
+          "role": "build strategy"
+        },
+        {
+          "title": "40 — Repository Boundary",
+          "role": "split gate"
+        },
+        {
+          "title": "41 — Notebook-to-Repository Promotion",
+          "role": "promotion workflow"
+        }
+      ],
+      "semantic_role": "harness canonical entry",
+      "snapshot": "2026-09-11-d41f18bb65f5"
+    },
+    {
+      "local_path": "docs/harness/roadmap-status.md",
+      "notion_pages": [
+        {
+          "title": "18 — Roadmap H0-H18",
+          "role": "roadmap"
+        },
+        {
+          "title": "19 — Registro de Decisões",
+          "role": "accepted decisions"
+        }
+      ],
+      "semantic_role": "implementation truth table",
+      "snapshot": "2026-09-11-d41f18bb65f5"
     }
   ]
 }

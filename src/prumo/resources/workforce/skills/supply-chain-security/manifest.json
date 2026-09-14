@@ -6,8 +6,11 @@
   "purpose": "Verify package checksums, signatures, lockfile integrity, and malicious dependency detection.",
   "risk_level": "high",
   "modes": [
+    "implementation",
+    "review",
     "audit",
-    "implementation"
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Security policy",
@@ -59,5 +62,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: supply-chain-security\ndescription: Cryptographic lockfiles, exact dependency pinning, automated vulnerability scanning, package provenance, and typosquatting defense\n---\n# Supply Chain & Dependency Security\n\n## 1. Cryptographic Lockfile Verification\nCommit lockfiles (go.sum, package-lock.json, Cargo.lock, prumo.lock) to version control. Validate cryptographic package hashes during CI builds to guarantee build reproducibility and tamper detection.\n\n## 2. Exact Version Pinning\nPin exact dependency versions in production manifests. Prohibit dynamic version wildcards (*, ^, ~, latest) in deployable services to prevent unexpected upstream breaking changes or malicious minor updates.\n\n## 3. Automated Vulnerability Scanning\nIntegrate automated CVE scanners (govulncheck, npm audit, cargo audit, pip-audit) as blocking pre-merge checks in CI pipelines. Fail builds immediately upon detection of High or Critical vulnerabilities.\n\n## 4. Package Provenance & SLSA Verification\nVerify cryptographic signatures and SLSA build provenance for external packages, libraries, and container base images using Sigstore and Cosign before deployment.\n\n## 5. Typosquatting & Namespace Defense\nEnforce strict registry configurations using scoped private namespaces (@company/package). Inspect new dependencies for suspiciously recent publication dates or typo-similarity to popular packages.\n\n## 6. Dependency Minimization & Tree Pruning\nRoutinely audit the dependency graph for transitive bloat. Prefer well-tested standard library capabilities over importing single-function third-party micro-packages.\n\n## 7. Safe Installation Flags\nRun package managers with script-execution disabled during build (npm ci --ignore-scripts) to prevent malicious install hooks from executing arbitrary shell commands during dependency fetching.\n\n## 8. Vendoring for Critical Systems\nFor security-critical or mission-critical projects, vendor third-party source dependencies into the repository, ensuring complete autonomy from external registry downtime or upstream repository deletion.\n\n## 9. License Compliance Governance\nScan dependency licenses automatically using tools like go-licenses or FOSSA. Reject packages with incompatible or viral licenses (e.g. GPL in proprietary closed-source distributions).\n\n## 10. Upstream Compromise Incident Response\nMaintain an emergency playbook for upstream dependency compromise: steps for immediately freezing lockfiles, revoking affected tokens, and publishing patched releases.\n"
 }

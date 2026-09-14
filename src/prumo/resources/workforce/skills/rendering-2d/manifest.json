@@ -6,7 +6,11 @@
   "purpose": "Implement batch sprite renderers, tilemap pipelines, and texture atlases.",
   "risk_level": "medium",
   "modes": [
-    "implementation"
+    "implementation",
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Engine architecture specification",
@@ -28,7 +32,7 @@
   "references": [],
   "templates": [],
   "checks": [
-    "checks/rendering-2d-invariants.md"
+    "checks/rendering-2d-checklist.md"
   ],
   "scripts": [],
   "examples": [],
@@ -57,5 +61,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: rendering-2d\ndescription: Dynamic sprite batching, texture atlas generation, ortho projection, 2D frustum culling, shader pipelines, and draw call minimization\n---\n# 2D Rendering & Graphics Pipeline\n\n## 1. Dynamic Sprite Batching\nGroup consecutive 2D draw calls sharing the same texture and shader into a single contiguous vertex buffer. Minimize state changes to keep draw calls under 20 per frame.\n\n## 2. Texture Atlas Architecture\nPack multiple sprite assets into unified texture atlases (power-of-two dimensions) with padding to eliminate texture bleed. Store UV coordinates in a fast lookup table.\n\n## 3. Orthographic Camera & Screen Mapping\nImplement a 2D orthographic camera supporting zoom, pan, rotation, and pixel-perfect integer scaling to eliminate sub-pixel artifact jitter.\n\n## 4. 2D Frustum & Viewport Culling\nPerform bounding box (AABB) intersection tests against the camera view rect to cull off-screen sprites before pushing vertex data to the GPU.\n\n## 5. Z-Index & Sorting Layers\nSort sprites deterministically by sorting layer, Z-index, and material state to ensure correct alpha blending and minimize GPU pipeline state changes.\n\n## 6. Alpha Blending & Blend Modes\nConfigure standard blend modes (premultiplied alpha, additive, multiply). Prefer premultiplied alpha to avoid dark fringing around transparent sprite edges.\n\n## 7. 2D Shader Effects & Post-Processing\nImplement customized 2D shaders for bloom, outlines, screen-shake distortion, and palette swapping using compact fragment shaders.\n\n## 8. Tilemap Chunking & Optimization\nRender large tilemaps in static chunks (e.g. 16x16 or 32x32 tiles) baked into vertex buffers, recalculating geometry only when tile modifications occur.\n\n## 9. Particle System Batching\nRender 2D particles using instanced rendering or dynamic point-sprite batches with CPU or compute-shader particle physics.\n\n## 10. Frame Pacing & VSync Synchronization\nSynchronize swapchain presentation with monitor refresh rates to avoid screen tearing while maintaining minimal input latency.\n"
 }

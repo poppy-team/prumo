@@ -1,36 +1,35 @@
 ---
 name: github-pr-review
-description: Code review methodology, security checks, performance checks, architectural alignment, test validation, edge case consideration, tone and empathy, actionable feedback, blocking vs nitpick, approval criteria
+description: Rigorous code review heuristics, architectural conformance, security inspection, constructive feedback, and gh pr review automation
 ---
-# Github Pr Review
+# GitHub Pull Request Review & Quality Assessment
 
-## 1. Code Review Methodology
-Implementation and rigorous validation of Code review methodology is essential for github-pr-review. Engineers must ensure that Code review methodology is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Code review methodology. Furthermore, edge cases regarding Code review methodology must be explicitly documented and guarded against in the codebase. Failure to address Code review methodology properly leads to systemic vulnerabilities or architectural decay.
+## 1. Architectural Alignment & Clean Code
+Verify that proposed changes conform to repository design invariants, dependency directions, and domain boundaries. Reject premature abstractions and unneeded architectural complexity.
 
-## 2. Security Checks
-Implementation and rigorous validation of security checks is essential for github-pr-review. Engineers must ensure that security checks is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in security checks. Furthermore, edge cases regarding security checks must be explicitly documented and guarded against in the codebase. Failure to address security checks properly leads to systemic vulnerabilities or architectural decay.
+## 2. Exhaustive Test Coverage Verification
+Ensure every new code path, error handling branch, and edge case is backed by deterministic automated unit or integration tests. Reject PRs claiming completion without tests.
 
-## 3. Performance Checks
-Implementation and rigorous validation of performance checks is essential for github-pr-review. Engineers must ensure that performance checks is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in performance checks. Furthermore, edge cases regarding performance checks must be explicitly documented and guarded against in the codebase. Failure to address performance checks properly leads to systemic vulnerabilities or architectural decay.
+## 3. Security & Boundary Inspection
+Scrutinize inputs, data sanitization, authentication boundaries, and secret handling. Verify that no escape hatches or unchecked suppressions are introduced.
 
-## 4. Architectural Alignment
-Implementation and rigorous validation of architectural alignment is essential for github-pr-review. Engineers must ensure that architectural alignment is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in architectural alignment. Furthermore, edge cases regarding architectural alignment must be explicitly documented and guarded against in the codebase. Failure to address architectural alignment properly leads to systemic vulnerabilities or architectural decay.
+## 4. Constructive & Actionable Feedback
+Format review comments clearly: state the concern, explain the architectural why, and provide a concrete proposed code suggestion using GitHub suggestion blocks.
 
-## 5. Test Validation
-Implementation and rigorous validation of test validation is essential for github-pr-review. Engineers must ensure that test validation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in test validation. Furthermore, edge cases regarding test validation must be explicitly documented and guarded against in the codebase. Failure to address test validation properly leads to systemic vulnerabilities or architectural decay.
+## 5. Performance & Resource Management
+Identify potential memory leaks, N+1 database queries, unindexed queries, blocking I/O calls in event loops, and missing timeouts on external network requests.
 
-## 6. Edge Case Consideration
-Implementation and rigorous validation of edge case consideration is essential for github-pr-review. Engineers must ensure that edge case consideration is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in edge case consideration. Furthermore, edge cases regarding edge case consideration must be explicitly documented and guarded against in the codebase. Failure to address edge case consideration properly leads to systemic vulnerabilities or architectural decay.
+## 6. Backward Compatibility & Contract Safety
+Verify that public APIs, database schemas, and configuration contracts maintain compatibility or provide safe, versioned migration paths.
 
-## 7. Tone And Empathy
-Implementation and rigorous validation of tone and empathy is essential for github-pr-review. Engineers must ensure that tone and empathy is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in tone and empathy. Furthermore, edge cases regarding tone and empathy must be explicitly documented and guarded against in the codebase. Failure to address tone and empathy properly leads to systemic vulnerabilities or architectural decay.
+## 7. Automated gh CLI Review Operations
+Execute review operations via CLI: gh pr review --comment -b 'Feedback', gh pr review --request-changes -b 'Blocking concerns', or gh pr review --approve -b 'Approved with evidence'.
 
-## 8. Actionable Feedback
-Implementation and rigorous validation of actionable feedback is essential for github-pr-review. Engineers must ensure that actionable feedback is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in actionable feedback. Furthermore, edge cases regarding actionable feedback must be explicitly documented and guarded against in the codebase. Failure to address actionable feedback properly leads to systemic vulnerabilities or architectural decay.
+## 8. Review Gate Enforcement
+Strictly enforce repository governance review rules: verify that independent security verifiers approve High/Critical risk PRs before merge.
 
-## 9. Blocking Vs Nitpick
-Implementation and rigorous validation of blocking vs nitpick is essential for github-pr-review. Engineers must ensure that blocking vs nitpick is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in blocking vs nitpick. Furthermore, edge cases regarding blocking vs nitpick must be explicitly documented and guarded against in the codebase. Failure to address blocking vs nitpick properly leads to systemic vulnerabilities or architectural decay.
+## 9. Conversation Resolution Discipline
+Require all review comments and inline threads to be explicitly resolved before approving. Do not resolve threads with pending unresolved technical concerns.
 
-## 10. Approval Criteria
-Implementation and rigorous validation of approval criteria is essential for github-pr-review. Engineers must ensure that approval criteria is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in approval criteria. Furthermore, edge cases regarding approval criteria must be explicitly documented and guarded against in the codebase. Failure to address approval criteria properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Evidence-Based Approval Verdict
+Issue approval only when build artifacts, CI green gates, test reports, and review criteria are documented and satisfied.

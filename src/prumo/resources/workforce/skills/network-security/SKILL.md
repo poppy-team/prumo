@@ -1,36 +1,35 @@
 ---
 name: network-security
-description: TLS verification, certificate pinning, DNS rebinding, SSRF prevention, strict firewall rules, egress filtering, VPC isolation, DDoS mitigation, protocol stripping, port scanning defense
+description: TLS 1.3 enforcement, certificate verification, egress traffic governance, DNS rebinding mitigation, and safe HTTP client pooling
 ---
-# Network Security
+# Network Transport Security & Hardening
 
-## 1. Tls Verification
-Implementation and rigorous validation of TLS verification is essential for network-security. Engineers must ensure that TLS verification is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in TLS verification. Furthermore, edge cases regarding TLS verification must be explicitly documented and guarded against in the codebase. Failure to address TLS verification properly leads to systemic vulnerabilities or architectural decay.
+## 1. Modern TLS 1.3 Enforcement
+Mandate TLS 1.3 as the default transport protocol, permitting TLS 1.2 as minimum fallback. Enforce secure cipher suites with ephemeral Diffie-Hellman key exchange (ECDHE). Permanently disable deprecated ciphers, RC4, 3DES, and CBC mode suites.
 
-## 2. Certificate Pinning
-Implementation and rigorous validation of certificate pinning is essential for network-security. Engineers must ensure that certificate pinning is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in certificate pinning. Furthermore, edge cases regarding certificate pinning must be explicitly documented and guarded against in the codebase. Failure to address certificate pinning properly leads to systemic vulnerabilities or architectural decay.
+## 2. Certificate Verification & Mutual TLS (mTLS)
+Enforce strict X.509 certificate chain validation using system trust stores. Validate Subject Alternative Name (SAN) match. For microservice-to-microservice traffic, enforce mutual TLS (mTLS) with client certificate verification.
 
-## 3. Dns Rebinding
-Implementation and rigorous validation of DNS rebinding is essential for network-security. Engineers must ensure that DNS rebinding is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in DNS rebinding. Furthermore, edge cases regarding DNS rebinding must be explicitly documented and guarded against in the codebase. Failure to address DNS rebinding properly leads to systemic vulnerabilities or architectural decay.
+## 3. Egress Traffic Governance
+Implement default-deny outbound network egress policies for production and sandbox environments. Maintain an explicit allowlist of authorized external domains, ports, and API destinations. Route external requests through an egress proxy.
 
-## 4. Ssrf Prevention
-Implementation and rigorous validation of SSRF prevention is essential for network-security. Engineers must ensure that SSRF prevention is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in SSRF prevention. Furthermore, edge cases regarding SSRF prevention must be explicitly documented and guarded against in the codebase. Failure to address SSRF prevention properly leads to systemic vulnerabilities or architectural decay.
+## 4. DNS Rebinding & Host Header Validation
+Validate incoming Host and X-Forwarded-Host headers against an explicit list of authorized domain names. Reject unexpected hostnames with HTTP 400 Bad Request to eliminate DNS rebinding attack vectors.
 
-## 5. Strict Firewall Rules
-Implementation and rigorous validation of strict firewall rules is essential for network-security. Engineers must ensure that strict firewall rules is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in strict firewall rules. Furthermore, edge cases regarding strict firewall rules must be explicitly documented and guarded against in the codebase. Failure to address strict firewall rules properly leads to systemic vulnerabilities or architectural decay.
+## 5. Safe HTTP Client Configuration
+Never instantiate unbounded default HTTP clients. Explicitly configure connect timeouts (max 5s), TLS handshake timeouts (max 5s), response header timeouts (max 10s), and idle connection pool limits to prevent connection exhaustion.
 
-## 6. Egress Filtering
-Implementation and rigorous validation of egress filtering is essential for network-security. Engineers must ensure that egress filtering is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in egress filtering. Furthermore, edge cases regarding egress filtering must be explicitly documented and guarded against in the codebase. Failure to address egress filtering properly leads to systemic vulnerabilities or architectural decay.
+## 6. Slowloris & Connection Exhaustion Defense
+Configure web servers and reverse proxies with strict read header timeouts (max 5s) and idle keep-alive timeouts. Limit maximum concurrent connections per IP address to mitigate Slowloris and resource starvation attacks.
 
-## 7. Vpc Isolation
-Implementation and rigorous validation of VPC isolation is essential for network-security. Engineers must ensure that VPC isolation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in VPC isolation. Furthermore, edge cases regarding VPC isolation must be explicitly documented and guarded against in the codebase. Failure to address VPC isolation properly leads to systemic vulnerabilities or architectural decay.
+## 7. Private Subnet & VPC Isolation
+Place databases, cache clusters, and internal management interfaces inside private subnets with no direct public route. Access internal resources exclusively through secure bastion hosts, VPN tunnels, or WireGuard interfaces.
 
-## 8. Ddos Mitigation
-Implementation and rigorous validation of DDoS mitigation is essential for network-security. Engineers must ensure that DDoS mitigation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in DDoS mitigation. Furthermore, edge cases regarding DDoS mitigation must be explicitly documented and guarded against in the codebase. Failure to address DDoS mitigation properly leads to systemic vulnerabilities or architectural decay.
+## 8. WebSocket & Streaming Security
+Validate the Origin header during the initial HTTP upgrade handshake for WebSockets. Enforce per-connection message rate limits and strict payload size limits (max 64KB per frame) to prevent memory exhaustion.
 
-## 9. Protocol Stripping
-Implementation and rigorous validation of protocol stripping is essential for network-security. Engineers must ensure that protocol stripping is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in protocol stripping. Furthermore, edge cases regarding protocol stripping must be explicitly documented and guarded against in the codebase. Failure to address protocol stripping properly leads to systemic vulnerabilities or architectural decay.
+## 9. Network Telemetry & Anomaly Detection
+Capture VPC flow logs, DNS query logs, and connection state metrics. Configure automated anomaly detection alerts for unexpected egress data volume surges or repeated connection attempts to non-whitelisted IP addresses.
 
-## 10. Port Scanning Defense
-Implementation and rigorous validation of port scanning defense is essential for network-security. Engineers must ensure that port scanning defense is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in port scanning defense. Furthermore, edge cases regarding port scanning defense must be explicitly documented and guarded against in the codebase. Failure to address port scanning defense properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Zero Trust Microsegmentation
+Eliminate implicit trust within internal networks. Enforce authentication, authorization, and encrypted transport on every network hop, treating internal service calls with the same security rigor as external requests.

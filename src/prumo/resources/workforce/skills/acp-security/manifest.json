@@ -7,7 +7,10 @@
   "risk_level": "high",
   "modes": [
     "implementation",
-    "audit"
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Security policy",
@@ -59,5 +62,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: acp-security\ndescription: Verified agent routing, capability delegation limits, mutual authentication, state isolation, and deterministic termination signals\n---\n# Agent Client Protocol (ACP) Transport & Multi-Agent Security\n\n## 1. Agent Communication Boundaries\nEnforce cryptographic routing verification on all inter-agent messages. Deny untrusted or unverified subagents from spoofing sender identities. Maintain an explicit agent registry validating role permissions.\n\n## 2. Capability Delegation Limits\nEnforce strict delegation caps: subagents may only inherit a proper subset of their parent agent's capabilities. Mandate a maximum delegation depth (default 1, max 2) to prevent uncontrolled multi-agent recursion.\n\n## 3. Mutual Authentication & Session Handshake\nAuthenticate agent-to-agent RPC channels using mutual session tokens or cryptographic signatures. Establish unique ephemeral session IDs per task delegation to ensure message provenance.\n\n## 4. Message Integrity & Replay Protection\nInclude monotonic message sequence numbers, ISO 8601 UTC timestamps, and SHA-256 payload checksums on all agent messages. Reject messages with timestamps skewed beyond 60 seconds or duplicated sequence IDs.\n\n## 5. State & Context Isolation\nIsolate context memory between agents. Subagents must receive only a tailored, minimal context capsule (Working Context Capsule) necessary for their immediate task, preventing cross-tenant data leakage.\n\n## 6. Untrusted Subagent Quarantine\nWhen spawning agents to inspect external or untrusted codebases, place them in a quarantined sandbox with read-only filesystem access and zero outbound network or command execution capabilities.\n\n## 7. Token Budget Envelopes\nAssign explicit, non-expandable token budget envelopes to each subagent task. Track cumulative input, output, and cached token consumption. Terminate the subagent immediately if the allocated budget is exhausted.\n\n## 8. Deterministic Termination Signals\nImplement immediate, unignorable handling for CANCEL, STOP, and KILL signals across all running agent processes and background tasks. Prevent dangling background execution loops.\n\n## 9. Behavioral Monitoring & Drift Detection\nMonitor agent reasoning traces for cyclic loops, repetitive tool failures, or unexpected tool call patterns. Trigger an automatic circuit breaker after 3 consecutive failed verification attempts.\n\n## 10. Secure Handoff Contracts\nExecute agent-to-agent task handoffs via immutable state artifacts with defined schemas. Validate that all prerequisite acceptance criteria are certified before the receiving agent begins execution.\n"
 }

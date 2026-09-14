@@ -1,21 +1,9 @@
-# GitHub Issue Triaging — Verification Checklist
+# GitHub Issue Triage & Prioritization Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
-
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
-
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
-
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+- [ ] Issue completeness verified; missing information requested
+- [ ] Reported defect reproduced or verified in test environment
+- [ ] Duplicates identified, cross-referenced, and closed with notes
+- [ ] Severity level (P0-P3) and component labels applied
+- [ ] Security disclosures routed to private security advisory
+- [ ] Assigned to appropriate milestone or active project Goal
+- [ ] Status communicated clearly to the original reporter

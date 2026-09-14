@@ -6,8 +6,11 @@
   "purpose": "Classify incoming issues, detect duplicates, assign milestones, and link to roadmap Goals.",
   "risk_level": "low",
   "modes": [
+    "implementation",
     "review",
-    "audit"
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Repository context",
@@ -29,7 +32,9 @@
   "templates": [
     "templates/issue-template.md"
   ],
-  "checks": [],
+  "checks": [
+    "checks/github-issue-triage-checklist.md"
+  ],
   "scripts": [],
   "examples": [],
   "required_evidence": [
@@ -56,5 +61,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: github-issue-triage\ndescription: Issue qualification, reproduction verification, deduplication, SLA monitoring, component routing, and automated triage workflows\n---\n# GitHub Issue Triage & Prioritization\n\n## 1. Initial Issue Qualification\nReview newly incoming issues for completeness: verify that all mandatory template fields, reproduction steps, and error logs are present. Request missing details promptly.\n\n## 2. Reproduction Verification\nAttempt to reproduce reported defects in a clean local environment or CI container. Mark verified bugs with the 'verified' label and link reproduction tests.\n\n## 3. Deduplication & Search\nSearch existing open and closed issues before triaging. When an issue duplicates an existing report, link the canonical issue and close the duplicate politely with an explanation.\n\n## 4. Severity & Impact Assessment\nEvaluate impact on users and systems: distinguish security vulnerabilities (route to private advisory immediately) from data loss, broken workflows, or cosmetic bugs.\n\n## 5. Component & Team Routing\nApply accurate subsystem labels (area/backend, area/frontend, area/infra) and assign qualified domain owners based on CODEOWNERS.\n\n## 6. SLA & Stale Issue Management\nMonitor response times against project SLAs. Identify stale or abandoned issues needing user response and configure automated lifecycle reminders.\n\n## 7. Converting Discussions & Questions\nWhen issues are general questions or support requests rather than actionable engineering tasks, convert them to GitHub Discussions.\n\n## 8. Automated CLI Triage Operations\nTriage issues via CLI: gh issue edit 123 --add-label 'bug,verified' --add-assignee 'developer'.\n\n## 9. Security Triage & Disclosure Protocol\nIf an issue reports a security vulnerability publicly, immediately contact repository maintainers, move discussion to private advisory, and hide sensitive comments.\n\n## 10. Backlog Health & Milestone Planning\nAssign qualified and verified issues to upcoming project milestones or active phases (P00, P01) to keep the project roadmap actionable.\n"
 }

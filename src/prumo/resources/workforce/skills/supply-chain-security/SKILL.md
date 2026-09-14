@@ -1,36 +1,35 @@
 ---
 name: supply-chain-security
-description: Dependency audit, lockfile verification, provenance verification, build reproducibility, sigstore integration, artifact signing, internal mirror usage, compromised package detection, vendor security posture, SBOM generation
+description: Cryptographic lockfiles, exact dependency pinning, automated vulnerability scanning, package provenance, and typosquatting defense
 ---
-# Supply Chain Security
+# Supply Chain & Dependency Security
 
-## 1. Dependency Audit
-Implementation and rigorous validation of Dependency audit is essential for supply-chain-security. Engineers must ensure that Dependency audit is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Dependency audit. Furthermore, edge cases regarding Dependency audit must be explicitly documented and guarded against in the codebase. Failure to address Dependency audit properly leads to systemic vulnerabilities or architectural decay.
+## 1. Cryptographic Lockfile Verification
+Commit lockfiles (go.sum, package-lock.json, Cargo.lock, prumo.lock) to version control. Validate cryptographic package hashes during CI builds to guarantee build reproducibility and tamper detection.
 
-## 2. Lockfile Verification
-Implementation and rigorous validation of lockfile verification is essential for supply-chain-security. Engineers must ensure that lockfile verification is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in lockfile verification. Furthermore, edge cases regarding lockfile verification must be explicitly documented and guarded against in the codebase. Failure to address lockfile verification properly leads to systemic vulnerabilities or architectural decay.
+## 2. Exact Version Pinning
+Pin exact dependency versions in production manifests. Prohibit dynamic version wildcards (*, ^, ~, latest) in deployable services to prevent unexpected upstream breaking changes or malicious minor updates.
 
-## 3. Provenance Verification
-Implementation and rigorous validation of provenance verification is essential for supply-chain-security. Engineers must ensure that provenance verification is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in provenance verification. Furthermore, edge cases regarding provenance verification must be explicitly documented and guarded against in the codebase. Failure to address provenance verification properly leads to systemic vulnerabilities or architectural decay.
+## 3. Automated Vulnerability Scanning
+Integrate automated CVE scanners (govulncheck, npm audit, cargo audit, pip-audit) as blocking pre-merge checks in CI pipelines. Fail builds immediately upon detection of High or Critical vulnerabilities.
 
-## 4. Build Reproducibility
-Implementation and rigorous validation of build reproducibility is essential for supply-chain-security. Engineers must ensure that build reproducibility is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in build reproducibility. Furthermore, edge cases regarding build reproducibility must be explicitly documented and guarded against in the codebase. Failure to address build reproducibility properly leads to systemic vulnerabilities or architectural decay.
+## 4. Package Provenance & SLSA Verification
+Verify cryptographic signatures and SLSA build provenance for external packages, libraries, and container base images using Sigstore and Cosign before deployment.
 
-## 5. Sigstore Integration
-Implementation and rigorous validation of sigstore integration is essential for supply-chain-security. Engineers must ensure that sigstore integration is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in sigstore integration. Furthermore, edge cases regarding sigstore integration must be explicitly documented and guarded against in the codebase. Failure to address sigstore integration properly leads to systemic vulnerabilities or architectural decay.
+## 5. Typosquatting & Namespace Defense
+Enforce strict registry configurations using scoped private namespaces (@company/package). Inspect new dependencies for suspiciously recent publication dates or typo-similarity to popular packages.
 
-## 6. Artifact Signing
-Implementation and rigorous validation of artifact signing is essential for supply-chain-security. Engineers must ensure that artifact signing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in artifact signing. Furthermore, edge cases regarding artifact signing must be explicitly documented and guarded against in the codebase. Failure to address artifact signing properly leads to systemic vulnerabilities or architectural decay.
+## 6. Dependency Minimization & Tree Pruning
+Routinely audit the dependency graph for transitive bloat. Prefer well-tested standard library capabilities over importing single-function third-party micro-packages.
 
-## 7. Internal Mirror Usage
-Implementation and rigorous validation of internal mirror usage is essential for supply-chain-security. Engineers must ensure that internal mirror usage is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in internal mirror usage. Furthermore, edge cases regarding internal mirror usage must be explicitly documented and guarded against in the codebase. Failure to address internal mirror usage properly leads to systemic vulnerabilities or architectural decay.
+## 7. Safe Installation Flags
+Run package managers with script-execution disabled during build (npm ci --ignore-scripts) to prevent malicious install hooks from executing arbitrary shell commands during dependency fetching.
 
-## 8. Compromised Package Detection
-Implementation and rigorous validation of compromised package detection is essential for supply-chain-security. Engineers must ensure that compromised package detection is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in compromised package detection. Furthermore, edge cases regarding compromised package detection must be explicitly documented and guarded against in the codebase. Failure to address compromised package detection properly leads to systemic vulnerabilities or architectural decay.
+## 8. Vendoring for Critical Systems
+For security-critical or mission-critical projects, vendor third-party source dependencies into the repository, ensuring complete autonomy from external registry downtime or upstream repository deletion.
 
-## 9. Vendor Security Posture
-Implementation and rigorous validation of vendor security posture is essential for supply-chain-security. Engineers must ensure that vendor security posture is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in vendor security posture. Furthermore, edge cases regarding vendor security posture must be explicitly documented and guarded against in the codebase. Failure to address vendor security posture properly leads to systemic vulnerabilities or architectural decay.
+## 9. License Compliance Governance
+Scan dependency licenses automatically using tools like go-licenses or FOSSA. Reject packages with incompatible or viral licenses (e.g. GPL in proprietary closed-source distributions).
 
-## 10. Sbom Generation
-Implementation and rigorous validation of SBOM generation is essential for supply-chain-security. Engineers must ensure that SBOM generation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in SBOM generation. Furthermore, edge cases regarding SBOM generation must be explicitly documented and guarded against in the codebase. Failure to address SBOM generation properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Upstream Compromise Incident Response
+Maintain an emergency playbook for upstream dependency compromise: steps for immediately freezing lockfiles, revoking affected tokens, and publishing patched releases.

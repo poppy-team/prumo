@@ -7,7 +7,10 @@
   "risk_level": "high",
   "modes": [
     "implementation",
-    "review"
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Security policy",
@@ -59,5 +62,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: process-execution-security\ndescription: Command injection elimination, strict binary allowlisting, sanitized environment variables, execution timeouts, and process group reaping\n---\n# Subprocess & Execution Security\n\n## 1. Command Injection Elimination\nNever pass raw formatted strings to a shell interpreter (/bin/sh -c, cmd.exe). Always execute commands using direct argument vectors (exec.Command(binary, arg1, arg2)) where arguments are passed as isolated strings without shell parsing.\n\n## 2. Strict Binary Allowlisting\nExecute only binaries present on an explicit, pre-approved project allowlist (e.g. git, go, npm, cargo, prumo). Reject execution of arbitrary or user-specified binaries not registered in the project capability policy.\n\n## 3. Environment Variable Sanitization\nNever inherit the full environment of the parent process. Construct an isolated environment slice containing only necessary, sanitized variables (e.g. PATH, HOME, LANG). Strip API keys, tokens, and credentials.\n\n## 4. Working Directory Confinement\nConfine subprocess execution strictly within the current project repository root directory. Validate that the working directory exists and is owned by the current user before launching.\n\n## 5. Mandatory Execution Timeouts\nAlways bind subprocess lifecycles to an explicit context with timeout (context.WithTimeout). Default to a 60-second limit for developer commands and 10 seconds for diagnostics, preventing runaway deadlocks.\n\n## 6. Output Buffer Limiting\nWrap stdout and stderr capture buffers with bounded readers (io.LimitReader) to prevent unbounded subprocess output from consuming all system RAM.\n\n## 7. Privilege Demotion\nExecute all subprocesses under the current unprivileged user. Explicitly forbid execution under root/superuser accounts. Block commands attempting sudo, su, or setuid elevation.\n\n## 8. Process Group Cleanup & Orphan Reaping\nConfigure child processes with a dedicated process group (Setpgid: true). On cancellation or timeout, send SIGKILL to the entire process group (-pgid) to guarantee zero orphaned background processes.\n\n## 9. Banned Construct Scanners\nRun automated static checks across the project codebase to detect and ban dangerous dynamic execution functions (eval(), exec(), system(), popen(), Function()).\n\n## 10. Process Audit Journal\nLog every command invocation to .prumo/history/journal.json: capture binary name, sanitized argument list, working directory, start time, duration, exit code, and captured error output.\n"
 }

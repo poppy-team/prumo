@@ -1,21 +1,9 @@
-# GitHub PR Review — Verification Checklist
+# GitHub Pull Request Review & Quality Assessment Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
-
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
-
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
-
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+- [ ] Architecture and module boundaries respected; Clean Code pragmático followed
+- [ ] Comprehensive automated tests included and passing for all modified paths
+- [ ] Security boundaries, input validation, and secrets verified
+- [ ] Performance and memory efficiency reviewed; no unbounded operations
+- [ ] API and schema changes maintain backwards compatibility
+- [ ] Review feedback formulated with clear technical rationale and code suggestions
+- [ ] All discussions resolved and CI gates passing before final approval

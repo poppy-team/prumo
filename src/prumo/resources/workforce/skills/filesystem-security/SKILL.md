@@ -1,36 +1,35 @@
 ---
 name: filesystem-security
-description: Path traversal prevention, symlink attacks, permission checks, temp file safety, quota limits, race conditions, secure deletion, untrusted archives, sensitive data at rest, immutable mounts
+description: Path traversal defense, symlink attack mitigation, TOCTOU prevention, POSIX permissions, atomic file replacement, and protected directories
 ---
-# Filesystem Security
+# Filesystem Security & Access Control
 
-## 1. Path Traversal Prevention
-Implementation and rigorous validation of Path traversal prevention is essential for filesystem-security. Engineers must ensure that Path traversal prevention is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Path traversal prevention. Furthermore, edge cases regarding Path traversal prevention must be explicitly documented and guarded against in the codebase. Failure to address Path traversal prevention properly leads to systemic vulnerabilities or architectural decay.
+## 1. Path Traversal Defense
+Normalize and sanitize all file paths using canonical library methods (e.g. filepath.Clean). Verify that the resolved target path is strictly prefixed by the authorized workspace root before performing any read, write, or delete operation.
 
-## 2. Symlink Attacks
-Implementation and rigorous validation of symlink attacks is essential for filesystem-security. Engineers must ensure that symlink attacks is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in symlink attacks. Furthermore, edge cases regarding symlink attacks must be explicitly documented and guarded against in the codebase. Failure to address symlink attacks properly leads to systemic vulnerabilities or architectural decay.
+## 2. Symlink & Hardlink Attack Prevention
+Resolve all symbolic links to their absolute target paths using filepath.EvalSymlinks. Explicitly reject any symlink whose target destination lies outside the designated project root directory.
 
-## 3. Permission Checks
-Implementation and rigorous validation of permission checks is essential for filesystem-security. Engineers must ensure that permission checks is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in permission checks. Furthermore, edge cases regarding permission checks must be explicitly documented and guarded against in the codebase. Failure to address permission checks properly leads to systemic vulnerabilities or architectural decay.
+## 3. Time-of-Check to Time-of-Use (TOCTOU) Mitigation
+Avoid vulnerable check-then-open sequences. Use atomic file descriptor operations (e.g. os.OpenFile with O_CREATE|O_EXCL) to guarantee that the file examined is the exact file modified without race window exploitation.
 
-## 4. Temp File Safety
-Implementation and rigorous validation of temp file safety is essential for filesystem-security. Engineers must ensure that temp file safety is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in temp file safety. Furthermore, edge cases regarding temp file safety must be explicitly documented and guarded against in the codebase. Failure to address temp file safety properly leads to systemic vulnerabilities or architectural decay.
+## 4. Strict POSIX Permission Discipline
+Enforce restrictive file permissions: 0600 (read/write by owner only) for private files and credentials; 0700 for private directories; 0644 for public source files; 0755 for executables. Never create world-writable files (0666/0777).
 
-## 5. Quota Limits
-Implementation and rigorous validation of quota limits is essential for filesystem-security. Engineers must ensure that quota limits is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in quota limits. Furthermore, edge cases regarding quota limits must be explicitly documented and guarded against in the codebase. Failure to address quota limits properly leads to systemic vulnerabilities or architectural decay.
+## 5. Safe Temporary File Management
+Create temporary files exclusively via secure system utilities (os.CreateTemp) within designated temporary directories. Set restrictive permissions on temporary files and guarantee cleanup using defer os.Remove.
 
-## 6. Race Conditions
-Implementation and rigorous validation of race conditions is essential for filesystem-security. Engineers must ensure that race conditions is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in race conditions. Furthermore, edge cases regarding race conditions must be explicitly documented and guarded against in the codebase. Failure to address race conditions properly leads to systemic vulnerabilities or architectural decay.
+## 6. Atomic File Replacement
+Never overwrite production files directly in-place. Write new content to an adjacent temporary file in the same filesystem directory, call f.Sync() to flush buffers to disk, and execute an atomic rename (os.Rename).
 
-## 7. Secure Deletion
-Implementation and rigorous validation of secure deletion is essential for filesystem-security. Engineers must ensure that secure deletion is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in secure deletion. Furthermore, edge cases regarding secure deletion must be explicitly documented and guarded against in the codebase. Failure to address secure deletion properly leads to systemic vulnerabilities or architectural decay.
+## 7. File Size & Memory Caps
+Guard file reads against memory exhaustion attacks using bounded readers (io.LimitReader). Enforce an explicit maximum file size threshold (e.g. max 50MB) for automated ingestion and tool parsing.
 
-## 8. Untrusted Archives
-Implementation and rigorous validation of untrusted archives is essential for filesystem-security. Engineers must ensure that untrusted archives is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in untrusted archives. Furthermore, edge cases regarding untrusted archives must be explicitly documented and guarded against in the codebase. Failure to address untrusted archives properly leads to systemic vulnerabilities or architectural decay.
+## 8. Protected Directory Shield
+Hardcode inviolable security barriers that prevent modifications to critical infrastructure paths: .git/, .prumo/credentials, system binary directories, and root filesystem locations.
 
-## 9. Sensitive Data At Rest
-Implementation and rigorous validation of sensitive data at rest is essential for filesystem-security. Engineers must ensure that sensitive data at rest is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in sensitive data at rest. Furthermore, edge cases regarding sensitive data at rest must be explicitly documented and guarded against in the codebase. Failure to address sensitive data at rest properly leads to systemic vulnerabilities or architectural decay.
+## 9. Secure Data Wiping
+When deleting temporary files containing decrypted keys or sensitive tokens, overwrite the disk blocks with random bytes or zeros prior to unlinking to prevent data recovery from raw block storage.
 
-## 10. Immutable Mounts
-Implementation and rigorous validation of immutable mounts is essential for filesystem-security. Engineers must ensure that immutable mounts is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in immutable mounts. Furthermore, edge cases regarding immutable mounts must be explicitly documented and guarded against in the codebase. Failure to address immutable mounts properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Filesystem Audit Logging
+Record all file creation, modification, and deletion events in the project security audit log, capturing relative path, actor ID, timestamp, and post-modification cryptographic checksum.

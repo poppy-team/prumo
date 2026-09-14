@@ -1,36 +1,35 @@
 ---
 name: untrusted-project-security
-description: Sandboxing, resource limits, filesystem isolation, network blocking, process namespace isolation, memory quotas, CPU throttling, egress proxying, syscall filtering, ephemeral environments
+description: Zero-trust ingestion, no-execution static analysis, network egress quarantine, hidden hook scanning, and read-only container sandbox
 ---
-# Untrusted Project Security
+# Untrusted Codebase & Repository Quarantine
 
-## 1. Sandboxing
-Implementation and rigorous validation of Sandboxing is essential for untrusted-project-security. Engineers must ensure that Sandboxing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Sandboxing. Furthermore, edge cases regarding Sandboxing must be explicitly documented and guarded against in the codebase. Failure to address Sandboxing properly leads to systemic vulnerabilities or architectural decay.
+## 1. Zero-Trust Ingestion Policy
+Treat any foreign or newly cloned repository as potentially malicious untrusted data. Suspend automated task execution until formal quarantine inspection is complete.
 
-## 2. Resource Limits
-Implementation and rigorous validation of resource limits is essential for untrusted-project-security. Engineers must ensure that resource limits is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in resource limits. Furthermore, edge cases regarding resource limits must be explicitly documented and guarded against in the codebase. Failure to address resource limits properly leads to systemic vulnerabilities or architectural decay.
+## 2. No-Execution Static Analysis
+Inspect untrusted repositories exclusively using static parsers, AST analyzers, and text scanners. Never run make, build scripts, test suites, or package install commands during initial triage.
 
-## 3. Filesystem Isolation
-Implementation and rigorous validation of filesystem isolation is essential for untrusted-project-security. Engineers must ensure that filesystem isolation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in filesystem isolation. Furthermore, edge cases regarding filesystem isolation must be explicitly documented and guarded against in the codebase. Failure to address filesystem isolation properly leads to systemic vulnerabilities or architectural decay.
+## 3. Network Egress Quarantine
+Isolate the analysis environment from all outbound internet connectivity. Prevent untrusted code from exfiltrating local environment data or downloading secondary malware stages.
 
-## 4. Network Blocking
-Implementation and rigorous validation of network blocking is essential for untrusted-project-security. Engineers must ensure that network blocking is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in network blocking. Furthermore, edge cases regarding network blocking must be explicitly documented and guarded against in the codebase. Failure to address network blocking properly leads to systemic vulnerabilities or architectural decay.
+## 4. Malicious Hook & Trigger Scanning
+Scan the repository structure for hidden execution triggers: .git/hooks/, .vscode/tasks.json, .devcontainer/devcontainer.json, GitHub Actions workflows, and suspicious Makefile targets.
 
-## 5. Process Namespace Isolation
-Implementation and rigorous validation of process namespace isolation is essential for untrusted-project-security. Engineers must ensure that process namespace isolation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in process namespace isolation. Furthermore, edge cases regarding process namespace isolation must be explicitly documented and guarded against in the codebase. Failure to address process namespace isolation properly leads to systemic vulnerabilities or architectural decay.
+## 5. Obfuscation & Payload Detection
+Detect high-entropy strings, long base64/hex encoded blobs, hidden Unicode zero-width spaces, and binary executables disguised with text file extensions.
 
-## 6. Memory Quotas
-Implementation and rigorous validation of memory quotas is essential for untrusted-project-security. Engineers must ensure that memory quotas is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in memory quotas. Furthermore, edge cases regarding memory quotas must be explicitly documented and guarded against in the codebase. Failure to address memory quotas properly leads to systemic vulnerabilities or architectural decay.
+## 6. Sandboxed Container Exploration
+When dynamic execution or building is required, run the untrusted project inside an ephemeral, non-root Docker container or microVM (gVisor / Firecracker) with memory and CPU bounds.
 
-## 7. Cpu Throttling
-Implementation and rigorous validation of CPU throttling is essential for untrusted-project-security. Engineers must ensure that CPU throttling is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in CPU throttling. Furthermore, edge cases regarding CPU throttling must be explicitly documented and guarded against in the codebase. Failure to address CPU throttling properly leads to systemic vulnerabilities or architectural decay.
+## 7. Read-Only Root Filesystem
+Mount the untrusted project directory with read-only permissions (ro). Provide only an isolated, ephemeral tmpfs scratchpad for temporary compilation artifacts.
 
-## 8. Egress Proxying
-Implementation and rigorous validation of egress proxying is essential for untrusted-project-security. Engineers must ensure that egress proxying is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in egress proxying. Furthermore, edge cases regarding egress proxying must be explicitly documented and guarded against in the codebase. Failure to address egress proxying properly leads to systemic vulnerabilities or architectural decay.
+## 8. Manual Human Authorization Barrier
+Require explicit, human-confirmed consent before executing any build command or installing dependencies discovered in an untrusted project.
 
-## 9. Syscall Filtering
-Implementation and rigorous validation of syscall filtering is essential for untrusted-project-security. Engineers must ensure that syscall filtering is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in syscall filtering. Furthermore, edge cases regarding syscall filtering must be explicitly documented and guarded against in the codebase. Failure to address syscall filtering properly leads to systemic vulnerabilities or architectural decay.
+## 9. Safe Dependency Graph Inspection
+Parse package manifests (go.mod, package.json, requirements.txt) statically. Never run package manager commands that automatically resolve or download remote packages.
 
-## 10. Ephemeral Environments
-Implementation and rigorous validation of ephemeral environments is essential for untrusted-project-security. Engineers must ensure that ephemeral environments is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in ephemeral environments. Furthermore, edge cases regarding ephemeral environments must be explicitly documented and guarded against in the codebase. Failure to address ephemeral environments properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Formal Clearance Certification
+Emit a structured security assessment report (.prumo/history/quarantine-report.json) detailing findings, risk score, and clearance status before onboarding the repository to active development.

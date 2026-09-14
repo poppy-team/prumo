@@ -1,6 +1,9 @@
-# Untrusted Project Security Security Checklist
-- [ ] Trust boundaries clearly defined and documented
-- [ ] All untrusted inputs validated against strict schema
-- [ ] Principle of least privilege enforced
-- [ ] No hardcoded secrets or credentials
-- [ ] Automated security tests pass with 100% success
+# Untrusted Codebase & Repository Quarantine Checklist
+
+- [ ] Foreign repository treated as untrusted; automatic builds and tests suspended
+- [ ] Static analysis conducted with zero network egress permitted
+- [ ] Hidden execution hooks (.git/hooks, VS Code tasks, devcontainers) scanned
+- [ ] High-entropy blobs and obfuscated scripts flagged for inspection
+- [ ] Exploration conducted inside ephemeral, read-only sandboxed containers
+- [ ] Dependencies inspected statically without executing package managers
+- [ ] Formal clearance report generated before repository is approved for work

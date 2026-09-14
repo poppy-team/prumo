@@ -1,36 +1,35 @@
 ---
 name: wireframing
-description: Structured markdown wireframe format with regions, components, states, navigation, keyboard, responsive, accessibility
+description: Information architecture, responsive layout structures, user flow diagrams, content hierarchy, and rapid UX prototyping
 ---
-# Wireframing
+# Low-Fidelity Wireframing & Layout Prototyping
 
-## 1. Structured Markdown Wireframe Format With Regions
-Implementation and rigorous validation of Structured markdown wireframe format with regions is essential for wireframing. Engineers must ensure that Structured markdown wireframe format with regions is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Structured markdown wireframe format with regions. Furthermore, edge cases regarding Structured markdown wireframe format with regions must be explicitly documented and guarded against in the codebase. Failure to address Structured markdown wireframe format with regions properly leads to systemic vulnerabilities or architectural decay.
+## 1. Information Architecture & Hierarchy
+Establish the structural hierarchy of interface views before addressing visual styling. Define primary content zones, secondary utility areas, and global navigation landmarks.
 
-## 2. Components
-Implementation and rigorous validation of components is essential for wireframing. Engineers must ensure that components is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in components. Furthermore, edge cases regarding components must be explicitly documented and guarded against in the codebase. Failure to address components properly leads to systemic vulnerabilities or architectural decay.
+## 2. Low-Fidelity Layout Blueprinting
+Create low-fidelity wireframe representations using structural box layouts, grayscale palettes, and placeholder content blocks to focus attention on layout and usability rather than aesthetics.
 
-## 3. States
-Implementation and rigorous validation of states is essential for wireframing. Engineers must ensure that states is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in states. Furthermore, edge cases regarding states must be explicitly documented and guarded against in the codebase. Failure to address states properly leads to systemic vulnerabilities or architectural decay.
+## 3. Responsive Grid & Breakpoint Specifications
+Define fluid grid behaviors across Mobile (320-480px), Tablet (768-1024px), and Desktop (1200px+) breakpoints. Document column stacking orders and hidden elements.
 
-## 4. Navigation
-Implementation and rigorous validation of navigation is essential for wireframing. Engineers must ensure that navigation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in navigation. Furthermore, edge cases regarding navigation must be explicitly documented and guarded against in the codebase. Failure to address navigation properly leads to systemic vulnerabilities or architectural decay.
+## 4. User Flow & State Transition Mapping
+Map user journeys across wireframes with clear decision points, success paths, error states, and empty states. Annotate interaction triggers and target destinations.
 
-## 5. Keyboard
-Implementation and rigorous validation of keyboard is essential for wireframing. Engineers must ensure that keyboard is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in keyboard. Furthermore, edge cases regarding keyboard must be explicitly documented and guarded against in the codebase. Failure to address keyboard properly leads to systemic vulnerabilities or architectural decay.
+## 5. Component Scaffolding & Placement
+Position interface components (navigation bars, forms, cards, action buttons) logically according to F-pattern or Z-pattern eye-tracking heuristics.
 
-## 6. Responsive
-Implementation and rigorous validation of responsive is essential for wireframing. Engineers must ensure that responsive is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in responsive. Furthermore, edge cases regarding responsive must be explicitly documented and guarded against in the codebase. Failure to address responsive properly leads to systemic vulnerabilities or architectural decay.
+## 6. Accessibility Landmarks in Wireframes
+Define HTML5 semantic landmark regions (nav, main, aside, header, footer) during the wireframing phase to guarantee accessible page hierarchy from day one.
 
-## 7. Accessibility
-Implementation and rigorous validation of accessibility is essential for wireframing. Engineers must ensure that accessibility is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in accessibility. Furthermore, edge cases regarding accessibility must be explicitly documented and guarded against in the codebase. Failure to address accessibility properly leads to systemic vulnerabilities or architectural decay.
+## 7. Form & Input Architecture
+Design form layouts with visible labels, logical tab order, inline error message placements, and clear primary vs. secondary action button hierarchies.
 
-## 8. Advanced Wireframing Concept 0
-Implementation and rigorous validation of Advanced wireframing Concept 0 is essential for wireframing. Engineers must ensure that Advanced wireframing Concept 0 is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Advanced wireframing Concept 0. Furthermore, edge cases regarding Advanced wireframing Concept 0 must be explicitly documented and guarded against in the codebase. Failure to address Advanced wireframing Concept 0 properly leads to systemic vulnerabilities or architectural decay.
+## 8. Content Density & Scannability
+Balance whitespace and content density to avoid cognitive clutter. Group related information into cohesive card modules with distinct visual boundaries.
 
-## 9. Advanced Wireframing Concept 1
-Implementation and rigorous validation of Advanced wireframing Concept 1 is essential for wireframing. Engineers must ensure that Advanced wireframing Concept 1 is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Advanced wireframing Concept 1. Furthermore, edge cases regarding Advanced wireframing Concept 1 must be explicitly documented and guarded against in the codebase. Failure to address Advanced wireframing Concept 1 properly leads to systemic vulnerabilities or architectural decay.
+## 9. Interactive Prototyping & Click-Throughs
+Link wireframe screens into simple interactive click-through prototypes to validate assumptions with stakeholders before engineering implementation begins.
 
-## 10. Advanced Wireframing Concept 2
-Implementation and rigorous validation of Advanced wireframing Concept 2 is essential for wireframing. Engineers must ensure that Advanced wireframing Concept 2 is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Advanced wireframing Concept 2. Furthermore, edge cases regarding Advanced wireframing Concept 2 must be explicitly documented and guarded against in the codebase. Failure to address Advanced wireframing Concept 2 properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Design-to-Code Handoff Specifications
+Annotate wireframes with exact responsive layout behaviors, flexbox/grid alignments, content truncation rules, and state transitions for engineering teams.

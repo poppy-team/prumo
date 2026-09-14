@@ -6,7 +6,11 @@
   "purpose": "Author structured markdown and schematic wireframes with interactive region definitions.",
   "risk_level": "low",
   "modes": [
-    "design"
+    "implementation",
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Product requirements",
@@ -59,5 +63,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: wireframing\ndescription: Information architecture, responsive layout structures, user flow diagrams, content hierarchy, and rapid UX prototyping\n---\n# Low-Fidelity Wireframing & Layout Prototyping\n\n## 1. Information Architecture & Hierarchy\nEstablish the structural hierarchy of interface views before addressing visual styling. Define primary content zones, secondary utility areas, and global navigation landmarks.\n\n## 2. Low-Fidelity Layout Blueprinting\nCreate low-fidelity wireframe representations using structural box layouts, grayscale palettes, and placeholder content blocks to focus attention on layout and usability rather than aesthetics.\n\n## 3. Responsive Grid & Breakpoint Specifications\nDefine fluid grid behaviors across Mobile (320-480px), Tablet (768-1024px), and Desktop (1200px+) breakpoints. Document column stacking orders and hidden elements.\n\n## 4. User Flow & State Transition Mapping\nMap user journeys across wireframes with clear decision points, success paths, error states, and empty states. Annotate interaction triggers and target destinations.\n\n## 5. Component Scaffolding & Placement\nPosition interface components (navigation bars, forms, cards, action buttons) logically according to F-pattern or Z-pattern eye-tracking heuristics.\n\n## 6. Accessibility Landmarks in Wireframes\nDefine HTML5 semantic landmark regions (nav, main, aside, header, footer) during the wireframing phase to guarantee accessible page hierarchy from day one.\n\n## 7. Form & Input Architecture\nDesign form layouts with visible labels, logical tab order, inline error message placements, and clear primary vs. secondary action button hierarchies.\n\n## 8. Content Density & Scannability\nBalance whitespace and content density to avoid cognitive clutter. Group related information into cohesive card modules with distinct visual boundaries.\n\n## 9. Interactive Prototyping & Click-Throughs\nLink wireframe screens into simple interactive click-through prototypes to validate assumptions with stakeholders before engineering implementation begins.\n\n## 10. Design-to-Code Handoff Specifications\nAnnotate wireframes with exact responsive layout behaviors, flexbox/grid alignments, content truncation rules, and state transitions for engineering teams.\n"
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 — Headless Harness
+
+- **Prumo Harness (headless, Go-native):** NativeAgent reentrant state machine, `ModelProvider`/`AgentProvider` contracts, FakeProvider determinístico + conformance suite, adapters OpenAI-compat e Anthropic, gateway com routing/fallback/retry/quota, Coding ACI completa (`fs/code/edit/git/test/process`), Permission Engine determinística, checkpoints crash-safe com journal idempotente, Handoff v2 tipado, Context Compiler v2 (gates, BM25, repo-map, LSP, Memory Atlas), Knowledge Runtime (records, Delta, contradiction/coverage/readiness, seeding, research ledger), Documentation Compiler + Human Docs Runtime HD0–HD4, workforce multi-agent com review, daemon local (Unix socket + TLS remoto) com scheduler, ACP v1 agent server, MCP stdio/HTTP, SDK Go público + IDL versionada + types TypeScript.
+- **CLI:** `prumo agent <run|resume|handoff|events|protocol|serve|ps|logs|steer|stop|schedule|unschedule|jobs|promote|acp|gc|providers>`; flags de budget (`--budget-tokens/usd/tools`), `--strict`, `--gates`, sandbox (`--sandbox/--sandbox-image/--sandbox-runtime`), egress (`--egress-deny/--allow`), contexto (`--context-budget/--level`), compactação e MCP (`--mcp`).
+- **Docs:** `docs/harness/` canônica (overview, runtime, providers, security, context-knowledge, workforce, daemon, human-docs, roadmap, promotion-report, gap-register) reconciliada com o caderno Prumo Code Agent (snapshot `2026-09-11-d41f18bb65f5`).
+- **Evidência:** `go vet` + `go test ./...` verdes; interop live contra `opencode serve` 1.18.30; SIGKILL recovery; fuzz 1.5M execs sem falhas; relatório em `HARNESS_IMPLEMENTATION_REPORT.md`.
+- **Limites honestos:** sends live que gastam quota, chaves de models, daemon Docker/runsc e modelos locais seguem pendentes de ambiente/aprovação (ver gap-register). `raillen/prumo-code` NÃO criado (split gate NOT READY).
+
 ## 0.5.0 — Prumo rebrand
 
 - **New identity:** Project Atlas Framework is now **Prumo** — a Git-native project protocol and CLI for software built by humans and AI agents. No Atlas compatibility layer is kept (pre-v1 clean break).

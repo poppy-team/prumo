@@ -1,36 +1,35 @@
 ---
 name: visual-regression
-description: Snapshot comparison, threshold configuration, baseline management, dynamic content masking, CI integration, diff reviewing, flakiness mitigation, responsive testing, cross-browser validation, layout shifts
+description: Pixel-by-pixel snapshot testing, Playwright integration, dynamic content masking, deterministic font rendering, and cross-browser CI gates
 ---
-# Visual Regression
+# Automated Visual Regression Testing
 
-## 1. Snapshot Comparison
-Implementation and rigorous validation of Snapshot comparison is essential for visual-regression. Engineers must ensure that Snapshot comparison is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Snapshot comparison. Furthermore, edge cases regarding Snapshot comparison must be explicitly documented and guarded against in the codebase. Failure to address Snapshot comparison properly leads to systemic vulnerabilities or architectural decay.
+## 1. Deterministic Environment Configuration
+Run visual regression tests in standardized Docker containers to eliminate OS-level font antialiasing and sub-pixel rendering discrepancies across local and CI machines.
 
-## 2. Threshold Configuration
-Implementation and rigorous validation of threshold configuration is essential for visual-regression. Engineers must ensure that threshold configuration is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in threshold configuration. Furthermore, edge cases regarding threshold configuration must be explicitly documented and guarded against in the codebase. Failure to address threshold configuration properly leads to systemic vulnerabilities or architectural decay.
+## 2. Playwright & Tooling Integration
+Integrate automated snapshot testing using Playwright (expect(page).toHaveScreenshot()) or pixelmatch. Capture full-page and component-level screenshots across standard viewports (Mobile, Tablet, Desktop).
 
-## 3. Baseline Management
-Implementation and rigorous validation of baseline management is essential for visual-regression. Engineers must ensure that baseline management is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in baseline management. Furthermore, edge cases regarding baseline management must be explicitly documented and guarded against in the codebase. Failure to address baseline management properly leads to systemic vulnerabilities or architectural decay.
+## 3. Dynamic Content Masking
+Mask dynamic, fluctuating, or time-dependent UI elements (timestamps, user avatars, animated banners, random IDs) before snapshot capture using test locator masks.
 
-## 4. Dynamic Content Masking
-Implementation and rigorous validation of dynamic content masking is essential for visual-regression. Engineers must ensure that dynamic content masking is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in dynamic content masking. Furthermore, edge cases regarding dynamic content masking must be explicitly documented and guarded against in the codebase. Failure to address dynamic content masking properly leads to systemic vulnerabilities or architectural decay.
+## 4. Animation & Transition Freezing
+Disable all CSS animations, smooth scrolling, and transitions during test runs (prefers-reduced-motion: reduce) to guarantee capture of static, fully settled layouts.
 
-## 5. Ci Integration
-Implementation and rigorous validation of CI integration is essential for visual-regression. Engineers must ensure that CI integration is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in CI integration. Furthermore, edge cases regarding CI integration must be explicitly documented and guarded against in the codebase. Failure to address CI integration properly leads to systemic vulnerabilities or architectural decay.
+## 5. Font & Web Asset Loading Gates
+Wait for document.fonts.ready and all critical images to finish loading prior to taking snapshots to prevent capturing half-rendered typography or layout shifts.
 
-## 6. Diff Reviewing
-Implementation and rigorous validation of diff reviewing is essential for visual-regression. Engineers must ensure that diff reviewing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in diff reviewing. Furthermore, edge cases regarding diff reviewing must be explicitly documented and guarded against in the codebase. Failure to address diff reviewing properly leads to systemic vulnerabilities or architectural decay.
+## 6. Configurable Thresholds & Tolerance
+Set strict but realistic pixel-diff tolerance thresholds (e.g. maxDiffPixelRatio: 0.001). Distinguish between acceptable anti-aliasing variations and true visual regressions.
 
-## 7. Flakiness Mitigation
-Implementation and rigorous validation of flakiness mitigation is essential for visual-regression. Engineers must ensure that flakiness mitigation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in flakiness mitigation. Furthermore, edge cases regarding flakiness mitigation must be explicitly documented and guarded against in the codebase. Failure to address flakiness mitigation properly leads to systemic vulnerabilities or architectural decay.
+## 7. Side-by-Side Diff Artifact Reporting
+Generate visual failure reports presenting Baseline, Current, and Diff images with highlighted pixel changes. Publish reports as CI artifacts on failed runs.
 
-## 8. Responsive Testing
-Implementation and rigorous validation of responsive testing is essential for visual-regression. Engineers must ensure that responsive testing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in responsive testing. Furthermore, edge cases regarding responsive testing must be explicitly documented and guarded against in the codebase. Failure to address responsive testing properly leads to systemic vulnerabilities or architectural decay.
+## 8. Approval & Baseline Update Workflows
+Establish a controlled command workflow for updating baseline images (e.g. prumo test visual --update-snapshots) only when intentional UI updates are committed.
 
-## 9. Cross-Browser Validation
-Implementation and rigorous validation of cross-browser validation is essential for visual-regression. Engineers must ensure that cross-browser validation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in cross-browser validation. Furthermore, edge cases regarding cross-browser validation must be explicitly documented and guarded against in the codebase. Failure to address cross-browser validation properly leads to systemic vulnerabilities or architectural decay.
+## 9. Component-Level Isolation Testing
+Test visual snapshots of isolated component states in Storybook before testing complex end-to-end user journeys to isolate styling regressions rapidly.
 
-## 10. Layout Shifts
-Implementation and rigorous validation of layout shifts is essential for visual-regression. Engineers must ensure that layout shifts is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in layout shifts. Furthermore, edge cases regarding layout shifts must be explicitly documented and guarded against in the codebase. Failure to address layout shifts properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Cross-Browser & DPI Coverage
+Verify visual rendering across Chromium, Firefox, and WebKit rendering engines at both 1x and high-DPI (2x retina) pixel densities.

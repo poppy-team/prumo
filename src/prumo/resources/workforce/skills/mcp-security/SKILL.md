@@ -1,36 +1,35 @@
 ---
 name: mcp-security
-description: Tool output validation, capability scoping, prompt injection boundaries, safe sandboxing, execution timeouts, read-only constraints, audit logging, payload sanitization, context window protection, model jailbreak defense
+description: MCP tool execution boundaries, strict schema validation, side-effect journaling, prompt injection defense, and sensitive path shielding
 ---
-# Mcp Security
+# Model Context Protocol (MCP) Security
 
-## 1. Tool Output Validation
-Implementation and rigorous validation of Tool output validation is essential for mcp-security. Engineers must ensure that Tool output validation is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Tool output validation. Furthermore, edge cases regarding Tool output validation must be explicitly documented and guarded against in the codebase. Failure to address Tool output validation properly leads to systemic vulnerabilities or architectural decay.
+## 1. Tool Execution Boundaries
+Enforce strict least-privilege policies for MCP servers. Deny arbitrary shell execution or raw unrestricted filesystem write tools by default. Require tools to expose single-purpose, domain-constrained operations with explicit parameter validation.
 
-## 2. Capability Scoping
-Implementation and rigorous validation of capability scoping is essential for mcp-security. Engineers must ensure that capability scoping is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in capability scoping. Furthermore, edge cases regarding capability scoping must be explicitly documented and guarded against in the codebase. Failure to address capability scoping properly leads to systemic vulnerabilities or architectural decay.
+## 2. Strict Argument & Schema Validation
+Validate tool invocation payloads against formal JSON Schema definitions before dispatching to tool handlers. Reject excess, unknown, or malformed parameters. Enforce numeric bounds and regex patterns on string inputs.
 
-## 3. Prompt Injection Boundaries
-Implementation and rigorous validation of prompt injection boundaries is essential for mcp-security. Engineers must ensure that prompt injection boundaries is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in prompt injection boundaries. Furthermore, edge cases regarding prompt injection boundaries must be explicitly documented and guarded against in the codebase. Failure to address prompt injection boundaries properly leads to systemic vulnerabilities or architectural decay.
+## 3. Side-Effect Journaling & Audit Trails
+Record every mutating tool call into the project execution journal (.prumo/history/) before and after execution. Capture tool name, invoking agent, timestamp, sanitized parameters, execution duration, and hash of output changes.
 
-## 4. Safe Sandboxing
-Implementation and rigorous validation of safe sandboxing is essential for mcp-security. Engineers must ensure that safe sandboxing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in safe sandboxing. Furthermore, edge cases regarding safe sandboxing must be explicitly documented and guarded against in the codebase. Failure to address safe sandboxing properly leads to systemic vulnerabilities or architectural decay.
+## 4. Indirect Prompt Injection Defense
+Treat all content returned by MCP tools (web pages, files, database records) as untrusted user data. Never concatenate tool output directly into system prompt instructions without explicit delimiter isolation and neutralization of embedded directives.
 
-## 5. Execution Timeouts
-Implementation and rigorous validation of execution timeouts is essential for mcp-security. Engineers must ensure that execution timeouts is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in execution timeouts. Furthermore, edge cases regarding execution timeouts must be explicitly documented and guarded against in the codebase. Failure to address execution timeouts properly leads to systemic vulnerabilities or architectural decay.
+## 5. Sensitive Path Protection
+Hardcode file-access guards that block MCP tools from reading or modifying protected repository paths: .git/, .prumo/credentials, private keys, .env, and operating system root configuration directories.
 
-## 6. Read-Only Constraints
-Implementation and rigorous validation of read-only constraints is essential for mcp-security. Engineers must ensure that read-only constraints is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in read-only constraints. Furthermore, edge cases regarding read-only constraints must be explicitly documented and guarded against in the codebase. Failure to address read-only constraints properly leads to systemic vulnerabilities or architectural decay.
+## 6. Subprocess & Environment Isolation
+Execute external MCP server binaries in isolated sandboxes (dedicated low-privilege OS user, Docker container, or chroot). Pass only sanitized, allowlisted environment variables, stripping parent agent credentials and master tokens.
 
-## 7. Audit Logging
-Implementation and rigorous validation of audit logging is essential for mcp-security. Engineers must ensure that audit logging is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in audit logging. Furthermore, edge cases regarding audit logging must be explicitly documented and guarded against in the codebase. Failure to address audit logging properly leads to systemic vulnerabilities or architectural decay.
+## 7. Rate Limiting & Resource Caps
+Enforce invocation rate limits and concurrency locks on MCP tool calls. Terminate any individual tool execution exceeding a 30-second timeout. Enforce maximum byte limits on tool output buffers to prevent memory exhaustion.
 
-## 8. Payload Sanitization
-Implementation and rigorous validation of payload sanitization is essential for mcp-security. Engineers must ensure that payload sanitization is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in payload sanitization. Furthermore, edge cases regarding payload sanitization must be explicitly documented and guarded against in the codebase. Failure to address payload sanitization properly leads to systemic vulnerabilities or architectural decay.
+## 8. Token & Credential Sanitization
+Never pass master LLM API keys or administrative database passwords as tool arguments. When external authentication is required, use short-lived scoped tool tokens managed securely in the tool gateway.
 
-## 9. Context Window Protection
-Implementation and rigorous validation of context window protection is essential for mcp-security. Engineers must ensure that context window protection is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in context window protection. Furthermore, edge cases regarding context window protection must be explicitly documented and guarded against in the codebase. Failure to address context window protection properly leads to systemic vulnerabilities or architectural decay.
+## 9. Human-in-the-Loop Approval Gates
+Require interactive human confirmation before executing high-impact, irreversible operations: deleting files, running database migrations, modifying branch policies, or publishing external releases.
 
-## 10. Model Jailbreak Defense
-Implementation and rigorous validation of model jailbreak defense is essential for mcp-security. Engineers must ensure that model jailbreak defense is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in model jailbreak defense. Furthermore, edge cases regarding model jailbreak defense must be explicitly documented and guarded against in the codebase. Failure to address model jailbreak defense properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Capability Negotiation & Strict Enforcement
+Enforce mutual protocol negotiation on MCP session startup. Reject servers requesting elevated permissions without declaring a formal trust contract and cryptographic provenance signature.

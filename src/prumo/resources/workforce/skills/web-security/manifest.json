@@ -7,7 +7,10 @@
   "risk_level": "high",
   "modes": [
     "implementation",
-    "review"
+    "review",
+    "audit",
+    "testing",
+    "documentation"
   ],
   "inputs": [
     "Security policy",
@@ -58,5 +61,6 @@
     ]
   },
   "requires_any": [],
-  "tools": []
+  "tools": [],
+  "instructions": "---\nname: web-security\ndescription: Strict Content Security Policy (CSP), context-aware XSS prevention, SameSite CSRF defense, secure cookies, and SSRF prevention\n---\n# Web Application Security & Hardening\n\n## 1. Strict Content Security Policy (CSP)\nDeploy a nonce-based Content Security Policy: default-src 'none'; script-src 'nonce-{RANDOM}' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'. Ban unsafe-eval and arbitrary third-party script sources.\n\n## 2. Context-Aware Output Encoding (XSS Defense)\nEncode all untrusted data before rendering into HTML, JavaScript, CSS, or URL contexts. Use battle-tested sanitizers (DOMPurify) when user-authored HTML is required. Prefer textContent and framework-native data bindings over innerHTML.\n\n## 3. Anti-CSRF Tokens & SameSite Protection\nConfigure session cookies with SameSite=Lax (or Strict where feasible). For sensitive mutating requests, mandate custom anti-CSRF headers (X-CSRF-Token) verified server-side with HMAC validation.\n\n## 4. Secure Cookie Attributes\nFlag all session and authentication cookies with Secure, HttpOnly, and SameSite attributes. Use the __Host- prefix (__Host-session) to enforce that cookies are served only over HTTPS, bound to the host domain, and unshared with subdomains.\n\n## 5. Clickjacking Defense\nPrevent framing of web interfaces by setting Content-Security-Policy with frame-ancestors 'none' (or 'self' if embedded intentionally) and the legacy X-Frame-Options: DENY header.\n\n## 6. Server-Side Request Forgery (SSRF) Defense\nWhen fetching user-supplied URLs, validate the destination IP address against private and loopback ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.169.254). Reject IPv6 link-local addresses and disable automatic HTTP redirects.\n\n## 7. Safe File Upload Architecture\nValidate file uploads using magic bytes / MIME sniffing rather than trusting the user-provided file extension. Store uploaded assets in isolated cloud storage buckets with public execution disabled. Serve user uploads with Content-Disposition: attachment.\n\n## 8. CORS Hardening\nExplicitly whitelist permitted client origins. Never reflect the Origin header directly into Access-Control-Allow-Origin without validation. Never combine Access-Control-Allow-Origin: * with Access-Control-Allow-Credentials: true.\n\n## 9. Open Redirect Prevention\nValidate target redirect paths against relative URI patterns (/path) or an explicit trusted domain allowlist. Never redirect to external URLs supplied directly via query parameters (?next=https://malicious.com).\n\n## 10. Subresource Integrity (SRI) & CAA Records\nInclude cryptographic hashes (integrity=\"sha384-...\") on all external stylesheet and script tags imported from CDNs. Configure DNS CAA (Certificate Authority Authorization) records to restrict which CAs may issue certificates.\n"
 }

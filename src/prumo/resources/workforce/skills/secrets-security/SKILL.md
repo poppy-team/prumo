@@ -1,36 +1,35 @@
 ---
 name: secrets-security
-description: Secret detection, rotation policies, vault integration, environment variable safety, hardcoded secret scanning, ephemeral credentials, access auditing, encryption at rest, memory wiping, secret transmission
+description: Zero hardcoded secrets, automated pre-commit scanning, centralized secret managers, ephemeral tokens, and automated log redaction
 ---
-# Secrets Security
+# Secrets & Credential Protection
 
-## 1. Secret Detection
-Implementation and rigorous validation of Secret detection is essential for secrets-security. Engineers must ensure that Secret detection is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in Secret detection. Furthermore, edge cases regarding Secret detection must be explicitly documented and guarded against in the codebase. Failure to address Secret detection properly leads to systemic vulnerabilities or architectural decay.
+## 1. Zero Hardcoded Secrets Invariant
+Enforce an absolute ban on plaintext secrets (API keys, private keys, database passwords, webhook signing secrets) in source code, commit history, configuration files, and container images.
 
-## 2. Rotation Policies
-Implementation and rigorous validation of rotation policies is essential for secrets-security. Engineers must ensure that rotation policies is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in rotation policies. Furthermore, edge cases regarding rotation policies must be explicitly documented and guarded against in the codebase. Failure to address rotation policies properly leads to systemic vulnerabilities or architectural decay.
+## 2. Automated Secret Scanning Gates
+Run automated secret detection tools (Gitleaks, TruffleHog) in local git pre-commit hooks and as blocking CI gates. Analyze commit diffs for high-entropy strings and known vendor token patterns.
 
-## 3. Vault Integration
-Implementation and rigorous validation of vault integration is essential for secrets-security. Engineers must ensure that vault integration is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in vault integration. Furthermore, edge cases regarding vault integration must be explicitly documented and guarded against in the codebase. Failure to address vault integration properly leads to systemic vulnerabilities or architectural decay.
+## 3. Environment Separation & Scoped Injection
+Isolate credentials strictly across development, staging, and production environments. Follow Twelve-Factor App principles by injecting secrets via environment variables or mounted tmpfs files at runtime.
 
-## 4. Environment Variable Safety
-Implementation and rigorous validation of environment variable safety is essential for secrets-security. Engineers must ensure that environment variable safety is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in environment variable safety. Furthermore, edge cases regarding environment variable safety must be explicitly documented and guarded against in the codebase. Failure to address environment variable safety properly leads to systemic vulnerabilities or architectural decay.
+## 4. Centralized Secrets Management
+Retrieve production secrets dynamically from centralized managers (HashiCorp Vault, AWS Secrets Manager, GCP Secret Manager). Use short-lived, rotatable credentials instead of static long-lived strings.
 
-## 5. Hardcoded Secret Scanning
-Implementation and rigorous validation of hardcoded secret scanning is essential for secrets-security. Engineers must ensure that hardcoded secret scanning is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in hardcoded secret scanning. Furthermore, edge cases regarding hardcoded secret scanning must be explicitly documented and guarded against in the codebase. Failure to address hardcoded secret scanning properly leads to systemic vulnerabilities or architectural decay.
+## 5. Secret Rotation Playbooks
+Design application systems to support zero-downtime secret rotation. Support dual-key verification windows during rotation (accepting both old and new signing keys while tokens migrate).
 
-## 6. Ephemeral Credentials
-Implementation and rigorous validation of ephemeral credentials is essential for secrets-security. Engineers must ensure that ephemeral credentials is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in ephemeral credentials. Furthermore, edge cases regarding ephemeral credentials must be explicitly documented and guarded against in the codebase. Failure to address ephemeral credentials properly leads to systemic vulnerabilities or architectural decay.
+## 6. Ephemeral Developer Tokens
+Provide developers with scoped, short-lived development tokens (validity < 30 days) rather than production-grade credentials. Enforce immediate revocation upon employee or collaborator offboarding.
 
-## 7. Access Auditing
-Implementation and rigorous validation of access auditing is essential for secrets-security. Engineers must ensure that access auditing is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in access auditing. Furthermore, edge cases regarding access auditing must be explicitly documented and guarded against in the codebase. Failure to address access auditing properly leads to systemic vulnerabilities or architectural decay.
+## 7. Memory & Core Dump Protection
+Overwrite sensitive byte buffers with zeros immediately after use where supported by the language runtime. Disable automatic core dumps in production environments to prevent credential extraction from memory.
 
-## 8. Encryption At Rest
-Implementation and rigorous validation of encryption at rest is essential for secrets-security. Engineers must ensure that encryption at rest is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in encryption at rest. Furthermore, edge cases regarding encryption at rest must be explicitly documented and guarded against in the codebase. Failure to address encryption at rest properly leads to systemic vulnerabilities or architectural decay.
+## 8. Automated Log & Trace Redaction
+Configure log formatters and OpenTelemetry exporters to automatically scrub patterns resembling JWTs, Bearer tokens, private keys, and passwords before persisting records to disk or central logging systems.
 
-## 9. Memory Wiping
-Implementation and rigorous validation of memory wiping is essential for secrets-security. Engineers must ensure that memory wiping is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in memory wiping. Furthermore, edge cases regarding memory wiping must be explicitly documented and guarded against in the codebase. Failure to address memory wiping properly leads to systemic vulnerabilities or architectural decay.
+## 9. Compromise Response & History Scrubbing
+In the event of an accidental secret commit, treat the secret as compromised immediately and revoke it at the provider first. Only after revocation, rewrite git history using git-filter-repo to purge the artifact.
 
-## 10. Secret Transmission
-Implementation and rigorous validation of secret transmission is essential for secrets-security. Engineers must ensure that secret transmission is handled according to strict domain specifications. This involves automated testing, manual review, and continuous monitoring to prevent regressions in secret transmission. Furthermore, edge cases regarding secret transmission must be explicitly documented and guarded against in the codebase. Failure to address secret transmission properly leads to systemic vulnerabilities or architectural decay.
-
+## 10. Supply Chain & CI Secret Isolation
+Use GitHub Actions encrypted repository secrets or OIDC Workload Identity Federation instead of long-lived cloud access keys. Restrict secret visibility to protected branches and prevent pull requests from forks from accessing secrets.
