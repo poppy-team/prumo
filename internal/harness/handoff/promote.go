@@ -72,6 +72,13 @@ func PromoteFile(path, runID string) (Promotion, error) {
 	if err != nil {
 		return Promotion{}, err
 	}
+	return PromoteBytes(data, runID)
+}
+
+// PromoteBytes validates a persisted planning checkpoint payload and
+// promotes it. It exists so callers can promote in-memory payloads without
+// round-tripping through a temporary file.
+func PromoteBytes(data []byte, runID string) (Promotion, error) {
 	var cp planning.SessionCheckpoint
 	if err := json.Unmarshal(data, &cp); err != nil {
 		return Promotion{}, err

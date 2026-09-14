@@ -772,19 +772,11 @@ func runAgentPromote(asJSON bool, args []string) int {
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
-	tmp, err := os.CreateTemp("", "prumo-promote-*.json")
-	if err != nil {
-		return serviceError(asJSON, err)
-	}
-	tmpName := tmp.Name()
-	_, _ = tmp.Write(data)
-	_ = tmp.Close()
-	defer os.Remove(tmpName)
 	runID := f["run"]
 	if runID == "" {
 		runID = "R-promote-1"
 	}
-	promo, err := handoff.PromoteFile(tmpName, runID)
+	promo, err := handoff.PromoteBytes(data, runID)
 	if err != nil {
 		return serviceError(asJSON, err)
 	}

@@ -48,3 +48,15 @@ func TestPromoteFile(t *testing.T) {
 		t.Fatalf("promote file failed: %+v %v", p, err)
 	}
 }
+
+func TestPromoteBytes(t *testing.T) {
+	cp := planning.SessionCheckpoint{Version: 1, SessionID: "ps3", RunID: "R0", Scope: "s", Goal: "g"}
+	data, _ := json.Marshal(cp)
+	p, err := PromoteBytes(data, "R-c")
+	if err != nil || p.SessionID != "ps3" || p.RunID != "R-c" {
+		t.Fatalf("promote bytes failed: %+v %v", p, err)
+	}
+	if _, err := PromoteBytes(nil, "R-c"); err == nil {
+		t.Fatal("empty payload must fail")
+	}
+}
