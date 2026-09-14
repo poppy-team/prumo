@@ -22,3 +22,12 @@ htmlcov/
 /dist/
 /test-home/
 .opencode/
+
+# Notion imports (derived, on-demand)
+.prumo/imports/
+
+# Scratch / deep-research reports at root
+*-deep-research-report.md
+
+# Snapshot archives (large binaries)
+*.zip
