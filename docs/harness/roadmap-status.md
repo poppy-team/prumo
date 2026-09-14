@@ -39,3 +39,16 @@ Verdict: NOT READY for split — see `HARNESS_IMPLEMENTATION_REPORT.md`.
 The first Prumo Code must build with zero `internal/` imports; that
 conformance is now pinned for the Go SDK (`TestBoundaryNoInternalImports`)
 and remains to be extended to remote transport + generated bindings.
+
+## Post-harness: Implementation Waves
+
+The split gate is READY (conditional). Before the H10 TUI spike,
+implementation waves W0–W14 address structural gaps identified by deep
+research analysis. See `docs/development/waves.md` for canonical wave
+definitions and entry/exit criteria.
+
+| Priority | Waves | Focus |
+|----------|-------|-------|
+| P0 | W0–W7 | Authority cleanup, schema conformance, KnowledgeUnit, ContextManifest, UI contracts, locale, Gauntlet schema |
+| P1 | W8–W14 | Shared Product Contract, design tokens, doc compiler, accessibility, reconnect/replay, evals, Framework update |
+| Gate | — | P0 complete + W8/W9/W11/W12 → H10 TUI spike may begin |

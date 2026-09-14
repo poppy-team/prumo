@@ -81,3 +81,18 @@ behavior is still newer than the notebook.
 
 2nd real vendor adapter live creds, provider live matrix, daemon reconnect,
 protocol IDL/SDK generation, container sandbox provider, fuzz/chaos passes.
+
+## Deep Research Promotion (2026-09-14)
+
+The deep research analysis produced 16 constitutional directives and
+identified structural gaps across authority routing, schema/runtime
+conformance, knowledge architecture, context auditability, UI contracts,
+locale, accessibility, and quality loops.
+
+Promoted into implementation waves:
+- `docs/development/waves.md` — 15 waves (W0–W14) with entry/exit criteria
+- Gap-register traceability maintained (W→GAP mapping in waves doc)
+- Framework invariant candidates queued (W14)
+
+Source: `14-09_00h33-deep-research-report.md` (scratch, gitignored).
+Authority transfers to repository specs once waves are implemented.
