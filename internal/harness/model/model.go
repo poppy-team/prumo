@@ -152,6 +152,9 @@ type OpenAICompat struct {
 	APIKey  string
 	Model   string
 	Client  *http.Client
+	// ExtraHeaders are sent on every request (e.g. x-session-id on gateways
+	// whose free tier only serves requests tied to an account session).
+	ExtraHeaders map[string]string
 }
 
 func envOr(key, def string) string {
@@ -161,8 +164,35 @@ func envOr(key, def string) string {
 	return def
 }
 
+// ModelHeaders parses PRUMO_MODEL_HEADERS (a JSON object of header name to
+// value) into a map. Empty or malformed values yield nil.
+func ModelHeaders() map[string]string {
+	raw := os.Getenv("PRUMO_MODEL_HEADERS")
+	if raw == "" {
+		return nil
+	}
+	m := map[string]string{}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return nil
+	}
+	return m
+}
+
 func NewOpenAICompat(baseURL, apiKey, model string) *OpenAICompat {
 	return &OpenAICompat{BaseURL: strings.TrimRight(baseURL, "/"), APIKey: apiKey, Model: model, Client: &http.Client{Timeout: 120 * time.Second}}
+}
+
+// WithHeaders sets extra headers sent on every request and returns the
+// provider so callers can chain configuration.
+func (o *OpenAICompat) WithHeaders(headers map[string]string) *OpenAICompat {
+	o.ExtraHeaders = headers
+	return o
+}
+
+func (o *OpenAICompat) applyHeaders(req *http.Request) {
+	for name, value := range o.ExtraHeaders {
+		req.Header.Set(name, value)
+	}
 }
 
 func (o *OpenAICompat) Name() string { return "openai-compat" }
@@ -176,6 +206,7 @@ func (o *OpenAICompat) Models(ctx context.Context) ([]string, error) {
 	if o.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+o.APIKey)
 	}
+	o.applyHeaders(req)
 	if resp, err := o.Client.Do(req); err == nil {
 		defer resp.Body.Close()
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
@@ -208,6 +239,7 @@ func (o *OpenAICompat) Health(ctx context.Context) (string, error) {
 	if o.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+o.APIKey)
 	}
+	o.applyHeaders(req)
 	resp, err := o.Client.Do(req)
 	if err != nil {
 		return "unavailable", err
@@ -258,6 +290,7 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 	if o.APIKey != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+o.APIKey)
 	}
+	o.applyHeaders(httpReq)
 	resp, err := o.Client.Do(httpReq)
 	if err != nil {
 		if ctx.Err() != nil {

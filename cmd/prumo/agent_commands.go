@@ -151,7 +151,7 @@ func runAgentRun(asJSON bool, args []string) int {
 		if baseURL == "" {
 			return serviceError(asJSON, fmt.Errorf("openai-compat requires --base-url or PRUMO_MODEL_BASE_URL"))
 		}
-		provider = model.NewOpenAICompat(baseURL, apiKey, modelName)
+		provider = model.NewOpenAICompat(baseURL, apiKey, modelName).WithHeaders(model.ModelHeaders())
 	case "anthropic":
 		if baseURL == "" {
 			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")

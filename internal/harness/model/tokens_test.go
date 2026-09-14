@@ -48,3 +48,35 @@ func TestOpenAIDiscovery(t *testing.T) {
 		t.Fatalf("unreachable must fall back: %v %v", models, err)
 	}
 }
+
+func TestOpenAICompatSendsHeaders(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("x-session-id")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	o := NewOpenAICompat(srv.URL, "key", "m1").WithHeaders(map[string]string{"x-session-id": "ses-1"})
+	if _, err := o.Models(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got != "ses-1" {
+		t.Fatalf("header not sent: %q", got)
+	}
+}
+
+func TestModelHeaders(t *testing.T) {
+	t.Setenv("PRUMO_MODEL_HEADERS", "")
+	if h := ModelHeaders(); h != nil {
+		t.Fatalf("empty env must yield nil, got %v", h)
+	}
+	t.Setenv("PRUMO_MODEL_HEADERS", `{"x-session-id":"ses-2","x-trace":"t1"}`)
+	h := ModelHeaders()
+	if len(h) != 2 || h["x-session-id"] != "ses-2" || h["x-trace"] != "t1" {
+		t.Fatalf("bad headers: %v", h)
+	}
+	t.Setenv("PRUMO_MODEL_HEADERS", "{not-json")
+	if h := ModelHeaders(); h != nil {
+		t.Fatalf("malformed env must yield nil, got %v", h)
+	}
+}
