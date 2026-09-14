@@ -48,10 +48,10 @@ item. Novos gaps entram no fim com o próximo número livre.
 | GAP-030 | Transporte remoto do daemon (+auth) | split gate | ✅ done nos limites | TCP+TLS + token (subtle), SDK+CLI, teste live local | CA corporativa + hardening de exposição |
 | GAP-031 | Decisão: MCP Go SDK e transports | pág. 19 | ✅ decided | stdlib JSON-RPC registrado em mcp.go (troca sem mudar superfície) | reavaliar com benchmark |
 | GAP-032 | Decisão: subset ACP + matriz oficial | pág. 19 | ✅ decided | subset v1 registrado no código (init/new/load/resume/list/delete/close/prompt/cancel); cliente stdio implementado (ACPClient) cobrindo o mesmo subset | registry/mCP-per-session futuros |
-| GAP-033 | Decisão: Docker vs Podman padrão/rootless | pág. 19 | 🛑 decision | detecção honesta pronta | medir + ADR |
-| GAP-034 | Decisão: driver SQLite derived runtime | pág. 19 | 🛑 decision | — | medir + ADR |
-| GAP-035 | Decisão: isolamento de plugins | pág. 19 | 🛑 decision | — | ADR quando houver plugins |
-| GAP-036 | Decisão: budgets de performance + TTL/memory-pressure | pág. 19 | 🛑 decision | — | medir + ADR |
+| GAP-033 | Decisão: Docker vs Podman padrão/rootless | pág. 19 | ✅ decided | ADR 006: podman-preferred na detecção, docker como runtime de referência testado (GAP-037), rootless obrigatório quando disponível, fail-fast sem fallback silencioso | medir podman rootless quando houver ambiente |
+| GAP-034 | Decisão: driver SQLite derived runtime | pág. 19 | 🟡 partial | ADR 007 (Proposed): modernc.org/sqlite puro-Go atrás da port DerivedIndex; cgo só opt-in | medir workload real do primeiro componente SQLite para Promote |
+| GAP-035 | Decisão: isolamento de plugins | pág. 19 | ✅ decided | ADR 008: sem loader in-process; extensões out-of-process via contratos existentes (MCP/ACP/CLI providers); plugin futuro = processo próprio com handshake tipado | YAGNI até uso real |
+| GAP-036 | Decisão: budgets de performance + TTL/memory-pressure | pág. 19 | 🟡 partial | ADR 009 (Proposed): política de baselines medidos agora; thresholds só de distribuições medidas; TTL default 7d + prune-on-start | thresholds após primeiro componente SQLite (ADR 007) |
 | GAP-037 | Prova live do container | HA5 | ✅ done | TestContainerLive PASS 2026-09-14 (docker, alpine:latest, limits + rede negada) | — |
 | GAP-038 | Chaves live de models | HA6 | 🛑 env | adapters prontos + stub-testados | `PRUMO_MODEL_API_KEY`/BASE_URL |
 | GAP-039 | Sends live externos (opencode/codex/cursor) | HA7/HA8 | ✅ done nos limites | spend aprovado: cursor-agent turno real PASS 2026-09-14 (auth própria, 0 API key); opencode Send reach server mas OpenRouter s/ saldo e opencode/* free em 429 (rate limit vendor); codex ChatGPT em usage limit até 19/09 | re-testar opencode/codex quando quota voltar |
@@ -90,7 +90,7 @@ item. Novos gaps entram no fim com o próximo número livre.
 | 22 | compatibility/eval suite | ✅ +kill-test+benches+TS (GAP-012/014/041) |
 | 23 | `prumo agent` headless usable | ✅ |
 | 24 | docs describe reality | ✅ |
-| 25 | no P0 contradictions | ✅ (1 não-P0 registrada: regra de imports do `cmd`) |
+| 25 | no P0 contradictions | ✅ (contradição não-P0 da regra de imports do `cmd` resolvida por ADR 005) |
 
 ## 3. Split gate — estado por item
 
@@ -103,9 +103,10 @@ item. Novos gaps entram no fim com o próximo número livre.
 | HA4 checkpoint/restart/resume | ✅ |
 | HA5 ACI + Sandbox baseline | ✅ c/ limites |
 | headless coding Run end-to-end | ✅ |
-| versioned public protocol | ✅ (IDL + SDK Go; TS: GAP-041) |
-| reconnect/replay | ✅ local + remoto TLS c/ token (GAP-030 nos limites) |
-| **Veredito** | **NOT READY** — GAP-030 + GAP-041 + provas live |
+| versioned public protocol | ✅ (IDL + SDK Go + SDK TS com roundtrip live: GAP-041) |
+| reconnect/replay | ✅ local + remoto TLS c/ token (GAP-030 nos limites: CA corporativa) |
+| ADRs do split | ✅ ADR 005–009 escritos (005/006/008 Accepted; 007/009 Proposed pendentes de medição) |
+| **Veredito** | **READY (condicional)** — falta: PR/merge, re-testar opencode/codex sends quando quota voltar, Promote dos ADRs 007/009 com medição. Provas live fechadas 2026-09-14 (GAP-037/039/010) |
 
 ## 4. Fora deste Goal (não entra na conta)
 
