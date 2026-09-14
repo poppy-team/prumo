@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -268,10 +269,16 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		msg := parseProviderError(resp.Body)
 		resp.Body.Close()
+		if msg == "" {
+			msg = fmt.Sprintf("provider http %d", resp.StatusCode)
+		} else {
+			msg = fmt.Sprintf("provider http %d: %s", resp.StatusCode, msg)
+		}
 		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
 		ch := make(chan agent.ModelEvent, 1)
-		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: fmt.Sprintf("provider http %d", resp.StatusCode), Retryable: retryable}
+		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: msg, Retryable: retryable}
 		close(ch)
 		return ch, nil
 	}
@@ -290,6 +297,10 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 			}
 			line := strings.TrimSpace(sc.Text())
 			if !strings.HasPrefix(line, "data:") {
+				if em := parseProviderError(strings.NewReader(line)); em != "" {
+					ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: "provider error: " + em, Retryable: false}
+					return
+				}
 				continue
 			}
 			data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
@@ -342,4 +353,24 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 		ch <- agent.ModelEvent{Kind: agent.EventCompleted, RequestID: req.RequestID, Finished: true}
 	}()
 	return ch, nil
+}
+
+func parseProviderError(r io.Reader) string {
+	body, _ := io.ReadAll(io.LimitReader(r, 64*1024))
+	if len(body) == 0 {
+		return ""
+	}
+	var envelope struct {
+		Error struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil || envelope.Error.Message == "" {
+		return ""
+	}
+	if envelope.Error.Type != "" {
+		return envelope.Error.Type + ": " + envelope.Error.Message
+	}
+	return envelope.Error.Message
 }
