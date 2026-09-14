@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -92,5 +93,23 @@ func TestConnectorCommands(t *testing.T) {
 		if code := runConnector(false, []string{"uninstall", harness}); code != exitOK {
 			t.Fatalf("uninstall %s expected %d, got %d", harness, exitOK, code)
 		}
+	}
+
+	// 9. Test direct 'prumo install antigravity' and 'prumo uninstall antigravity'
+	if code := runInstall(false, tmpHome, []string{"antigravity"}); code != exitOK {
+		t.Fatalf("direct runInstall antigravity expected %d, got %d", exitOK, code)
+	}
+	geminiContent, err := os.ReadFile("GEMINI.md")
+	if err != nil {
+		t.Fatalf("failed to read generated GEMINI.md: %v", err)
+	}
+	if !strings.Contains(string(geminiContent), "Treat Prumo as an external CLI utility available in PATH ('prumo')") {
+		t.Fatalf("GEMINI.md missing black-box CLI directive, got:\n%s", string(geminiContent))
+	}
+	if code := runConnector(false, []string{"validate", "antigravity"}); code != exitOK {
+		t.Fatalf("validate after direct install expected %d, got %d", exitOK, code)
+	}
+	if code := runUninstall(false, tmpHome, []string{"antigravity"}); code != exitOK {
+		t.Fatalf("direct runUninstall antigravity expected %d, got %d", exitOK, code)
 	}
 }
