@@ -13,9 +13,9 @@ Snapshot: `2026-09-11-d41f18bb65f5`. ACCEPTED != implemented. Truth table:
 | HA2 | Native Agent state machine | ACCEPTED | implemented (reentrant Runner, safe points) |
 | HA3 | ToolGateway + Permission integration | ACCEPTED | implemented (ACI catalog + perm engine wired in Runner) |
 | HA4 | checkpoint/restart/resume + budgets + observability | ACCEPTED | implemented (atomic store, idempotent journal, budget hook, AgentEvent) |
-| HA5 | Coding ACI + Sandbox baseline | ACCEPTED | implemented (ACI catalog + containment + local/worktree + container execution with limits; live-daemon run pending, gVisor future) |
+| HA5 | Coding ACI + Sandbox baseline | ACCEPTED | implemented (ACI catalog + containment + local/worktree + container execution with limits; live-daemon run PROVEN 2026-09-14 via TestContainerLive, gVisor future) |
 | HA6 | 2nd ModelProvider + Gateway/fallback | ACCEPTED | code-complete (openai-compat + anthropic adapters, gateway routing/fallback/CB; live keys environmental) |
-| HA7 | 1st external AgentProvider | ACCEPTED | implemented (OpenCode adapter verified against real 1.18.30 API incl. live lifecycle/resume/usage; Codex invocation shape validated read-only; model-invoking send pending spend approval) |
+| HA7 | 1st external AgentProvider | ACCEPTED | implemented (OpenCode adapter verified against real 1.18.30 API incl. live lifecycle/resume/usage; Codex invocation shape validated read-only; REAL model send verified live via cursor-cli 2026-09-14 with own auth — opencode/codex sends blocked by vendor quota, Prumo boundary verified) |
 | HA8 | Handoff cross-provider dogfood | ACCEPTED | implemented (typed bundle + full fake transfer eval + live opencode attach/abort/delete; model-mediated continuation pending spend approval) |
 | HA9 | Context v2 / Knowledge integration | ACCEPTED | implemented (workspace v2 compilation wired into run+daemon with persisted manifests; per-run knowledge seeding with coverage/readiness; global promotion via delta review) |
 | HA10 | multi-agent/worktrees | ACCEPTED | implemented (concurrent roles, fail-fast cancel, hard budgets, snapshot diffs, least-context review gate, bounded-auto with cap) |

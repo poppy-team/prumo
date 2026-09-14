@@ -25,7 +25,7 @@ item. Novos gaps entram no fim com o próximo número livre.
 | GAP-007 | Regiões gerenciadas + JSON Patch no doc compiler | HD-base, pág. 26 | ✅ done nos limites | regions + RFC6902 + seções Markdown estruturais | AST pleno (listas/tabelas) |
 | GAP-008 | Merge/conflict explícito entre worktrees | HA10 | ✅ done | three-way + deleções propagadas/conflitadas, base intacta | — |
 | GAP-009 | Steering + compaction | HA2, pág. 05 | ✅ done | Inject/op/CLI/SDK + CompactKeep/Budget auto + ACP bridge | — |
-| GAP-010 | ACP Agent Server (expor Runtime a editores) | H11, págs. 06/22 | ✅ done nos limites | servidor ACP v1 (spec oficial) + `agent acp` + bridge testada vs daemon | verificação c/ cliente real (Zed) |
+| GAP-010 | ACP Agent Server (expor Runtime a editores) | H11, págs. 06/22 | ✅ done nos limites | servidor ACP v1 (spec oficial) + `agent acp` + bridge testada vs daemon + cliente ACPClient no extagent (dogfood live Prumo→ACP→Prumo 2026-09-14, 0 API key) | verificação c/ cliente real (Zed) |
 | GAP-011 | MCP client (transporte + integração tools) | H5 | ✅ done nos limites | stdio + HTTP c/ sessão + Adapter + Fanout + `--mcp` | SSE streams futuros |
 | GAP-012 | Benchmarks (packing, compilação, Runner) | relatório | ✅ done | compile ~6.8ms, BM25 ~0.78ms, run ~7µs (i7-3632QM) | — |
 | GAP-013 | Operação do daemon (PID lock, rotação, unit, stop) | daemon | ✅ done | lock/stale-takeover + stop + rotação + prune + unit doc | — |
@@ -47,14 +47,14 @@ item. Novos gaps entram no fim com o próximo número livre.
 | GAP-029 | Schema evolution/migrations (G20) | pág. 27 | ✅ done | schemareg (parse-all + Migrate por versão) | migrações quando houver v2 |
 | GAP-030 | Transporte remoto do daemon (+auth) | split gate | ✅ done nos limites | TCP+TLS + token (subtle), SDK+CLI, teste live local | CA corporativa + hardening de exposição |
 | GAP-031 | Decisão: MCP Go SDK e transports | pág. 19 | ✅ decided | stdlib JSON-RPC registrado em mcp.go (troca sem mudar superfície) | reavaliar com benchmark |
-| GAP-032 | Decisão: subset ACP + matriz oficial | pág. 19 | ✅ decided | subset v1 registrado no código (init/new/load/resume/list/delete/close/prompt/cancel) | registry/mCP-per-session futuros |
+| GAP-032 | Decisão: subset ACP + matriz oficial | pág. 19 | ✅ decided | subset v1 registrado no código (init/new/load/resume/list/delete/close/prompt/cancel); cliente stdio implementado (ACPClient) cobrindo o mesmo subset | registry/mCP-per-session futuros |
 | GAP-033 | Decisão: Docker vs Podman padrão/rootless | pág. 19 | 🛑 decision | detecção honesta pronta | medir + ADR |
 | GAP-034 | Decisão: driver SQLite derived runtime | pág. 19 | 🛑 decision | — | medir + ADR |
 | GAP-035 | Decisão: isolamento de plugins | pág. 19 | 🛑 decision | — | ADR quando houver plugins |
 | GAP-036 | Decisão: budgets de performance + TTL/memory-pressure | pág. 19 | 🛑 decision | — | medir + ADR |
-| GAP-037 | Prova live do container | HA5 | 🛑 env | `TestContainerLive` pronto; daemon inacessível aqui | `PRUMO_LIVE_DOCKER=1` onde houver daemon |
+| GAP-037 | Prova live do container | HA5 | ✅ done | TestContainerLive PASS 2026-09-14 (docker, alpine:latest, limits + rede negada) | — |
 | GAP-038 | Chaves live de models | HA6 | 🛑 env | adapters prontos + stub-testados | `PRUMO_MODEL_API_KEY`/BASE_URL |
-| GAP-039 | Sends live externos (opencode/codex) | HA7/HA8 | 🛑 approval | **gastam sua quota**; tudo ao redor live-verificado | sua aprovação explícita de spend |
+| GAP-039 | Sends live externos (opencode/codex/cursor) | HA7/HA8 | ✅ done nos limites | spend aprovado: cursor-agent turno real PASS 2026-09-14 (auth própria, 0 API key); opencode Send reach server mas OpenRouter s/ saldo e opencode/* free em 429 (rate limit vendor); codex ChatGPT em usage limit até 19/09 | re-testar opencode/codex quando quota voltar |
 | GAP-040 | Modelos locais + thresholds (benchmark-driven) | pág. 19/29 | 🛑 env+decision | No-LLM first-class mantido | hardware + corpus + aprovação |
 | GAP-041 | Bindings não-Go (TS types do IDL) | HA11 | ✅ done nos limites | protocol.d.ts + client.ts c/ roundtrip live vs daemon Go | mais linguagens sob demanda |
 | GAP-042 | Checkpoint retention no daemon store | HA4 | ✅ done | coberto por GAP-020 (mesmo store) | — |
