@@ -64,6 +64,8 @@ type Runner struct {
 	// tokens exceed it (0 = off). Estimate uses the versioned table.
 	CompactBudget int
 	// mu guards Messages and State for cross-goroutine Inject/StateCopy.
+	// Step holds it for the whole phase advance, so no State/Messages write
+	// happens without the lock.
 	mu sync.Mutex
 }
 
@@ -155,9 +157,24 @@ func (r *Runner) emitLocked(kind string, payload map[string]any) {
 	r.Svc.Events(agent.AgentEvent{ID: fmt.Sprintf("ev-%d", len(payload)+1), RunID: r.State.RunID, TurnID: r.State.TurnID, Kind: kind, Payload: payload, CreatedAt: agent.Now()})
 }
 
+// SeedMessages replaces the conversation buffer. Drivers seed the initial
+// goal before the loop starts; the lock keeps setup safe against a Serve
+// loop that is already accepting steer/status ops.
+func (r *Runner) SeedMessages(msgs []agent.Message) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.Messages = append([]agent.Message{}, msgs...)
+}
+
 // Step advances exactly one Phase. Callers loop until Complete/Failed,
-// checkpointing between steps to survive process restarts.
+// checkpointing between steps to survive process restarts. The whole
+// advance runs under mu: Inject/StateCopy may enqueue steering and snapshot
+// state while the loop runs, so the phase machine never mutates State or
+// Messages lock-free. This cannot deadlock with the daemon: drivers acquire
+// runner.mu only and never hold their own locks while blocking on it.
 func (r *Runner) Step(ctx context.Context) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	switch r.State.Phase {
 	case agent.PhasePrepare:
 		r.State.Phase = agent.PhaseCompileContext
@@ -173,7 +190,6 @@ func (r *Runner) Step(ctx context.Context) error {
 		r.State.ContextManifestID = id
 		r.State.Phase = agent.PhaseRequestModel
 	case agent.PhaseRequestModel:
-		r.mu.Lock()
 		r.maybeCompactLocked()
 		specs := []agent.ToolSpec{}
 		if r.Svc.ToolSpecs != nil {
@@ -185,7 +201,6 @@ func (r *Runner) Step(ctx context.Context) error {
 			Messages: append([]agent.Message{}, r.Messages...),
 			Tools:    specs,
 		}
-		r.mu.Unlock()
 		ch, err := r.Svc.Models.Stream(ctx, req)
 		if err != nil {
 			r.State.Phase = agent.PhaseFailed

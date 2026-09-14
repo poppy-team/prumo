@@ -306,7 +306,7 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 	s.mu.Unlock()
 	runner.MaxTurns = maxTurns
 	runner.Svc.ConsumeBudget = tracker.ConsumeUsage
-	runner.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: goal, CreatedAt: agent.Now()}}
+	runner.SeedMessages([]agent.Message{{ID: "m1", Role: agent.RoleUser, Content: goal, CreatedAt: agent.Now()}})
 	kstore := knowledge.New()
 	knowledge.SeedRequirement(kstore, runID, goal)
 	err := runner.RunUntilDone(ctx)
@@ -318,6 +318,9 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 		}
 	} else if runner.State.Phase == agent.PhaseYield {
 		status = "yielded"
+		if ctx.Err() != nil {
+			status = "cancelled"
+		}
 	}
 	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(runner.State.Phase), StopReason: runner.State.StopReason})
 	knowledge.SeedEvidence(kstore, runID, string(runner.State.Phase), runner.State.StopReason, runID+"-latest")
