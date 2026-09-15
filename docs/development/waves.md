@@ -713,16 +713,25 @@ green while no component inventory existed. Decision: **ADR 012**.
 | W22.9 | `prumo ui map\|verify\|impact\|config` |
 | W22.10 | Dogfood: this repository's own map, with `not-implemented` used for the approval surface that GAP-046 blocks |
 | W22.11 | Bind the four contracts to the artifact, replacing four waivers |
-| W22.12 | Conformance gate: schema enums equal the Go vocabularies, and the repository's own map is valid and its projections fresh |
+| W22.12 | Conformance gate: schema enums equal the Go vocabularies, and the repository's own map is valid; projection freshness is checked by `prumo ui verify` where the runtime artifacts exist, and hermetically by `internal/uimap` on a temporary root |
 
 **Entry**: W5 complete (contracts and schemas), W9 complete (tokens), H10 Fase A
 (the `tui` profile composed, so the obligations are actually evaluated).
 **Exit**: `prumo ui verify` passes on this repository, the four contracts are
 bound, and the projections are fresh.
 
+**Correction 2026-09-15**: the first W22.12 gate asserted projection freshness
+against `.prumo/runtime/`, which is gitignored and never committed. It passed
+locally only because the artifacts were present from a `--write` run and failed
+on a clean checkout — a gate green for an accident of the working tree. CI now
+decides what it can (the map compiles clean; derived artifacts are rooted outside
+`docs/`), the digest round trip is tested hermetically in `internal/uimap`, and
+freshness stays a `prumo ui verify` check on machines that hold the artifacts.
+
 **Status**: ✅ complete 2026-09-15 — 24 elements, 10 typed interconnections, 216
 derived symbols; the four waivers are replaced by bindings; `ui.component-contracts`
-no longer says "owed by the first layout increment".
+no longer says "owed by the first layout increment". Landed in PR #68, including
+the W22.12 correction above.
 
 **Cost, stated**: the map is one more artifact to keep current. It is enforced
 rather than trusted — changing the interface without changing the map fails
