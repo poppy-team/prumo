@@ -165,7 +165,7 @@ func TestRequiredSchemaSetExists(t *testing.T) {
 	required := []string{
 		"knowledge-unit", "knowledge-claim", "knowledge-manifest",
 		"context-policy", "context-manifest",
-		"ui-component-contract", "ui-state-matrix", "design-token-set",
+		"ui-component-contract", "ui-state-matrix", "ui-interface-map", "design-token-set",
 		"translation-record",
 		"gauntlet-policy", "gauntlet-run",
 		"documentation-spec", "documentation-plan", "documentation-unit",

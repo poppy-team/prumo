@@ -1,0 +1,88 @@
+{
+  "id": "M001",
+  "kind": "interface-map",
+  "title": "A complete map passes and its projections carry the position and the implementation trace",
+  "vocabulary": {
+    "states": [
+      "default",
+      "focus"
+    ],
+    "tokens": [
+      "token:color.text"
+    ]
+  },
+  "symbols": [
+    "shell.Model",
+    "shell.List",
+    "shell.Empty"
+  ],
+  "map": {
+    "id": "ui:eval-surface",
+    "version": 1,
+    "surface": "Eval surface",
+    "platforms": [
+      "tui"
+    ],
+    "states_source": "docs/ui-ux/state-matrix.json",
+    "tokens_source": "docs/ui-ux/design-tokens.json",
+    "derivation": {
+      "sources": [
+        "shell/**/*.go"
+      ],
+      "mode": "verify-only"
+    },
+    "tree": [
+      {
+        "id": "node:shell",
+        "kind": "shell",
+        "slot": {
+          "region": "root",
+          "order": 0,
+          "align": "stretch"
+        },
+        "implementation": {
+          "symbol": "shell.Model",
+          "status": "implemented"
+        },
+        "children": [
+          {
+            "id": "node:list",
+            "kind": "list",
+            "slot": {
+              "region": "body",
+              "order": 0,
+              "align": "stretch"
+            },
+            "label": "Ranked commands",
+            "implementation": {
+              "symbol": "shell.List",
+              "status": "implemented"
+            }
+          },
+          {
+            "id": "node:empty",
+            "kind": "text",
+            "slot": {
+              "region": "body",
+              "order": 1,
+              "align": "stretch"
+            },
+            "label": "nothing matches",
+            "implementation": {
+              "symbol": "shell.Empty",
+              "status": "implemented"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expect_ok": true,
+  "expect_findings": [],
+  "expect_projection_contains": [
+    "node:shell** · `shell` · root/0 stretch",
+    "Ranked commands** · `list` · body/0 stretch",
+    "`shell.Model`",
+    "`shell.List`"
+  ]
+}

@@ -36,6 +36,8 @@ jobs:
         run: /tmp/prumo docs verify --path . --strict --json
       - name: Terminology gate
         run: /tmp/prumo docs glossary --path . --json
+      - name: Interface map gate
+        run: /tmp/prumo ui verify --path . --json
       - name: Documentation version policy gate
         run: /tmp/prumo docs version --path . --json
       - name: Documentation gauntlet (deterministic rounds)

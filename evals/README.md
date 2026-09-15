@@ -16,6 +16,7 @@ satisfied by rejecting everything.
 | Context disclosure | `evals/context/` | `TestContextEvalCorpus` | L0–L4 disclosure levels, canonical-preference dedup, budget exclusion with a reason, sufficiency |
 | UI specification | `evals/ui-specification/` | `TestUISpecificationEvalCorpus` | contract evidence, profile coverage, state vocabulary, duplicate ids, token/theme gaps, contrast, accessibility exception paths |
 | Reconstruction | `evals/reconstruction/` | `TestReconstructionEvalCorpus` | byte-exact Markdown projection, route stability, agent surfaces never published as human pages, historical records excluded from AI retrieval |
+| Interface map | `evals/interface-map/` | `TestInterfaceMapEvalCorpus` | mandatory position, conditional alternatives, state/token closure, symbol resolution, declared absence, edge endpoints, derivation scope |
 
 ## Case counts
 
@@ -23,6 +24,7 @@ satisfied by rejecting everything.
 - `evals/context/` — C001–C010.
 - `evals/ui-specification/` — U001–U009 (10 files).
 - `evals/reconstruction/` — R001–R004.
+- `evals/interface-map/` — M001–M013 (several with controls).
 
 ## Adding a case
 

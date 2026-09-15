@@ -1,0 +1,99 @@
+{
+  "id": "M012",
+  "kind": "interface-map",
+  "title": "fill-gaps lists an undeclared element in its own region, marked as derived",
+  "vocabulary": {
+    "states": [
+      "default",
+      "focus"
+    ],
+    "tokens": [
+      "token:color.text"
+    ]
+  },
+  "symbols": [
+    "shell.Model",
+    "shell.List",
+    "shell.Empty"
+  ],
+  "map": {
+    "id": "ui:eval-surface",
+    "version": 1,
+    "surface": "Eval surface",
+    "platforms": [
+      "tui"
+    ],
+    "states_source": "docs/ui-ux/state-matrix.json",
+    "tokens_source": "docs/ui-ux/design-tokens.json",
+    "derivation": {
+      "sources": [
+        "shell/**/*.go"
+      ],
+      "mode": "verify-only"
+    },
+    "tree": [
+      {
+        "id": "node:shell",
+        "kind": "shell",
+        "slot": {
+          "region": "root",
+          "order": 0,
+          "align": "stretch"
+        },
+        "implementation": {
+          "symbol": "shell.Model",
+          "status": "implemented"
+        },
+        "children": [
+          {
+            "id": "node:list",
+            "kind": "list",
+            "slot": {
+              "region": "body",
+              "order": 0,
+              "align": "stretch"
+            },
+            "label": "Ranked commands",
+            "implementation": {
+              "symbol": "shell.List",
+              "status": "implemented"
+            }
+          },
+          {
+            "id": "node:empty",
+            "kind": "text",
+            "slot": {
+              "region": "body",
+              "order": 1,
+              "align": "stretch"
+            },
+            "label": "nothing matches",
+            "implementation": {
+              "symbol": "shell.Empty",
+              "status": "implemented"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expect_ok": true,
+  "expect_findings": [],
+  "derivation": {
+    "mode": "fill-gaps",
+    "sources": [
+      "shell/**/*.go"
+    ],
+    "elements": [
+      "shell.NewThingView"
+    ]
+  },
+  "expect_undeclared": [
+    "shell.NewThingView"
+  ],
+  "expect_roots": 1,
+  "expect_projection_contains": [
+    "node:derived-unmapped",
+    "shell.NewThingView"
+  ]
+}

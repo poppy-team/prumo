@@ -1174,11 +1174,125 @@
   },
   {
     "contract_id": "ui.component-contracts",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the first layout increment. No component inventory exists; the spike names panes and a status bar as scope, not as contracted components (docs/product/tui-spike-h10.md, 'In scope')."
+    "requirement_map": {
+      "component inventory": "REQ-UICOMPONENTS-INVENTORY",
+      "anatomy": "REQ-UICOMPONENTS-ANATOMY",
+      "component states": "REQ-UICOMPONENTS-STATES",
+      "component interactions": "REQ-UICOMPONENTS-INTERACTIONS",
+      "implementation trace": "REQ-UICOMPONENTS-TRACE"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UICOMPONENTS-INVENTORY",
+        "statement": "`docs/ui-ux/interface-map.json` is the component inventory: every element of the shell appears exactly once in one composition tree, each with a kind from a closed vocabulary, a label, and a semantic position. `prumo ui verify` refuses an element without a position rather than defaulting one, so the inventory cannot be partial by omission.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UICOMPONENTS-INVENTORY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UICOMPONENTS-INVENTORY",
+            "type": "canonical-document",
+            "target": "CLAIM-UICOMPONENTS-INVENTORY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UICOMPONENTS-ANATOMY",
+        "statement": "An element's anatomy is its subtree in the same tree: the palette contains its ranked list, which contains a selectable row, the empty-state message and the query input. Anatomy and composition are one fact rather than two descriptions that can disagree, and every element that renders text carries the label a user actually reads.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UICOMPONENTS-ANATOMY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UICOMPONENTS-ANATOMY",
+            "type": "canonical-document",
+            "target": "CLAIM-UICOMPONENTS-ANATOMY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UICOMPONENTS-STATES",
+        "statement": "Every element declares the states it can be in, drawn from `docs/ui-ux/state-matrix.json`; the validator rejects a state the matrix marks not applicable, so a component cannot claim a state the surface never decided to support.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UICOMPONENTS-STATES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UICOMPONENTS-STATES",
+            "type": "canonical-document",
+            "target": "CLAIM-UICOMPONENTS-STATES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UICOMPONENTS-INTERACTIONS",
+        "statement": "Two kinds of interaction are declared separately because a tree cannot hold both: the input that operates each element (`inputs`), and the typed interconnections between elements (`focus`, `data`, `event`, `overlay`, `navigates-to`, `blocks`) with the condition under which each is live.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UICOMPONENTS-INTERACTIONS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UICOMPONENTS-INTERACTIONS",
+            "type": "canonical-document",
+            "target": "CLAIM-UICOMPONENTS-INTERACTIONS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UICOMPONENTS-TRACE",
+        "statement": "Every element a user operates or sees names an implementation symbol, and `prumo ui verify` resolves each one against the sources the map declares (`tui/**/*.go`); an element that is described but not built must instead declare `not-implemented` with a reason. The map therefore cannot describe an interface that does not exist, which is the state this obligation spent its life in.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UICOMPONENTS-TRACE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UICOMPONENTS-TRACE",
+            "type": "canonical-document",
+            "target": "CLAIM-UICOMPONENTS-TRACE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.design-tokens",
@@ -1293,11 +1407,103 @@
   },
   {
     "contract_id": "ui.information-architecture",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the first layout increment. The spike deliberately ships contrast-over-boxes panes without a navigation hierarchy (docs/product/tui-spike-h10.md, 'In scope')."
+    "requirement_map": {
+      "navigation model": "REQ-UIIA-NAVIGATION",
+      "surface hierarchy": "REQ-UIIA-HIERARCHY",
+      "naming conventions": "REQ-UIIA-NAMING",
+      "task findability": "REQ-UIIA-FINDABILITY"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UIIA-NAVIGATION",
+        "statement": "`docs/ui-ux/interface-map.json` declares the navigation model as typed edges: the palette reaches every other stage, and each focus edge carries the condition under which it fires. `docs/ui-ux/interaction.md` holds the keyboard map, and the two are bound to the same surface.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIIA-NAVIGATION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIIA-NAVIGATION",
+            "type": "canonical-document",
+            "target": "CLAIM-UIIA-NAVIGATION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIIA-HIERARCHY",
+        "statement": "The composition tree is the surface hierarchy: one shell root, then regions, panes, lists and elements. It is a tree by construction and by rule — a second parent is an error, and anything that is not hierarchy (a focus cycle, an overlay, a data flow between distant branches) must be declared as an edge instead of being forced into the tree.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIIA-HIERARCHY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIIA-HIERARCHY",
+            "type": "canonical-document",
+            "target": "CLAIM-UIIA-HIERARCHY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIIA-NAMING",
+        "statement": "Element ids are namespaced `node:<name>` and kinds come from a closed vocabulary, so an id and a kind always mean the same thing to a reader, a renderer and an agent. Labels are the user-visible text and are required for every kind that renders any.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIIA-NAMING"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIIA-NAMING",
+            "type": "canonical-document",
+            "target": "CLAIM-UIIA-NAMING",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIIA-FINDABILITY",
+        "statement": "Every action is reachable from the palette, and the map records how: each stage declares the inputs that operate it and the focus edges that reach it. An element that could only be reached by an unlisted route would be visible as a stage with no inbound focus edge.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIIA-FINDABILITY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIIA-FINDABILITY",
+            "type": "canonical-document",
+            "target": "CLAIM-UIIA-FINDABILITY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.interaction",
@@ -1426,11 +1632,103 @@
   },
   {
     "contract_id": "ui.layout",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the first layout increment. The spike fixes a focus model and semantic tokens but not size classes or overflow behaviour."
+    "requirement_map": {
+      "layout model": "REQ-UILAYOUT-MODEL",
+      "responsive behavior": "REQ-UILAYOUT-RESPONSIVE",
+      "size classes": "REQ-UILAYOUT-SIZECLASSES",
+      "overflow handling": "REQ-UILAYOUT-OVERFLOW"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UILAYOUT-MODEL",
+        "statement": "Position is semantic rather than pixel-based, because a terminal has no stable geometry under resize: every element declares a region, an order within it, an alignment, and optionally a weight and a stacking direction. Two elements may share a position only by declaring the condition under which each is present, which is how the map distinguishes alternatives from neighbours.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UILAYOUT-MODEL"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UILAYOUT-MODEL",
+            "type": "canonical-document",
+            "target": "CLAIM-UILAYOUT-MODEL",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UILAYOUT-RESPONSIVE",
+        "statement": "Every element declares whether it exists in each terminal size class, so a deliberate reflow is distinguishable from a missing element. `docs/ui-ux/interaction.md` holds the behaviour per class; the map holds which elements survive it.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UILAYOUT-RESPONSIVE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UILAYOUT-RESPONSIVE",
+            "type": "canonical-document",
+            "target": "CLAIM-UILAYOUT-RESPONSIVE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UILAYOUT-SIZECLASSES",
+        "statement": "The size-class vocabulary is compact, standard and wide, matching `docs/ui-ux/interaction.md`, and the validator rejects any other value so a renderer never meets an unknown class.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UILAYOUT-SIZECLASSES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UILAYOUT-SIZECLASSES",
+            "type": "canonical-document",
+            "target": "CLAIM-UILAYOUT-SIZECLASSES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UILAYOUT-OVERFLOW",
+        "statement": "The timeline is the one unbounded surface, and it is bounded explicitly: a declared capacity, a deterministic drop of the oldest rows, continuous numbering so aged-out rows stay visible as absent rather than silently renumbered, and a statusline that reports how many rows left the window.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UILAYOUT-OVERFLOW"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UILAYOUT-OVERFLOW",
+            "type": "canonical-document",
+            "target": "CLAIM-UILAYOUT-OVERFLOW",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.localization",
@@ -1466,11 +1764,81 @@
   },
   {
     "contract_id": "ui.screen-inventory",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the first layout increment; the spike's surfaces are listed as in-scope items, not yet as a screen inventory with entry points (docs/product/tui-spike-h10.md, 'In scope')."
+    "requirement_map": {
+      "screen inventory": "REQ-UISCREEN-INVENTORY",
+      "screen purpose": "REQ-UISCREEN-PURPOSE",
+      "entry points": "REQ-UISCREEN-ENTRY"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UISCREEN-INVENTORY",
+        "statement": "`docs/ui-ux/interface-map.json` inventories the surfaces: the four stages (command palette, goal prompt, run panel, evidence panel) under one shell, plus the persistent statusline and the approval prompt recorded as described-but-not-built. Mutually exclusive stages declare a presence condition, so the map states that they are alternatives rather than four panes stacked.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISCREEN-INVENTORY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISCREEN-INVENTORY",
+            "type": "canonical-document",
+            "target": "CLAIM-UISCREEN-INVENTORY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UISCREEN-PURPOSE",
+        "statement": "Every stage declares both its `role` (what it is in the interface's own terms) and its `intent` (the user need it serves), so a reviewer can tell a screen that exists for a reason from one that exists because the layout had room.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISCREEN-PURPOSE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISCREEN-PURPOSE",
+            "type": "canonical-document",
+            "target": "CLAIM-UISCREEN-PURPOSE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UISCREEN-ENTRY",
+        "statement": "Entry points are declared as focus edges with conditions: the palette is the entry point, the run-goal command opens the goal prompt, an accepted goal starts the run, a terminal status moves to the evidence panel, and `esc` returns to the palette from anywhere.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISCREEN-ENTRY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISCREEN-ENTRY",
+            "type": "canonical-document",
+            "target": "CLAIM-UISCREEN-ENTRY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.state-model",

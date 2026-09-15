@@ -672,6 +672,16 @@
     }
    ],
    "semantic_role": "schema contract for typed traceability graph"
+  },
+  {
+   "local_path": "docs/adr/012-interface-map-artifact-and-projections.md",
+   "notion_pages": [],
+   "semantic_role": "ADR defining the interface map as a canonical artifact with declared+derived fill, semantic slots with optional per-platform geometry, a composition tree plus labelled interconnection edges, and per-audience projections driven by prumo.json `ui` configuration"
+  },
+  {
+   "local_path": "docs/ui-ux/interface-map.json",
+   "notion_pages": [],
+   "semantic_role": "canonical interface map for the Prumo TUI (dogfood): composition tree, element positions, labelled interconnections and implementation trace; `ui.component-contracts`, `ui.information-architecture`, `ui.screen-inventory` and `ui.layout` bind to it"
   }
  ]
 }
