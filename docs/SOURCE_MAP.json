@@ -528,6 +528,30 @@
       ],
       "semantic_role": "implementation truth table",
       "snapshot": "2026-09-11-d41f18bb65f5"
+    },
+    {
+      "local_path": "docs/development/waves.md",
+      "notion_pages": [
+        {
+          "title": "14-09_00h33-deep-research-report.md",
+          "role": "local deep research"
+        },
+        {
+          "title": "PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md",
+          "role": "documentation control plane deep audit"
+        }
+      ],
+      "semantic_role": "implementation waves (W0-W21) & gap register mapping"
+    },
+    {
+      "local_path": "docs/product/tui-spike-h10.md",
+      "notion_pages": [
+        {
+          "title": "Living Book pages 13, 14, 18, 21, 23",
+          "role": "source"
+        }
+      ],
+      "semantic_role": "tui spike"
     }
   ]
 }

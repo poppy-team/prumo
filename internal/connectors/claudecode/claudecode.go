@@ -72,6 +72,7 @@ This project uses Prumo v0.5.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.
+- Treat Prumo as an external CLI utility available in PATH ('prumo'). Run 'prumo <command>' or 'prumo --help' for project operations and lifecycle. Do not inspect or search for internal framework development source code.
 - Do not scan or read the entire repository by default.
 - Stop when verification evidence is sufficient.
 `

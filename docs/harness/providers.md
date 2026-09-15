@@ -69,10 +69,29 @@ fake             model  available   builtin      deterministic double
 openai-compat    model  unconfigured             needs PRUMO_MODEL_BASE_URL
 anthropic        model  unconfigured             needs PRUMO_MODEL_API_KEY
 opencode-cli     agent  available   1.18.30      binary present
-opencode-server  agent  probed live              lifecycle verified 2026-09-11 vs 1.18.30 (send pending spend approval)
-codex-cli        agent  available   0.153.4      binary + credentials present; live exec pending spend approval
+opencode-server  agent  probed live              lifecycle+resume+usage+handoff verified 2026-09-11/14 vs 1.18.30
+codex-cli        agent  available   0.154.0      binary + credentials present; ChatGPT usage limit 2026-09-14 (retry after 19/09)
+cursor-cli       agent  available   2026.07.23   binary + login present; REAL model turn verified 2026-09-14 (own auth, no API key)
+acp              agent  spawn-based              any ACP v1 agent binary via ACPClient (stdio JSON-RPC); dogfood live vs `agent acp` 2026-09-14
 acp-generic      agent  unconfigured             needs PRUMO_ACP_URL
 ```
+
+Live send proofs (2026-09-14, user-approved spend):
+
+- `cursor-agent -p --output-format json --trust`: real turn completed
+  (`TestCursorLiveSend`), adapter `CursorCLI` in `extagent`.
+- ACP client dogfood (`TestACPLiveDogfood`, `PRUMO_LIVE_ACP=1`): Prumo
+  spawns `agent acp` (real binary) against a live daemon backed by the fake
+  provider — full external loop with zero API keys: session/new →
+  session/prompt → streamed update → end_turn → session/delete.
+- `opencode serve` + `OpenCodeServer.Send`: request reached the server; the
+  default model (openrouter free tier) failed with provider-side wallet/rate
+  errors — Prumo boundary performed correctly (session, message, typed
+  provider error surfaced).
+- `codex exec --json`: invocation shape correct; ChatGPT account hit usage
+  limit (resets 2026-09-19).
+- Container live proof: `TestContainerLive` PASS (docker, `--network none`,
+  memory/CPU/PID limits).
 
 Live session interop against those CLIs/servers is the next matrix step;
 the adapters + probe are the conformance baseline it will run against.

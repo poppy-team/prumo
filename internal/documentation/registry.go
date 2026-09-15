@@ -41,7 +41,24 @@ type Registry struct {
 
 func LoadRegistry(root string) (Registry, error) {
 	registry := Registry{Contracts: map[string]Contract{}, Profiles: map[string]Profile{}}
-	contractsData, err := os.ReadFile(filepath.Join(root, "docs", "contracts", "builtin.json"))
+	contractsPath := filepath.Join(root, "docs", "contracts", "builtin.json")
+	profilesPath := filepath.Join(root, "docs", "profiles", "builtin.json")
+	if _, err := os.Stat(contractsPath); err != nil {
+		if envRoot := os.Getenv("PRUMO_REPO_ROOT"); envRoot != "" {
+			cand := filepath.Join(envRoot, "docs", "contracts", "builtin.json")
+			if _, err := os.Stat(cand); err == nil {
+				contractsPath = cand
+				profilesPath = filepath.Join(envRoot, "docs", "profiles", "builtin.json")
+			}
+		} else if home, err := os.UserHomeDir(); err == nil {
+			cand := filepath.Join(home, "Documentos", "Projetos", "prumo", "docs", "contracts", "builtin.json")
+			if _, err := os.Stat(cand); err == nil {
+				contractsPath = cand
+				profilesPath = filepath.Join(home, "Documentos", "Projetos", "prumo", "docs", "profiles", "builtin.json")
+			}
+		}
+	}
+	contractsData, err := os.ReadFile(contractsPath)
 	if err != nil {
 		return registry, err
 	}
@@ -58,7 +75,7 @@ func LoadRegistry(root string) (Registry, error) {
 		}
 		registry.Contracts[contract.ID] = contract
 	}
-	profilesData, err := os.ReadFile(filepath.Join(root, "docs", "profiles", "builtin.json"))
+	profilesData, err := os.ReadFile(profilesPath)
 	if err != nil {
 		return registry, err
 	}

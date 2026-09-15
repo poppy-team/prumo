@@ -4,6 +4,14 @@
 
 Prumo evolves from a Git-native execution-ready protocol into a **complete project engineering layer** assisted by humans and agents. It integrates planning, deep living documentation, execution, governance, episodic and experiential memory, traceability, validation, handoff, and adapter portability across harnesses without ceding project authority to any single harness.
 
+### Problem and Users
+
+Software engineering teams, open-source maintainers, and autonomous coding agents suffer from fragmented documentation, context rot, lost architectural decisions between sessions, and ungrounded execution. Prumo serves engineers and agents who require deterministic project governance, verifiable implementation readiness, and durable memory that outlives transient chat sessions.
+
+### Product Outcome
+
+The primary product outcome is a self-governing, knowledge-aware engineering harness: an executable control plane where intent compiles deterministically into verified code, evidence, living documentation, and clean handoffs with zero vendor lock-in.
+
 ## Core Capabilities (v0.4)
 
 | Capability | Description |

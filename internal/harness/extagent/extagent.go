@@ -401,6 +401,90 @@ func (c *CodexCLI) Approve(_ context.Context, _, _ string, _ bool) error { retur
 func (c *CodexCLI) Cancel(_ context.Context, _ string) error             { return nil }
 func (c *CodexCLI) Close(_ context.Context, _ string) error              { return nil }
 
+// ---- Cursor CLI adapter (print mode) ----
+
+// CursorCLI drives `cursor-agent -p` as an external runtime. Authentication
+// is the user's Cursor login handled by the binary; no API key crosses the
+// Prumo boundary. The turn is process-scoped: the CLI owns its model loop
+// and Prumo observes completion via exit status + JSON result envelope.
+type CursorCLI struct {
+	Bin    string
+	Trust  bool
+	Runner func(ctx context.Context, bin string, args ...string) (string, error) // injectable for tests
+}
+
+func NewCursorCLI(bin string) *CursorCLI {
+	if bin == "" {
+		bin = "cursor-agent"
+	}
+	return &CursorCLI{Bin: bin, Trust: true}
+}
+
+func (c *CursorCLI) Name() string { return "cursor" }
+
+func (c *CursorCLI) Capabilities(_ context.Context) ([]string, error) {
+	return []string{"session"}, nil
+}
+
+func (c *CursorCLI) CreateSession(_ context.Context, runID string) (Session, error) {
+	return Session{ID: "cursor-" + runID, Provider: "cursor", Status: "open", CreatedAt: time.Now().UTC().Format(time.RFC3339Nano)}, nil
+}
+
+func (c *CursorCLI) run(ctx context.Context, args ...string) (string, error) {
+	if c.Runner != nil {
+		return c.Runner(ctx, c.Bin, args...)
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, c.Bin, args...).CombinedOutput()
+	return string(out), err
+}
+
+// Send performs one turn via print mode. Trust is explicit: the operator
+// approved this workspace for headless execution (non-interactive runs
+// refuse without it, so it is passed deliberately, never silently).
+func (c *CursorCLI) Send(ctx context.Context, sessionID, message string) error {
+	args := []string{"-p", message, "--output-format", "json"}
+	if c.Trust {
+		args = append(args, "--trust")
+	}
+	out, err := c.run(ctx, args...)
+	if err != nil {
+		return fmt.Errorf("cursor exec failed: %s: %w", strings.TrimSpace(out), err)
+	}
+	var result struct {
+		Result  string `json:"result"`
+		IsError bool   `json:"is_error"`
+	}
+	if jsonErr := json.Unmarshal([]byte(lastJSONLine(out)), &result); jsonErr == nil && result.IsError {
+		return fmt.Errorf("cursor turn failed: %s", strings.TrimSpace(result.Result))
+	}
+	return nil
+}
+
+// lastJSONLine returns the last non-empty line (JSON envelopes arrive on
+// stdout while warnings may precede them).
+func lastJSONLine(s string) string {
+	s = strings.TrimRight(s, "\r\n \t")
+	if i := strings.LastIndex(s, "\n"); i >= 0 {
+		s = s[i+1:]
+	}
+	return strings.TrimSpace(s)
+}
+
+func (c *CursorCLI) Events(_ context.Context, sessionID string) (<-chan agent.AgentEvent, error) {
+	ch := make(chan agent.AgentEvent, 8)
+	go func() {
+		defer close(ch)
+		ch <- agent.AgentEvent{ID: "ev-cursor-open", RunID: sessionID, Kind: "external.session.open", CreatedAt: time.Now().UTC().Format(time.RFC3339Nano)}
+	}()
+	return ch, nil
+}
+
+func (c *CursorCLI) Approve(_ context.Context, _, _ string, _ bool) error { return nil }
+func (c *CursorCLI) Cancel(_ context.Context, _ string) error             { return nil }
+func (c *CursorCLI) Close(_ context.Context, _ string) error              { return nil }
+
 // ---- FakeAgentProvider for conformance without external binaries ----
 
 type FakeAgent struct{ Sessions int }

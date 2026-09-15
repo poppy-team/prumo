@@ -1,6 +1,6 @@
 # Prumo v0.4 Scope
 
-## In Scope
+## In-Scope Capabilities
 
 ### Core Runtime Migration
 - Go Core & CLI replacing Python runtime
@@ -110,3 +110,24 @@ Python v0.3 remains as **executable oracle** during migration:
 - Zero new v0.4 features in Python
 - All Go development validated against Python conformance
 - Python deprecated only after 100% critical contract parity
+
+## v0.5 Addendum — Pre-TUI Foundation Waves
+
+The deep research analysis (2026-09-14) identified structural gaps between
+the harness headless completion and the TUI spike. These are tracked as
+implementation waves W0–W14 in `docs/development/waves.md`.
+
+Key additions to scope:
+
+- **KnowledgeUnit & stable identity** — atom of retrievable knowledge with IDs independent of paths.
+- **ContextManifest** — every compiled context is explainable and replayable.
+- **UI contract decomposition** — monolithic `ui.documentation` replaced by 13 specialized contracts.
+- **Locale foundation** — English canonical, TranslationRecord lifecycle.
+- **Gauntlet schema** — quality iteration policy (mode: off default).
+- **Schema/runtime conformance gate** — automated drift detection.
+- **Semantic design tokens** — three-tier system (primitive → semantic → component).
+- **Accessibility contracts** — surface-specific (TUI, desktop, web, CLI).
+- **Behavioral eval corpus** — evaluation infrastructure before automated loops.
+
+These items are in scope for the current development cycle and gate the H10
+TUI spike start.

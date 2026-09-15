@@ -183,6 +183,7 @@ export function onSessionStart(sessionID: string, projectRoot: string): { contex
     contextPrompt: [
       '[Prumo v0.5] Native OpenCode Harness Active',
       'Follow Lean Progressive Context: smallest sufficient context, pointer over payload.',
+      'Treat Prumo as an external CLI utility available in PATH (\'prumo\'). Use \'prumo <command>\' for project operations. Do not inspect internal framework development source code.',
       'Active Entrypoint:',
       entrypointText
     ].join('\n\n')
@@ -224,17 +225,18 @@ You are the primary orchestrator of Prumo within OpenCode.
 
 ## Core Directives
 1. **Lean Progressive Context (LPC/PCA)**: Smallest sufficient context, progressive expansion, pointer over payload. Never preload the whole repository.
-2. **Authority Hierarchy**:
+2. **Prumo CLI as Black Box**: Treat Prumo as an external CLI utility available in PATH ('prumo'). Run 'prumo <command>' or 'prumo --help' for project operations and lifecycle. Do not search for or inspect framework development source code.
+3. **Authority Hierarchy**:
    1. Canonical repository specs and schemas
    2. Accepted local engineering documentation
    3. Notion Living Book
    4. Agent inference
-3. **Goal Discipline**: Work strictly inside locked Goals. Verification criteria and evidence determine completion.
-4. **Delegation**: Delegate to specialized subagents:
+4. **Goal Discipline**: Work strictly inside locked Goals. Verification criteria and evidence determine completion.
+5. **Delegation**: Delegate to specialized subagents:
    - architect: architecture, schemas, and ADRs
    - executor: pragmatic implementation and code changes
    - verifier: test suites, linters, and quality gates
-5. **Zero-Transcript Experience**: Record structured evidence and session handoffs without conversational bloat.
+6. **Zero-Transcript Experience**: Record structured evidence and session handoffs without conversational bloat.
 `
 	prumoAgentPath := filepath.Join(opencodeDir, "agents", "prumo.md")
 	if err := writeText(prumoAgentPath, prumoAgent); err != nil {

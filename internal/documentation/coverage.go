@@ -152,26 +152,63 @@ func evaluate(root string, c Contract, b Binding) Coverage {
 	}
 	content = strings.ToLower(content)
 	for _, k := range c.RequiredKnowledge {
-		found := false
-		for _, word := range strings.Fields(strings.ToLower(k)) {
-			if strings.Contains(content, strings.Trim(word, ".,:;()")) {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !matchesKnowledgeRequirement(content, k) {
 			coverage.MissingKnowledge = append(coverage.MissingKnowledge, k)
 		}
 	}
 	if len(coverage.MissingKnowledge) == 0 {
 		coverage.State = ImplementationReady
-		if len(c.EvidenceRequirements) > 0 && len(b.Evidence) >= len(c.EvidenceRequirements) {
-			coverage.State = Verified
+		if len(c.EvidenceRequirements) > 0 {
+			nonEmpty := 0
+			seen := make(map[string]bool)
+			for _, ev := range b.Evidence {
+				trimmed := strings.TrimSpace(ev)
+				if trimmed != "" && !seen[trimmed] {
+					seen[trimmed] = true
+					nonEmpty++
+				}
+			}
+			if nonEmpty >= len(c.EvidenceRequirements) {
+				coverage.State = Verified
+			}
 		}
 	} else {
 		coverage.State = Partial
 	}
 	return coverage
+}
+
+var defaultStopwords = map[string]bool{
+	"and": true, "or": true, "in": true, "of": true,
+	"to": true, "for": true, "with": true, "a": true,
+	"an": true, "the": true, "by": true, "on": true,
+}
+
+func matchesKnowledgeRequirement(content, req string) bool {
+	reqLower := strings.ToLower(strings.TrimSpace(req))
+	if reqLower == "" {
+		return true
+	}
+	if strings.Contains(content, reqLower) {
+		return true
+	}
+	words := strings.Fields(reqLower)
+	keyWords := make([]string, 0, len(words))
+	for _, w := range words {
+		cleaned := strings.Trim(w, ".,:;()[]\"'/-")
+		if cleaned != "" && !defaultStopwords[cleaned] {
+			keyWords = append(keyWords, cleaned)
+		}
+	}
+	if len(keyWords) == 0 {
+		return strings.Contains(content, reqLower)
+	}
+	for _, kw := range keyWords {
+		if !strings.Contains(content, kw) {
+			return false
+		}
+	}
+	return true
 }
 func Readiness(root, goal string) (ReadinessReport, error) {
 	audit, err := Audit(root)

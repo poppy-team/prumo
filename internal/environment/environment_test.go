@@ -2,6 +2,7 @@ package environment
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -50,6 +51,16 @@ func TestWorktreeEnvironment(t *testing.T) {
 	}
 	tempWorktree := filepath.Join(t.TempDir(), "wt-test")
 	branchName := "test-wt-branch-d2"
+
+	// Idempotency: a previous interrupted run may have left the branch
+	// behind (fixed name, repo-level). Prune before and after so the test
+	// never fails on its own residue.
+	prune := func() {
+		_ = exec.Command("git", "-C", cwd, "worktree", "prune").Run()
+		_ = exec.Command("git", "-C", cwd, "branch", "-D", branchName).Run()
+	}
+	prune()
+	t.Cleanup(prune)
 
 	wtEnv := NewWorktreeEnvironment(cwd, tempWorktree, branchName)
 	if err := wtEnv.Prepare(); err != nil {

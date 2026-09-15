@@ -166,7 +166,7 @@ func TestAgentProvidersListsMatrix(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("providers failed: code=%d", code)
 	}
-	for _, want := range []string{"fake", "openai-compat", "anthropic", "opencode-cli", "opencode-server", "codex-cli", "acp-generic"} {
+	for _, want := range []string{"fake", "openai-compat", "anthropic", "opencode-cli", "opencode-server", "codex-cli", "cursor-cli", "acp-generic"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("matrix missing %q:\n%s", want, out)
 		}

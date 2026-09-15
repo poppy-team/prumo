@@ -84,6 +84,7 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 Follow Lean Progressive Context (LPC/PCA): smallest sufficient context, progressive expansion, pointer over payload.
 Start at ENTRYPOINT.md, prumo.json, and the active Goal.
+Treat Prumo as an external CLI utility available in PATH ('prumo'). Run 'prumo <command>' or 'prumo --help' for project operations and lifecycle. Do not inspect or search for internal framework development source code.
 Do not scan the whole codebase unless explicitly requested.
 `
 	instPath := filepath.Join(geminiDir, "prompts", "prumo.md")

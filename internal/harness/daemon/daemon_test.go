@@ -46,7 +46,11 @@ func serveForTest(t *testing.T, dir string, block bool) (*Server, Client, contex
 	sock := filepath.Join(dir, "agentd.sock")
 	srv := New(sock, filepath.Join(dir, "store"), fakeDeps(block))
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() { _ = srv.Serve(ctx) }()
+	served := make(chan struct{})
+	go func() {
+		_ = srv.Serve(ctx)
+		close(served)
+	}()
 	deadline := time.Now().Add(5 * time.Second)
 	probe := Client{SocketPath: sock}
 	for {
@@ -55,11 +59,19 @@ func serveForTest(t *testing.T, dir string, block bool) (*Server, Client, contex
 		}
 		if time.Now().After(deadline) {
 			cancel()
+			<-served
 			t.Fatal("daemon did not come up")
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	return srv, Client{SocketPath: sock}, cancel
+	cleanup := func() {
+		cancel()
+		select {
+		case <-served:
+		case <-time.After(2 * time.Second):
+		}
+	}
+	return srv, Client{SocketPath: sock}, cleanup
 }
 
 func waitStatus(t *testing.T, c Client, runID, want string) map[string]any {
@@ -156,6 +168,7 @@ func TestDaemonCancel(t *testing.T) {
 			t.Fatal(err)
 		}
 		if st["ok"] == true && st["status"] == "cancelled" {
+			time.Sleep(50 * time.Millisecond)
 			return
 		}
 		if time.Now().After(deadline) {

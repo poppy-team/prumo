@@ -18,7 +18,7 @@ sh uninstall.sh --mode full --remove-binary --dry-run
 sh uninstall.sh --mode full --remove-binary
 ```
 
-## Regra de segurança
+## Regra de segurança (Uninstall safety)
 
 A desinstalação do Prumo nunca remove dados de projetos.
 

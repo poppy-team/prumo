@@ -91,6 +91,7 @@ func (p Prober) Matrix(ctx context.Context) []ProbeResult {
 		p.cliAgent("opencode-cli", "opencode", "--version"),
 		p.openCodeServer(ctx),
 		p.cliAgent("codex-cli", "codex", "--version"),
+		p.cliAgent("cursor-cli", "cursor-agent", "--version"),
 		p.acp(),
 	}
 	return out
