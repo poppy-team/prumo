@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/raillen/prumo/internal/uimap"
@@ -94,11 +95,17 @@ func TestInterfaceMapSchemaForbidsUnknownFields(t *testing.T) {
 	}
 }
 
-// TestProjectMapIsValidAndFresh is the dogfood gate: this repository's own
-// interface map must satisfy the rules it ships, and its projections must match
-// it. A framework that exempts its own repository from its contract has no
-// contract.
-func TestProjectMapIsValidAndFresh(t *testing.T) {
+// TestProjectMapIsValid is the dogfood gate: this repository's own interface map
+// must satisfy the rules it ships. A framework that exempts its own repository
+// from its contract has no contract.
+//
+// It deliberately says nothing about projection freshness. Projections live only
+// under `.prumo/runtime/`, so a clean checkout has none and a freshness check here
+// would either fail for the wrong reason or pass because someone happened to run
+// `--write` locally. The digest round trip is covered hermetically in
+// `internal/uimap`, where a temporary root makes the write and the stale case
+// deterministic; `prumo ui verify` is the check that runs where the artifacts exist.
+func TestProjectMapIsValid(t *testing.T) {
 	root := repoRoot(t)
 	cfg, err := uimap.ResolveConfig(root)
 	if err != nil {
@@ -119,11 +126,19 @@ func TestProjectMapIsValidAndFresh(t *testing.T) {
 		}
 		t.FailNow()
 	}
-	if findings := uimap.CheckProjections(root, result.Projections); len(findings) != 0 {
-		for _, f := range findings {
-			t.Errorf("%s: %s (%s)", f.Code, f.Message, f.Hint)
-		}
-		t.Fatal("run `prumo ui map --write` to refresh the interface map projections")
+
+	// Derived artifacts must stay in runtime: a projection under `docs/` would be
+	// a regenerable summary sitting where readers look for canonical sources.
+	rel, err := filepath.Rel(root, uimap.ProjectionRoot(root))
+	if err != nil {
+		t.Fatalf("locate the projection root: %v", err)
+	}
+	slash := filepath.ToSlash(rel)
+	if slash == "docs" || strings.HasPrefix(slash, "docs/") {
+		t.Errorf("projections are rooted at %q; derived artifacts must not become canonical files", slash)
+	}
+	if len(result.Projections) == 0 {
+		t.Error("the map compiled but produced no projections, so no reader is served")
 	}
 }
 
