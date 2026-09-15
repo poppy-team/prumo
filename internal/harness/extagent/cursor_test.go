@@ -51,9 +51,14 @@ func TestCursorSendCommandFailure(t *testing.T) {
 }
 
 func TestCursorProbeMatrixRow(t *testing.T) {
-	p := Prober{Runner: func(ctx context.Context, bin string, args ...string) (string, error) {
-		return "2026.07.23-e383d2b", nil
-	}}
+	dir := t.TempDir()
+	writeStub(t, dir, "cursor-agent", "echo 2026.07.23-e383d2b")
+	p := Prober{
+		Path: dir,
+		Runner: func(ctx context.Context, bin string, args ...string) (string, error) {
+			return "2026.07.23-e383d2b", nil
+		},
+	}
 	var row *ProbeResult
 	for i := range p.Matrix(context.Background()) {
 		if p.Matrix(context.Background())[i].Name == "cursor-cli" {
