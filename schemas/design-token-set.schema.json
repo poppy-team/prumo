@@ -47,8 +47,11 @@
         "type": "object",
         "required": ["id", "extends"],
         "properties": {
-          "id": { "type": "string" },
-          "extends": { "type": "string" },
+          "id": { "type": "string" },    "extends": {
+      "type": "string",
+      "pattern": "^(theme:[a-z0-9][a-z0-9._-]*)?$",
+      "description": "Parent theme ID, or empty for a root theme. A theme extends a theme: naming a token here is a defect, because the reference cannot resolve."
+    },
           "overrides": { "type": "object" },
           "high_contrast": { "type": "boolean" },
           "reduced_motion": { "type": "boolean" }

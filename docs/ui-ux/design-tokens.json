@@ -33,9 +33,26 @@
     { "id": "token:tui.command-palette.highlight", "tier": "component", "type": "color", "value": "token:color.accent", "platforms": ["tui"] },
     { "id": "token:tui.approval.prompt", "tier": "component", "type": "color", "value": "token:color.warning", "platforms": ["tui"] }
   ],
-  "themes": [
-    { "id": "theme.default", "extends": "token:color.surface", "overrides": {} },
-    { "id": "theme.no-color", "extends": "theme.default", "overrides": { "token:color.accent": "none", "token:color.success": "none", "token:color.warning": "none", "token:color.error": "none" } },
+  "themes": [  {
+   "id": "theme.default",
+   "extends": "",
+   "overrides": {}
+  },  {
+   "id": "theme.no-color",
+   "extends": "theme.default",
+   "overrides": {
+    "token:color.surface": "none",
+    "token:color.panel": "none",
+    "token:color.border-subtle": "none",
+    "token:color.text": "none",
+    "token:color.text-muted": "none",
+    "token:color.accent": "none",
+    "token:color.success": "none",
+    "token:color.warning": "none",
+    "token:color.error": "none",
+    "token:color.focus": "none"
+   }
+  },
     { "id": "theme.high-contrast", "extends": "theme.default", "high_contrast": true, "overrides": { "token:color.text-muted": "token:primitive.black" } },
     { "id": "theme.reduced-motion", "extends": "theme.default", "reduced_motion": true, "overrides": { "token:primitive.motion.fast": "0ms" } }
   ],

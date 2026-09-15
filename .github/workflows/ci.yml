@@ -17,6 +17,11 @@ jobs:
           diff -u <(echo -n) <(gofmt -d .)
       - name: Go vet
         run: go vet ./...
+      # The module now has external dependencies (the TUI stack), so the
+      # checksums are a gate rather than a formality: a served module whose
+      # hash does not match go.sum fails here instead of at runtime.
+      - name: Module checksum verification
+        run: go mod verify
       - name: Go test
         run: go test -v -race ./...
       - name: Build Prumo CLI

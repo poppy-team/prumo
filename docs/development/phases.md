@@ -305,8 +305,36 @@ line of TUI code.
   strategy and the visual evidence/capture/regression policy in
   `docs/architecture/visual-constitution.md`.
 
-**Remaining**: the `tui/` package itself (Fase B/C). `prumo docs verify --strict`
-is green, so the gate is met rather than deferred.
+**Progress**: Fase B/C complete (2026-09-15) — the vertical slice runs.
+
+- `tui/` lives outside `internal/` and imports only the public SDK and the
+  standard library. `TestBoundaryNoInternalImports` (criterion 1) fails the
+  build if that stops being true, including for test files.
+- The package is split so the parts worth testing need no terminal: `timeline.go`
+  (bounded, severity-classified event rows), `palette.go` (fuzzy ranking),
+  `styles.go` (token → style, no literal colours) and `session.go` (run over the
+  protocol) are pure or SDK-only; `app.go` only routes keys and messages.
+- `theme` is a generated projection of the canonical token set with a digest
+  freshness check, and `tui/theme.Resolve` is the only place a token becomes a
+  value.
+- The flow `palette → goal → run → stream → evidence` is verified twice: by
+  `go test` with a scripted endpoint (`TestVerticalSliceFlow`) and against a live
+  supervised daemon (`TestLiveDaemonFlow`, criterion 2's shape, FakeProvider, no
+  API key). Reconnect/replay reproduces the daemon's rows instead of merging two
+  half-views (criterion 3's mechanism).
+- `prumo tui` supervises `prumo agent serve` as a subprocess, which is what keeps
+  the boundary real and makes the remote mode the same client with another
+  address rather than a second code path.
+
+**Remaining**: criterion 2's approval step, and criteria 4–5. The Agent Protocol
+has **no op to answer a permission request** — the runner sets
+`PendingPerms` and nothing consumes it, so the TUI can render
+`permission_wait` but cannot approve it. Tracked as GAP-046. Criterion 4
+(live remote TLS+token flow) and criterion 5 (redraw budget per ADR 009
+methodology) are unmeasured; tracked as GAP-047.
+
+**Remaining (Fase A gate)**: none — `prumo docs verify --strict` is green, so the
+gate is met rather than deferred.
 
 ---
 
