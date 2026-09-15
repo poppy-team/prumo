@@ -248,6 +248,39 @@
     },
     "execution": {
       "type": "object"
+    },
+    "ui": {
+      "type": "object",
+      "description": "Interface documentation. Applies to any project Prumo builds that has an interface, not only to Prumo itself. When the project declares a UI capability (`ui`, `tui`, `desktop-gui`, `web-application`) or a UI `project.type` and does not say otherwise, the interface map is on and projected for all three audiences.",
+      "properties": {
+        "interface_map": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master switch. `false` produces nothing and says so; there is no silent skip."
+            },
+            "targets": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": ["developer", "site", "agent"]
+              },
+              "description": "Which audiences get a projection. Narrowing is a product decision: a map for the code agent and the developer but not for a public site is a legitimate scope, and an empty list is refused rather than producing nothing quietly."
+            },
+            "derivation": {
+              "enum": ["off", "verify-only", "fill-gaps"],
+              "description": "How much the compiler reads from the implementation beyond proving symbols. `verify-only` (the default) reports elements the map omits; `fill-gaps` lists them for review; `off` skips it. Divergence between a declared and a derived element is an error in every mode."
+            },
+            "path": {
+              "type": "string",
+              "description": "Canonical map location, relative to the project root. Defaults to `docs/ui-ux/interface-map.json`."
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": true

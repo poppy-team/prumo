@@ -1,0 +1,389 @@
+{
+  "id": "ui:prumo-code-shell",
+  "version": 1,
+  "surface": "Prumo Code TUI — app shell and run panel (H10 spike)",
+  "note": "Canonical interface map for the terminal client. Structure, labels, intent and placement are declared here; symbols are proven against tui/**/*.go by `prumo ui verify`. A declared element always wins over a derived one, and divergence is a finding rather than a silent pick.",
+  "platforms": ["tui"],
+  "states_source": "docs/ui-ux/state-matrix.json",
+  "tokens_source": "docs/ui-ux/design-tokens.json",
+  "derivation": {
+    "sources": ["tui/**/*.go"],
+    "mode": "verify-only"
+  },
+  "tree": [
+    {
+      "id": "node:shell",
+      "kind": "shell",
+      "role": "Application root: one stage at a time, palette-first navigation",
+      "slot": { "region": "root", "order": 0, "align": "stretch", "stack": "column" },
+      "size_classes": ["compact", "standard", "wide"],
+      "states": ["default", "focus", "high-contrast"],
+      "tokens": ["token:color.surface"],
+      "implementation": { "symbol": "tui.Model", "path": "tui/app.go", "status": "implemented" },
+      "children": [
+        {
+          "id": "node:titlebar",
+          "kind": "region",
+          "role": "Product identity line, shared by every stage",
+          "slot": { "region": "header", "order": 0, "align": "start" },
+          "size_classes": ["compact", "standard", "wide"],
+          "tokens": ["token:color.text"],
+          "children": [
+            {
+              "id": "node:titlebar-text",
+              "kind": "text",
+              "label": "Prumo",
+              "role": "Names the product; the only brand surface in the client",
+              "slot": { "region": "header", "order": 0, "align": "start" },
+              "size_classes": ["compact", "standard", "wide"],
+              "states": ["default", "high-contrast"],
+              "tokens": ["token:color.text"],
+              "implementation": { "symbol": "tui.Model.View", "path": "tui/app.go", "status": "implemented" }
+            }
+          ]
+        },
+        {
+          "id": "node:body",
+          "kind": "region",
+          "role": "Stage area: exactly one stage owns the keyboard",
+          "slot": { "region": "body", "order": 1, "align": "stretch", "weight": 1, "stack": "column" },
+          "size_classes": ["compact", "standard", "wide"],
+          "children": [
+            {
+              "id": "node:palette",
+              "kind": "pane",
+              "label": "Command palette",
+              "role": "Palette-first entry point: every action is reachable from here",
+              "intent": "Let a user act without having to know which pane a feature lives in",
+              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "row", "condition": "stage = palette" },
+              "size_classes": ["compact", "standard", "wide"],
+              "states": ["default", "focus", "empty", "loading"],
+              "tokens": ["token:tui.command-palette.highlight", "token:color.text-muted"],
+              "inputs": ["down", "up", "ctrl+p", "ctrl+n", "enter", "esc"],
+              "implementation": { "symbol": "tui.Palette", "path": "tui/palette.go", "status": "implemented" },
+              "children": [
+                {
+                  "id": "node:palette-list",
+                  "kind": "list",
+                  "label": "Ranked commands",
+                  "role": "Ranked matches for the current query, best first",
+                  "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["default", "focus", "selected", "empty", "narrow-viewport"],
+                  "tokens": ["token:tui.command-palette.highlight"],
+                  "inputs": ["down", "up"],
+                  "implementation": { "symbol": "tui.Palette.Matches", "path": "tui/palette.go", "status": "implemented" },
+                  "children": [
+                    {
+                      "id": "node:palette-row",
+                      "kind": "button",
+                      "label": "› <command title>",
+                      "role": "One selectable command; the selected row also shows its description",
+                      "intent": "Make the highlighted action the obvious one to accept",
+                      "slot": { "region": "body", "order": 0, "align": "start" },
+                      "size_classes": ["compact", "standard", "wide"],
+                      "states": ["default", "focus", "selected"],
+                      "tokens": ["token:tui.command-palette.highlight", "token:color.text"],
+                      "inputs": ["enter", "pointer"],
+                      "implementation": { "symbol": "tui.Command", "path": "tui/palette.go", "status": "implemented" }
+                    },
+                    {
+                      "id": "node:palette-empty",
+                      "kind": "text",
+                      "label": "no command matches \"<query>\"",
+                      "role": "States the empty filter result instead of rendering a blank panel",
+                      "intent": "A blank panel reads as a broken palette; the message says the query is the reason",
+                      "slot": { "region": "body", "order": 1, "align": "start" },
+                      "size_classes": ["compact", "standard", "wide"],
+                      "states": ["empty"],
+                      "tokens": ["token:color.text-muted"],
+                      "implementation": { "symbol": "tui.Palette.Empty", "path": "tui/palette.go", "status": "implemented" }
+                    },
+                    {
+                      "id": "node:palette-query",
+                      "kind": "input",
+                      "label": "query: <text>",
+                      "role": "The fuzzy filter, shown as text rather than stored invisibly",
+                      "slot": { "region": "body", "order": 2, "align": "start" },
+                      "size_classes": ["compact", "standard", "wide"],
+                      "states": ["default", "focus", "read-only"],
+                      "tokens": ["token:color.text-muted"],
+                      "inputs": ["paste"],
+                      "implementation": { "symbol": "tui.Palette.SetQuery", "path": "tui/palette.go", "status": "implemented" }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node:goal-prompt",
+              "kind": "pane",
+              "label": "Goal prompt",
+              "role": "Collects the goal text before a run starts",
+              "intent": "One field, one decision: what should the agent do",
+              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column", "condition": "stage = goal" },
+              "size_classes": ["compact", "standard", "wide"],
+              "states": ["focus", "default", "error"],
+              "tokens": ["token:color.focus"],
+              "inputs": ["enter", "esc", "paste"],
+              "implementation": { "symbol": "tui.StageGoal", "path": "tui/app.go", "status": "implemented" },
+              "children": [
+                {
+                  "id": "node:goal-field",
+                  "kind": "input",
+                  "label": "goal",
+                  "role": "The goal text, with a visible cursor",
+                  "slot": { "region": "body", "order": 0, "align": "stretch" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["focus", "error"],
+                  "tokens": ["token:color.focus", "token:color.text"],
+                  "inputs": ["enter", "esc", "backspace", "paste"],
+                  "implementation": { "symbol": "tui.StartConfig", "path": "tui/session.go", "status": "implemented" }
+                },
+                {
+                  "id": "node:goal-route-hint",
+                  "kind": "text",
+                  "label": "provider <name> · max turns <n>",
+                  "role": "States the route the goal will run on, before it runs",
+                  "intent": "A run that used the wrong provider is expensive; saying which one is cheap",
+                  "slot": { "region": "body", "order": 1, "align": "start" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["default", "read-only"],
+                  "tokens": ["token:color.text-muted"],
+                  "implementation": { "symbol": "tui.StartConfig", "path": "tui/session.go", "status": "implemented" }
+                }
+              ]
+            },
+            {
+              "id": "node:run-panel",
+              "kind": "pane",
+              "label": "Run panel",
+              "role": "Live view of the run in flight",
+              "intent": "Show what the agent is doing while it does it, not after",
+              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column", "condition": "stage = run" },
+              "size_classes": ["compact", "standard", "wide"],
+              "states": ["active", "loading", "partial", "error", "offline", "reconnecting", "permission-requested"],
+              "tokens": ["token:color.accent", "token:color.error"],
+              "inputs": ["esc", "ctrl+r"],
+              "implementation": { "symbol": "tui.StageRun", "path": "tui/app.go", "status": "implemented" },
+              "children": [
+                {
+                  "id": "node:run-heading",
+                  "kind": "text",
+                  "label": "run <run id>",
+                  "role": "Identifies the run the panel is showing",
+                  "slot": { "region": "body", "order": 0, "align": "start" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["default"],
+                  "tokens": ["token:color.text"],
+                  "implementation": { "symbol": "tui.Session", "path": "tui/session.go", "status": "implemented" }
+                },
+                {
+                  "id": "node:run-goal-line",
+                  "kind": "text",
+                  "label": "goal: <goal text>",
+                  "role": "Restates the goal so the stream is readable without the prompt",
+                  "slot": { "region": "body", "order": 1, "align": "start" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["default"],
+                  "tokens": ["token:color.text-muted"],
+                  "implementation": { "symbol": "tui.StartSession", "path": "tui/session.go", "status": "implemented" }
+                },
+                {
+                  "id": "node:timeline",
+                  "kind": "list",
+                  "label": "timeline",
+                  "role": "Bounded event stream with per-row severity",
+                  "intent": "Bound the view so a long run cannot turn the terminal into unbounded scrollback",
+                  "slot": { "region": "body", "order": 2, "align": "stretch", "weight": 1, "stack": "column" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["loading", "partial", "success", "warning", "error"],
+                  "tokens": ["token:color.success", "token:color.warning", "token:color.error"],
+                  "inputs": ["PgUp", "PgDn", "pointer"],
+                  "implementation": { "symbol": "tui.Timeline", "path": "tui/timeline.go", "status": "implemented" },
+                  "children": [
+                    {
+                      "id": "node:timeline-row",
+                      "kind": "text",
+                      "label": "<index> <event title>",
+                      "role": "One event, numbered continuously so rows that aged out stay visible as absent",
+                      "slot": { "region": "body", "order": 0, "align": "start" },
+                      "size_classes": ["compact", "standard", "wide"],
+                      "states": ["default", "success", "warning", "error"],
+                      "tokens": ["token:color.text", "token:color.text-muted"],
+                      "implementation": { "symbol": "tui.Entry", "path": "tui/timeline.go", "status": "implemented" }
+                    },
+                    {
+                      "id": "node:timeline-detail",
+                      "kind": "text",
+                      "label": "<key=value …>",
+                      "role": "Deterministic payload detail, keys sorted so the same event always renders identically",
+                      "slot": { "region": "body", "order": 1, "align": "start" },
+                      "size_classes": ["standard", "wide"],
+                      "states": ["read-only"],
+                      "tokens": ["token:color.text-muted"],
+                      "implementation": { "symbol": "tui.Entry.Detail", "path": "tui/timeline.go", "status": "implemented" }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node:evidence-panel",
+              "kind": "pane",
+              "label": "Evidence",
+              "role": "Terminal accounting for the run that just stopped",
+              "intent": "Answer \"how did it end\" from the protocol, without reading the daemon's private files",
+              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column", "condition": "stage = evidence" },
+              "size_classes": ["compact", "standard", "wide"],
+              "states": ["success", "error", "warning", "read-only"],
+              "tokens": ["token:color.accent"],
+              "inputs": ["esc", "ctrl+r"],
+              "implementation": { "symbol": "tui.StageEvidence", "path": "tui/app.go", "status": "implemented" },
+              "children": [
+                {
+                  "id": "node:evidence-rows",
+                  "kind": "list",
+                  "label": "run · status · phase · stop reason · events seen · aged out · store",
+                  "role": "The accountable facts of the run, each on its own labelled row",
+                  "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column" },
+                  "size_classes": ["compact", "standard", "wide"],
+                  "states": ["default", "success", "warning", "error"],
+                  "tokens": ["token:color.accent", "token:color.text-muted"],
+                  "implementation": { "symbol": "tui.Evidence", "path": "tui/session.go", "status": "implemented" },
+                  "children": [
+                    {
+                      "id": "node:evidence-row",
+                      "kind": "text",
+                      "label": "<field>: <value>",
+                      "role": "One accountable fact",
+                      "slot": { "region": "body", "order": 0, "align": "start" },
+                      "size_classes": ["compact", "standard", "wide"],
+                      "states": ["default", "read-only"],
+                      "tokens": ["token:color.accent"],
+                      "implementation": { "symbol": "tui.Evidence.Summary", "path": "tui/session.go", "status": "implemented" }
+                    }
+                  ]
+                },
+                {
+                  "id": "node:evidence-scope-note",
+                  "kind": "text",
+                  "label": "the richer artifacts (evidence, budget, permissions) live in the store above; this panel reports what the protocol states",
+                  "role": "States the boundary between what the panel shows and what the daemon owns",
+                  "intent": "A client that reaches into the daemon's private files is not a protocol client; saying so prevents the shortcut",
+                  "slot": { "region": "body", "order": 1, "align": "start" },
+                  "size_classes": ["standard", "wide"],
+                  "states": ["read-only"],
+                  "tokens": ["token:color.text-muted"],
+                  "implementation": { "symbol": "tui.Evidence.Summary", "path": "tui/session.go", "status": "implemented" }
+                }
+              ]
+            },
+            {
+              "id": "node:approval-prompt",
+              "kind": "button",
+              "label": "Approve / deny the pending permission (a approve · d deny, default deny)",
+              "role": "The inline answer to a permission request raised by a run",
+              "intent": "A run that yields on permission_wait must be answerable without leaving the client",
+              "slot": { "region": "overlay", "order": 0, "align": "center", "condition": "a run yielded on permission_wait" },
+              "size_classes": ["compact", "standard", "wide"],
+              "states": ["permission-requested", "permission-denied", "destructive-confirmation"],
+              "tokens": ["token:tui.approval.prompt"],
+              "inputs": ["a", "d", "esc"],
+              "implementation": {
+                "path": "tui/app.go",
+                "status": "not-implemented",
+                "absent_reason": "The Agent Protocol has no op to answer a permission request: the runner sets PendingPerms on the run state and nothing consumes it, so a client can render permission_wait and cannot approve it. Tracked as GAP-046. The element is described here so the gap is visible in the interface, not only in the gap register."
+              }
+            }
+          ]
+        },
+        {
+          "id": "node:statusline",
+          "kind": "status",
+          "label": "<stage> · <status> · theme <theme id>",
+          "role": "Always-present line stating what the client is doing and how it is themed",
+          "intent": "A user must never have to guess which surface has the keyboard",
+          "slot": { "region": "footer", "order": 0, "align": "stretch" },
+          "size_classes": ["compact", "standard", "wide"],
+          "states": ["default", "reconnecting", "offline", "narrow-viewport", "high-contrast"],
+          "tokens": ["token:tui.statusline", "token:color.text-muted"],
+          "inputs": ["pointer"],
+          "implementation": { "symbol": "tui.Styles.Statusbar", "path": "tui/styles.go", "status": "implemented" }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "kind": "focus",
+      "from": "node:palette",
+      "to": "node:goal-prompt",
+      "label": "the run-goal command opens the goal prompt",
+      "condition": "the selected command starts a run"
+    },
+    {
+      "kind": "focus",
+      "from": "node:goal-prompt",
+      "to": "node:run-panel",
+      "label": "an accepted goal starts the run and moves focus to it",
+      "condition": "the goal is non-empty and the daemon accepts the run"
+    },
+    {
+      "kind": "focus",
+      "from": "node:goal-prompt",
+      "to": "node:palette",
+      "label": "esc discards the goal and returns focus to the palette",
+      "condition": "the user dismisses the prompt"
+    },
+    {
+      "kind": "focus",
+      "from": "node:run-panel",
+      "to": "node:evidence-panel",
+      "label": "a terminal status moves the view to the evidence panel",
+      "condition": "the run leaves the running state"
+    },
+    {
+      "kind": "focus",
+      "from": "node:evidence-panel",
+      "to": "node:palette",
+      "label": "esc returns to the palette, which is always one chord away",
+      "condition": "always"
+    },
+    {
+      "kind": "navigates-to",
+      "from": "node:palette",
+      "to": "node:evidence-panel",
+      "label": "show evidence",
+      "condition": "a session exists"
+    },
+    {
+      "kind": "data",
+      "from": "node:run-panel",
+      "to": "node:timeline",
+      "label": "polled AgentEvent batches, appended newest last",
+      "condition": "the run has not reached a terminal status"
+    },
+    {
+      "kind": "data",
+      "from": "node:evidence-panel",
+      "to": "node:evidence-rows",
+      "label": "the run's terminal accounting as the protocol states it",
+      "condition": "the run stopped"
+    },
+    {
+      "kind": "event",
+      "from": "node:body",
+      "to": "node:statusline",
+      "label": "the active stage and its status text",
+      "condition": "every redraw"
+    },
+    {
+      "kind": "blocks",
+      "from": "node:approval-prompt",
+      "to": "node:run-panel",
+      "label": "a run that yields on permission_wait cannot proceed without an approval answer",
+      "condition": "the permission engine returns ask for a tool call"
+    }
+  ]
+}

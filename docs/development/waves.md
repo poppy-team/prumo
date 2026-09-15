@@ -687,6 +687,51 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 
 ---
 
+## W22 — Interface Map & Interdependence Tree
+
+**Priority**: P1 (completes the `ui.*` obligations the TUI increment opens)
+**Goal**: One canonical artifact mapping a whole interface — components,
+subcomponents, text, inputs, buttons, menus — with where each element sits and how
+the elements interconnect, projected for the developer, the documentation site and
+the code agent.
+
+**Why it exists**: W5 created `ui-component-contract` and the four obligations
+(`ui.component-contracts`, `ui.information-architecture`, `ui.screen-inventory`,
+`ui.layout`) were satisfied by waivers with no producer behind them. The gate was
+green while no component inventory existed. Decision: **ADR 012**.
+
+| Task | Detail |
+|---|---|
+| W22.1 | `schemas/ui-interface-map.schema.json` — closed kind/region/align/stack/edge vocabularies, mandatory slot, optional per-platform geometry |
+| W22.2 | `internal/uimap` — model, loader, vocabulary read from the state matrix and token set the map names |
+| W22.3 | Validation, fail closed: unique ids, single shell root, mandatory position, labels for text-rendering kinds, states from the matrix, tokens from the set, edge endpoints and a closed edge vocabulary, no duplicate or self edges |
+| W22.4 | Declared + derived with declared always winning; `off` \| `verify-only` \| `fill-gaps`; divergence is an error |
+| W22.5 | `SymbolDeriver` seam + `GoSymbolDeriver` (types, methods, exported fields; test files excluded) |
+| W22.6 | Interdependence tree, typed edges and impact closure in both directions with the reason for every hop |
+| W22.7 | Three projections — developer reference, site pages, bounded agent surface plus a machine-readable index — with digest freshness and stale detection |
+| W22.8 | Per-project configuration (`ui.interface_map`: enabled, targets, derivation, path) with auto-enable on a declared interface and refusal of silent no-ops |
+| W22.9 | `prumo ui map\|verify\|impact\|config` |
+| W22.10 | Dogfood: this repository's own map, with `not-implemented` used for the approval surface that GAP-046 blocks |
+| W22.11 | Bind the four contracts to the artifact, replacing four waivers |
+| W22.12 | Conformance gate: schema enums equal the Go vocabularies, and the repository's own map is valid and its projections fresh |
+
+**Entry**: W5 complete (contracts and schemas), W9 complete (tokens), H10 Fase A
+(the `tui` profile composed, so the obligations are actually evaluated).
+**Exit**: `prumo ui verify` passes on this repository, the four contracts are
+bound, and the projections are fresh.
+
+**Status**: ✅ complete 2026-09-15 — 24 elements, 10 typed interconnections, 216
+derived symbols; the four waivers are replaced by bindings; `ui.component-contracts`
+no longer says "owed by the first layout increment".
+
+**Cost, stated**: the map is one more artifact to keep current. It is enforced
+rather than trusted — changing the interface without changing the map fails
+`prumo ui verify`, and `prumo ui map --write` regenerates all eight projections.
+The agent surface is bounded at 80 tree rows and reports the exact number it
+omitted instead of truncating silently.
+
+---
+
 ## Recommended Dependency Graph
 
 ```text
@@ -755,7 +800,7 @@ complete before H10 exit criteria are evaluated. Their current state:
 
 **P2 waves (W20/W21)**: W20 ✅ complete (terminology registry and explicit version policy landed); W21 🟡 (scale benchmark landed; query-intent tracking refused by ADR 011; workforce routing by impact type and full Markdown AST remain). Neither blocks the TUI: the spike consumes the W5/W6/W9/W11 contracts and the W12 reconnect contract, all complete.
 
-**Stopping condition for this wave set**: the TUI gate is met when every P0/P1 contract wave is complete *and* `prumo docs verify --strict` passes. Both hold. No wave is left partially implemented: the two items the audit proposed but the framework's trust model forbids are recorded as refused with ADR 011, not as outstanding work.
+**Stopping condition for this wave set**: the TUI gate is met when every P0/P1 contract wave is complete *and* `prumo docs verify --strict` passes. Both hold. Two items the audit proposed are recorded as **refused** with ADR 011 rather than as outstanding work, and two waves remain genuinely partial by scope rather than by refusal: W19 owes DOC-GAP-020 (examples are linked and existence-checked, but not executed) and W21 owes DOC-GAP-024 and DOC-GAP-026 (workforce routing by impact type, full Markdown AST). `ACCEPTED != implemented` applies to them too.
 
 ---
 

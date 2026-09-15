@@ -115,5 +115,16 @@
     "deterministic-conformance",
     "continuous-documentation",
     "documentation-control-plane"
-  ]
+  ],
+  "ui": {
+    "interface_map": {
+      "enabled": true,
+      "targets": [
+        "developer",
+        "site",
+        "agent"
+      ],
+      "derivation": "verify-only"
+    }
+  }
 }

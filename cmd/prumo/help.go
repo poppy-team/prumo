@@ -758,6 +758,31 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo tui --socket .prumo/runtime/harness/agentd.sock",
 		},
 	},
+	"ui": {
+		Name:     "ui",
+		Category: "Harness",
+		Summary:  "Interface map: composition tree, element positions and interconnections",
+		Usage:    "prumo ui <map|verify|impact|config> [flags]",
+		Description: "Compiles the complete map of a user interface — components, subcomponents, text, inputs, " +
+			"buttons, menus — with where each element sits and how the elements interconnect, then projects it " +
+			"for the developer, the documentation site and the code agent. Structure, labels and placement are " +
+			"declared; symbols and coverage are derived from the implementation, and a declared element always wins. " +
+			"Applies to any project Prumo builds that has an interface, and each audience can be switched off " +
+			"individually under `ui.interface_map` in prumo.json.",
+		Flags: []string{
+			"--path <dir>         Project root (default: .)",
+			"--file <map>         Canonical map to compile (default: docs/ui-ux/interface-map.json)",
+			"--target <names>     Narrow the projections: developer,site,agent (comma separated)",
+			"--write              Emit the projections under .prumo/runtime/interface-map/",
+			"--json               Output structured JSON envelope",
+		},
+		Examples: []string{
+			"prumo ui config",
+			"prumo ui verify --path .",
+			"prumo ui map --write --target agent",
+			"prumo ui impact node:palette",
+		},
+	},
 	"automation": {
 		Name:        "automation",
 		Category:    "Platform & Automation",
