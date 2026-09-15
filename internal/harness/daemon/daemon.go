@@ -322,7 +322,6 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 			status = "cancelled"
 		}
 	}
-	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(runner.State.Phase), StopReason: runner.State.StopReason})
 	knowledge.SeedEvidence(kstore, runID, string(runner.State.Phase), runner.State.StopReason, runID+"-latest")
 	_ = kstore.Save(filepath.Join(dir, "knowledge-"+runID+".json"))
 	_ = tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
@@ -333,6 +332,7 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 	_, _ = checkpoints.Prune(5)
 	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-finished", RunID: runID, Kind: "run.finished",
 		Payload: map[string]any{"status": status, "phase": string(runner.State.Phase)}, CreatedAt: agent.Now()})
+	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(runner.State.Phase), StopReason: runner.State.StopReason})
 }
 
 func (s *Server) opStatus(runID string) map[string]any {
@@ -341,6 +341,10 @@ func (s *Server) opStatus(runID string) map[string]any {
 	}
 	s.mu.Lock()
 	ar, active := s.runs[runID]
+	var runner *harnessruntime.Runner
+	if active && ar != nil {
+		runner = ar.runner
+	}
 	s.mu.Unlock()
 	data, err := os.ReadFile(s.recordPath(runID))
 	if err != nil {
@@ -350,8 +354,8 @@ func (s *Server) opStatus(runID string) map[string]any {
 	if err := json.Unmarshal(data, &rec); err != nil {
 		return map[string]any{"ok": false, "error": "corrupt record " + runID}
 	}
-	if active && ar.runner != nil {
-		live := ar.runner.StateCopy()
+	if active && runner != nil {
+		live := runner.StateCopy()
 		rec.Phase = string(live.Phase)
 	}
 	return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "stop_reason": rec.StopReason, "active": active}
@@ -444,11 +448,15 @@ func (s *Server) opSteer(runID, message string) map[string]any {
 	}
 	s.mu.Lock()
 	ar, ok := s.runs[runID]
+	var runner *harnessruntime.Runner
+	if ok && ar != nil {
+		runner = ar.runner
+	}
 	s.mu.Unlock()
-	if !ok || ar.runner == nil {
+	if !ok || runner == nil {
 		return map[string]any{"ok": false, "error": "run not active: " + runID}
 	}
-	if err := ar.runner.Inject(agent.Message{ID: "steer-" + runID, Role: agent.RoleUser, Content: message, CreatedAt: agent.Now()}); err != nil {
+	if err := runner.Inject(agent.Message{ID: "steer-" + runID, Role: agent.RoleUser, Content: message, CreatedAt: agent.Now()}); err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
 	return map[string]any{"ok": true, "steered": true}
