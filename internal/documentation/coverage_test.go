@@ -14,9 +14,13 @@ func TestPrumoAuditAndReadiness(t *testing.T) {
 	if len(audit.ApplicableContracts) == 0 {
 		t.Fatal("expected applicable contracts")
 	}
-	if audit.SemanticContracts+audit.LexicalContracts != len(audit.Coverage) {
-		t.Fatalf("mode classification mismatch: semantic=%d lexical=%d coverage=%d",
-			audit.SemanticContracts, audit.LexicalContracts, len(audit.Coverage))
+	// Every applicable contract lands in exactly one bucket. A waived contract is
+	// its own bucket: it is neither bound work nor a blocker, and folding it into
+	// the lexical count would overstate what a reviewer still has to do.
+	classified := audit.SemanticContracts + audit.LexicalContracts + len(audit.NotApplicableContracts)
+	if classified != len(audit.Coverage) {
+		t.Fatalf("mode classification mismatch: semantic=%d lexical=%d not-applicable=%d coverage=%d",
+			audit.SemanticContracts, audit.LexicalContracts, len(audit.NotApplicableContracts), len(audit.Coverage))
 	}
 	for _, c := range audit.Coverage {
 		if c.Authoritative != (c.Mode == ModeSemantic) {
@@ -258,9 +262,18 @@ func TestSemanticReadinessDogfood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(report.UnverifiedContracts) == 0 && audit.LexicalContracts > 0 {
-		t.Fatalf("expected lexical contracts to be reported unverified, got %d lexical / %d unverified",
-			audit.LexicalContracts, len(report.UnverifiedContracts))
+	// A lexical-only contract must be surfaced, not absorbed. Checking
+	// UnverifiedContracts alone is not enough: a contract with no binding at all
+	// is reported as `missing` and reaches the operator through
+	// BlockingContracts, so a project could declare a capability, fail every
+	// gate it brings, and still see an empty unverified list.
+	surfaced := map[string]bool{}
+	for _, id := range append(append([]string{}, report.UnverifiedContracts...), report.BlockingContracts...) {
+		surfaced[id] = true
+	}
+	if len(surfaced) < audit.LexicalContracts {
+		t.Fatalf("expected every lexical contract to be reported, got %d lexical / %d surfaced",
+			audit.LexicalContracts, len(surfaced))
 	}
 	for _, c := range audit.Coverage {
 		if !c.Authoritative && c.State == Verified {

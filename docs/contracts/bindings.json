@@ -1,5 +1,443 @@
 [
   {
+    "contract_id": "accessibility.accessible-auth",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed when the TUI exposes the approval surface. The spike approves one permission inline and has no authentication flow to contract."
+  },
+  {
+    "contract_id": "accessibility.cognitive-clarity",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the first error surface. The spike renders streamed events but defines no error-recovery copy, so error clarity and plain-language policy have nothing to describe."
+  },
+  {
+    "contract_id": "accessibility.contrast",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the visual-validation specification, which is bound in this increment. Token-level contrast ratios exist (`docs/ui-ux/design-tokens.json`) but non-text and rendered contrast evidence do not."
+  },
+  {
+    "contract_id": "accessibility.drag-alternatives",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Not applicable: the spike ships no drag interaction, so there is no pointer-only gesture needing a keyboard equivalent."
+  },
+  {
+    "contract_id": "accessibility.focus",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the interaction specification, which is bound in this increment. The spike fixes a focus model (docs/product/tui-spike-h10.md, 'In scope') but visual focus evidence does not exist yet."
+  },
+  {
+    "contract_id": "accessibility.keyboard",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the interaction specification, which is bound in this increment. Until it lands, keyboard reachability and shortcut-conflict policy have no artifact to cite."
+  },
+  {
+    "contract_id": "accessibility.motion",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed with the first animated surface. The token set already carries a reduced-motion theme, but no motion policy exists because the spike ships no animated component."
+  },
+  {
+    "contract_id": "accessibility.screen-reader",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the TUI accessibility specification, which is bound in this increment. Terminal screen-reader announcement strategy needs the surfaces it announces."
+  },
+  {
+    "contract_id": "accessibility.target-size",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Not applicable to a keyboard-first terminal client: there is no pointer target geometry to size. Mouse support is optional in docs/product/tui-spike-h10.md and carries no exclusive action."
+  },
+  {
+    "contract_id": "accessibility.zoom-reflow",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Not applicable to a terminal client: terminal reflow is owned by the emulator and the application cannot scroll horizontally. Recorded here so the waiver is reviewable rather than inferred."
+  },
+  {
+    "contract_id": "architecture.system",
+    "sources": [
+      "docs/architecture/overview.md",
+      "docs/architecture/dependency-rules.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "What owns canonical state?",
+      "Which components may mutate it?"
+    ],
+    "requirement_map": {
+      "system boundaries": "REQ-ARCH-BOUNDARIES",
+      "major components": "REQ-ARCH-COMPONENTS",
+      "dependency direction": "REQ-ARCH-DIRECTION",
+      "external integrations": "REQ-ARCH-INTEGRATIONS"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-ARCH-BOUNDARIES",
+        "statement": "`docs/architecture/overview.md` states the system boundaries of the harness, documentation control plane and CLI.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-BOUNDARIES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-BOUNDARIES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-BOUNDARIES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/overview.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-ARCH-COMPONENTS",
+        "statement": "`docs/architecture/overview.md` and `docs/architecture/documentation-control-plane.md` name the major components.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-COMPONENTS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-COMPONENTS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-COMPONENTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/overview.md"
+          },
+          {
+            "id": "EV-PRUMO-ARCH-COMPONENTS-CP",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-COMPONENTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/documentation-control-plane.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-ARCH-DIRECTION",
+        "statement": "`docs/architecture/dependency-rules.md` states the dependency direction and the layer import policy.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-DIRECTION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-DIRECTION-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-DIRECTION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/dependency-rules.md"
+          },
+          {
+            "id": "EV-PRUMO-ARCH-DIRECTION-ROUNDTRIP",
+            "type": "conformance-test",
+            "target": "CLAIM-PRUMO-ARCH-DIRECTION",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "conformance/schema-runtime/roundtrip_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-ARCH-INTEGRATIONS",
+        "statement": "`docs/architecture/overview.md` and `docs/integration/connector-contract.md` describe the external integration surface.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-INTEGRATIONS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-INTEGRATIONS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-INTEGRATIONS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/integration/connector-contract.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "cli.reference",
+    "sources": [
+      "docs/reference/cli.md",
+      "docs/manual/usage.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which commands are stable?"
+    ],
+    "requirement_map": {
+      "command surface": "REQ-CLI-SURFACE",
+      "machine output": "REQ-CLI-MACHINE",
+      "exit codes": "REQ-CLI-EXITS",
+      "examples": "REQ-CLI-EXAMPLES"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-CLI-SURFACE",
+        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo/help.go`.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-SURFACE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-SURFACE-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-SURFACE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/cli.md"
+          },
+          {
+            "id": "EV-PRUMO-CLI-SURFACE-SOURCE",
+            "type": "source",
+            "target": "CLAIM-PRUMO-CLI-SURFACE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "cmd/prumo/help.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-CLI-MACHINE",
+        "statement": "The `--json` envelope is defined once in `internal/protocol` and documents machine-readable output.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-MACHINE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-MACHINE-SOURCE",
+            "type": "source",
+            "target": "CLAIM-PRUMO-CLI-MACHINE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "internal/protocol/protocol.go"
+          },
+          {
+            "id": "EV-PRUMO-CLI-MACHINE-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-MACHINE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/cli.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-CLI-EXITS",
+        "statement": "Exit-code semantics are documented and enforced by the CLI smoke test in CI.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-EXITS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-EXITS-CI",
+            "type": "ci-workflow",
+            "target": "CLAIM-PRUMO-CLI-EXITS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": ".github/workflows/ci.yml"
+          },
+          {
+            "id": "EV-PRUMO-CLI-EXITS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-EXITS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/cli.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-CLI-EXAMPLES",
+        "statement": "`docs/manual/usage.md` provides runnable examples for the documented commands.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-EXAMPLES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-EXAMPLES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-EXAMPLES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/usage.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "installation.lifecycle",
+    "sources": [
+      "docs/manual/installation.md",
+      "docs/manual/uninstallation.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "What happens after interrupted update?"
+    ],
+    "requirement_map": {
+      "installation paths": "REQ-INSTALL-PATHS",
+      "ownership": "REQ-INSTALL-OWNERSHIP",
+      "rollback strategy": "REQ-INSTALL-ROLLBACK",
+      "uninstall safety": "REQ-INSTALL-UNINSTALL"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-INSTALL-PATHS",
+        "statement": "`docs/manual/installation.md` states the supported installation paths.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-PATHS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-PATHS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-PATHS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/installation.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-INSTALL-OWNERSHIP",
+        "statement": "`docs/reference/installation-contract.md` states which files the tool owns and which belong to the user.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-OWNERSHIP"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-OWNERSHIP-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-OWNERSHIP",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/installation-contract.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-INSTALL-ROLLBACK",
+        "statement": "`docs/manual/installation.md` states the rollback strategy and recovery after an update.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-ROLLBACK"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-ROLLBACK-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-ROLLBACK",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/installation.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-INSTALL-UNINSTALL",
+        "statement": "`docs/manual/uninstallation.md` states what uninstallation removes and what it intentionally preserves.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-UNINSTALL"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-UNINSTALL-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-UNINSTALL",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/uninstallation.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "contract_id": "product.vision",
     "sources": [
       "docs/product/vision.md"
@@ -180,123 +618,103 @@
     ]
   },
   {
-    "contract_id": "architecture.system",
+    "contract_id": "security.trust",
     "sources": [
-      "docs/architecture/overview.md",
-      "docs/architecture/dependency-rules.md"
+      "docs/security/trust-model.md"
     ],
     "ownership": "human-maintained",
     "authority": "canonical-documentation",
     "answered_questions": [
-      "What owns canonical state?",
-      "Which components may mutate it?"
+      "Which actions require explicit approval?"
     ],
     "requirement_map": {
-      "system boundaries": "REQ-ARCH-BOUNDARIES",
-      "major components": "REQ-ARCH-COMPONENTS",
-      "dependency direction": "REQ-ARCH-DIRECTION",
-      "external integrations": "REQ-ARCH-INTEGRATIONS"
+      "trust boundaries": "REQ-TRUST-BOUNDARIES",
+      "permission model": "REQ-TRUST-PERMISSIONS",
+      "secrets model": "REQ-TRUST-SECRETS",
+      "recovery": "REQ-TRUST-RECOVERY"
     },
     "claims": [
       {
-        "id": "CLAIM-PRUMO-ARCH-BOUNDARIES",
-        "statement": "`docs/architecture/overview.md` states the system boundaries of the harness, documentation control plane and CLI.",
+        "id": "CLAIM-PRUMO-TRUST-BOUNDARIES",
+        "statement": "`docs/security/trust-model.md` states the trust boundaries between repository, harness and external providers.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-ARCH-BOUNDARIES"
+          "REQ-TRUST-BOUNDARIES"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-ARCH-BOUNDARIES-DOC",
+            "id": "EV-PRUMO-TRUST-BOUNDARIES-DOC",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-ARCH-BOUNDARIES",
+            "target": "CLAIM-PRUMO-TRUST-BOUNDARIES",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/architecture/overview.md"
+            "artifact": "docs/security/trust-model.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-ARCH-COMPONENTS",
-        "statement": "`docs/architecture/overview.md` and `docs/architecture/documentation-control-plane.md` name the major components.",
+        "id": "CLAIM-PRUMO-TRUST-PERMISSIONS",
+        "statement": "`docs/security/trust-model.md` states which actions require explicit approval.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-ARCH-COMPONENTS"
+          "REQ-TRUST-PERMISSIONS"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-ARCH-COMPONENTS-DOC",
+            "id": "EV-PRUMO-TRUST-PERMISSIONS-DOC",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-ARCH-COMPONENTS",
+            "target": "CLAIM-PRUMO-TRUST-PERMISSIONS",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/architecture/overview.md"
-          },
-          {
-            "id": "EV-PRUMO-ARCH-COMPONENTS-CP",
-            "type": "canonical-document",
-            "target": "CLAIM-PRUMO-ARCH-COMPONENTS",
-            "revision": "1",
-            "producer": "human-maintained",
-            "verified": true,
-            "artifact": "docs/architecture/documentation-control-plane.md"
+            "artifact": "docs/security/trust-model.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-ARCH-DIRECTION",
-        "statement": "`docs/architecture/dependency-rules.md` states the dependency direction and the layer import policy.",
+        "id": "CLAIM-PRUMO-TRUST-SECRETS",
+        "statement": "`docs/security/trust-model.md` and `SECURITY.md` state how secrets are handled and never committed.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-ARCH-DIRECTION"
+          "REQ-TRUST-SECRETS"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-ARCH-DIRECTION-DOC",
+            "id": "EV-PRUMO-TRUST-SECRETS-DOC",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-ARCH-DIRECTION",
+            "target": "CLAIM-PRUMO-TRUST-SECRETS",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/architecture/dependency-rules.md"
-          },
-          {
-            "id": "EV-PRUMO-ARCH-DIRECTION-ROUNDTRIP",
-            "type": "conformance-test",
-            "target": "CLAIM-PRUMO-ARCH-DIRECTION",
-            "revision": "1",
-            "producer": "prumo-maintained",
-            "verified": true,
-            "artifact": "conformance/schema-runtime/roundtrip_test.go"
+            "artifact": "SECURITY.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-ARCH-INTEGRATIONS",
-        "statement": "`docs/architecture/overview.md` and `docs/integration/connector-contract.md` describe the external integration surface.",
+        "id": "CLAIM-PRUMO-TRUST-RECOVERY",
+        "statement": "`docs/security/trust-model.md` states the recovery behaviour for interrupted or failed operations.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-ARCH-INTEGRATIONS"
+          "REQ-TRUST-RECOVERY"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-ARCH-INTEGRATIONS-DOC",
+            "id": "EV-PRUMO-TRUST-RECOVERY-DOC",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-ARCH-INTEGRATIONS",
+            "target": "CLAIM-PRUMO-TRUST-RECOVERY",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/integration/connector-contract.md"
+            "artifact": "docs/security/trust-model.md"
           }
         ]
       }
@@ -424,338 +842,443 @@
     ]
   },
   {
-    "contract_id": "security.trust",
+    "contract_id": "tui.accessibility",
     "sources": [
-      "docs/security/trust-model.md"
+      "docs/architecture/visual-constitution.md"
     ],
     "ownership": "human-maintained",
     "authority": "canonical-documentation",
     "answered_questions": [
-      "Which actions require explicit approval?"
+      "Which accessibility evidence applies to a terminal surface?"
     ],
     "requirement_map": {
-      "trust boundaries": "REQ-TRUST-BOUNDARIES",
-      "permission model": "REQ-TRUST-PERMISSIONS",
-      "secrets model": "REQ-TRUST-SECRETS",
-      "recovery": "REQ-TRUST-RECOVERY"
+      "color capability fallback": "REQ-TUIACCESSIBILITY-COLOR",
+      "Unicode fallback": "REQ-TUIACCESSIBILITY-UNICODE",
+      "no-color mode": "REQ-TUIACCESSIBILITY-NOCOLOR",
+      "screen reader strategy": "REQ-TUIACCESSIBILITY-SR"
     },
     "claims": [
       {
-        "id": "CLAIM-PRUMO-TRUST-BOUNDARIES",
-        "statement": "`docs/security/trust-model.md` states the trust boundaries between repository, harness and external providers.",
+        "id": "CLAIM-TUIACCESSIBILITY-COLOR",
+        "statement": "`docs/architecture/visual-constitution.md` declares the terminal capability matrix: true color degrades to 256-color, then 16-color, then none, and the interface stays usable at minimal capability.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-TRUST-BOUNDARIES"
+          "REQ-TUIACCESSIBILITY-COLOR"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-TRUST-BOUNDARIES-DOC",
+            "id": "EV-TUIACCESSIBILITY-COLOR",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-TRUST-BOUNDARIES",
+            "target": "CLAIM-TUIACCESSIBILITY-COLOR",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/security/trust-model.md"
+            "artifact": "docs/architecture/visual-constitution.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-TRUST-PERMISSIONS",
-        "statement": "`docs/security/trust-model.md` states which actions require explicit approval.",
+        "id": "CLAIM-TUIACCESSIBILITY-UNICODE",
+        "statement": "`docs/architecture/visual-constitution.md` requires Unicode box drawing to fall back to ASCII, and Unicode width and CJK handling to be computed conservatively so alignment never corrupts.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-TRUST-PERMISSIONS"
+          "REQ-TUIACCESSIBILITY-UNICODE"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-TRUST-PERMISSIONS-DOC",
+            "id": "EV-TUIACCESSIBILITY-UNICODE",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-TRUST-PERMISSIONS",
+            "target": "CLAIM-TUIACCESSIBILITY-UNICODE",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/security/trust-model.md"
+            "artifact": "docs/architecture/visual-constitution.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-TRUST-SECRETS",
-        "statement": "`docs/security/trust-model.md` and `SECURITY.md` state how secrets are handled and never committed.",
+        "id": "CLAIM-TUIACCESSIBILITY-NOCOLOR",
+        "statement": "`docs/architecture/visual-constitution.md` makes monochrome the default with a no-color fallback for every semantic token, so colour carries meaning but never carries it alone.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-TRUST-SECRETS"
+          "REQ-TUIACCESSIBILITY-NOCOLOR"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-TRUST-SECRETS-DOC",
+            "id": "EV-TUIACCESSIBILITY-NOCOLOR",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-TRUST-SECRETS",
+            "target": "CLAIM-TUIACCESSIBILITY-NOCOLOR",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "SECURITY.md"
+            "artifact": "docs/architecture/visual-constitution.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-TRUST-RECOVERY",
-        "statement": "`docs/security/trust-model.md` states the recovery behaviour for interrupted or failed operations.",
+        "id": "CLAIM-TUIACCESSIBILITY-SR",
+        "statement": "`docs/architecture/visual-constitution.md` states the terminal screen-reader strategy: state is expressed in text before colour, announcements are deltas rather than redraws, cursor position is never the only signal, and screen-reader mode is a declared terminal capability that suppresses motion.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-TRUST-RECOVERY"
+          "REQ-TUIACCESSIBILITY-SR"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-TRUST-RECOVERY-DOC",
+            "id": "EV-TUIACCESSIBILITY-SR",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-TRUST-RECOVERY",
+            "target": "CLAIM-TUIACCESSIBILITY-SR",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/security/trust-model.md"
+            "artifact": "docs/architecture/visual-constitution.md"
           }
         ]
       }
     ]
   },
   {
-    "contract_id": "installation.lifecycle",
+    "contract_id": "tui.interaction",
     "sources": [
-      "docs/manual/installation.md",
-      "docs/manual/uninstallation.md"
+      "docs/ui-ux/interaction.md"
     ],
-    "ownership": "human-maintained",
+    "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
     "answered_questions": [
-      "What happens after interrupted update?"
+      "Is the interface complete without a mouse?"
     ],
     "requirement_map": {
-      "installation paths": "REQ-INSTALL-PATHS",
-      "ownership": "REQ-INSTALL-OWNERSHIP",
-      "rollback strategy": "REQ-INSTALL-ROLLBACK",
-      "uninstall safety": "REQ-INSTALL-UNINSTALL"
+      "terminal keymap": "REQ-TUIINTERACTION-KEYMAP",
+      "focus and selection semantics": "REQ-TUIINTERACTION-FOCUS",
+      "mouse optionality": "REQ-TUIINTERACTION-MOUSE",
+      "terminal size classes": "REQ-TUIINTERACTION-SIZE"
     },
     "claims": [
       {
-        "id": "CLAIM-PRUMO-INSTALL-PATHS",
-        "statement": "`docs/manual/installation.md` states the supported installation paths.",
+        "id": "CLAIM-TUIINTERACTION-KEYMAP",
+        "statement": "`docs/ui-ux/interaction.md` defines the terminal keymap, including bracketed paste that inserts literally and never triggers keybindings, and focus events that never change run state.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-INSTALL-PATHS"
+          "REQ-TUIINTERACTION-KEYMAP"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-INSTALL-PATHS-DOC",
+            "id": "EV-TUIINTERACTION-KEYMAP",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-INSTALL-PATHS",
+            "target": "CLAIM-TUIINTERACTION-KEYMAP",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/manual/installation.md"
+            "artifact": "docs/ui-ux/interaction.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-INSTALL-OWNERSHIP",
-        "statement": "`docs/reference/installation-contract.md` states which files the tool owns and which belong to the user.",
+        "id": "CLAIM-TUIINTERACTION-FOCUS",
+        "statement": "`docs/ui-ux/interaction.md` states the terminal-specific focus and selection rules: focus indicated by the border glyph as well as the cursor, selection preserved per list across focus moves, and a timeline that scrolls without a selection.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-INSTALL-OWNERSHIP"
+          "REQ-TUIINTERACTION-FOCUS"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-INSTALL-OWNERSHIP-DOC",
+            "id": "EV-TUIINTERACTION-FOCUS",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-INSTALL-OWNERSHIP",
+            "target": "CLAIM-TUIINTERACTION-FOCUS",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/reference/installation-contract.md"
+            "artifact": "docs/ui-ux/interaction.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-INSTALL-ROLLBACK",
-        "statement": "`docs/manual/installation.md` states the rollback strategy and recovery after an update.",
+        "id": "CLAIM-TUIINTERACTION-MOUSE",
+        "statement": "`docs/ui-ux/interaction.md` limits mouse events to actions that already have a keyboard route and declares that no action depends on a gesture a keyboard cannot express.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-INSTALL-ROLLBACK"
+          "REQ-TUIINTERACTION-MOUSE"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-INSTALL-ROLLBACK-DOC",
+            "id": "EV-TUIINTERACTION-MOUSE",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-INSTALL-ROLLBACK",
+            "target": "CLAIM-TUIINTERACTION-MOUSE",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/manual/installation.md"
+            "artifact": "docs/ui-ux/interaction.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-INSTALL-UNINSTALL",
-        "statement": "`docs/manual/uninstallation.md` states what uninstallation removes and what it intentionally preserves.",
+        "id": "CLAIM-TUIINTERACTION-SIZE",
+        "statement": "`docs/ui-ux/interaction.md` defines the compact, standard and wide size classes with their column ranges, forbids horizontal scrolling, and requires a visible truncation marker and conservative Unicode width calculation.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-INSTALL-UNINSTALL"
+          "REQ-TUIINTERACTION-SIZE"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-INSTALL-UNINSTALL-DOC",
+            "id": "EV-TUIINTERACTION-SIZE",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-INSTALL-UNINSTALL",
+            "target": "CLAIM-TUIINTERACTION-SIZE",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/manual/uninstallation.md"
+            "artifact": "docs/ui-ux/interaction.md"
           }
         ]
       }
     ]
   },
   {
-    "contract_id": "cli.reference",
+    "contract_id": "ui.accessibility",
     "sources": [
-      "docs/reference/cli.md",
-      "docs/manual/usage.md"
+      "docs/architecture/accessibility.md"
     ],
     "ownership": "human-maintained",
     "authority": "canonical-documentation",
     "answered_questions": [
-      "Which commands are stable?"
+      "Which accessibility evidence is mandatory for this surface?"
     ],
     "requirement_map": {
-      "command surface": "REQ-CLI-SURFACE",
-      "machine output": "REQ-CLI-MACHINE",
-      "exit codes": "REQ-CLI-EXITS",
-      "examples": "REQ-CLI-EXAMPLES"
+      "keyboard access": "REQ-UIACCESSIBILITY-KEYBOARD",
+      "focus visibility": "REQ-UIACCESSIBILITY-FOCUS",
+      "contrast": "REQ-UIACCESSIBILITY-CONTRAST",
+      "screen reader strategy": "REQ-UIACCESSIBILITY-SR",
+      "evidence classes": "REQ-UIACCESSIBILITY-EVIDENCE"
     },
     "claims": [
       {
-        "id": "CLAIM-PRUMO-CLI-SURFACE",
-        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo/help.go`.",
+        "id": "CLAIM-UIACCESSIBILITY-KEYBOARD",
+        "statement": "`docs/architecture/accessibility.md` makes keyboard reachability an independently verifiable sub-contract (`accessibility.keyboard`) rather than an assumed property.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-CLI-SURFACE"
+          "REQ-UIACCESSIBILITY-KEYBOARD"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-CLI-SURFACE-DOC",
+            "id": "EV-UIACCESSIBILITY-KEYBOARD",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-CLI-SURFACE",
+            "target": "CLAIM-UIACCESSIBILITY-KEYBOARD",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/reference/cli.md"
-          },
-          {
-            "id": "EV-PRUMO-CLI-SURFACE-SOURCE",
-            "type": "source",
-            "target": "CLAIM-PRUMO-CLI-SURFACE",
-            "revision": "1",
-            "producer": "prumo-maintained",
-            "verified": true,
-            "artifact": "cmd/prumo/help.go"
+            "artifact": "docs/architecture/accessibility.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-CLI-MACHINE",
-        "statement": "The `--json` envelope is defined once in `internal/protocol` and documents machine-readable output.",
+        "id": "CLAIM-UIACCESSIBILITY-FOCUS",
+        "statement": "`docs/architecture/accessibility.md` requires focus to be visible, ordered and never trapped or lost (`accessibility.focus`), with visual evidence.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-CLI-MACHINE"
+          "REQ-UIACCESSIBILITY-FOCUS"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-CLI-MACHINE-SOURCE",
-            "type": "source",
-            "target": "CLAIM-PRUMO-CLI-MACHINE",
-            "revision": "1",
-            "producer": "prumo-maintained",
-            "verified": true,
-            "artifact": "internal/protocol/protocol.go"
-          },
-          {
-            "id": "EV-PRUMO-CLI-MACHINE-DOC",
+            "id": "EV-UIACCESSIBILITY-FOCUS",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-CLI-MACHINE",
+            "target": "CLAIM-UIACCESSIBILITY-FOCUS",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/reference/cli.md"
+            "artifact": "docs/architecture/accessibility.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-CLI-EXITS",
-        "statement": "Exit-code semantics are documented and enforced by the CLI smoke test in CI.",
+        "id": "CLAIM-UIACCESSIBILITY-CONTRAST",
+        "statement": "`docs/architecture/accessibility.md` requires text and non-text contrast to be measured (`accessibility.contrast`) rather than asserted.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-CLI-EXITS"
+          "REQ-UIACCESSIBILITY-CONTRAST"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-CLI-EXITS-CI",
-            "type": "ci-workflow",
-            "target": "CLAIM-PRUMO-CLI-EXITS",
-            "revision": "1",
-            "producer": "prumo-maintained",
-            "verified": true,
-            "artifact": ".github/workflows/ci.yml"
-          },
-          {
-            "id": "EV-PRUMO-CLI-EXITS-DOC",
+            "id": "EV-UIACCESSIBILITY-CONTRAST",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-CLI-EXITS",
+            "target": "CLAIM-UIACCESSIBILITY-CONTRAST",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/reference/cli.md"
+            "artifact": "docs/architecture/accessibility.md"
           }
         ]
       },
       {
-        "id": "CLAIM-PRUMO-CLI-EXAMPLES",
-        "statement": "`docs/manual/usage.md` provides runnable examples for the documented commands.",
+        "id": "CLAIM-UIACCESSIBILITY-SR",
+        "statement": "`docs/architecture/accessibility.md` requires name/role/value and structure to be exposed and verified manually (`accessibility.screen-reader`), and maps the obligation per surface.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
         "requires": [
-          "REQ-CLI-EXAMPLES"
+          "REQ-UIACCESSIBILITY-SR"
         ],
         "evidence": [
           {
-            "id": "EV-PRUMO-CLI-EXAMPLES-DOC",
+            "id": "EV-UIACCESSIBILITY-SR",
             "type": "canonical-document",
-            "target": "CLAIM-PRUMO-CLI-EXAMPLES",
+            "target": "CLAIM-UIACCESSIBILITY-SR",
             "revision": "1",
             "producer": "human-maintained",
             "verified": true,
-            "artifact": "docs/manual/usage.md"
+            "artifact": "docs/architecture/accessibility.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIACCESSIBILITY-EVIDENCE",
+        "statement": "`docs/architecture/accessibility.md` closes the evidence vocabulary (automated, manual, visual, interaction, platform-specific, exception-with-rationale) and states that automated checks alone never constitute full verification.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIACCESSIBILITY-EVIDENCE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIACCESSIBILITY-EVIDENCE",
+            "type": "canonical-document",
+            "target": "CLAIM-UIACCESSIBILITY-EVIDENCE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/accessibility.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "ui.component-contracts",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the first layout increment. No component inventory exists; the spike names panes and a status bar as scope, not as contracted components (docs/product/tui-spike-h10.md, 'In scope')."
+  },
+  {
+    "contract_id": "ui.design-tokens",
+    "sources": [
+      "docs/architecture/visual-constitution.md",
+      "docs/ui-ux/design-tokens.json"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which semantic tokens are contractual?"
+    ],
+    "requirement_map": {
+      "token tiers": "REQ-UIDESIGNTOKENS-TIERS",
+      "semantic tokens": "REQ-UIDESIGNTOKENS-SEMANTIC",
+      "token change policy": "REQ-UIDESIGNTOKENS-CHANGE",
+      "contrast evidence": "REQ-UIDESIGNTOKENS-CONTRAST"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UIDESIGNTOKENS-TIERS",
+        "statement": "`docs/architecture/visual-constitution.md` fixes the token system at three tiers only (primitive, semantic, component) and forbids components from consuming primitives directly.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIDESIGNTOKENS-TIERS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIDESIGNTOKENS-TIERS",
+            "type": "canonical-document",
+            "target": "CLAIM-UIDESIGNTOKENS-TIERS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIDESIGNTOKENS-SEMANTIC",
+        "statement": "`docs/architecture/visual-constitution.md` names the contractual semantic tokens (surface, panel, border-subtle, text, text-muted, accent, success, warning, error, focus) plus the four TUI component tokens, and `docs/ui-ux/design-tokens.json` declares them as the versioned token set.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIDESIGNTOKENS-SEMANTIC"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIDESIGNTOKENS-SEMANTIC",
+            "type": "canonical-document",
+            "target": "CLAIM-UIDESIGNTOKENS-SEMANTIC",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIDESIGNTOKENS-CHANGE",
+        "statement": "`docs/architecture/visual-constitution.md` states that a token rename is an API change requiring a migration note and impact on components, themes, visual evidence and user-customization documentation.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIDESIGNTOKENS-CHANGE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIDESIGNTOKENS-CHANGE",
+            "type": "canonical-document",
+            "target": "CLAIM-UIDESIGNTOKENS-CHANGE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIDESIGNTOKENS-CONTRAST",
+        "statement": "`docs/architecture/visual-constitution.md` requires contrast to be evidence rather than intent: semantic text and focus tokens declare a measured ratio, and `docs/ui-ux/design-tokens.json` carries the measured contrast per token pair.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIDESIGNTOKENS-CONTRAST"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIDESIGNTOKENS-CONTRAST",
+            "type": "canonical-document",
+            "target": "CLAIM-UIDESIGNTOKENS-CONTRAST",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
           }
         ]
       }
@@ -767,5 +1290,400 @@
     "ownership": "human-maintained",
     "authority": "canonical-documentation",
     "answered_questions": []
+  },
+  {
+    "contract_id": "ui.information-architecture",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the first layout increment. The spike deliberately ships contrast-over-boxes panes without a navigation hierarchy (docs/product/tui-spike-h10.md, 'In scope')."
+  },
+  {
+    "contract_id": "ui.interaction",
+    "sources": [
+      "docs/ui-ux/interaction.md"
+    ],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Is every action reachable by keyboard only?"
+    ],
+    "requirement_map": {
+      "input methods": "REQ-UIINTERACTION-INPUTS",
+      "keyboard map": "REQ-UIINTERACTION-KEYMAP",
+      "focus semantics": "REQ-UIINTERACTION-FOCUS",
+      "selection semantics": "REQ-UIINTERACTION-SELECTION",
+      "mouse optionality": "REQ-UIINTERACTION-MOUSE"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UIINTERACTION-INPUTS",
+        "statement": "`docs/ui-ux/interaction.md` lists the input methods, marks the terminal keyboard as the only method that must be complete, and keeps mouse as optional acceleration that is never the sole route to an action.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIINTERACTION-INPUTS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIINTERACTION-INPUTS",
+            "type": "canonical-document",
+            "target": "CLAIM-UIINTERACTION-INPUTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIINTERACTION-KEYMAP",
+        "statement": "`docs/ui-ux/interaction.md` tabulates the binding for every action and reserves Ctrl+C and Ctrl+Q as unrebindable chords.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIINTERACTION-KEYMAP"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIINTERACTION-KEYMAP",
+            "type": "canonical-document",
+            "target": "CLAIM-UIINTERACTION-KEYMAP",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIINTERACTION-FOCUS",
+        "statement": "`docs/ui-ux/interaction.md` requires exactly one focused pane, an indicator that survives a no-color terminal, focus that is never trapped, and focus returning to the invoking surface when a layer closes.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIINTERACTION-FOCUS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIINTERACTION-FOCUS",
+            "type": "canonical-document",
+            "target": "CLAIM-UIINTERACTION-FOCUS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIINTERACTION-SELECTION",
+        "statement": "`docs/ui-ux/interaction.md` makes selection a property of a list rather than of the screen, forbids side effects on cursor movement, and clears a selection when its list is refilled.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIINTERACTION-SELECTION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIINTERACTION-SELECTION",
+            "type": "canonical-document",
+            "target": "CLAIM-UIINTERACTION-SELECTION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIINTERACTION-MOUSE",
+        "statement": "`docs/ui-ux/interaction.md` states mouse optionality as a test rather than a claim: every action is reachable with the keyboard alone and the acceptance run uses no mouse input.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIINTERACTION-MOUSE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIINTERACTION-MOUSE",
+            "type": "canonical-document",
+            "target": "CLAIM-UIINTERACTION-MOUSE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "ui.layout",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the first layout increment. The spike fixes a focus model and semantic tokens but not size classes or overflow behaviour."
+  },
+  {
+    "contract_id": "ui.localization",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Out of scope for the spike: docs/product/tui-spike-h10.md lists 'themes/i18n packs' as explicitly excluded, so no locale surface exists to contract."
+  },
+  {
+    "contract_id": "ui.personalization",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Out of scope for the spike: docs/product/tui-spike-h10.md excludes preference surfaces, so nothing is customizable, persisted or importable yet."
+  },
+  {
+    "contract_id": "ui.platform-conventions",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed when a second platform ships. H10 targets one platform (a Linux terminal); a capability matrix with fallback behaviour needs a second target to be meaningful."
+  },
+  {
+    "contract_id": "ui.product-ux",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the first flow beyond the palette. The spike is command-palette-first and ships no multi-step flow, so a flow inventory would describe screens that do not exist yet (docs/product/tui-spike-h10.md, 'In scope')."
+  },
+  {
+    "contract_id": "ui.screen-inventory",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Owed by the first layout increment; the spike's surfaces are listed as in-scope items, not yet as a screen inventory with entry points (docs/product/tui-spike-h10.md, 'In scope')."
+  },
+  {
+    "contract_id": "ui.state-model",
+    "sources": [
+      "docs/ui-ux/state-matrix.json"
+    ],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which states must be supported and which are explicitly not applicable?"
+    ],
+    "requirement_map": {
+      "state matrix": "REQ-UISTATEMODEL-MATRIX",
+      "state applicability": "REQ-UISTATEMODEL-APPLICABILITY",
+      "recovery behavior": "REQ-UISTATEMODEL-RECOVERY",
+      "error messaging": "REQ-UISTATEMODEL-ERRORS"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UISTATEMODEL-MATRIX",
+        "statement": "`docs/ui-ux/state-matrix.json` declares every state in the closed vocabulary against one shell surface, each with its user-visible text and its recovery behaviour.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISTATEMODEL-MATRIX"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISTATEMODEL-MATRIX",
+            "type": "canonical-document",
+            "target": "CLAIM-UISTATEMODEL-MATRIX",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/state-matrix.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UISTATEMODEL-APPLICABILITY",
+        "statement": "`docs/ui-ux/state-matrix.json` states applicability explicitly for all states: hover, alternate-theme and alternate-locale are declared not applicable with a reason, so an unimplemented state cannot be mistaken for an unconsidered one.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISTATEMODEL-APPLICABILITY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISTATEMODEL-APPLICABILITY",
+            "type": "canonical-document",
+            "target": "CLAIM-UISTATEMODEL-APPLICABILITY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/state-matrix.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UISTATEMODEL-RECOVERY",
+        "statement": "`docs/ui-ux/state-matrix.json` gives every applicable state a recovery path and declares the transitions between states, including offline to reconnecting to replayed streaming.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISTATEMODEL-RECOVERY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISTATEMODEL-RECOVERY",
+            "type": "canonical-document",
+            "target": "CLAIM-UISTATEMODEL-RECOVERY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/state-matrix.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UISTATEMODEL-ERRORS",
+        "statement": "`docs/ui-ux/state-matrix.json` requires the error state to render the diagnostic code and message from the protocol envelope and to name the failing operation and the next observable action.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UISTATEMODEL-ERRORS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UISTATEMODEL-ERRORS",
+            "type": "canonical-document",
+            "target": "CLAIM-UISTATEMODEL-ERRORS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/state-matrix.json"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "ui.theming",
+    "sources": [],
+    "ownership": "prumo-maintained",
+    "authority": "canonical-documentation",
+    "applicability": "not-applicable",
+    "not_applicable_reason": "Out of scope for the spike: themes ship as tokens only (`docs/ui-ux/design-tokens.json`), and docs/product/tui-spike-h10.md lists themes as explicitly excluded, so no theme-selection surface exists."
+  },
+  {
+    "contract_id": "ui.visual-validation",
+    "sources": [
+      "docs/architecture/visual-constitution.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which visual states require evidence?"
+    ],
+    "requirement_map": {
+      "visual evidence set": "REQ-UIVISUALVALIDATION-SET",
+      "capture environment": "REQ-UIVISUALVALIDATION-CAPTURE",
+      "regression policy": "REQ-UIVISUALVALIDATION-REGRESSION",
+      "media freshness": "REQ-UIVISUALVALIDATION-FRESHNESS"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UIVISUALVALIDATION-SET",
+        "statement": "`docs/architecture/visual-constitution.md` derives the visual evidence set from `docs/ui-ux/state-matrix.json`: one golden frame per applicable state and width class, with not-applicable states carrying a reason instead of a frame.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIVISUALVALIDATION-SET"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIVISUALVALIDATION-SET",
+            "type": "canonical-document",
+            "target": "CLAIM-UIVISUALVALIDATION-SET",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIVISUALVALIDATION-CAPTURE",
+        "statement": "`docs/architecture/visual-constitution.md` requires a frame to be captured as the rendered frame buffer rather than a screenshot, and the record to name terminal size, token theme, Unicode capability and width calculation.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIVISUALVALIDATION-CAPTURE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIVISUALVALIDATION-CAPTURE",
+            "type": "canonical-document",
+            "target": "CLAIM-UIVISUALVALIDATION-CAPTURE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIVISUALVALIDATION-REGRESSION",
+        "statement": "`docs/architecture/visual-constitution.md` requires byte-for-byte comparison against the record and forbids splitting a surface change from its regenerated evidence across commits.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIVISUALVALIDATION-REGRESSION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIVISUALVALIDATION-REGRESSION",
+            "type": "canonical-document",
+            "target": "CLAIM-UIVISUALVALIDATION-REGRESSION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UIVISUALVALIDATION-FRESHNESS",
+        "statement": "`docs/architecture/visual-constitution.md` links frames to the surface they illustrate so they go stale by content digest, and makes a stale frame block release.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UIVISUALVALIDATION-FRESHNESS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UIVISUALVALIDATION-FRESHNESS",
+            "type": "canonical-document",
+            "target": "CLAIM-UIVISUALVALIDATION-FRESHNESS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/visual-constitution.md"
+          }
+        ]
+      }
+    ]
   }
 ]
