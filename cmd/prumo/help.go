@@ -736,6 +736,28 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo agent providers",
 		},
 	},
+	"tui": {
+		Name:     "tui",
+		Category: "Harness",
+		Summary:  "Terminal client for the Agent Protocol (palette → goal → run → stream → evidence)",
+		Usage:    "prumo tui [flags]",
+		Description: "Supervises a `prumo agent serve` daemon and drives it over the public Agent Protocol. " +
+			"Palette-first navigation, live AgentEvent timeline, and a terminal evidence panel. " +
+			"Imports only the public SDK — never prumo/internal. Interactive: no --json output.",
+		Flags: []string{
+			"--path <dir>         Workspace root (default: .)",
+			"--socket <path>      Attach to an existing daemon instead of starting one",
+			"--provider <name>    fake|openai-compat|anthropic (default: fake)",
+			"--model <id>         Model id for real providers",
+			"--max-turns <n>      Max turns (default: 5)",
+			"--theme <id>         theme.default|theme.high-contrast|theme.no-color|theme.reduced-motion",
+		},
+		Examples: []string{
+			"prumo tui --path .",
+			"prumo tui --theme theme.no-color",
+			"prumo tui --socket .prumo/runtime/harness/agentd.sock",
+		},
+	},
 	"automation": {
 		Name:        "automation",
 		Category:    "Platform & Automation",
@@ -749,6 +771,24 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo automation list",
 		},
 	},
+}
+
+// helpCategoryOrder is the order the top-level help prints command categories
+// in. It is a package variable rather than a local slice so a test can assert
+// that every category in the registry appears here — the defect that hid
+// `agent` was a category missing from this list.
+var helpCategoryOrder = []string{
+	"Project Lifecycle",
+	"Goals & Execution",
+	"Workforce & Compilation",
+	"Tooling & Verification",
+	"Adoption & Migration",
+	"Governance & Traceability",
+	"Control Plane Runtime",
+	"Harness",
+	"Platform & Automation",
+	"Environment & Connectors",
+	"General",
 }
 
 // PrintGeneralHelp prints top-level CLI help to stdout.
@@ -773,24 +813,12 @@ func PrintGeneralHelp(asJSON bool) int {
 	fmt.Println("  prumo [--json] [--home <path>] <command> [subcommand] [flags]")
 	fmt.Println()
 
-	// Group by category
-	categoryOrder := []string{
-		"Project Lifecycle",
-		"Goals & Execution",
-		"Workforce & Compilation",
-		"Tooling & Verification",
-		"Governance & Traceability",
-		"Control Plane Runtime",
-		"Environment & Connectors",
-		"General",
-	}
-
 	catMap := map[string][]CommandInfo{}
 	for _, info := range commandRegistry {
 		catMap[info.Category] = append(catMap[info.Category], info)
 	}
 
-	for _, cat := range categoryOrder {
+	for _, cat := range helpCategoryOrder {
 		cmds, ok := catMap[cat]
 		if !ok || len(cmds) == 0 {
 			continue

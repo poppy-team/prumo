@@ -12,7 +12,12 @@ and never owns domain state.
 1. **Agent-first, information-dense.** The run panel is the primary surface;
    decoration is subordinate to state legibility.
 2. **Monochrome-by-default.** Color carries meaning, never brand. Every
-   semantic token has a no-color fallback.
+   semantic token has a no-color fallback, and the fallback is enforced rather
+   than asserted: `theme.no-color` must resolve *every* non-primitive color
+   token to `none`, and resolving a palette that claims to suppress colour while
+   still painting one is an error. Emphasis (weight, frame, spacing) is
+   deliberately kept in that theme, because with no colour left it is the only
+   remaining readability signal.
 3. **Keyboard-only complete.** Every action reachable by keybinding; mouse is
    optional acceleration, never a requirement.
 4. **Capability-degrading.** Missing Unicode, color or true-color terminals

@@ -122,6 +122,21 @@ External dependencies (when added) must be:
 - Vendored or checksum-verified in CI
 - Justified by anti-overengineering guardrail questions
 
+### First external dependency — the TUI stack
+
+Until the H10 terminal client, this module had no third-party dependency: every
+package was standard library only. `tui/` introduces the first two direct ones,
+and the rules above apply to them.
+
+| Aspect | Position |
+|--------|----------|
+| What | `charm.land/bubbletea/v2`, `charm.land/lipgloss/v2` (Stack H, accepted in `docs/product/tui-spike-h10.md`) |
+| Where | Only `tui/`. `internal/` stays standard-library-only, and the boundary test fails if that changes |
+| Pinned | Exact module versions in `go.mod`; the transitive set and its hashes in `go.sum` |
+| Verified | `go mod verify` is a CI step, so a mismatch fails the build |
+| Exit path | The renderer is behind `tui/styles.go` and the transport behind `tui/session.go` (`Ops`); the protocol, the daemon and the SDK do not depend on either framework |
+| Guardrail | The framework renders; it decides nothing. Ranking, bounding, classification and token resolution live in framework-free files, which is also what makes them testable without a terminal |
+
 ## OPEN QUESTIONS
 
 - [ ] Exact package split for `internal/documentation` (contracts vs profiles vs readiness vs delta)
