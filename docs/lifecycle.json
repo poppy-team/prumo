@@ -1,0 +1,22 @@
+{
+  "version": "0.6.0",
+  "release_gates": [
+    "every registered translation is current for its source digest",
+    "every media record illustrates the current revision of its unit",
+    "each deprecation names a replacement or a removal, and is annotated in the document itself",
+    "no current document presents a removed version line as available"
+  ],
+  "version_policy": {
+    "current": "0.6.0",
+    "supported": ["0.5"],
+    "deprecated": ["0.3", "0.4"],
+    "removed": ["0.1", "0.2"],
+    "historical_exempt": true
+  },
+  "deprecated": [],
+  "mutations": {
+    "allowed": [],
+    "require_approval": true,
+    "note": "documentation mutations are denied by default; the read-only MCP resource surface is always available (W18.12)"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "C007",
+  "kind": "dedup",
+  "title": "Control: an orphan projection survives because nothing better is present",
+  "items": [
+    { "ref": "docs/generated/cli.md", "authority": "reference", "projection": true, "canonical_source": "docs/reference/cli.md" },
+    { "ref": "docs/other.md", "authority": "reference" }
+  ],
+  "expect_kept": ["docs/generated/cli.md", "docs/other.md"],
+  "expect_excluded": []
+}

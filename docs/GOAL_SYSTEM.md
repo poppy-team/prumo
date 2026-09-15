@@ -10,7 +10,7 @@ A roadmap says what should happen over time. A Goal defines an outcome that can 
 
 A Goal has an ID, phase, objective, constraints, non-goals, acceptance criteria, gates, dependencies, evidence and state history.
 
-v0.2 Goals are stored as JSON under `.ai/goals/<phase>/<id>.goal.json`.
+Goals are stored as JSON under `.ai/goals/<phase>/<id>.goal.json`.
 
 ## State machine
 
@@ -50,3 +50,11 @@ Goal completion should trigger:
 - compact task/project intelligence update;
 - durable evidence link update;
 - context garbage collection.
+
+Documentation impact is computed **before and after** behavior-changing work:
+a typed `DocumentationPlan` at Goal lock (expected affected units, translations,
+media, agent surfaces, and explicit N/A decisions) and a `DocumentationDelta` at
+completion (actual impacts, new/resolved gaps). A Goal is not complete while its
+required documentation projections are stale.
+
+Specification: W17 in `docs/development/waves.md`. Architecture: ADR 010.

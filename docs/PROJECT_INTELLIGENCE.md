@@ -60,7 +60,7 @@ Do not create one permanent report file per task by default. Store compact task 
 
 ## Durable storage
 
-The recommended v0.2 durable source is one JSON data file, for example:
+The recommended durable source is one JSON data file, for example:
 
 ```text
 .prumo/history/project-intelligence.json
@@ -190,10 +190,11 @@ The dashboard reads durable JSON/derived aggregates. It is replaceable and never
 ## Task completion lifecycle
 
 ```text
-Implement
+Documentation Plan (preflight)
+→ Implement
 → Test
 → Review
-→ Documentation Delta
+→ Documentation Delta (postflight)
 → Measure
 → Update Project Intelligence
 → Update durable knowledge/history

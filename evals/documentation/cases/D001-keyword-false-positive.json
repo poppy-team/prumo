@@ -1,0 +1,8 @@
+{
+  "id": "D001",
+  "kind": "knowledge-match",
+  "title": "A generic keyword must not satisfy a multi-term requirement",
+  "requirement": "permission model and recovery guarantees",
+  "content": "The model is initialized with default settings before any request is served.",
+  "expect_satisfied": false
+}

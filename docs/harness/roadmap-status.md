@@ -47,9 +47,38 @@ implementation waves W0–W21 address structural gaps identified by deep
 research analysis and the Documentation Control Plane Deep Audit.
 See `docs/development/waves.md` for canonical wave definitions and entry/exit criteria.
 
+**Wave progress** (2026-09-15): **✅ W0–W18, W20** · **🟡 W19** (example execution,
+DOC-GAP-020) · **🟡 W21** (workforce routing by impact type, DOC-GAP-024; full
+Markdown AST, DOC-GAP-026) · **⬜ none**. W21.2/W21.3 (query/intent telemetry) are
+**refused by ADR 011** because the trust model forbids collecting what users
+retrieve; the refusal is recorded, not left as an open gap.
+TUI gate: every P0/P1 contract wave is complete and
+`prumo docs verify --strict` passes.
+
+Gate evidence: `conformance/schema-runtime` (W1), `prumo docs authority` (W0),
+`internal/knowledge`, `internal/gauntlet`, W12 client-facing reconnect/replay
+conformance, `evals/documentation` (W13, 13 cases), semantic readiness v2
+(W15: `internal/documentation/semantic.go`, `TestSemanticReadinessDogfood`),
+the agent surface compiler (W16: `internal/agentsurface`, `docs/agents/instruction-ir.json`,
+`prumo docs agents verify`), the semantic impact graph and Goal preflight/postflight
+(W17: `internal/documentation/impact_semantic.go`, `plan.go`), the publishing and
+AI-retrieval plane (W18: `internal/docpublish`, `prumo docs site verify`), the
+continuous verification and Gauntlet runtime (W19: `VerifyDocs`, `VerifyDocsStrict`,
+`internal/gauntlet/run.go`, new CI steps), documentation lifecycle
+(W20: `internal/doclifecycle`) and documentation intelligence plus brownfield
+adoption (W21: `internal/docintel`, `prumo docs adopt`).
+Full repo suite: 73 packages ok, 0 failures.
+
+W15 changed a verdict on purpose and then earned it back honestly: the first draft
+of the repository's own bindings cited a document the authority map classifies as
+historical, and the semantic evaluator rejected it as `non-canonical-evidence`
+instead of accepting a green result. W15.10 was then authored properly, so
+`prumo docs readiness` is now green because 7 contracts genuinely carry accepted
+claims with verified evidence — not because the check was weakened.
+
 | Priority | Waves | Focus |
 |----------|-------|-------|
 | P0 | W0–W7, W15 | Authority cleanup, schema conformance, KnowledgeUnit, ContextManifest, UI contracts, locale, Gauntlet schema, Semantic Readiness v2 |
 | P1 | W8–W14, W16–W19 | Shared Product Contract, design tokens, doc compiler, accessibility, reconnect/replay, evals, Framework update, Agent surfaces, Impact graph, Publishing/AI retrieval, Continuous verification |
 | P1/P2 | W20–W21 | Documentation lifecycle (i18n/media/versioning) & Intelligence, adoption & scale |
-| Gate | — | P0 complete + W8/W9/W11/W12/W15 → H10 TUI spike may begin |
+| Gate | — | P0 complete + W8/W9/W11/W12/W15 → H10 TUI spike may begin (**met**) |

@@ -171,16 +171,46 @@ var commandRegistry = map[string]CommandInfo{
 	"context": {
 		Name:     "context",
 		Category: "Goals & Execution",
-		Summary:  "Plan context strategy and budget allocation (LPC)",
-		Usage:    "prumo context plan <description> [--path <dir>]",
+		Summary:  "Plan, compile and explain context compilations (LPC)",
+		Usage:    "prumo context plan <description> | compile --goal <text> | explain <CTX-id>",
 		Description: "Applies Lean Progressive Context (LPC) to determine the minimal sufficient\n" +
-			"context capsule, token budget, and retrieval strategy for an AI coding goal.",
+			"context capsule, token budget, and retrieval strategy for an AI coding goal.\n" +
+			"compile emits a replayable ContextManifest at an explicit L0-L4 disclosure\n" +
+			"level; explain answers what a compilation included, why, what it left out and\n" +
+			"whether it was sufficient.",
 		Flags: []string{
 			"--path <dir>           Project directory (default: .)",
-			"--json                 Output context plan envelope",
+			"--goal <text>          Goal the compilation must serve (compile)",
+			"--budget <n>           Token budget (compile, default 8000)",
+			"--level <L0..L4>       Progressive disclosure level (compile)",
+			"--id <id>              Compilation id (compile; default derived from --goal)",
+			"--required <refs>      Comma-separated refs that must be present (compile, explain)",
+			"--json                 Output the JSON envelope",
 		},
 		Examples: []string{
 			"prumo context plan \"debug database connection leak\" --path ./my-project --json",
+			"prumo context compile --goal \"add a transition template\" --budget 3000 --level L2",
+			"prumo context explain CTX-add-a-transition-template --budget 3000",
+		},
+	},
+	"knowledge": {
+		Name:     "knowledge",
+		Category: "Goals & Execution",
+		Summary:  "Derived knowledge manifest and stable-identity migration report",
+		Usage:    "prumo knowledge manifest | ids",
+		Description: "Builds the derived KnowledgeManifest from every persisted run store.\n" +
+			"The manifest is a projection written under .prumo/runtime/ and is never a\n" +
+			"canonical artifact; ids reports records that still carry a pre-migration\n" +
+			"identifier (they keep resolving to their stable id).",
+		Flags: []string{
+			"--path <dir>           Project directory (default: .)",
+			"--out <file>           Write the derived manifest to a path",
+			"--json                 Output the JSON envelope",
+		},
+		Examples: []string{
+			"prumo knowledge manifest",
+			"prumo knowledge manifest --json",
+			"prumo knowledge ids",
 		},
 	},
 	"resolve": {
@@ -363,16 +393,44 @@ var commandRegistry = map[string]CommandInfo{
 		Description: "Validates local canonical engineering documentation against schema\n" +
 			"contracts and tracks semantic documentation deltas.",
 		Subcommands: []string{
-			"check [path]       Validate documentation files against schemas",
-			"export [path]      Export documentation index and manifest",
-			"validate [path]    Validate canonical local documentation integrity",
+			"contracts          List documentation contracts (show <id> for detail)",
+			"profiles           List documentation profiles (show <id> for detail)",
+			"audit              Report contract coverage for this repository",
+			"readiness          Report Goal implementation readiness",
+			"impact <paths...>  Analyze documentation impact of changed paths",
+			"delta <action>     Manage semantic documentation deltas",
+			"contradictions     Detect contradictions across bound documents",
+			"authority          Validate authority map, version drift and routing links",
+			"plan --goal <id>   Preflight documentation obligations (--changed … --reconcile for postflight)",
+			"explain <id>       Explain a planned obligation, contract or bound document",
+			"agents <build|verify|explain>  Compile and verify agent instruction surfaces",
+			"verify [--strict]  Run deterministic documentation checks (--strict also requires semantic readiness)",
+			"gauntlet           Run bounded deterministic documentation rounds",
+			"glossary           Validate the terminology registry and its use in current documents",
+			"version            Check the documentation version policy against the shipped release",
+			"metrics            Report documentation intelligence computed from repository state",
+			"resources <read|list>  Read documentation resources over the MCP surface",
+			"mutations          Report which documentation mutations are allowed (denied by default)",
+			"adopt <inspect|propose>  Discover and propose contracts in a brownfield repository",
 		},
 		Flags: []string{
-			"--json             Output documentation check results as JSON",
+			"--json             Output results as JSON",
+			"--path <dir>       Repository root (default .)",
+			"--goal <id>        Goal identifier for readiness",
+			"--out <dir>        Target dir for compiled vendor surfaces",
 		},
 		Examples: []string{
-			"prumo docs check",
-			"prumo docs validate",
+			"prumo docs audit",
+			"prumo docs readiness --goal M5",
+			"prumo docs authority --json",
+			"prumo docs plan --goal M6 --changed schemas/goal.schema.json",
+			"prumo docs plan --goal M6 --changed cmd/prumo/main.go --reconcile",
+			"prumo docs explain cli.reference --goal M6",
+			"prumo docs agents build",
+			"prumo docs agents verify --json",
+			"prumo docs verify --strict",
+			"prumo docs glossary",
+			"prumo docs version",
 		},
 	},
 	"trace": {

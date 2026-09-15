@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "source": "Living Book page 23 — Shared Product Contract (promoted to repository authority)",
+  "capabilities": [
+    { "id": "cap:cli", "name": "CLI & machine protocol", "state_owner": "internal/protocol" },
+    { "id": "cap:projects", "name": "Project resolution & config", "state_owner": "internal/project" },
+    { "id": "cap:goals", "name": "Goals, plans and task DAGs", "state_owner": "internal/planning" },
+    { "id": "cap:agent-runtime", "name": "Native agent runtime", "state_owner": "internal/harness/agent" },
+    { "id": "cap:context", "name": "Context compilation", "state_owner": "internal/harness/contextv2" },
+    { "id": "cap:knowledge", "name": "Knowledge runtime", "state_owner": "internal/harness/knowledge" },
+    { "id": "cap:documentation", "name": "Documentation control plane", "state_owner": "internal/documentation" },
+    { "id": "cap:evidence-gates", "name": "Evidence and gates", "state_owner": "internal/harness/runlayer" },
+    { "id": "cap:workforce", "name": "Workforce resolution", "state_owner": "internal/resolver" },
+    { "id": "cap:daemon", "name": "Daemon and remote transport", "state_owner": "internal/harness/daemon" },
+    { "id": "cap:connectors", "name": "Harness integrations", "state_owner": "internal/connectors" },
+    { "id": "cap:observability", "name": "Observability and events", "state_owner": "internal/observability" },
+    { "id": "cap:security", "name": "Trust, permissions and egress", "state_owner": "internal/harness/permissions" },
+    { "id": "cap:tui", "name": "Terminal client", "state_owner": "prumo-code (H10)" },
+    { "id": "cap:desktop", "name": "Desktop client", "state_owner": "prumo-code (Stack H)" }
+  ],
+  "entities": [
+    { "id": "entity:goal", "state_owner": "canonical repository (.ai/goals)", "mutability": "goal lifecycle only" },
+    { "id": "entity:plan", "state_owner": "canonical repository", "mutability": "via Goal" },
+    { "id": "entity:task", "state_owner": "canonical repository", "mutability": "via Plan" },
+    { "id": "entity:run", "state_owner": "runtime store (derived)", "mutability": "runtime only" },
+    { "id": "entity:checkpoint", "state_owner": "runtime store (derived)", "mutability": "runtime only" },
+    { "id": "entity:evidence", "state_owner": "canonical repository", "mutability": "append-only" },
+    { "id": "entity:knowledge-unit", "state_owner": "canonical knowledge", "mutability": "Delta-first" },
+    { "id": "entity:documentation-unit", "state_owner": "canonical + projections", "mutability": "compiler + review" },
+    { "id": "entity:approval", "state_owner": "runtime journal (append-only)", "mutability": "append-only" },
+    { "id": "entity:budget", "state_owner": "runtime", "mutability": "runtime only" },
+    { "id": "entity:handoff", "state_owner": "canonical artifact", "mutability": "explicit" },
+    { "id": "entity:event", "state_owner": "runtime stream (derived)", "mutability": "append-only" }
+  ],
+  "invariants": [
+    "Clients consume the contract; they never reimplement domain rules.",
+    "Canonical state is repository-owned; runtime state is derived and GC-able.",
+    "Every client projection resolves to the same entity IDs."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "C010",
+  "kind": "sufficiency",
+  "title": "Control: a compilation that covers every obligation is sufficient",
+  "included": ["goal", "file:a.md"],
+  "required": ["file:a.md"],
+  "expect_sufficient": true,
+  "expect_missing": []
+}

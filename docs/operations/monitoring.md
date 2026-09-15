@@ -1,6 +1,6 @@
 # Monitoring Guide
 
-Monitor the Go v0.4 CLI through deterministic health checks, exit codes, JSON envelopes, and repository state.
+Monitor the Go CLI through deterministic health checks, exit codes, JSON envelopes, and repository state.
 
 ## Framework health
 

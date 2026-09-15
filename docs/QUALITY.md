@@ -8,7 +8,7 @@ Framework quality gates:
 - Goal transitions reject illegal state changes;
 - `DONE` requires evidence;
 - project bootstrap generates Markdown/JSON canonical state;
-- YAML is not generated in v0.2;
+- YAML is not generated;
 - legacy YAML input remains readable during migration support;
 - platform compilation uses only selected workforce entries;
 - runtime/generated context is not treated as canonical;

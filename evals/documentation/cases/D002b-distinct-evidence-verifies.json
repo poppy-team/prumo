@@ -1,0 +1,38 @@
+{
+  "id": "D002b",
+  "kind": "evidence-binding",
+  "title": "Claim with verified evidence bound to the current revision verifies",
+  "contract": {
+    "id": "eval.evidence-binding-ok",
+    "required_knowledge": ["recovery guarantees"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "requirement_map": {
+    "recovery guarantees": "REQ-RECOVERY"
+  },
+  "claims": [
+    {
+      "id": "CLAIM-RECOVERY",
+      "statement": "Crash recovery guarantees are documented per operation.",
+      "status": "accepted",
+      "authority": "canonical-documentation",
+      "revision": 3,
+      "requires": ["REQ-RECOVERY"],
+      "evidence": [
+        {
+          "id": "EV-1",
+          "type": "test-suite",
+          "target": "CLAIM-RECOVERY",
+          "revision": "3",
+          "verified": true
+        }
+      ]
+    }
+  ],
+  "expect_state": "verified"
+}

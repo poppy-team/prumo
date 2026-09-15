@@ -34,7 +34,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/rai
 
 Variáveis opcionais para customização:
 ```bash
-PRUMO_VERSION=v0.5.0 PRUMO_INSTALL_DIR="$HOME/.local/bin" sh install.sh
+PRUMO_VERSION=v0.6.0 PRUMO_INSTALL_DIR="$HOME/.local/bin" sh install.sh
 PRUMO_HOME="$HOME/.prumo" sh install.sh
 ```
 
@@ -133,7 +133,7 @@ prumo doctor ./my-project
 
 ## Depreciação e Aposentadoria do Python (ADR 002)
 
-O runtime e os testes em Python v0.3 foram completamente removidos (consulte [ADR 002](../adr/002-retire-python-runtime.md)). O Prumo v0.5 é distribuído exclusivamente em binário único compilado em Go, sem dependência de interpretadores externos, ambientes virtuais ou gerenciadores de pacotes Python.
+O runtime e os testes em Python v0.3 (legacy) foram completamente removidos (consulte [ADR 002](../adr/002-retire-python-runtime.md)). O Prumo v0.6 é distribuído exclusivamente em binário único compilado em Go, sem dependência de interpretadores externos, ambientes virtuais ou gerenciadores de pacotes Python.
 
 ## Problemas comuns
 

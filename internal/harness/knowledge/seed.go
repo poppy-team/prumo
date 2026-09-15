@@ -38,15 +38,35 @@ func (s *Store) Restore(records []Record, rels []Relation) {
 	s.rels = append([]Relation{}, rels...)
 }
 
+// RestoreWithAliases also reinstates the locator bindings, so a store written
+// before the stable-identity migration keeps resolving (W3.8).
+func (s *Store) RestoreWithAliases(records []Record, rels []Relation, aliases map[string]string) {
+	s.Restore(records, rels)
+	s.aliases = map[string]string{}
+	for locator, id := range aliases {
+		s.aliases[locator] = id
+	}
+}
+
+// Aliases returns a copy of the locator→stable-id bindings.
+func (s *Store) Aliases() map[string]string {
+	out := map[string]string{}
+	for locator, id := range s.aliases {
+		out[locator] = id
+	}
+	return out
+}
+
 type persisted struct {
-	Records []Record   `json:"records"`
-	Rels    []Relation `json:"rels"`
+	Records []Record          `json:"records"`
+	Rels    []Relation        `json:"rels"`
+	Aliases map[string]string `json:"aliases,omitempty"`
 }
 
 // Save writes the store atomically (tmp + rename).
 func (s *Store) Save(path string) error {
 	records, rels := s.Snapshot()
-	data, err := json.MarshalIndent(persisted{Records: records, Rels: rels}, "", "  ")
+	data, err := json.MarshalIndent(persisted{Records: records, Rels: rels, Aliases: s.Aliases()}, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -74,15 +94,22 @@ func Load(path string) (*Store, error) {
 	if err := json.Unmarshal(data, &p); err != nil {
 		return nil, err
 	}
-	s.Restore(p.Records, p.Rels)
+	s.RestoreWithAliases(p.Records, p.Rels, p.Aliases)
 	return s, nil
 }
 
-// RequirementID is the stable per-run requirement id.
-func RequirementID(runID string) string { return "req-" + runID }
+// RequirementID is the stable id of the requirement a run seeds (W3.8). It is
+// derived from the run's domain identity, never from a path or a title.
+func RequirementID(runID string) string { return StableIDFor(KindRequirement, "run-"+runID) }
 
-// EvidenceID is the stable per-run evidence id.
-func EvidenceID(runID string) string { return "ev-" + runID + "-final" }
+// EvidenceID is the stable id of the evidence a run closes with.
+func EvidenceID(runID string) string { return StableIDFor(KindEvidence, "run-"+runID+"-final") }
+
+// LegacyRequirementID / LegacyEvidenceID reproduce the pre-migration ids so a
+// store persisted before W3.8 can still be read through Store.Resolve.
+func LegacyRequirementID(runID string) string { return legacyRequirementPrefix + runID }
+
+func LegacyEvidenceID(runID string) string { return legacyEvidencePrefix + runID + "-final" }
 
 // SeedRequirement records the run goal via KnowledgeDelta (GAP-019:
 // agent writes are Delta-first). Idempotent per run id.
@@ -97,7 +124,10 @@ func SeedRequirement(s *Store, runID, goal string) Record {
 		Provenance: "run:" + runID + ":goal",
 		UpdatedAt:  time.Now().UTC().Format(time.RFC3339Nano),
 	}
-	_ = s.Commit(Delta{ID: "seed-" + runID, Author: "harness-run", Upserts: []Record{r}})
+	_ = s.Commit(Delta{ID: StableIDFor(KindDecision, "seed-"+runID), Author: "harness-run", Upserts: []Record{r}})
+	// Keep the pre-migration identifier resolvable: a store written before
+	// W3.8 names this same requirement `req-<runID>`.
+	s.Alias(r.ID, LegacyRequirementID(runID))
 	out, _ := s.Get(r.ID)
 	return out
 }
@@ -117,9 +147,10 @@ func SeedEvidence(s *Store, runID, phase, stopReason, checkpointID string) Recor
 		Provenance: "run:" + runID + ":finish",
 		UpdatedAt:  time.Now().UTC().Format(time.RFC3339Nano),
 	}
-	_ = s.Commit(Delta{ID: "seed-ev-" + runID, Author: "harness-run",
+	_ = s.Commit(Delta{ID: StableIDFor(KindDecision, "seed-ev-"+runID), Author: "harness-run",
 		Upserts: []Record{r},
 		Links:   []Relation{{From: r.ID, Type: "evidences", To: RequirementID(runID)}}})
+	s.Alias(r.ID, LegacyEvidenceID(runID))
 	out, _ := s.Get(r.ID)
 	return out
 }

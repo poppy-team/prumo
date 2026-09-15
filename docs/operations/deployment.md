@@ -1,6 +1,6 @@
 # Installation and Deployment
 
-This is the operational index for Prumo v0.4 deployment. The user-facing procedure is maintained in the [installation manual](../manual/installation.md). The uninstall procedure is maintained in the [uninstallation manual](../manual/uninstallation.md).
+This is the operational index for Prumo deployment. The user-facing procedure is maintained in the [installation manual](../manual/installation.md). The uninstall procedure is maintained in the [uninstallation manual](../manual/uninstallation.md).
 
 ## Release requirements
 

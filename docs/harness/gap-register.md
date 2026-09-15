@@ -112,40 +112,65 @@ item. Novos gaps entram no fim com o próximo número livre.
 
 Desktop/TUI (prumo-code), execução cloud/microVM (H18), federação A2A (H17), site público/i18n (HD5+), polish visual, `prumo-code` em si.
 
-## 5. Documentation Control Plane Gaps (DOC-GAP-001 – DOC-GAP-030)
+## 5. Documentation Control Plane Gaps (DOC-GAP-001 – DOC-GAP-033)
 
-Source: `PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md` (2026-09-14).
-Mapeados diretamente para as Waves W0–W21 em `docs/development/waves.md`.
+Source: `PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md` (2026-09-14,
+artefato de entrada gitignored). Mapeados para as Waves W0–W21 em
+`docs/development/waves.md`. Decisão arquitetural: ADR 010 (Proposed).
+
+> Nota de status: o fix **léxico** imediato do DOC-GAP-002/003 aterrissou em
+> `internal/documentation/coverage.go` em 2026-09-14 (matching por todas as
+> palavras-chave + stopwords; evidência distinta e não-vazia) com regressão
+> `TestFalseGreenKnowledgeMatchingPrevented` / `TestEvidenceDistinctAndNonEmpty`.
+> Em 2026-09-15 o alvo chegou: `internal/documentation/semantic.go` implementa
+> requirement → claim → evidence e o avaliador léxico foi **rebaixado a
+> diagnóstico** (`mode: lexical`, `authoritative: false`, estado máximo
+> `unverified`). W15.10 também aterrou: os 7 contratos do próprio repositório
+> carregam claims aceitas com evidência verificada e `prumo docs readiness`
+> reporta `ready: true` sem warnings. Vale registrar **por que** demorou: a
+> primeira versão dos bindings citava `docs/migration/conformance-strategy.md`,
+> que o authority map classifica como **historical**, e o avaliador rejeitou como
+> `non-canonical-evidence` em vez de aceitar o verde. Foi o caso D002 do corpus
+> léxico (misbinding de evidência) disparando no repositório real.
+>
+> Em 2026-09-15 as waves W17–W21 também aterraram: impacto semântico tipado e
+> preflight/postflight de Goal (W17), plano de publicação e recuperação por IA
+> (W18), verificador determinístico, gate `--strict` e Gauntlet (W19), ciclo de
+> vida de tradução/mídia/release (W20) e inteligência documental + adoção
+> brownfield (W21).
 
 | ID | Item | Tier | Wave | Status | Próximo passo |
 |----|------|------|------|--------|---------------|
-| DOC-GAP-001 | Authority/version drift não prevenido mecanicamente | P0 | W0, W1 | ⬜ open | Regra de drift e gate CI em W0 |
-| DOC-GAP-002 | Semantic coverage/readiness excessivamente léxico (ANY-word bug) | P0 | W15 | 🟡 fixing | Substituir por matching semântico/estruturado em W15 (fix imediato em coverage.go) |
-| DOC-GAP-003 | Verificação de evidência baseada em mera contagem | P0 | W15 | ⬜ open | Vincular evidência por ID, tipo e revisão |
-| DOC-GAP-004 | Contradições entre documentos não barram completion | P0 | W15, W19 | ⬜ open | Ligar motor de contradições ao gate |
-| DOC-GAP-005 | Fiação Goal → DocumentationPlan incompleta | P0 | W17 | ⬜ open | Preflight em Goal lock e postflight em delta |
-| DOC-GAP-006 | Lint de HumanDocs valida apenas estrutura, não verdade/semântica | P0 | W10, W19 | ⬜ open | Verificador em camadas em W19 |
-| DOC-GAP-007 | Instruções de agente como verdade paralela e obsoleta (context-rot) | P0 | W4, W16 | ⬜ open | AgentInstructionIR e compilador de superfícies |
-| DOC-GAP-008 | Análise de impacto não cobre tipos semânticos suficientes | P0 | W17 | ⬜ open | Triggers por símbolo, API, schema e UI |
-| DOC-GAP-009 | Pacotes de documentação fragmentados no runtime | P0 | W15 | ⬜ open | Coordenador do control plane em W15 |
-| DOC-GAP-010 | Documentação "ready" diverge da verdade do código | P0 | W15 | ⬜ open | Relatório de dogfood semântico |
-| DOC-GAP-011 | Modelo DocumentationUnit necessita semântica mais rica | P1 | W3, W10 | ⬜ open | Schema expandido em W10 |
-| DOC-GAP-012 | Unidades de contexto e docs humanos não unificados | P1 | W3 | ⬜ open | Grafo único de KnowledgeUnits |
-| DOC-GAP-013 | Publicação HD5+ ainda deferida | P1 | W18 | ⬜ open | Adaptador Starlight e gerador de rotas |
-| DOC-GAP-014 | Ausência de projeções AI-native (llms.txt, MCP) | P1 | W18 | ⬜ open | Gerar /llms.txt e expor MCP de docs |
-| DOC-GAP-015 | Documentação de UI/UX necessita ciclo de vida | P1 | W5, W20 | ⬜ open | Contratos especializados de UI em W5 |
-| DOC-GAP-016 | Evidência visual sem semântica de frescor | P1 | W20 | ⬜ open | MediaRecord vinculado a estado de UI |
-| DOC-GAP-017 | Fundação de tradução necessita ciclo de QA completo | P1 | W6, W20 | ⬜ open | Terminology, glossário e pseudo-localização |
-| DOC-GAP-018 | Temas/personalização sem contratos explícitos | P1 | W9 | ⬜ open | Design tokens como API versionada |
-| DOC-GAP-019 | Documentação de referência de API/CLI não orientada a contratos | P1 | W18 | ⬜ open | Adaptadores de referência de contratos de máquina |
+| DOC-GAP-001 | Authority/version drift não prevenido mecanicamente | P0 | W0, W1 | ✅ done | W0: `docs/governance/authority.md` + `docs/AUTHORITY_MAP.json` + `prumo docs authority` (gate `docs-authority`); W1: `conformance/schema-runtime` (identidade, draft, enums, integridade referencial, round-trip) |
+| DOC-GAP-002 | Semantic coverage/readiness excessivamente léxico (ANY-word bug) | P0 | W15 | ✅ done | `semantic.go`: requirement → claim → evidence; léxico virou diagnóstico não-autoritativo (W15.3–W15.7); corpus D001–D011 |
+| DOC-GAP-003 | Verificação de evidência baseada em mera contagem | P0 | W15 | ✅ done | Evidência exige `id` estável, `target` = claim, revisão atual, `verified` e artefato existente; dedup por ID (`TestEvidenceDistinctAndNonEmpty`) |
+| DOC-GAP-004 | Contradições entre documentos não barram completion | P0 | W15, W19 | ✅ done | W15: findings `contradiction` e `superseded-claim` bloqueiam readiness (D010/D011); W19: `VerifyDocsStrict` + Gauntlet contínuo sobre documentos |
+| DOC-GAP-005 | Fiação Goal → DocumentationPlan incompleta | P0 | W17 | ✅ done | Preflight em Goal lock (`BuildPlanForContracts`), postflight em delta (`Reconcile`), `DocumentationGap`/`DocumentationPlan` populados em `internal/app/goalplan.go` |
+| DOC-GAP-006 | Lint de HumanDocs valida apenas estrutura, não verdade/semântica | P0 | W10, W19 | ✅ done | W10: schemas de quality-policy e evidence-requirement; W19: verificador em camadas (authority → managed regions → links → claim-drift) + `semantic-readiness` sob `--strict` |
+| DOC-GAP-007 | Instruções de agente como verdade paralela e obsoleta (context-rot) | P0 | W4, W16 | ✅ done | W16: IR canônico (`docs/agents/instruction-ir.json`) → adapters (agents-md/copilot/cursor/claude/skill-md) com fingerprint e orçamento de tokens; gate de context-rot (`prumo docs agents verify` + `TestAgentSurfaceContextRotGate`) falha em referências obsoletas |
+| DOC-GAP-008 | Análise de impacto não cobre tipos semânticos suficientes | P0 | W17 | ✅ done | `impact_semantic.go`: triggers por símbolo, schema, token, UI, API, evento, permissão, locale, mídia, Goal, Wave, ADR, release e evidência |
+| DOC-GAP-009 | Pacotes de documentação fragmentados no runtime | P0 | W15 | ✅ done | Fronteira e direção de dependência definidas em `docs/architecture/documentation-control-plane.md`; composição no CLI, sem acoplar docengine ao harness |
+| DOC-GAP-010 | Documentação "ready" diverge da verdade do código | P0 | W15 | ✅ done | `TestSemanticReadinessDogfood` + estado `unverified`; `prumo docs readiness` não passa por palavras e hoje reporta `semantic=7 lexical=0` com `ready: true` porque os claims existem de fato |
+| DOC-GAP-011 | Modelo DocumentationUnit necessita semântica mais rica | P1 | W3, W10 | ✅ done | `documentation-unit` schema completo (fontes, evidência, visibilidade, sensibilidade, locale, freshness, supersede, projeções, token estimate) |
+| DOC-GAP-012 | Unidades de contexto e docs humanos não unificados | P1 | W3 | ✅ done | `knowledge-unit` + 13 relações tipadas + identidade estável; o baseline do Knowledge Runtime já semeia por IDs estáveis (`knowledge.DeriveID`), com manifest derivado (`internal/harness/knowledge/manifest.go`) e CLI `prumo knowledge manifest\|search` |
+| DOC-GAP-013 | Publicação HD5+ ainda deferida | P1 | W18 | ✅ done | `internal/docpublish`: interface de renderer, adaptador Starlight, rotas versionadas/localizadas, `prumo docs site build\|verify` |
+| DOC-GAP-014 | Ausência de projeções AI-native (llms.txt, MCP) | P1 | W18 | ✅ done | `/llms.txt`, `/llms-full.txt`, Markdown cru, índice de busca, referência de API/schema e recursos MCP de documentação: leitura sempre disponível (`prumo://docs/...`, `docs resources read`) e mutação negada por padrão (`docs mutations`, `allowed: []`) |
+| DOC-GAP-015 | Documentação de UI/UX necessita ciclo de vida | P1 | W5, W20 | 🟡 partial | W5 ✅: 14 contratos `ui.*` + `tui.interaction`/`tui.accessibility` + state matrix (22 estados) e component contract; ciclo de vida e evidência visual em W20 |
+| DOC-GAP-016 | Evidência visual sem semântica de frescor | P1 | W20 | ✅ done | `media-record` schema + `doclifecycle.MediaStatuses`: staleness por digest, ligada a estado/tema/locale/plataforma |
+| DOC-GAP-017 | Fundação de tradução necessita ciclo de QA completo | P1 | W6, W20 | ✅ done | W6: lifecycle, locale-key, placeholders, reviewer, fallback, RTL; W20: `VerifyPseudoLoc` + staleness por digest de conteúdo |
+| DOC-GAP-018 | Temas/personalização sem contratos explícitos | P1 | W9 | ✅ done | `design-token-set` schema + `docs/ui-ux/design-tokens.json` (tiers, temas no-color/high-contrast/reduced-motion, contraste medido, fallback TUI) + contrato `ui.personalization` |
+| DOC-GAP-019 | Documentação de referência de API/CLI não orientada a contratos | P1 | W18 | ✅ done | `apiReferenceRenderer` gera as páginas de referência a partir de `docs/contracts/builtin.json` e de `schemas/*.schema.json`, marcadas como geradas (`Graph.Reference`) para nunca serem confundidas com páginas autorais |
 | DOC-GAP-020 | Exemplos não são unidades de documentação executáveis | P1 | W19 | ⬜ open | Execução e teste de exemplos no pipeline |
-| DOC-GAP-021 | Documentação de release/depreciação/migração sem ciclo estruturado | P1 | W20 | ⬜ open | Política de versão e plano de release |
-| DOC-GAP-022 | Observabilidade documental subespecificada | P1 | W21 | ⬜ open | Métricas integradas ao Project Intelligence |
-| DOC-GAP-023 | Feedback de usuário/suporte não alimenta planning documental | P2 | W21 | ⬜ open | Rastrear falhas de intenção documental |
-| DOC-GAP-024 | Workforce documental necessita especialização por impacto | P2 | W21 | ⬜ open | Roteamento dinâmico de skills por tipo de impacto |
-| DOC-GAP-025 | Segurança e visibilidade documental necessitam política de projeção | P2 | W21 | ⬜ open | Filtro de visibilidade público vs interno |
+| DOC-GAP-021 | Documentação de release/depreciação/migração sem ciclo estruturado | P1 | W20 | ✅ done | `docs/lifecycle.json` com release gates, `DeprecationFindings` (substituto ou remoção + anotação no documento) e `CheckRelease` → `prumo docs release` |
+| DOC-GAP-022 | Observabilidade documental subespecificada | P1 | W21 | ✅ done | `internal/docintel.Collect` + `prumo docs metrics`: tokens, split léxico/semântico, traduções/mídia, links, claim drift, débito nomeado e `freshness_score` limitado |
+| DOC-GAP-023 | Feedback de usuário/suporte não alimenta planning documental | P2 | W21 | 🚫 refused by design | Rastrear intenção exigiria um canal de telemetria; as regras de autoridade e trust do framework proíbem coletar o que usuários consultam. Decisão registrada em **ADR 011**; métricas vêm apenas do estado do repositório |
+| DOC-GAP-024 | Workforce documental necessita especialização por impacto | P2 | W21 | ⬜ open | Roteamento dinâmico de skills por tipo de impacto (o impacto tipado existe em W17; o roteamento de workforce não) |
+| DOC-GAP-025 | Segurança e visibilidade documental necessitam política de projeção | P2 | W21 | ✅ done | `Graph.Human()` vs `Current()` separa público/interno e superfícies de agente; a saída publicada é derivada, sob `.prumo/runtime/` |
 | DOC-GAP-026 | Edição com AST completo de Markdown (listas/tabelas) | P2 | W21 | ⬜ open | Parser AST completo no doccompile |
-| DOC-GAP-027 | Performance de build em monorepos/grandes repositórios | P2 | W21 | ⬜ open | Benchmarking de invalidação e build |
-| DOC-GAP-028 | Adoção e migração brownfield de documentação | P2 | W21 | ⬜ open | Descoberta semântica e proposta de bindings |
-| DOC-GAP-029 | Débito documental como classe de débito tipada | P2 | W21 | ⬜ open | Integração com registro de dívida técnica |
-| DOC-GAP-030 | Rastreabilidade e explicabilidade no nível de consulta | P2 | W21 | ⬜ open | Proveniência de query registrada no ContextManifest |
+| DOC-GAP-027 | Performance de build em monorepos/grandes repositórios | P2 | W21 | ✅ done | `TestLargeRepositoryIncrementalInvalidationIsBounded` (build frio escreve tudo, rebuild sem mudança não escreve nada, uma edição invalida um subconjunto) + `BenchmarkBuildLargeRepository` (200 docs: frio ~64,5 ms, inalterado ~14,5 ms; i7-3632QM) |
+| DOC-GAP-028 | Adoção e migração brownfield de documentação | P2 | W21 | ✅ done | `Inspect`/`Propose`: sinais, inventário, duplicatas, propostas com confiança `inferred` e caminho de promoção; nada é escrito no repositório alvo |
+| DOC-GAP-029 | Débito documental como classe de débito tipada | P2 | W21 | ✅ done | `documentationDebt` nomeia cada obrigação pendente; contrato não verificado sempre aparece como débito e reduz o score |
+| DOC-GAP-030 | Rastreabilidade e explicabilidade no nível de consulta | P2 | W21 | ✅ done | `prumo docs query` retorna rota/heading/excerto rastreáveis e `prumo docs explain` explica unidade ou finding; a proveniência de consulta registrada (W21.2) foi recusada com DOC-GAP-023/ADR 011 |
+| DOC-GAP-031 | Terminologia/glossário sem registro canônico | P1 | W20 | ✅ done | `docs/glossary.json` + `schemas/glossary.schema.json` + `internal/doclifecycle/glossary.go`: status fechado (preferred/deprecated/forbidden), termo deprecado deve nomear um substituto preferido, match por palavra inteira, `prumo docs glossary`, e verificação dentro de `prumo docs verify` |
+| DOC-GAP-032 | Ausência de política explícita de versão documental | P1 | W20 | ✅ done | `version_policy` em `docs/lifecycle.json` + `schemas/doc-lifecycle.schema.json` + `internal/doclifecycle/versionpolicy.go`: buckets exclusivos (current/supported/deprecated/removed), drift contra `protocol.CLIVersion`, referência a linha removida reprovada salvo em documento histórico ou linha histórica anotada, `prumo docs version` |
+| DOC-GAP-033 | Telemetria de consulta/intenção documental | P2 | W21 | 🚫 refused by design | W21.2/W21.3 não implementados: não existe canal de telemetria e registrar consultas armazenaria conteúdo sensível por construção. **ADR 011** registra a decisão, o limite e a condição para revertê-la |

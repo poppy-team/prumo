@@ -1,6 +1,6 @@
 # Incident Response Playbook
 
-Troubleshooting guide for common Prumo v0.4 Go CLI failures and recovery procedures.
+Troubleshooting guide for common Prumo Go CLI failures and recovery procedures.
 
 Use the [installation manual](../manual/installation.md), [uninstallation manual](../manual/uninstallation.md), and [usage manual](../manual/usage.md) for normal operations.
 

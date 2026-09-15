@@ -1,0 +1,39 @@
+{
+  "id": "U003",
+  "kind": "ui-specification",
+  "title": "A contract declaring a state outside the canonical vocabulary is unmapped",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ],
+        "states": [
+          "default",
+          "focus",
+          "vibing"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "state-coverage"
+  ],
+  "expect_counts": {
+    "state-coverage": 1
+  }
+}

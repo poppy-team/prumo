@@ -1,4 +1,4 @@
-# Prumo v0.4 Testing Strategy
+# Prumo Testing Strategy
 
 ## Principles
 
@@ -19,7 +19,7 @@ Temporary filesystems, Git repositories, schema registry, SQLite derived index, 
 
 ### Conformance / Golden
 
-Implementation-independent inputs and expected outputs. Compare Python v0.3 and Go v0.4 for:
+Implementation-independent inputs and expected outputs. Compare Python v0.3 (oracle) and Go for:
 - process exit code;
 - stdout and relevant stderr;
 - JSON envelope and error codes;
@@ -75,7 +75,7 @@ Include:
 - event stream;
 - FakeRuntime happy path, retry, fallback;
 - project diagnostics;
-- all public v0.3 CLI commands.
+- all public CLI commands (v0.3 oracle surface).
 
 Documentation contracts additionally need incomplete fixtures distinguishing `missing`, `partial`, `ready`, and `not-applicable`.
 

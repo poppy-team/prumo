@@ -1,0 +1,13 @@
+{
+  "id": "R001",
+  "kind": "reconstruction",
+  "title": "A canonical document reconstructs to the same Markdown at a route derived from its path",
+  "sources": [
+    { "path": "docs/guide/setup.md", "content": "# Setup\n\nInstall it.\n\n## Options\n\nRun it.\n" }
+  ],
+  "expect_pages": 1,
+  "expect_routes": ["/guide/setup"],
+  "expect_route_independent_of_title": true,
+  "expect_markdown_roundtrip": true,
+  "expect_idempotent": true
+}

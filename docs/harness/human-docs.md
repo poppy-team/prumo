@@ -28,5 +28,10 @@ capabilities/contracts/audiences — never hallucinated prose.
 ## Out of scope (HD5+)
 
 Example/screenshot/diagram lifecycle, Starlight renderer, i18n/versioning,
-changelog/release automation, devlog projection, static publishing — they
-consume this runtime's units and never block the Harness.
+changelog/release automation, devlog projection, static publishing.
+
+These consume this runtime's units and never block the Harness. They are now
+planned rather than open-ended: semantic readiness over these units = **W15**,
+publishing + AI retrieval (HD5–HD7) = **W18**, continuous verification = **W19**,
+lifecycle (i18n/media/versioning/release) = **W20**. See `docs/development/waves.md`
+and ADR 010.

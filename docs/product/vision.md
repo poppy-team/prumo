@@ -1,4 +1,4 @@
-# Prumo — Product Vision v0.4
+# Prumo — Product Vision
 
 ## Purpose
 
@@ -12,7 +12,7 @@ Software engineering teams, open-source maintainers, and autonomous coding agent
 
 The primary product outcome is a self-governing, knowledge-aware engineering harness: an executable control plane where intent compiles deterministically into verified code, evidence, living documentation, and clean handoffs with zero vendor lock-in.
 
-## Core Capabilities (v0.4)
+## Core Capabilities
 
 | Capability | Description |
 |------------|-------------|
@@ -28,7 +28,7 @@ The primary product outcome is a self-governing, knowledge-aware engineering har
 | **Control Plane** | Run Engine, Budget/Cost Governance, Context Compiler, Model Router, Tool Gateway, Automation, Execution Environments, Observability. |
 | **Integration Layer** | OpenCode (first native), Codex, Claude Code, Gemini CLI, Copilot CLI, Kiro, Generic fallback — all as thin adapters. |
 
-## Non-Goals (v0.4)
+## Non-Goals
 
 - Distributed scheduler / central team server (deferred to v1.0+)
 - Mandatory cloud dependencies or SaaS
@@ -41,7 +41,7 @@ The primary product outcome is a self-governing, knowledge-aware engineering har
 ## Authority Hierarchy
 
 1. **Canonical Repository** — schemas, ADRs, code, tests
-2. **Approved Notion Design** — Living Book v0.4 pages
+2. **Approved Notion Design** — Living Book pages
 3. **Agent Inference** — bounded, evidence-backed
 
 ## Success Boundaries

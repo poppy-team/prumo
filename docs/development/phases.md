@@ -1,6 +1,10 @@
 # Prumo Implementation Phases
 
 > **Rule**: Only fully detail current phase + next phase. Future phases remain architectural until dependencies mature.
+>
+> **Version scope**: M0–M4 record the historical v0.3→v0.4 migration; Pre-TUI waves
+> (W0–W21) and the H10 TUI spike are current. Classification:
+> `docs/AUTHORITY_MAP.json` (`drift_exempt`).
 
 ---
 

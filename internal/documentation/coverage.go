@@ -18,6 +18,9 @@ const (
 	Verified            CoverageState = "verified"
 	Stale               CoverageState = "stale"
 	NotApplicable       CoverageState = "not-applicable"
+	// Unverified means the obligation is structurally present, but only a
+	// lexical word match backs it. It is never a passing state (W15.5).
+	Unverified CoverageState = "unverified"
 )
 
 type Binding struct {
@@ -27,18 +30,32 @@ type Binding struct {
 	Authority         string   `json:"authority"`
 	AnsweredQuestions []string `json:"answered_questions"`
 	Evidence          []string `json:"evidence"`
+	// RequirementMap maps a required-knowledge phrase to its stable requirement
+	// ID. Claims reference those IDs, so readiness resolves knowledge through
+	// typed relations instead of substring matching (W15.3).
+	RequirementMap map[string]string `json:"requirement_map,omitempty"`
+	// Claims carry the durable statements and their bound evidence that prove a
+	// requirement at a revision (W15.3, W15.6).
+	Claims []ClaimBinding `json:"claims,omitempty"`
 }
+
 type Coverage struct {
-	ContractID        string        `json:"contract_id"`
-	State             CoverageState `json:"state"`
-	Sources           []string      `json:"sources"`
-	MissingKnowledge  []string      `json:"missing_knowledge"`
-	BlockingQuestions []string      `json:"blocking_questions"`
-	Warnings          []string      `json:"warnings"`
+	ContractID        string                `json:"contract_id"`
+	State             CoverageState         `json:"state"`
+	Mode              CoverageMode          `json:"mode"`
+	Authoritative     bool                  `json:"authoritative"`
+	Sources           []string              `json:"sources"`
+	MissingKnowledge  []string              `json:"missing_knowledge"`
+	BlockingQuestions []string              `json:"blocking_questions"`
+	Requirements      []RequirementCoverage `json:"requirements,omitempty"`
+	Findings          []SemanticFinding     `json:"findings"`
+	Warnings          []string              `json:"warnings"`
 }
 type AuditReport struct {
 	Profiles            []string   `json:"profiles"`
 	ApplicableContracts []string   `json:"applicable_contracts"`
+	SemanticContracts   int        `json:"semantic_contracts"`
+	LexicalContracts    int        `json:"lexical_contracts"`
 	Coverage            []Coverage `json:"coverage"`
 	Warnings            []string   `json:"warnings"`
 }
@@ -46,6 +63,7 @@ type ReadinessReport struct {
 	Ready               bool       `json:"ready"`
 	Goal                string     `json:"goal,omitempty"`
 	BlockingContracts   []string   `json:"blocking_contracts"`
+	UnverifiedContracts []string   `json:"unverified_contracts"`
 	BlockingQuestions   []string   `json:"blocking_questions"`
 	Warnings            []string   `json:"warnings"`
 	ApplicableContracts []string   `json:"applicable_contracts"`
@@ -124,22 +142,47 @@ func Audit(root string) (AuditReport, error) {
 	}
 	for _, c := range contracts {
 		report.ApplicableContracts = append(report.ApplicableContracts, c.ID)
-		report.Coverage = append(report.Coverage, evaluate(root, c, bound[c.ID]))
+		coverage := evaluate(root, c, bound[c.ID])
+		if coverage.Authoritative {
+			report.SemanticContracts++
+		} else {
+			report.LexicalContracts++
+		}
+		report.Coverage = append(report.Coverage, coverage)
 	}
 	return report, nil
 }
+
+// evaluate computes coverage for one contract. A binding is authoritative only
+// when it is semantic: required knowledge mapped to requirement IDs and claims
+// carrying bound evidence. Legacy lexical bindings are still evaluated, but can
+// never report a ready state — a word match is not readiness (W15.4, W15.5).
 func evaluate(root string, c Contract, b Binding) Coverage {
-	answered := map[string]bool{}
-	for _, question := range b.AnsweredQuestions {
-		answered[question] = true
+	if b.semantic() {
+		return evaluateSemanticContract(root, c, b)
 	}
-	questions := []string{}
-	for _, question := range c.BlockingQuestions {
-		if !answered[question] {
-			questions = append(questions, question)
-		}
+	coverage := evaluateLexical(root, c, b)
+	coverage.Mode = ModeLexical
+	coverage.Authoritative = false
+	coverage.Requirements = []RequirementCoverage{}
+	switch coverage.State {
+	case ImplementationReady, Verified:
+		coverage.State = Unverified
+		coverage.Warnings = append(coverage.Warnings,
+			"lexical match only: bind requirement_map and claims with bound evidence to make this contract authoritative (W15)")
 	}
-	coverage := Coverage{ContractID: c.ID, Sources: append([]string{}, b.Sources...), BlockingQuestions: questions}
+	return coverage
+}
+
+// evaluateLexical is the legacy diagnostic matcher. It is retained for
+// migration visibility and never asserts readiness on its own.
+func evaluateLexical(root string, c Contract, b Binding) Coverage {
+	coverage := Coverage{
+		ContractID:        c.ID,
+		Sources:           append([]string{}, b.Sources...),
+		BlockingQuestions: unresolvedQuestions(c, b),
+		Findings:          []SemanticFinding{}, Warnings: []string{},
+	}
 	if len(b.Sources) == 0 {
 		coverage.State = Missing
 		return coverage
@@ -178,6 +221,22 @@ func evaluate(root string, c Contract, b Binding) Coverage {
 	return coverage
 }
 
+// unresolvedQuestions lists contract questions the binding has not answered.
+// It applies to both the lexical and the semantic path.
+func unresolvedQuestions(c Contract, b Binding) []string {
+	answered := map[string]bool{}
+	for _, question := range b.AnsweredQuestions {
+		answered[question] = true
+	}
+	questions := []string{}
+	for _, question := range c.BlockingQuestions {
+		if !answered[question] {
+			questions = append(questions, question)
+		}
+	}
+	return questions
+}
+
 var defaultStopwords = map[string]bool{
 	"and": true, "or": true, "in": true, "of": true,
 	"to": true, "for": true, "with": true, "a": true,
@@ -210,18 +269,41 @@ func matchesKnowledgeRequirement(content, req string) bool {
 	}
 	return true
 }
+
+// applyCoverage folds one coverage result into a readiness report. Blocking
+// states are those where an obligation is unmet (missing/partial/stale) or
+// present but semantically unproven (unverified) (W15.4).
+func applyCoverage(report *ReadinessReport, c Coverage) {
+	switch c.State {
+	case Missing, Partial, Stale:
+		report.Ready = false
+		report.BlockingContracts = append(report.BlockingContracts, c.ContractID)
+		report.BlockingQuestions = append(report.BlockingQuestions, c.BlockingQuestions...)
+	case Unverified:
+		report.Ready = false
+		report.UnverifiedContracts = append(report.UnverifiedContracts, c.ContractID)
+	}
+}
+
 func Readiness(root, goal string) (ReadinessReport, error) {
 	audit, err := Audit(root)
 	if err != nil {
 		return ReadinessReport{}, err
 	}
-	report := ReadinessReport{Ready: true, Goal: goal, ApplicableContracts: audit.ApplicableContracts, Coverage: audit.Coverage, Warnings: audit.Warnings}
+	report := ReadinessReport{
+		Ready:               true,
+		Goal:                goal,
+		ApplicableContracts: audit.ApplicableContracts,
+		Coverage:            audit.Coverage,
+		Warnings:            audit.Warnings,
+		UnverifiedContracts: []string{},
+	}
 	for _, c := range audit.Coverage {
-		if c.State == Missing || c.State == Partial || c.State == Stale {
-			report.Ready = false
-			report.BlockingContracts = append(report.BlockingContracts, c.ContractID)
-			report.BlockingQuestions = append(report.BlockingQuestions, c.BlockingQuestions...)
-		}
+		applyCoverage(&report, c)
+	}
+	if len(report.UnverifiedContracts) > 0 {
+		report.Warnings = append(report.Warnings,
+			"contracts backed by lexical match only are not authoritative; bind requirement_map and claims with verified evidence (W15)")
 	}
 	return report, nil
 }

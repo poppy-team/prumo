@@ -62,9 +62,61 @@ type Relation struct {
 type Store struct {
 	records map[string]Record
 	rels    []Relation
+	// aliases maps a historical locator (a pre-migration run-scoped id, an old
+	// path) to the stable id. Renames append; they never replace (W3.7).
+	aliases map[string]string
 }
 
-func New() *Store { return &Store{records: map[string]Record{}} }
+func New() *Store { return &Store{records: map[string]Record{}, aliases: map[string]string{}} }
+
+// Alias binds a historical locator to a stable id so identity survives a
+// rename or a move. Binding an unknown or empty id is a no-op.
+func (s *Store) Alias(id, locator string) {
+	locator = strings.TrimSpace(locator)
+	if locator == "" || id == "" {
+		return
+	}
+	if _, ok := s.records[id]; !ok {
+		return
+	}
+	if s.aliases == nil {
+		s.aliases = map[string]string{}
+	}
+	s.aliases[locator] = id
+}
+
+// Resolve looks an identifier up by stable id, by a registered alias, or by the
+// deterministic mapping from a pre-migration run-scoped id. It is the read path
+// that makes the W3.8 migration non-breaking.
+func (s *Store) Resolve(id string) (Record, bool) {
+	if r, ok := s.records[id]; ok {
+		return r, true
+	}
+	if stable, ok := s.aliases[id]; ok {
+		if r, ok := s.records[stable]; ok {
+			return r, true
+		}
+	}
+	if stable, ok := legacyAlias(id); ok {
+		if r, ok := s.records[stable]; ok {
+			return r, true
+		}
+	}
+	return Record{}, false
+}
+
+// UnstableIDs lists records whose identifier predates the stable scheme, so a
+// migration can report what it would rewrite instead of guessing.
+func (s *Store) UnstableIDs() []string {
+	out := []string{}
+	for id := range s.records {
+		if !IsStableID(id) {
+			out = append(out, id)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
 
 func (s *Store) Put(r Record) error {
 	if r.ID == "" || r.Kind == "" {

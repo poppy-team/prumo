@@ -29,6 +29,30 @@ The framework serves four audiences at once: product users, developers/contribut
 - **Model preferences are per-project.** Bootstrap explicitly obtains the preferred model/provider roster.
 - **Portability first.** A generic Markdown entrypoint remains sufficient for unknown platforms.
 
+## Documentation & knowledge invariants
+
+Added by W14 (architecture: `docs/adr/010-documentation-control-plane.md`):
+
+- **Canonical knowledge precedes prose.** Documentation is a governed projection of typed canonical knowledge, never an independent source of truth.
+- **Missing knowledge creates a gap.** Documentation is never invented to satisfy coverage.
+- **Stable identity.** Every durable semantic entity keeps an ID independent of file path, title or URL.
+- **Explicit authority.** Every artifact is canonical, projection or historical, and machine-resolvable (`docs/AUTHORITY_MAP.json`).
+- **A projection cannot silently become canonical.** Generated surfaces are replaceable and never authoritative by existence.
+- **Readiness is semantic evidence coverage, not keyword presence.** Requirement → claim → evidence, with revision and freshness.
+- **Every generated projection is explainable and freshness-checkable.** Provenance is always recoverable.
+- **Documentation impact is computed before and after behavior-changing work.** Silent N/A is forbidden; explicit N/A is valid.
+- **A Goal is not complete while its required documentation projections are stale.**
+- **Agent instruction files are small, scoped maps — not parallel truth.** They are compiled projections with budgets and freshness checks.
+- **Localization preserves one canonical implementation truth.** Translations are projections of an English canonical source.
+- **Accessibility requires evidence appropriate to the surface.** Automated checks are not always sufficient.
+- **Media has provenance and freshness like code-derived artifacts.**
+- **Design systems and public schemas are versioned APIs.** Token renames are breaking changes.
+- **Site generators and vendor agent formats are replaceable adapters.**
+- **Documentation cost and quality are measurable Project Intelligence.**
+- **Deterministic quality failures cannot be overridden by model self-evaluation.** Deterministic checks run first.
+- **Human, agent, site, locale and API views may differ in presentation but must resolve to the same canonical claims.**
+- **The harness optimizes for current, sufficient, verifiable knowledge — not maximum prose volume.**
+
 ## Authority order
 
 1. Explicit current user/project decision.

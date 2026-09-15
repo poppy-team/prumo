@@ -1,0 +1,48 @@
+{
+  "id": "D010",
+  "kind": "evidence-binding",
+  "title": "An unresolved contradiction with an accepted claim blocks readiness",
+  "contract": {
+    "id": "eval.contradiction",
+    "required_knowledge": ["recovery guarantees"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "requirement_map": {
+    "recovery guarantees": "REQ-RECOVERY"
+  },
+  "claims": [
+    {
+      "id": "CLAIM-OLD",
+      "statement": "Recovery is best effort only.",
+      "status": "accepted",
+      "authority": "canonical-documentation",
+      "revision": 1,
+      "requires": []
+    },
+    {
+      "id": "CLAIM-RECOVERY",
+      "statement": "Crash recovery guarantees are documented per operation.",
+      "status": "accepted",
+      "authority": "canonical-documentation",
+      "revision": 3,
+      "requires": ["REQ-RECOVERY"],
+      "contradicts": ["CLAIM-OLD"],
+      "evidence": [
+        {
+          "id": "EV-1",
+          "type": "test-suite",
+          "target": "CLAIM-RECOVERY",
+          "revision": "3",
+          "verified": true
+        }
+      ]
+    }
+  ],
+  "expect_state": "unverified",
+  "expect_finding": "contradiction"
+}

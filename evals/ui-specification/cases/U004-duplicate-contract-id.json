@@ -1,0 +1,44 @@
+{
+  "id": "U004",
+  "kind": "ui-specification",
+  "title": "A duplicated contract id means one of the two is silently ignored",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ]
+      },
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "contract-uniqueness"
+  ],
+  "expect_counts": {
+    "contract-uniqueness": 1
+  }
+}

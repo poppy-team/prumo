@@ -78,7 +78,7 @@ A project exposes explicit user, developer, operations and agent surfaces. The P
 
 ## Project configuration
 
-v0.2+ projects use one canonical root configuration, `prumo.json`, instead of duplicating project profile + project manifest truth.
+Projects use one canonical root configuration, `prumo.json`, instead of duplicating project profile + project manifest truth.
 
 ## Runtime
 

@@ -175,7 +175,7 @@ Contains:
 
 **Features:**
 - Minimal tooling assumptions
-- Raw prompt engineering
+- Raw instruction text
 - Vision + text support ready
 
 **Use case:** Anthropic Claude API direct calls.
@@ -215,7 +215,7 @@ For **traycer**: Generate `.traycer/PROJECT_PRUMO.md`
 Original project remains **untouched**:
 - ✅ `prumo.json` unchanged
 - ✅ `.ai/` structure unchanged
-- ✅ No YAML artifacts generated (v0.3+ policy)
+- ✅ No YAML artifacts generated (legacy v0.3+ policy)
 
 ---
 

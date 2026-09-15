@@ -1,0 +1,18 @@
+{
+  "id": "D003",
+  "kind": "evidence-binding",
+  "title": "Lexical-only binding can never assert readiness",
+  "contract": {
+    "id": "eval.lexical-only",
+    "required_knowledge": ["recovery guarantees"],
+    "evidence_requirements": ["test-suite"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "evidence": ["test-suite"],
+  "expect_state": "unverified"
+}

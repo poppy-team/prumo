@@ -2,6 +2,8 @@
 
 This repository develops Prumo itself.
 
+<!-- prumo:begin agents-core -->
+<!-- prumo:generated adapter=agents-md scope=root fingerprint=4659acf1db2af284 sources=ENTRYPOINT.md,FRAMEWORK.md,docs/AI_WORKFORCE.md,docs/DOCUMENTATION_SYSTEM.md,docs/LEAN_PROGRESSIVE_CONTEXT.md,docs/PRUMO.md,docs/architecture/dependency-rules.md,docs/architecture/documentation-compiler.md,docs/architecture/documentation-control-plane.md,docs/development/testing-strategy.md,schemas -->
 - Start with `ENTRYPOINT.md`, `FRAMEWORK.md`, and `docs/PRUMO.md`.
 - Preserve provider-neutral core policy.
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, bounded output.
@@ -17,6 +19,7 @@ This repository develops Prumo itself.
 - Do not make any orchestrator/model provider mandatory for the core framework.
 - New context mechanisms must report token/cost impact and have a stopping condition.
 - Deep recursive execution remains experimental and disabled by default.
+<!-- prumo:end agents-core -->
 
 # Prumo Development Authority
 
@@ -37,7 +40,7 @@ Use Notion on demand when:
 - a local specification is missing;
 - an architectural decision needs clarification;
 - planning a new implementation phase;
-- checking approved v0.4 design;
+- checking approved design (ADR / Living Book);
 - resolving ambiguity.
 
 Do not load the entire Living Book into context.
@@ -68,7 +71,7 @@ https://app.notion.com/p/raillen/Project-Prumo-Framework-Livro-Vivo-v0-4-3d59bb7
 
 Agents must:
 1. **Retrieve only pages relevant to the current Goal** — never load the entire book.
-2. **Consult on demand** when: local spec is missing; architectural decision needs clarification; planning a new phase; checking approved v0.4 design; resolving ambiguity.
+2. **Consult on demand** when: local spec is missing; architectural decision needs clarification; planning a new phase; checking approved design; resolving ambiguity.
 3. **Respect authority order**: canonical repository → approved Notion design → agent inference.
 
 ## Implementation Discipline
@@ -76,6 +79,14 @@ Agents must:
 - Implementation begins only when the Goal has sufficient local documentation and acceptance criteria.
 - Clean Code pragmático applies permanently: responsabilidades explícitas, baixo acoplamento, alta coesão, nomes de domínio, funções pequenas, composição, dependências apontando para dentro, testes determinísticos, erros explícitos, sem abstração sem necessidade concreta.
 - No silent changes to locked/canonical decisions (ADRs, schemas, documented policies). If a change is needed, update the canonical document and ADR first.
+
+## Documentation authority
+
+Authority order, roles (canonical/projection/historical) and drift rules are
+canonical in `docs/governance/authority.md`. The machine-readable classification
+lives in `docs/AUTHORITY_MAP.json` and is verified by `prumo docs authority`
+(CI gate `docs-authority`). Agent/provider adapters are projections and may not
+introduce independent project facts.
 
 ## Repository governance
 
@@ -92,7 +103,10 @@ Before remote Git/SCM mutations:
 
 | Need | Start Here |
 |------|------------|
-| What is v0.4 building? | `docs/product/vision.md` |
+| What is Prumo building now? | `docs/product/vision.md` |
+| What is the implementation plan? | `docs/development/waves.md` |
+| What is still missing? | `docs/harness/gap-register.md` |
+| Who owns a doc; is it canonical? | `docs/governance/authority.md`, `docs/AUTHORITY_MAP.json` |
 | What is in/out of scope? | `docs/product/scope-v0.4.md` |
 | How do packages depend? | `docs/architecture/dependency-rules.md` |
 | What are the macro phases? | `docs/development/phases.md` |

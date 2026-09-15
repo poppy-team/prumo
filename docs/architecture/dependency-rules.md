@@ -1,4 +1,4 @@
-# Prumo v0.4 Dependency Rules
+# Prumo Dependency Rules
 
 ## Package Dependency Graph
 

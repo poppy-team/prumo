@@ -1,4 +1,4 @@
-# Prumo v0.4 Architecture Overview
+# Prumo Architecture Overview
 
 ## High-Level Topology
 

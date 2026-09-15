@@ -1,0 +1,11 @@
+{
+  "id": "D009",
+  "kind": "projection-cycle",
+  "title": "A projection whose canonical source is another projection is a cycle",
+  "documents": [
+    { "path": "docs/generated/site-page.md", "role": "projection", "canonical_source": "docs/reference/cli.md" },
+    { "path": "docs/reference/cli.md", "role": "projection", "canonical_source": "docs/generated/site-page.md" },
+    { "path": "docs/product/vision.md", "role": "canonical" }
+  ],
+  "expect_findings": 2
+}

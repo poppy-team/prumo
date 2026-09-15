@@ -1,6 +1,6 @@
 # Core Concepts
 
-Prumo v0.4 is a Go-based, Git-native protocol and CLI for engineering software with humans and AI agents.
+Prumo is a Go-based, Git-native protocol and CLI for engineering software with humans and AI agents.
 
 - **Repository over conversation memory:** canonical project knowledge lives in Git.
 - **Protocol over harness:** OpenCode, Codex, Claude Code, Gemini and other clients are adapters.

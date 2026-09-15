@@ -159,7 +159,7 @@ Use `--home` em CI, testes, devboxes e cenários que não devem tocar `~/.prumo`
 
 ## 11. Aposentadoria do Python (ADR 002)
 
-O runtime e a suíte de testes em Python v0.3 foram aposentados e removidos (ADR 002). O Prumo v0.5 é 100% Go nativo e autocontido. Conformance e validação são executadas diretamente pela suíte de testes em Go.
+O runtime e a suíte de testes em Python v0.3 (legacy) foram aposentados e removidos (ADR 002). O Prumo v0.6 é 100% Go nativo e autocontido. Conformance e validação são executadas diretamente pela suíte de testes em Go.
 
 ## Command reference
 

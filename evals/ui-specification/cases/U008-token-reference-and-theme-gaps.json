@@ -1,0 +1,49 @@
+{
+  "id": "U008",
+  "kind": "ui-specification",
+  "title": "An unresolved token reference and a missing no-color theme are both defects",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ],
+    "themes": [
+      {
+        "id": "theme.default"
+      }
+    ],
+    "tokens": [
+      {
+        "id": "token:color.panel",
+        "tier": "semantic",
+        "type": "color",
+        "value": "token:primitive.absent"
+      }
+    ]
+  },
+  "expect_findings": [
+    "token-integrity",
+    "theme-required-variants"
+  ],
+  "expect_counts": {
+    "token-integrity": 1,
+    "theme-required-variants": 2
+  }
+}

@@ -15,7 +15,7 @@ A reusable change should identify:
 
 - Keep core provider-neutral.
 - Keep `ENTRYPOINT.md` and root `AGENTS.md` short.
-- Maintain Markdown + JSON as the v0.2 human-maintained format budget.
+- Maintain Markdown + JSON as the human-maintained format budget.
 - A new persistent format requires ADR-level justification.
 - Keep runtime/cache/derived data out of canonical Git state.
 - Update schemas when contracts change.

@@ -28,7 +28,7 @@ func codeIntelItems(root, goal string) []Item {
 			Ref: "repo-map", Authority: "reference", Trust: "medium",
 			Privacy: "internal", Freshness: "current",
 			Score: 0.55, Method: "repo-map", TokenCost: cost,
-			Content: rendered,
+			Content: rendered, Reason: "repository map for orientation",
 		})
 	}
 	lang := ""
@@ -51,6 +51,7 @@ func codeIntelItems(root, goal string) []Item {
 			Privacy: "internal", Freshness: "current",
 			Score: 0.7 - 0.05*float64(i), Method: "symbols",
 			TokenCost: 20, Content: s.Kind + " " + s.Name + " (" + s.Provider + ")",
+			Reason: "symbol matched the goal",
 		})
 	}
 	return out

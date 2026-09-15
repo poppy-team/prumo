@@ -7,6 +7,7 @@ package contextv2
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -24,17 +25,46 @@ type Item struct {
 	TokenCost int      `json:"token_cost"`
 	Content   string   `json:"content,omitempty"`
 	DependsOn []string `json:"depends_on,omitempty"`
+	// Reason says why this item belongs in the context. Every included item
+	// carries one, so a compilation is explainable rather than merely
+	// reproducible (W4.5).
+	Reason string `json:"reason,omitempty"`
+	// Projection marks derived content and CanonicalSource names the unit it was
+	// derived from, which is what canonical-preference dedup needs (W4.6).
+	Projection      bool   `json:"projection,omitempty"`
+	CanonicalSource string `json:"canonical_source,omitempty"`
+	// Level is the disclosure level this item was rendered at, and Truncated
+	// records that a higher level would reveal more.
+	Level     Level `json:"level,omitempty"`
+	Truncated bool  `json:"truncated,omitempty"`
 }
 
 // Manifest is the replayable v2 output.
 type Manifest struct {
-	Version         int      `json:"version"`
-	RunID           string   `json:"run_id"`
-	Included        []Item   `json:"included"`
-	Excluded        []string `json:"excluded,omitempty"`
-	EstimatedTokens int      `json:"estimated_tokens"`
-	Pressure        string   `json:"pressure"`
-	Level           string   `json:"level"` // L0..L4 disclosure
+	Version         int         `json:"version"`
+	ID              string      `json:"id,omitempty"`
+	RunID           string      `json:"run_id"`
+	CreatedAt       string      `json:"created_at,omitempty"`
+	Included        []Item      `json:"included"`
+	Excluded        []Exclusion `json:"excluded,omitempty"`
+	EstimatedTokens int         `json:"estimated_tokens"`
+	Pressure        string      `json:"pressure"`
+	Level           Level       `json:"level"` // L0..L4 disclosure
+	// InstructionTokens is the share of the budget spent on agent instruction
+	// surfaces, reported separately so instruction overhead is measurable
+	// instead of hidden inside the total (W4.10).
+	InstructionTokens int    `json:"instruction_tokens,omitempty"`
+	Policy            string `json:"policy,omitempty"`
+}
+
+// CompilePolicy is how a caller chooses a compilation. Making it explicit is
+// what allows `prumo context compile` to name the level and the budget it used
+// (W4.4, W4.7).
+type CompilePolicy struct {
+	Budget            int
+	Level             Level
+	Policy            string
+	InstructionTokens int
 }
 
 var authorityRank = map[string]int{"canonical": 0, "reference": 1, "imported": 2, "untrusted": 3}
@@ -99,13 +129,39 @@ func MMRDedup(items []Item) []Item {
 	return out
 }
 
-// Compile packs by marginal utility per token with dependency closure.
+// Compile packs by marginal utility per token with dependency closure, applying
+// the disclosure level and canonical-preference dedup first (W4.4–W4.6).
 func Compile(runID string, candidates []Item, budget int, level string) Manifest {
+	return CompileWithPolicy(runID, candidates, CompilePolicy{Budget: budget, Level: ParseLevel(level)})
+}
+
+// CompileWithPolicy is Compile with an explicit policy.
+func CompileWithPolicy(runID string, candidates []Item, policy CompilePolicy) Manifest {
+	budget := policy.Budget
+	if budget <= 0 {
+		budget = 8000
+	}
+	level := policy.Level
+	if !level.Valid() {
+		level = DefaultLevel
+	}
+
+	// Dedup first: a projection that duplicates its canonical source must not
+	// consume budget before it is dropped.
+	deduped, dedupExcluded := DeduplicatePreferCanonical(candidates)
+
+	// Disclose each candidate at the chosen level, so cost accounting reflects
+	// what will actually be revealed.
+	disclosed := make([]Item, 0, len(deduped))
+	for _, it := range deduped {
+		disclosed = append(disclosed, DiscloseItem(it, level))
+	}
+
 	byRef := map[string]Item{}
-	for _, c := range candidates {
+	for _, c := range disclosed {
 		byRef[c.Ref] = c
 	}
-	scored := append([]Item{}, candidates...)
+	scored := append([]Item{}, disclosed...)
 	sort.Slice(scored, func(i, j int) bool {
 		ui := utility(scored[i])
 		uj := utility(scored[j])
@@ -115,7 +171,7 @@ func Compile(runID string, candidates []Item, budget int, level string) Manifest
 		return scored[i].Ref < scored[j].Ref
 	})
 	included := []Item{}
-	excluded := []string{}
+	excluded := append([]Exclusion{}, dedupExcluded...)
 	used := 0
 	inSet := map[string]bool{}
 	var add func(it Item)
@@ -129,11 +185,13 @@ func Compile(runID string, candidates []Item, budget int, level string) Manifest
 			}
 		}
 		if used+it.TokenCost > budget {
-			excluded = append(excluded, it.Ref)
+			excluded = append(excluded, Exclusion{Ref: it.Ref, Reason: ReasonBudget,
+				Detail: "would exceed the " + strconv.Itoa(budget) + " token budget"})
 			return
 		}
 		inSet[it.Ref] = true
 		used += it.TokenCost
+		it.Reason = selectionReason(it)
 		included = append(included, it)
 	}
 	for _, it := range scored {
@@ -146,11 +204,28 @@ func Compile(runID string, candidates []Item, budget int, level string) Manifest
 	if budget > 0 && used >= budget {
 		pressure = "critical"
 	}
-	if level == "" {
-		level = "L1"
+	sort.SliceStable(excluded, func(i, j int) bool {
+		if excluded[i].Reason != excluded[j].Reason {
+			return excluded[i].Reason < excluded[j].Reason
+		}
+		return excluded[i].Ref < excluded[j].Ref
+	})
+	return Manifest{
+		Version: ManifestSchemaVersion, ID: ManifestID(runID), RunID: runID,
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		Included:  included, Excluded: excluded, EstimatedTokens: used, Pressure: pressure,
+		Level: level, InstructionTokens: policy.InstructionTokens, Policy: policy.Policy,
 	}
-	return Manifest{Version: 2, RunID: runID, Included: included, Excluded: excluded, EstimatedTokens: used, Pressure: pressure, Level: level}
 }
+
+// ManifestID is the stable identifier of a compiled context, so an operator can
+// ask about a specific compilation (W4.8).
+func ManifestID(runID string) string { return "CTX-" + runID }
+
+// ManifestSchemaVersion is the schema version the compiler emits. Version 1 is
+// the legacy `sources` projection; version 2 is the `included`/`excluded`
+// manifest with disclosure levels and typed exclusion reasons.
+const ManifestSchemaVersion = 2
 
 func utility(it Item) float64 {
 	if it.TokenCost <= 0 {

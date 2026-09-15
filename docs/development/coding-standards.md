@@ -1,4 +1,4 @@
-# Prumo v0.4 Coding Standards (Go)
+# Prumo Coding Standards (Go)
 
 > Clean Code is permanent implementation policy — applied pragmatically, not dogmatically.
 

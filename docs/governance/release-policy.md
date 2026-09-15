@@ -5,10 +5,10 @@
 Use Semantic Versioning-compatible release tags:
 
 ```text
-v0.5.0-alpha.1
-v0.5.0-beta.1
-v0.5.0-rc.1
-v0.5.0
+v0.6.0-alpha.1
+v0.6.0-beta.1
+v0.6.0-rc.1
+v0.6.0
 v1.0.0
 ```
 
@@ -40,7 +40,7 @@ Release changes enter `main` through a Pull Request with:
 - `checksums.txt`;
 - `release.json`.
 
-The release workflow uploads these artifacts on `v0.5.*` tags.
+The release workflow uploads these artifacts on `v0.6.*` tags.
 
 ## Promotion
 

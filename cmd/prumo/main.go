@@ -332,6 +332,8 @@ func run(args []string) int {
 		return runExperience(asJSON, rest[1:])
 	case "connector":
 		return runConnector(asJSON, rest[1:])
+	case "knowledge":
+		return runKnowledge(asJSON, rest[1:])
 	case "context":
 		return runContext(svc, asJSON, rest[1:])
 	case "report":
@@ -573,17 +575,30 @@ func runGoal(svc *cliops.Service, asJSON bool, args []string) int {
 }
 
 func runContext(svc *cliops.Service, asJSON bool, args []string) int {
-	if len(args) < 2 || args[0] != "plan" {
-		fmt.Fprintf(os.Stderr, "error: context requires: plan <task>\n")
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "error: context requires: plan <task> | compile --goal <text> | explain <CTX-id>\n")
 		return exitUsage
 	}
-	path := pathFlag(args)
-	plan := svc.ContextPlan(path, args[1])
-	if asJSON {
-		return printEnvelope(protocol.OkEnvelope(plan))
+	switch args[0] {
+	case "plan":
+		if len(args) < 2 {
+			fmt.Fprintf(os.Stderr, "error: context plan requires a task\n")
+			return exitUsage
+		}
+		plan := svc.ContextPlan(pathFlag(args), args[1])
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(plan))
+		}
+		fmt.Printf("Profile: %v\nStrategy: %v\n", plan["profile"], plan["strategy"])
+		return exitOK
+	case "compile":
+		return runContextCompile(asJSON, args[1:])
+	case "explain":
+		return runContextExplain(asJSON, args[1:])
+	default:
+		fmt.Fprintf(os.Stderr, "error: unknown context subcommand: %s\n", args[0])
+		return exitUsage
 	}
-	fmt.Printf("Profile: %v\nStrategy: %v\n", plan["profile"], plan["strategy"])
-	return exitOK
 }
 
 func runReport(svc *cliops.Service, asJSON bool, args []string) int {

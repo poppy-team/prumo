@@ -1,0 +1,39 @@
+{
+  "id": "D008",
+  "kind": "evidence-binding",
+  "title": "Claims from low-authority sources cannot promote readiness",
+  "contract": {
+    "id": "eval.unauthorised-claim",
+    "required_knowledge": ["recovery guarantees"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "requirement_map": {
+    "recovery guarantees": "REQ-RECOVERY"
+  },
+  "claims": [
+    {
+      "id": "CLAIM-RECOVERY",
+      "statement": "An agent-proposed statement about recovery.",
+      "status": "accepted",
+      "authority": "external",
+      "revision": 1,
+      "requires": ["REQ-RECOVERY"],
+      "evidence": [
+        {
+          "id": "EV-1",
+          "type": "test-suite",
+          "target": "CLAIM-RECOVERY",
+          "revision": "1",
+          "verified": true
+        }
+      ]
+    }
+  ],
+  "expect_state": "unverified",
+  "expect_finding": "unauthorised-claim"
+}

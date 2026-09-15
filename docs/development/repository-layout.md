@@ -1,4 +1,4 @@
-# Prumo v0.4 Canonical Repository Layout
+# Prumo Canonical Repository Layout
 
 > Directories only exist when they have real content. No empty packages for diagrammatic completeness.
 

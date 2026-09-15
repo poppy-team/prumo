@@ -1,0 +1,37 @@
+{
+  "id": "U006",
+  "kind": "ui-specification",
+  "title": "An accessibility contract relying on automated evidence alone is silently concluded",
+  "spec": {
+    "contracts": [
+      {
+        "id": "accessibility.screen-reader",
+        "role": "accessibility",
+        "required_knowledge": [
+          "announcements"
+        ],
+        "blocking_questions": [
+          "What is announced on focus change?"
+        ],
+        "evidence_requirements": [
+          "automated"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "accessibility.screen-reader"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "accessibility-evidence"
+  ],
+  "expect_counts": {
+    "accessibility-evidence": 1
+  }
+}

@@ -2,7 +2,7 @@
 
 Prumo emphasizes rigorous testing to ensure deterministic behavior, contract conformance, and backward compatibility.
 
-## Test Suite Organization (Go v0.4)
+## Test Suite Organization (Go)
 
 The test suite is written in pure Go and organized by package:
 

@@ -1,0 +1,8 @@
+{
+  "id": "D001b",
+  "kind": "knowledge-match",
+  "title": "All key terms present does satisfy the requirement",
+  "requirement": "permission model and recovery guarantees",
+  "content": "The permission model documents crash recovery guarantees for every long-running operation.",
+  "expect_satisfied": true
+}

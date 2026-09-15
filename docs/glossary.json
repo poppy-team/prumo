@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "note": "Canonical terminology registry. A term is preferred (the wording Prumo uses), deprecated (outgoing wording, must name its replacement) or forbidden (must not appear in current documentation). Matching is whole-word and case-insensitive.",
+  "terms": [
+    {
+      "term": "Goal",
+      "definition": "The single declared unit of intent a run is authorized to pursue. A Goal carries acceptance criteria and is locked before implementation begins.",
+      "status": "preferred",
+      "sources": ["docs/GOAL_SYSTEM.md"]
+    },
+    {
+      "term": "KnowledgeUnit",
+      "definition": "A stable-identity, provider-neutral record of knowledge (requirement, decision, evidence, fact) that the workforce reads and writes.",
+      "status": "preferred",
+      "sources": ["docs/architecture/documentation-control-plane.md"]
+    },
+    {
+      "term": "Working Context Capsule",
+      "definition": "A derived, non-canonical pack of the smallest sufficient context for one Goal, produced by the context compiler.",
+      "status": "preferred",
+      "sources": ["docs/runtime/control-plane.md"]
+    },
+    {
+      "term": "agent surface",
+      "definition": "A generated projection of the instruction IR into a vendor-specific instruction file (AGENTS.md, .cursor rules, skills). Never canonical.",
+      "status": "preferred",
+      "sources": ["docs/architecture/documentation-control-plane.md"]
+    },
+    {
+      "term": "canonical",
+      "definition": "Owning project truth. A canonical document is the source other surfaces resolve to.",
+      "status": "preferred",
+      "sources": ["docs/architecture/overview.md"]
+    },
+    {
+      "term": "projection",
+      "definition": "A derived surface that must resolve back to a canonical source; it never owns facts.",
+      "status": "preferred",
+      "sources": ["docs/architecture/overview.md"]
+    },
+    {
+      "term": "wave",
+      "definition": "A planned, verifiable increment of implementation with explicit exit criteria (see docs/development/waves.md).",
+      "status": "preferred",
+      "sources": ["docs/development/waves.md"]
+    },
+    {
+      "term": "living document",
+      "definition": "A document kept in sync with the code it describes, with drift treated as a defect.",
+      "status": "preferred",
+      "sources": ["docs/governance/documentation-dogfood.md"]
+    },
+    {
+      "term": "gatekeeper",
+      "definition": "Retired wording for the role that validates a surface before it is trusted.",
+      "status": "deprecated",
+      "replaced_by": "evidence gate",
+      "sources": ["docs/QUALITY.md"]
+    },
+    {
+      "term": "evidence gate",
+      "definition": "A declared, deterministic check that produces evidence which must pass before a run may claim success.",
+      "status": "preferred",
+      "sources": ["docs/QUALITY.md"]
+    },
+    {
+      "term": "prompt engineering",
+      "definition": "Forbidden: it names a technique as the product's identity, which misstates what Prumo is. Describe the mechanism instead (context compilation, instruction IR).",
+      "status": "forbidden",
+      "sources": ["docs/product/vision.md"]
+    }
+  ]
+}

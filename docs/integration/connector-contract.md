@@ -1,6 +1,6 @@
 # Prumo Connector Contract
 
-This document defines the Connector Contract specification for Prumo v0.4 harnesses and integrations.
+This document defines the Connector Contract specification for Prumo harnesses and integrations.
 
 ## Overview
 

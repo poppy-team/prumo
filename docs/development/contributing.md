@@ -44,7 +44,7 @@ go test -v -race ./...
 
 - The Python v0.3 runtime was retired in ADR 002; the repository is 100% pure Go.
 - Do not change the Prumo protocol only to make Go implementation easier.
-- New v0.4 capabilities require closed Goals, documentation, and acceptance criteria.
+- New capabilities require closed Goals, documentation, and acceptance criteria.
 - Lock content, ADRs, and schemas must change explicitly, not silently.
 
 ## Pull request process
