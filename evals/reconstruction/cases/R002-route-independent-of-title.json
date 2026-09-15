@@ -1,0 +1,13 @@
+{
+  "id": "R002",
+  "kind": "reconstruction",
+  "title": "Retitling a document changes its heading, never its route",
+  "sources": [
+    { "path": "docs/reference/cli.md", "content": "# A Completely Different Title\n\nbody\n" }
+  ],
+  "expect_pages": 1,
+  "expect_routes": ["/reference/cli"],
+  "expect_title": "A Completely Different Title",
+  "expect_markdown_roundtrip": true,
+  "expect_idempotent": true
+}

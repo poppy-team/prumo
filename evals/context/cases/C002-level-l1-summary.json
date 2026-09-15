@@ -1,0 +1,10 @@
+{
+  "id": "C002",
+  "kind": "disclosure",
+  "title": "L1 discloses the first meaningful line and not the body",
+  "level": "L1",
+  "content": "\n\n# Title\n\nintro line\n\n## Section A\n\nbody a\n",
+  "expect_revealed": ["Title"],
+  "expect_absent": ["intro line", "body a"],
+  "expect_full": false
+}

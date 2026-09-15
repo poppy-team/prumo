@@ -333,6 +333,10 @@ type planBlueprintData struct {
 	Rationale        string             `json:"rationale"`
 	Tasks            []map[string]any   `json:"tasks,omitempty"`
 	DocumentationGap []docengine.Impact `json:"documentation_gap,omitempty"`
+	// DocumentationPlan is the Goal preflight (W17.7): the documentation
+	// obligations an implementation would owe, with a reason per obligation.
+	DocumentationPlan *docengine.DocumentationPlan `json:"documentation_plan,omitempty"`
+	PlanFindings      []docengine.SemanticFinding  `json:"plan_findings,omitempty"`
 }
 
 // runPlanAnswer ingests a classified answer to an open question, resolves it
@@ -519,19 +523,31 @@ func runPlanBlueprint(asJSON bool, path, sessionID, goal string, planRequested b
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
-	output, err := app.ProposeGoalPlan(app.GoalPlanInput{Scope: session.Scope, Preview: session.LastPreview, Readiness: readiness}, planRequested)
+	// Preflight (W17.7): the Goal carries its documentation obligations from
+	// the moment it is proposed, derived from the contracts the session's
+	// accepted decisions touch. The plan is derived runtime state.
+	plan, err := docengine.BuildPlanForContracts(path, readinessGoal, app.AffectedContracts(session.LastPreview), time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if err := docengine.SavePlan(path, plan); err != nil {
+		return serviceError(asJSON, err)
+	}
+	output, err := app.ProposeGoalPlan(app.GoalPlanInput{Scope: session.Scope, Preview: session.LastPreview, Readiness: readiness, Plan: plan}, planRequested)
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
 	data := planBlueprintData{
-		Scope:            session.Scope,
-		Session:          session.ID,
-		Goal:             output.Goal,
-		ReadinessReady:   readiness.Ready,
-		PlanRequired:     output.PlanRequired,
-		Rationale:        output.GammaRationale,
-		Tasks:            output.Tasks,
-		DocumentationGap: output.DocumentationGap,
+		Scope:             session.Scope,
+		Session:           session.ID,
+		Goal:              output.Goal,
+		ReadinessReady:    readiness.Ready,
+		PlanRequired:      output.PlanRequired,
+		Rationale:         output.GammaRationale,
+		Tasks:             output.Tasks,
+		DocumentationGap:  output.DocumentationGap,
+		DocumentationPlan: output.DocumentationPlan,
+		PlanFindings:      output.PlanFindings,
 	}
 	if asJSON {
 		return printEnvelope(protocol.OkEnvelope(data))

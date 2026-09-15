@@ -121,6 +121,17 @@
             "type": "string"
           }
         },
+        "source_locale": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+          }
+        },
         "virtual_chunking": {
           "type": ["boolean", "string"]
         }

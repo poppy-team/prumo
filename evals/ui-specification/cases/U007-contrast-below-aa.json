@@ -1,0 +1,62 @@
+{
+  "id": "U007",
+  "kind": "ui-specification",
+  "title": "A token whose measured contrast is below AA cannot be used for text",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ],
+    "themes": [
+      {
+        "id": "theme.no-color"
+      },
+      {
+        "id": "theme.high-contrast",
+        "high_contrast": true
+      }
+    ],
+    "tokens": [
+      {
+        "id": "token:color.surface",
+        "tier": "semantic",
+        "type": "color",
+        "value": "#ffffff"
+      },
+      {
+        "id": "token:color.whisper",
+        "tier": "semantic",
+        "type": "color",
+        "value": "#eeeeee",
+        "contrast": {
+          "against": "token:color.surface",
+          "ratio": 1.2,
+          "wcag": "AA"
+        }
+      }
+    ]
+  },
+  "expect_findings": [
+    "token-contrast"
+  ],
+  "expect_counts": {
+    "token-contrast": 1
+  }
+}

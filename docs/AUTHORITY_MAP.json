@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "current_version": "0.6.0",
+  "generated_from": [
+    "internal/protocol/protocol.go (CLIVersion)",
+    "docs/governance/authority.md"
+  ],
+  "documents": [
+    { "path": "AGENTS.md", "role": "canonical", "owner": "prumo-maintained", "note": "agent entrypoint + development authority" },
+    { "path": "ENTRYPOINT.md", "role": "canonical", "owner": "prumo-maintained", "note": "AI entrypoint" },
+    { "path": "FRAMEWORK.md", "role": "canonical", "owner": "human-maintained", "note": "framework invariants" },
+    { "path": "README.md", "role": "projection", "owner": "prumo-maintained", "canonical_source": "docs/product/vision.md" },
+    { "path": "CONTRIBUTING.md", "role": "canonical", "owner": "human-maintained" },
+    { "path": "SECURITY.md", "role": "canonical", "owner": "human-maintained" },
+    { "path": "CHANGELOG.md", "role": "historical", "note": "release record; entries are never rewritten" },
+    { "path": "HARNESS_IMPLEMENTATION_REPORT.md", "role": "historical" },
+    { "path": "docs/PRUMO.md", "role": "projection", "owner": "prumo-maintained", "canonical_source": "docs/product/vision.md", "note": "intent router" },
+    { "path": "docs/adr/**", "role": "historical", "note": "decision records; normative while active, never rewritten after acceptance" },
+    { "path": "docs/migration/**", "role": "historical" },
+    { "path": "docs/runtime/d*-progress.md", "role": "historical", "note": "phase progress logs" },
+    { "path": "docs/harness/promotion-report.md", "role": "historical" },
+    { "path": "docs/FRAMEWORK_CHANGE_PROPOSAL.md", "role": "historical", "note": "proposal, not accepted" },
+    { "path": "docs/product/scope-v0.4.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "the v0.4 boundary body is intentionally historical; the current line lives in the addendum" },
+    { "path": "docs/development/implementation-blueprint.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "v0.3→v0.4 migration blueprint; its version references are the historical migration boundary" },
+    { "path": "docs/development/phases.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "M0–M4 are the v0.3→v0.4 migration record; later sections (Pre-TUI waves, H10) are current" },
+    { "path": "docs/governance/m*-exit-gate.md", "role": "historical", "note": "milestone validation records" },
+    { "path": "docs/governance/documentation-dogfood.md", "role": "historical", "note": "dated M5 dogfood record; its readiness claim predates semantic readiness v2 (W15)" },
+    { "path": "docs/governance/**", "role": "canonical" },
+    { "path": "docs/**", "role": "canonical" }
+  ]
+}

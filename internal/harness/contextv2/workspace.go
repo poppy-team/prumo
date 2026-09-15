@@ -29,7 +29,7 @@ func CompileWorkspace(runID, goal, root string, budget int, level string) Manife
 	goalItem := Item{
 		Ref: "goal", Authority: "canonical", Trust: "high", Privacy: "internal",
 		Freshness: "current", Score: 1.0, Method: "exact",
-		TokenCost: estimateTokens(goal), Content: goal,
+		TokenCost: estimateTokens(goal), Content: goal, Reason: "the run goal",
 	}
 	candidates := []Item{goalItem}
 	abs := root
@@ -63,12 +63,46 @@ func CompileWorkspace(runID, goal, root string, budget int, level string) Manife
 	}
 	for ref, bonus := range ftsBoost(abs, refs, Tokenize(goal)) {
 		for i := range eligible {
-			if eligible[i].Ref == ref {
-				eligible[i].Score += bonus
+			if eligible[i].Ref != ref {
+				continue
 			}
+			eligible[i].Score += bonus
+			// The lexical signal is part of the reason the item is here; naming
+			// it is what makes the manifest explainable rather than merely
+			// reproducible (W4.5).
+			eligible[i].Reason = joinReason(eligible[i].Reason, "lexically matched the goal")
 		}
 	}
-	return Compile(runID, MMRDedup(eligible), budget, level)
+	manifest := CompileWithPolicy(runID, eligible, CompilePolicy{
+		Budget: budget, Level: ParseLevel(level), Policy: "workspace-v2",
+	})
+	// Instruction overhead is measured over what actually shipped, not over the
+	// candidates that were considered and dropped (W4.10).
+	manifest.InstructionTokens = 0
+	for _, it := range manifest.Included {
+		if isInstructionSurface(it.Ref) {
+			manifest.InstructionTokens += it.TokenCost
+		}
+	}
+	return manifest
+}
+
+// instructionRefNames are the repository-root agent instruction surfaces. They
+// are part of every compilation but their cost is reported separately, because
+// instruction overhead is a different budget from retrieved content (W4.10).
+var instructionRefNames = []string{"AGENTS.md", "CLAUDE.md", "ENTRYPOINT.md"}
+
+// isInstructionSurface reports whether a candidate is an agent instruction
+// surface rather than project content.
+func isInstructionSurface(ref string) bool {
+	slash := filepath.ToSlash(ref)
+	for _, name := range instructionRefNames {
+		if slash == name {
+			return true
+		}
+	}
+	return strings.Contains(slash, ".github/copilot-instructions") ||
+		strings.Contains(slash, ".cursor/rules/")
 }
 
 func estimateTokens(s string) int { return model.EstimateTokens(s, "") }
@@ -83,10 +117,19 @@ func entrypointItems(root string) []Item {
 		if err != nil || st.IsDir() {
 			continue
 		}
+		// Entry points are small and always considered; carrying their content is
+		// what makes progressive disclosure meaningful for them (W4.4).
+		content := ""
+		if st.Size() <= 1<<18 {
+			if data, err := os.ReadFile(p); err == nil {
+				content = string(data)
+			}
+		}
 		out = append(out, Item{
 			Ref: name, Authority: "canonical", Trust: "high", Privacy: "internal",
 			Freshness: st.ModTime().UTC().Format(time.RFC3339),
 			Score:     0.9, Method: "exact", TokenCost: cappedEstimate(int(st.Size())),
+			Content: content, Reason: "repository entry point",
 		})
 	}
 	return out
@@ -154,10 +197,15 @@ func fileItems(root string, modified map[string]bool) []Item {
 		if modified[rel] {
 			score = 0.8
 		}
+		reason := "workspace file"
+		if modified[rel] {
+			reason = "recently modified workspace file"
+		}
 		out = append(out, Item{
 			Ref: "file:" + rel, Authority: "reference", Trust: "medium", Privacy: "internal",
 			Freshness: st.ModTime().UTC().Format(time.RFC3339), Rev: "",
 			Score: score, Method: "structured", TokenCost: cappedEstimate(int(st.Size())),
+			Reason: reason,
 		})
 	}
 	for _, name := range names {
@@ -207,7 +255,7 @@ func atlasItems(root, goal string) []Item {
 			Privacy: "internal", Freshness: r.UpdatedAt,
 			Score: 0.6 - 0.05*float64(i), Method: "memory",
 			TokenCost: cappedEstimate(len(r.Title) + len(r.Body)),
-			Content:   r.Title,
+			Content:   r.Title, Reason: "recalled project memory",
 		})
 	}
 	return out

@@ -1,10 +1,771 @@
 [
-  {"contract_id":"product.vision","sources":["docs/product/vision.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["What problem does the product solve?"]},
-  {"contract_id":"project.scope","sources":["docs/product/scope-v0.4.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["What is explicitly out of scope?"]},
-  {"contract_id":"architecture.system","sources":["docs/architecture/overview.md","docs/architecture/dependency-rules.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["What owns canonical state?","Which components may mutate it?"]},
-  {"contract_id":"testing.strategy","sources":["docs/development/testing-strategy.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["Which checks block completion?"]},
-  {"contract_id":"security.trust","sources":["docs/security/trust-model.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["Which actions require explicit approval?"]},
-  {"contract_id":"installation.lifecycle","sources":["docs/manual/installation.md","docs/manual/uninstallation.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["What happens after interrupted update?"]},
-  {"contract_id":"cli.reference","sources":["docs/reference/cli.md","docs/manual/usage.md"],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":["Which commands are stable?"]},
-  {"contract_id":"ui.documentation","sources":[],"ownership":"human-maintained","authority":"canonical-documentation","answered_questions":[]}
+  {
+    "contract_id": "product.vision",
+    "sources": [
+      "docs/product/vision.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "What problem does the product solve?"
+    ],
+    "requirement_map": {
+      "problem and users": "REQ-VISION-PROBLEM",
+      "product outcome": "REQ-VISION-OUTCOME",
+      "success boundaries": "REQ-VISION-BOUNDARIES"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-VISION-PROBLEM",
+        "statement": "`docs/product/vision.md` states the problem Prumo addresses and who it is for.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-VISION-PROBLEM"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-VISION-PROBLEM-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-VISION-PROBLEM",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/vision.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-VISION-OUTCOME",
+        "statement": "`docs/product/vision.md` states the intended product outcome.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-VISION-OUTCOME"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-VISION-OUTCOME-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-VISION-OUTCOME",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/vision.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-VISION-BOUNDARIES",
+        "statement": "`docs/product/vision.md` and `docs/product/scope-v0.4.md` state the success and non-goal boundaries.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-VISION-BOUNDARIES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-VISION-BOUNDARIES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-VISION-BOUNDARIES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/vision.md"
+          },
+          {
+            "id": "EV-PRUMO-VISION-BOUNDARIES-SCOPE",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-VISION-BOUNDARIES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/scope-v0.4.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "project.scope",
+    "sources": [
+      "docs/product/scope-v0.4.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "What is explicitly out of scope?"
+    ],
+    "requirement_map": {
+      "in-scope capabilities": "REQ-SCOPE-IN",
+      "non-goals": "REQ-SCOPE-NONGOALS",
+      "compatibility constraints": "REQ-SCOPE-COMPAT"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-SCOPE-IN",
+        "statement": "`docs/product/scope-v0.4.md` lists the in-scope capabilities of the current delivery.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-SCOPE-IN"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-SCOPE-IN-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-SCOPE-IN",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/scope-v0.4.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-SCOPE-NONGOALS",
+        "statement": "`docs/product/scope-v0.4.md` lists the explicit non-goals.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-SCOPE-NONGOALS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-SCOPE-NONGOALS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-SCOPE-NONGOALS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/scope-v0.4.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-SCOPE-COMPAT",
+        "statement": "`docs/product/scope-v0.4.md` states the compatibility constraints and the migration boundary.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-SCOPE-COMPAT"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-SCOPE-COMPAT-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-SCOPE-COMPAT",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/product/scope-v0.4.md"
+          },
+          {
+            "id": "EV-PRUMO-SCOPE-COMPAT-DEPTEST",
+            "type": "conformance-test",
+            "target": "CLAIM-PRUMO-SCOPE-COMPAT",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "conformance/schema-runtime/conformance_test.go"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "architecture.system",
+    "sources": [
+      "docs/architecture/overview.md",
+      "docs/architecture/dependency-rules.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "What owns canonical state?",
+      "Which components may mutate it?"
+    ],
+    "requirement_map": {
+      "system boundaries": "REQ-ARCH-BOUNDARIES",
+      "major components": "REQ-ARCH-COMPONENTS",
+      "dependency direction": "REQ-ARCH-DIRECTION",
+      "external integrations": "REQ-ARCH-INTEGRATIONS"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-ARCH-BOUNDARIES",
+        "statement": "`docs/architecture/overview.md` states the system boundaries of the harness, documentation control plane and CLI.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-BOUNDARIES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-BOUNDARIES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-BOUNDARIES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/overview.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-ARCH-COMPONENTS",
+        "statement": "`docs/architecture/overview.md` and `docs/architecture/documentation-control-plane.md` name the major components.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-COMPONENTS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-COMPONENTS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-COMPONENTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/overview.md"
+          },
+          {
+            "id": "EV-PRUMO-ARCH-COMPONENTS-CP",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-COMPONENTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/documentation-control-plane.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-ARCH-DIRECTION",
+        "statement": "`docs/architecture/dependency-rules.md` states the dependency direction and the layer import policy.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-DIRECTION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-DIRECTION-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-DIRECTION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/architecture/dependency-rules.md"
+          },
+          {
+            "id": "EV-PRUMO-ARCH-DIRECTION-ROUNDTRIP",
+            "type": "conformance-test",
+            "target": "CLAIM-PRUMO-ARCH-DIRECTION",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "conformance/schema-runtime/roundtrip_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-ARCH-INTEGRATIONS",
+        "statement": "`docs/architecture/overview.md` and `docs/integration/connector-contract.md` describe the external integration surface.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-ARCH-INTEGRATIONS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-ARCH-INTEGRATIONS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-ARCH-INTEGRATIONS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/integration/connector-contract.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "testing.strategy",
+    "sources": [
+      "docs/development/testing-strategy.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which checks block completion?"
+    ],
+    "requirement_map": {
+      "test levels": "REQ-TEST-LEVELS",
+      "quality gates": "REQ-TEST-GATES",
+      "conformance strategy": "REQ-TEST-CONFORMANCE",
+      "evidence expectations": "REQ-TEST-EVIDENCE"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-TEST-LEVELS",
+        "statement": "`docs/development/testing-strategy.md` states the test levels in use.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TEST-LEVELS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TEST-LEVELS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TEST-LEVELS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/development/testing-strategy.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-TEST-GATES",
+        "statement": "`docs/development/testing-strategy.md` and `docs/QUALITY.md` state which checks block completion.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TEST-GATES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TEST-GATES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TEST-GATES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/development/testing-strategy.md"
+          },
+          {
+            "id": "EV-PRUMO-TEST-GATES-CI",
+            "type": "ci-workflow",
+            "target": "CLAIM-PRUMO-TEST-GATES",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": ".github/workflows/ci.yml"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-TEST-CONFORMANCE",
+        "statement": "The conformance strategy is executable: `conformance/schema-runtime` enforces schema identity, enum parity and round-trip.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TEST-CONFORMANCE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TEST-CONFORMANCE-SUITE",
+            "type": "conformance-test",
+            "target": "CLAIM-PRUMO-TEST-CONFORMANCE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "conformance/schema-runtime/conformance_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-TEST-EVIDENCE",
+        "statement": "Evidence expectations are recorded per Goal/Wave and per documentation contract.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TEST-EVIDENCE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TEST-EVIDENCE-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TEST-EVIDENCE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/GOAL_SYSTEM.md"
+          },
+          {
+            "id": "EV-PRUMO-TEST-EVIDENCE-WAVES",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TEST-EVIDENCE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/development/waves.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "security.trust",
+    "sources": [
+      "docs/security/trust-model.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which actions require explicit approval?"
+    ],
+    "requirement_map": {
+      "trust boundaries": "REQ-TRUST-BOUNDARIES",
+      "permission model": "REQ-TRUST-PERMISSIONS",
+      "secrets model": "REQ-TRUST-SECRETS",
+      "recovery": "REQ-TRUST-RECOVERY"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-TRUST-BOUNDARIES",
+        "statement": "`docs/security/trust-model.md` states the trust boundaries between repository, harness and external providers.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TRUST-BOUNDARIES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TRUST-BOUNDARIES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TRUST-BOUNDARIES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/security/trust-model.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-TRUST-PERMISSIONS",
+        "statement": "`docs/security/trust-model.md` states which actions require explicit approval.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TRUST-PERMISSIONS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TRUST-PERMISSIONS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TRUST-PERMISSIONS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/security/trust-model.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-TRUST-SECRETS",
+        "statement": "`docs/security/trust-model.md` and `SECURITY.md` state how secrets are handled and never committed.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TRUST-SECRETS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TRUST-SECRETS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TRUST-SECRETS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "SECURITY.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-TRUST-RECOVERY",
+        "statement": "`docs/security/trust-model.md` states the recovery behaviour for interrupted or failed operations.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-TRUST-RECOVERY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-TRUST-RECOVERY-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-TRUST-RECOVERY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/security/trust-model.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "installation.lifecycle",
+    "sources": [
+      "docs/manual/installation.md",
+      "docs/manual/uninstallation.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "What happens after interrupted update?"
+    ],
+    "requirement_map": {
+      "installation paths": "REQ-INSTALL-PATHS",
+      "ownership": "REQ-INSTALL-OWNERSHIP",
+      "rollback strategy": "REQ-INSTALL-ROLLBACK",
+      "uninstall safety": "REQ-INSTALL-UNINSTALL"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-INSTALL-PATHS",
+        "statement": "`docs/manual/installation.md` states the supported installation paths.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-PATHS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-PATHS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-PATHS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/installation.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-INSTALL-OWNERSHIP",
+        "statement": "`docs/reference/installation-contract.md` states which files the tool owns and which belong to the user.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-OWNERSHIP"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-OWNERSHIP-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-OWNERSHIP",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/installation-contract.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-INSTALL-ROLLBACK",
+        "statement": "`docs/manual/installation.md` states the rollback strategy and recovery after an update.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-ROLLBACK"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-ROLLBACK-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-ROLLBACK",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/installation.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-INSTALL-UNINSTALL",
+        "statement": "`docs/manual/uninstallation.md` states what uninstallation removes and what it intentionally preserves.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-INSTALL-UNINSTALL"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-INSTALL-UNINSTALL-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-INSTALL-UNINSTALL",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/uninstallation.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "cli.reference",
+    "sources": [
+      "docs/reference/cli.md",
+      "docs/manual/usage.md"
+    ],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": [
+      "Which commands are stable?"
+    ],
+    "requirement_map": {
+      "command surface": "REQ-CLI-SURFACE",
+      "machine output": "REQ-CLI-MACHINE",
+      "exit codes": "REQ-CLI-EXITS",
+      "examples": "REQ-CLI-EXAMPLES"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PRUMO-CLI-SURFACE",
+        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo/help.go`.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-SURFACE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-SURFACE-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-SURFACE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/cli.md"
+          },
+          {
+            "id": "EV-PRUMO-CLI-SURFACE-SOURCE",
+            "type": "source",
+            "target": "CLAIM-PRUMO-CLI-SURFACE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "cmd/prumo/help.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-CLI-MACHINE",
+        "statement": "The `--json` envelope is defined once in `internal/protocol` and documents machine-readable output.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-MACHINE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-MACHINE-SOURCE",
+            "type": "source",
+            "target": "CLAIM-PRUMO-CLI-MACHINE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "internal/protocol/protocol.go"
+          },
+          {
+            "id": "EV-PRUMO-CLI-MACHINE-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-MACHINE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/cli.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-CLI-EXITS",
+        "statement": "Exit-code semantics are documented and enforced by the CLI smoke test in CI.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-EXITS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-EXITS-CI",
+            "type": "ci-workflow",
+            "target": "CLAIM-PRUMO-CLI-EXITS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": ".github/workflows/ci.yml"
+          },
+          {
+            "id": "EV-PRUMO-CLI-EXITS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-EXITS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/reference/cli.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PRUMO-CLI-EXAMPLES",
+        "statement": "`docs/manual/usage.md` provides runnable examples for the documented commands.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-CLI-EXAMPLES"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PRUMO-CLI-EXAMPLES-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PRUMO-CLI-EXAMPLES",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/manual/usage.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "contract_id": "ui.documentation",
+    "sources": [],
+    "ownership": "human-maintained",
+    "authority": "canonical-documentation",
+    "answered_questions": []
+  }
 ]

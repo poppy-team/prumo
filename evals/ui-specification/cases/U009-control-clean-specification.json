@@ -1,0 +1,93 @@
+{
+  "id": "U009",
+  "kind": "ui-specification",
+  "title": "Control: a complete specification produces no findings",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ],
+        "states": [
+          "default",
+          "focus",
+          "empty"
+        ]
+      },
+      {
+        "id": "accessibility.keyboard",
+        "role": "accessibility",
+        "required_knowledge": [
+          "key bindings"
+        ],
+        "blocking_questions": [
+          "Is every command reachable by keyboard?"
+        ],
+        "evidence_requirements": [
+          "automated",
+          "manual"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette",
+          "accessibility.keyboard"
+        ]
+      }
+    ],
+    "themes": [
+      {
+        "id": "theme.default"
+      },
+      {
+        "id": "theme.no-color",
+        "extends": "theme.default"
+      },
+      {
+        "id": "theme.high-contrast",
+        "extends": "theme.default",
+        "high_contrast": true
+      }
+    ],
+    "tokens": [
+      {
+        "id": "token:color.surface",
+        "tier": "semantic",
+        "type": "color",
+        "value": "#ffffff"
+      },
+      {
+        "id": "token:color.text",
+        "tier": "semantic",
+        "type": "color",
+        "value": "#000000",
+        "contrast": {
+          "against": "token:color.surface",
+          "ratio": 16.0,
+          "wcag": "AAA"
+        }
+      },
+      {
+        "id": "token:tui.panel.border",
+        "tier": "component",
+        "type": "border",
+        "value": "ASCII +/-",
+        "platforms": [
+          "tui"
+        ],
+        "capability_fallback": "ASCII when the terminal lacks Unicode box drawing"
+      }
+    ]
+  },
+  "expect_findings": [],
+  "expect_counts": {}
+}

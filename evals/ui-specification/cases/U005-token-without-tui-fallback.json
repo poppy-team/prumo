@@ -1,0 +1,54 @@
+{
+  "id": "U005",
+  "kind": "ui-specification",
+  "title": "A non-colour token used on the TUI must say what it degrades to",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "required_knowledge": [
+          "palette states"
+        ],
+        "blocking_questions": [
+          "Which states must the palette support?"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ],
+    "themes": [
+      {
+        "id": "theme.no-color"
+      },
+      {
+        "id": "theme.high-contrast",
+        "high_contrast": true
+      }
+    ],
+    "tokens": [
+      {
+        "id": "token:tui.dialog.frame",
+        "tier": "component",
+        "type": "border",
+        "value": "ASCII",
+        "platforms": [
+          "tui"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "token-tui-fallback"
+  ],
+  "expect_counts": {
+    "token-tui-fallback": 1
+  }
+}

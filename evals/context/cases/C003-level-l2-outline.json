@@ -1,0 +1,10 @@
+{
+  "id": "C003",
+  "kind": "disclosure",
+  "title": "L2 discloses the outline and drops body text",
+  "level": "L2",
+  "content": "# Title\n\nintro line\n\n## Section A\n\nbody a\n\n## Section B\n\nbody b\n",
+  "expect_revealed": ["# Title", "## Section A", "## Section B"],
+  "expect_absent": ["intro line", "body a", "body b"],
+  "expect_full": false
+}

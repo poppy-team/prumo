@@ -1,0 +1,13 @@
+{
+  "id": "C006",
+  "kind": "dedup",
+  "title": "A projection is dropped in favour of its canonical source",
+  "items": [
+    { "ref": "docs/reference/cli.md", "authority": "canonical" },
+    { "ref": "docs/generated/cli.md", "authority": "reference", "projection": true, "canonical_source": "docs/reference/cli.md" }
+  ],
+  "expect_kept": ["docs/reference/cli.md"],
+  "expect_excluded": [
+    { "ref": "docs/generated/cli.md", "reason": "prefer-canonical" }
+  ]
+}

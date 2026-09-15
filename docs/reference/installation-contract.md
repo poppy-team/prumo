@@ -1,4 +1,4 @@
-# Prumo v0.5 Installation Contract
+# Prumo Installation Contract
 
 This contract defines how the Go binary, global state, and project-local state coexist without destructive side effects.
 

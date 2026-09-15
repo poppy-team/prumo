@@ -1,0 +1,15 @@
+{
+  "id": "C008",
+  "kind": "budget",
+  "title": "A candidate that would exceed the budget is excluded for that reason",
+  "budget": 10,
+  "level": "L4",
+  "items": [
+    { "ref": "goal", "authority": "canonical", "score": 1.0, "content": "short goal" },
+    { "ref": "file:huge.md", "authority": "reference", "score": 0.2, "content": "this candidate is deliberately far too large to fit inside the tiny budget the case declares for it" }
+  ],
+  "expect_included": ["goal"],
+  "expect_excluded": [
+    { "ref": "file:huge.md", "reason": "budget" }
+  ]
+}

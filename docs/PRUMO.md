@@ -4,7 +4,7 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 
 ## Current implementation line
 
-- Go v0.5: active Core and CLI.
+- Go v0.6: active Core and CLI.
 - Python v0.3: retired compatibility oracle (canonical resources preserved under `src/prumo/`).
 - Canonical formats: Markdown, JSON, JSON Schema, Git.
 - Derived state: caches, indexes, runtime context, generated adapters.
@@ -21,7 +21,7 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 ## Product and architecture
 
 - [Product vision](product/vision.md)
-- [v0.4 scope](product/scope-v0.4.md)
+- [v0.4 boundary scope (historical)](product/scope-v0.4.md)
 - [Architecture overview](architecture/overview.md)
 - [Dependency rules](architecture/dependency-rules.md)
 - [Repository layout](development/repository-layout.md)
@@ -30,16 +30,16 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 
 ## Harness (headless, Prumo-native)
 
-- [Harness overview](../harness/overview.md)
-- [Agent runtime](../harness/agent-runtime.md)
-- [Providers + Gateway](../harness/providers.md)
-- [Security](../harness/security.md)
-- [Context + Knowledge](../harness/context-knowledge.md)
-- [Workforce + Handoff](../harness/workforce-handoff.md)
-- [Daemon](../harness/daemon.md)
-- [Human docs](../harness/human-docs.md)
-- [Roadmap status](../harness/roadmap-status.md)
-- [Promotion report](../harness/promotion-report.md)
+- [Harness overview](harness/overview.md)
+- [Agent runtime](harness/agent-runtime.md)
+- [Providers + Gateway](harness/providers.md)
+- [Security](harness/security.md)
+- [Context + Knowledge](harness/context-knowledge.md)
+- [Workforce + Handoff](harness/workforce-handoff.md)
+- [Daemon](harness/daemon.md)
+- [Human docs](harness/human-docs.md)
+- [Roadmap status](harness/roadmap-status.md)
+- [Promotion report](harness/promotion-report.md)
 
 ## Development
 
@@ -51,6 +51,9 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 - [Migration protocol inventory](migration/protocol-inventory.md)
 - [Conformance strategy](migration/conformance-strategy.md)
 - [Migration status](migration/v0.3-to-v0.4-go.md)
+- [Implementation waves (W0–W21)](development/waves.md)
+- [Authority & projection policy](governance/authority.md)
+- [Documentation Control Plane (ADR 010)](adr/010-documentation-control-plane.md)
 
 ## Integrations and authoring
 
@@ -72,6 +75,7 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 - `prumo docs profiles`
 - `prumo docs audit`
 - `prumo docs readiness`
+- `prumo docs authority`
 
 M5 documentation analysis is deterministic and read-only. Missing knowledge is reported; Prumo does not create empty documents or silently promote model prose to canonical state.
 

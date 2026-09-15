@@ -42,7 +42,30 @@
       "core-software"
     ],
     "contracts": [
-      "ui.documentation"
+      "ui.product-ux",
+      "ui.information-architecture",
+      "ui.screen-inventory",
+      "ui.layout",
+      "ui.interaction",
+      "ui.state-model",
+      "ui.design-tokens",
+      "ui.component-contracts",
+      "ui.accessibility",
+      "ui.localization",
+      "ui.theming",
+      "ui.personalization",
+      "ui.visual-validation",
+      "ui.platform-conventions",
+      "accessibility.keyboard",
+      "accessibility.focus",
+      "accessibility.contrast",
+      "accessibility.screen-reader",
+      "accessibility.motion",
+      "accessibility.zoom-reflow",
+      "accessibility.target-size",
+      "accessibility.drag-alternatives",
+      "accessibility.accessible-auth",
+      "accessibility.cognitive-clarity"
     ]
   },
   {
@@ -57,7 +80,70 @@
       "core-software"
     ],
     "contracts": [
-      "ui.documentation"
+      "ui.product-ux",
+      "ui.information-architecture",
+      "ui.screen-inventory",
+      "ui.layout",
+      "ui.interaction",
+      "ui.state-model",
+      "ui.design-tokens",
+      "ui.component-contracts",
+      "ui.accessibility",
+      "ui.localization",
+      "ui.theming",
+      "ui.personalization",
+      "ui.visual-validation",
+      "ui.platform-conventions",
+      "accessibility.keyboard",
+      "accessibility.focus",
+      "accessibility.contrast",
+      "accessibility.screen-reader",
+      "accessibility.motion",
+      "accessibility.zoom-reflow",
+      "accessibility.target-size",
+      "accessibility.drag-alternatives",
+      "accessibility.accessible-auth",
+      "accessibility.cognitive-clarity"
+    ]
+  },
+  {
+    "id": "tui",
+    "version": 1,
+    "description": "Terminal applications. Composes the specialized UI contracts plus TUI-specific interaction and accessibility obligations.",
+    "capabilities": [
+      "tui",
+      "ui"
+    ],
+    "extends": [
+      "core-software"
+    ],
+    "contracts": [
+      "ui.product-ux",
+      "ui.information-architecture",
+      "ui.screen-inventory",
+      "ui.layout",
+      "ui.interaction",
+      "ui.state-model",
+      "ui.design-tokens",
+      "ui.component-contracts",
+      "ui.accessibility",
+      "ui.localization",
+      "ui.theming",
+      "ui.personalization",
+      "ui.visual-validation",
+      "ui.platform-conventions",
+      "tui.interaction",
+      "tui.accessibility",
+      "accessibility.keyboard",
+      "accessibility.focus",
+      "accessibility.contrast",
+      "accessibility.screen-reader",
+      "accessibility.motion",
+      "accessibility.zoom-reflow",
+      "accessibility.target-size",
+      "accessibility.drag-alternatives",
+      "accessibility.accessible-auth",
+      "accessibility.cognitive-clarity"
     ]
   },
   {

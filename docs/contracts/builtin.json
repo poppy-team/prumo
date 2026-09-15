@@ -1,10 +1,1108 @@
 [
-  {"id":"product.vision","version":1,"role":"product-vision","description":"Why the product exists and what outcome it creates.","required_knowledge":["problem and users","product outcome","success boundaries"],"blocking_questions":["What problem does the product solve?"],"update_triggers":["product.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}},
-  {"id":"project.scope","version":1,"role":"scope","description":"In-scope, non-goals, and compatibility boundaries.","required_knowledge":["in-scope capabilities","non-goals","compatibility constraints"],"blocking_questions":["What is explicitly out of scope?"],"update_triggers":["scope.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}},
-  {"id":"architecture.system","version":1,"role":"system-architecture","description":"System boundaries, components, dependencies, and external integrations.","required_knowledge":["system boundaries","major components","dependency direction","external integrations"],"blocking_questions":["What owns canonical state?","Which components may mutate it?"],"update_triggers":["architecture.changed","public-api.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}},
-  {"id":"testing.strategy","version":1,"role":"testing-strategy","description":"Validation levels, quality gates, fixtures, and evidence expectations.","required_knowledge":["test levels","quality gates","conformance strategy","evidence expectations"],"blocking_questions":["Which checks block completion?"],"update_triggers":["test-policy.changed","schema.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}},
-  {"id":"security.trust","version":1,"role":"security-trust","description":"Trust boundaries, permissions, secrets, and recovery.","required_knowledge":["trust boundaries","permission model","secrets model","recovery"],"blocking_questions":["Which actions require explicit approval?"],"update_triggers":["security-policy.changed","permission.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}},
-  {"id":"installation.lifecycle","version":1,"role":"installation","description":"Installation, update, rollback, and uninstall behavior.","required_knowledge":["installation paths","ownership","rollback strategy","uninstall safety"],"blocking_questions":["What happens after interrupted update?"],"update_triggers":["installation.changed","release.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}},
-  {"id":"cli.reference","version":1,"role":"cli-reference","description":"Commands, arguments, outputs, and exit codes.","required_knowledge":["command surface","machine output","exit codes","examples"],"blocking_questions":["Which commands are stable?"],"update_triggers":["cli.changed"],"eligible_owners":["human-maintained","prumo-maintained","generated"],"staleness":{"mode":"trigger-based"}},
-  {"id":"ui.documentation","version":1,"role":"ui-documentation","description":"UI flows, states, accessibility, tokens, and visual evidence.","applicability":{"capabilities_any":["desktop-gui","web-application","ui"]},"required_knowledge":["user flows","screens and states","accessibility","visual validation"],"blocking_questions":["Which user states must be supported?"],"update_triggers":["ui.changed"],"eligible_owners":["human-maintained","prumo-maintained"],"staleness":{"mode":"trigger-based"}}
+  {
+    "id": "product.vision",
+    "version": 1,
+    "role": "product-vision",
+    "description": "Why the product exists and what outcome it creates.",
+    "required_knowledge": [
+      "problem and users",
+      "product outcome",
+      "success boundaries"
+    ],
+    "blocking_questions": [
+      "What problem does the product solve?"
+    ],
+    "update_triggers": [
+      "path:docs/product/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "project.scope",
+    "version": 1,
+    "role": "scope",
+    "description": "In-scope, non-goals, and compatibility boundaries.",
+    "required_knowledge": [
+      "in-scope capabilities",
+      "non-goals",
+      "compatibility constraints"
+    ],
+    "blocking_questions": [
+      "What is explicitly out of scope?"
+    ],
+    "update_triggers": [
+      "path:docs/product/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "architecture.system",
+    "version": 1,
+    "role": "system-architecture",
+    "description": "System boundaries, components, dependencies, and external integrations.",
+    "required_knowledge": [
+      "system boundaries",
+      "major components",
+      "dependency direction",
+      "external integrations"
+    ],
+    "blocking_questions": [
+      "What owns canonical state?",
+      "Which components may mutate it?"
+    ],
+    "update_triggers": [
+      "path:docs/architecture/",
+      "path:sdk/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "testing.strategy",
+    "version": 1,
+    "role": "testing-strategy",
+    "description": "Validation levels, quality gates, fixtures, and evidence expectations.",
+    "required_knowledge": [
+      "test levels",
+      "quality gates",
+      "conformance strategy",
+      "evidence expectations"
+    ],
+    "blocking_questions": [
+      "Which checks block completion?"
+    ],
+    "update_triggers": [
+      "path:docs/development/testing-strategy.md",
+      "path:schemas/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "security.trust",
+    "version": 1,
+    "role": "security-trust",
+    "description": "Trust boundaries, permissions, secrets, and recovery.",
+    "required_knowledge": [
+      "trust boundaries",
+      "permission model",
+      "secrets model",
+      "recovery"
+    ],
+    "blocking_questions": [
+      "Which actions require explicit approval?"
+    ],
+    "update_triggers": [
+      "path:docs/security/",
+      "permission:approval"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "installation.lifecycle",
+    "version": 1,
+    "role": "installation",
+    "description": "Installation, update, rollback, and uninstall behavior.",
+    "required_knowledge": [
+      "installation paths",
+      "ownership",
+      "rollback strategy",
+      "uninstall safety"
+    ],
+    "blocking_questions": [
+      "What happens after interrupted update?"
+    ],
+    "update_triggers": [
+      "path:docs/manual/installation.md",
+      "path:docs/governance/release-policy.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "cli.reference",
+    "version": 1,
+    "role": "cli-reference",
+    "description": "Commands, arguments, outputs, and exit codes.",
+    "required_knowledge": [
+      "command surface",
+      "machine output",
+      "exit codes",
+      "examples"
+    ],
+    "blocking_questions": [
+      "Which commands are stable?"
+    ],
+    "update_triggers": [
+      "path:cmd/prumo/",
+      "path:docs/reference/cli.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained",
+      "generated"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.documentation",
+    "version": 1,
+    "role": "ui-documentation",
+    "description": "DEPRECATED (W5.7): monolithic UI contract superseded by the specialized ui.* contracts. Retained for read compatibility only.",
+    "applicability": {
+      "capabilities_any": [
+        "desktop-gui",
+        "web-application",
+        "ui"
+      ]
+    },
+    "required_knowledge": [
+      "user flows",
+      "screens and states",
+      "accessibility",
+      "visual validation"
+    ],
+    "blocking_questions": [
+      "Which user states must be supported?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.product-ux",
+    "version": 1,
+    "role": "ui-product-ux",
+    "description": "User flows and the command/interaction map.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "user goals",
+      "user flow inventory",
+      "command and interaction map"
+    ],
+    "blocking_questions": [
+      "Which user journeys must work end to end?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/product/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.information-architecture",
+    "version": 1,
+    "role": "ui-information-architecture",
+    "description": "Navigation, hierarchy, naming, findability.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "navigation model",
+      "surface hierarchy",
+      "naming conventions",
+      "task findability"
+    ],
+    "blocking_questions": [
+      "How does a user find a task-relevant surface?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.screen-inventory",
+    "version": 1,
+    "role": "ui-screen-inventory",
+    "description": "Screens, views and their purpose.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "screen inventory",
+      "screen purpose",
+      "entry points"
+    ],
+    "blocking_questions": [
+      "Which screens are required for the primary flow?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.layout",
+    "version": 1,
+    "role": "ui-layout",
+    "description": "Responsive/adaptive layout and size classes.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "layout model",
+      "responsive behavior",
+      "size classes",
+      "overflow handling"
+    ],
+    "blocking_questions": [
+      "What happens at the smallest supported size?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.interaction",
+    "version": 1,
+    "role": "ui-interaction",
+    "description": "Input methods, keybindings, focus and selection semantics.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "input methods",
+      "keyboard map",
+      "focus semantics",
+      "selection semantics",
+      "mouse optionality"
+    ],
+    "blocking_questions": [
+      "Is every action reachable by keyboard only?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.state-model",
+    "version": 1,
+    "role": "ui-state-model",
+    "description": "State matrix: default, loading, empty, error, offline, reconnect, permission.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "state matrix",
+      "state applicability",
+      "recovery behavior",
+      "error messaging"
+    ],
+    "blocking_questions": [
+      "Which states must be supported and which are explicitly not applicable?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.design-tokens",
+    "version": 1,
+    "role": "ui-design-tokens",
+    "description": "Three-tier token system as a versioned API.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "token tiers",
+      "semantic tokens",
+      "token change policy",
+      "contrast evidence"
+    ],
+    "blocking_questions": [
+      "Which semantic tokens are contractual?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "token:accent"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.component-contracts",
+    "version": 1,
+    "role": "ui-component-contracts",
+    "description": "Component anatomy, states, interactions and implementation trace.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "component inventory",
+      "anatomy",
+      "component states",
+      "component interactions",
+      "implementation trace"
+    ],
+    "blocking_questions": [
+      "Which components are reusable contracts?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.accessibility",
+    "version": 1,
+    "role": "ui-accessibility",
+    "description": "Surface-specific accessibility obligations and evidence classes.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "keyboard access",
+      "focus visibility",
+      "contrast",
+      "screen reader strategy",
+      "evidence classes"
+    ],
+    "blocking_questions": [
+      "Which accessibility evidence is mandatory for this surface?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.localization",
+    "version": 1,
+    "role": "ui-localization",
+    "description": "Locale-aware presentation, expansion and RTL readiness.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "supported locales",
+      "text expansion policy",
+      "formatting policy",
+      "RTL readiness",
+      "fallback policy"
+    ],
+    "blocking_questions": [
+      "Which locales are user-visible and what is the fallback?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/development/localization.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.theming",
+    "version": 1,
+    "role": "ui-theming",
+    "description": "Themes, contrast modes and token inheritance.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "theme compatibility matrix",
+      "token inheritance",
+      "high contrast mode",
+      "reduced motion"
+    ],
+    "blocking_questions": [
+      "Which themes must be supported and how do they inherit tokens?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "token:accent"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.personalization",
+    "version": 1,
+    "role": "ui-personalization",
+    "description": "What users may customize, defaults, persistence and limits.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "customizable surface",
+      "defaults",
+      "persistence location",
+      "import and export",
+      "invalid value behavior",
+      "platform limitations"
+    ],
+    "blocking_questions": [
+      "What customization is supported and where is it persisted?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.visual-validation",
+    "version": 1,
+    "role": "ui-visual-validation",
+    "description": "Visual evidence requirements and freshness.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "visual evidence set",
+      "capture environment",
+      "regression policy",
+      "media freshness"
+    ],
+    "blocking_questions": [
+      "Which visual states require evidence?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "ui.platform-conventions",
+    "version": 1,
+    "role": "ui-platform-conventions",
+    "description": "Platform capabilities, conventions and graceful fallback.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "platform capability matrix",
+      "platform conventions",
+      "fallback behavior"
+    ],
+    "blocking_questions": [
+      "How does the UI degrade on a reduced-capability platform?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "tui.interaction",
+    "version": 1,
+    "role": "tui-interaction",
+    "description": "Terminal-specific interaction invariants: keymap, focus, selection.",
+    "applicability": {
+      "capabilities_any": [
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "terminal keymap",
+      "focus and selection semantics",
+      "mouse optionality",
+      "terminal size classes"
+    ],
+    "blocking_questions": [
+      "Is the interface complete without a mouse?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "tui.accessibility",
+    "version": 1,
+    "role": "tui-accessibility",
+    "description": "Terminal accessibility: color capability, Unicode fallback, screen-reader strategy.",
+    "applicability": {
+      "capabilities_any": [
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "color capability fallback",
+      "Unicode fallback",
+      "no-color mode",
+      "screen reader strategy"
+    ],
+    "blocking_questions": [
+      "Which accessibility evidence applies to a terminal surface?"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.keyboard",
+    "version": 1,
+    "role": "accessibility-keyboard",
+    "description": "Every actionable element is reachable and operable from the keyboard.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "keyboard reachability",
+      "shortcut conflict policy",
+      "focus order"
+    ],
+    "blocking_questions": [
+      "Can every action be completed without a pointer?"
+    ],
+    "evidence_requirements": [
+      "automated",
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.focus",
+    "version": 1,
+    "role": "accessibility-focus",
+    "description": "Focus is visible, ordered and never trapped or lost.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "focus visibility",
+      "focus order",
+      "focus trapping rules"
+    ],
+    "blocking_questions": [
+      "Where does focus go after an error or a modal closes?"
+    ],
+    "evidence_requirements": [
+      "visual",
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.contrast",
+    "version": 1,
+    "role": "accessibility-contrast",
+    "description": "Text and non-text contrast meet measured thresholds.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "contrast ratios",
+      "non-text contrast",
+      "contrast evidence"
+    ],
+    "blocking_questions": [
+      "Which token pairs have measured contrast evidence?"
+    ],
+    "evidence_requirements": [
+      "automated",
+      "visual"
+    ],
+    "update_triggers": [
+      "path:docs/architecture/accessibility.md",
+      "token:contrast"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.screen-reader",
+    "version": 1,
+    "role": "accessibility-screen-reader",
+    "description": "Name, role, value and structure are exposed to assistive technology.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "name role value",
+      "announcements",
+      "landmark structure"
+    ],
+    "blocking_questions": [
+      "How is dynamic state announced?"
+    ],
+    "evidence_requirements": [
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.motion",
+    "version": 1,
+    "role": "accessibility-motion",
+    "description": "Motion is optional and reduced-motion is honoured.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "motion policy",
+      "reduced-motion behavior"
+    ],
+    "blocking_questions": [
+      "What is disabled under reduced motion?"
+    ],
+    "evidence_requirements": [
+      "automated",
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.zoom-reflow",
+    "version": 1,
+    "role": "accessibility-zoom-reflow",
+    "description": "Content reflows under zoom without loss or horizontal scrolling.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "zoom levels",
+      "reflow behavior",
+      "no horizontal scroll"
+    ],
+    "blocking_questions": [
+      "Does content survive extreme zoom or narrow widths?"
+    ],
+    "evidence_requirements": [
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.target-size",
+    "version": 1,
+    "role": "accessibility-target-size",
+    "description": "Interactive targets meet minimum size with documented exceptions.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "minimum target sizes",
+      "spacing exceptions"
+    ],
+    "blocking_questions": [
+      "Which targets are below the minimum and why?"
+    ],
+    "evidence_requirements": [
+      "automated",
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.drag-alternatives",
+    "version": 1,
+    "role": "accessibility-drag-alternatives",
+    "description": "Pointer-drag interactions have a non-drag alternative.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "drag interactions",
+      "keyboard alternative"
+    ],
+    "blocking_questions": [
+      "Which drag interaction lacks a keyboard equivalent?"
+    ],
+    "evidence_requirements": [
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.accessible-auth",
+    "version": 1,
+    "role": "accessibility-accessible-auth",
+    "description": "Authentication does not rely on a cognitive function test.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "auth flows",
+      "cognitive load limits",
+      "alternative auth"
+    ],
+    "blocking_questions": [
+      "Which auth step requires memory or puzzle solving?"
+    ],
+    "evidence_requirements": [
+      "manual"
+    ],
+    "update_triggers": [
+      "path:docs/architecture/accessibility.md",
+      "path:docs/security/"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  },
+  {
+    "id": "accessibility.cognitive-clarity",
+    "version": 1,
+    "role": "accessibility-cognitive-clarity",
+    "description": "Language, errors and navigation stay predictable and simple.",
+    "applicability": {
+      "capabilities_any": [
+        "ui",
+        "desktop-gui",
+        "web-application",
+        "tui"
+      ]
+    },
+    "required_knowledge": [
+      "error clarity",
+      "consistent navigation",
+      "plain language policy"
+    ],
+    "blocking_questions": [
+      "Can a user recover from an error without prior knowledge?"
+    ],
+    "evidence_requirements": [
+      "manual",
+      "exception-with-rationale"
+    ],
+    "update_triggers": [
+      "path:docs/ui-ux/",
+      "path:docs/architecture/accessibility.md"
+    ],
+    "eligible_owners": [
+      "human-maintained",
+      "prumo-maintained"
+    ],
+    "staleness": {
+      "mode": "trigger-based"
+    }
+  }
 ]

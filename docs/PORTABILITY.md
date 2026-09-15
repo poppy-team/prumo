@@ -32,7 +32,7 @@ A platform/model adapter may render Context IR as compact KV, minimal Markdown o
 
 ## Persistent format portability
 
-v0.2 canonical project formats:
+Canonical project formats:
 
 - Markdown;
 - JSON.

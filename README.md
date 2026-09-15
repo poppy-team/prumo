@@ -6,9 +6,9 @@ The repository is the durable source of truth. Prumo stores canonical project st
 
 ## Current release line
 
-Prumo v0.5 is a pure Go distribution (ADR 002).
+Prumo v0.6 is a pure Go distribution (ADR 002).
 
-- **Go v0.5** is the official single-binary CLI and Core implementation.
+- **Go v0.6** is the official single-binary CLI and Core implementation.
 - Python v0.3 has been completely retired (ADR 002).
 - Zero external runtime dependencies (no Python, pip, or virtualenv required).
 - All canonical assets (schemas, catalog, workforce, adapters) are embedded directly into the Go binary.
@@ -166,7 +166,7 @@ The Go suite includes comprehensive tests for initialization, resolver behavior,
 - [CLI reference](docs/manual/usage.md#command-reference)
 - [First project](docs/getting-started/first-project.md)
 - [Core concepts](docs/getting-started/concepts.md)
-- [v0.4 product scope](docs/product/scope-v0.4.md)
+- [v0.4 boundary scope (historical)](docs/product/scope-v0.4.md)
 - [Architecture](docs/architecture/overview.md)
 - [ADR 001: Go Core](docs/adr/001-go-core.md)
 - [ADR 002: Retire Python Runtime](docs/adr/002-retire-python-runtime.md)

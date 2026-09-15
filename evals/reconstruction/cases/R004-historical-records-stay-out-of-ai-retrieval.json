@@ -1,0 +1,18 @@
+{
+  "id": "R004",
+  "kind": "reconstruction",
+  "title": "A historical record stays published for humans and leaves AI retrieval",
+  "sources": [
+    { "path": "docs/adr/001-old-decision.md", "content": "# Old decision\n\nsuperseded\n" },
+    { "path": "docs/guide.md", "content": "# Guide\n\ncurrent\n" }
+  ],
+  "authority_map": [
+    { "path": "docs/adr/**", "role": "historical" },
+    { "path": "docs/**", "role": "canonical" }
+  ],
+  "expect_pages": 2,
+  "expect_historical": ["docs/adr/001-old-decision.md"],
+  "expect_current_pages": ["/guide"],
+  "expect_markdown_roundtrip": true,
+  "expect_idempotent": true
+}

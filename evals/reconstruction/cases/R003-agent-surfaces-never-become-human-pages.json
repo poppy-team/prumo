@@ -1,0 +1,15 @@
+{
+  "id": "R003",
+  "kind": "reconstruction",
+  "title": "Agent instruction surfaces stay agent-audience and never enter the human site",
+  "sources": [
+    { "path": "AGENTS.md", "content": "# Agent rules\n\nbe careful\n" },
+    { "path": "docs/guide.md", "content": "# Guide\n\nbody\n" }
+  ],
+  "expect_pages": 2,
+  "expect_routes": ["/guide", "/root/AGENTS"],
+  "expect_audience": { "AGENTS.md": "agent", "docs/guide.md": "human" },
+  "expect_human_pages": ["/guide"],
+  "expect_markdown_roundtrip": true,
+  "expect_idempotent": true
+}

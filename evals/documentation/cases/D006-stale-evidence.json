@@ -1,0 +1,39 @@
+{
+  "id": "D006",
+  "kind": "evidence-binding",
+  "title": "Evidence proving an older revision is stale",
+  "contract": {
+    "id": "eval.stale-evidence",
+    "required_knowledge": ["recovery guarantees"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "requirement_map": {
+    "recovery guarantees": "REQ-RECOVERY"
+  },
+  "claims": [
+    {
+      "id": "CLAIM-RECOVERY",
+      "statement": "Crash recovery guarantees are documented per operation.",
+      "status": "accepted",
+      "authority": "canonical-documentation",
+      "revision": 4,
+      "requires": ["REQ-RECOVERY"],
+      "evidence": [
+        {
+          "id": "EV-1",
+          "type": "test-suite",
+          "target": "CLAIM-RECOVERY",
+          "revision": "2",
+          "verified": true
+        }
+      ]
+    }
+  ],
+  "expect_state": "unverified",
+  "expect_finding": "stale-evidence"
+}

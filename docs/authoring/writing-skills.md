@@ -1,6 +1,6 @@
 # Writing Skills
 
-Prumo v0.3 introduces Skill Packages v2, a directory-based structure that encapsulates everything an AI agent needs to execute a specific task reliably.
+Prumo introduces Skill Packages v2, a directory-based structure that encapsulates everything an AI agent needs to execute a specific task reliably.
 
 ## Skill Package v2 Directory Structure
 

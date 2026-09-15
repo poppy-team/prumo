@@ -1,0 +1,31 @@
+{
+  "id": "U010",
+  "kind": "ui-specification",
+  "title": "A contract with obligations but no blocking question degrades into nothing to ask",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.state-model",
+        "role": "ui",
+        "required_knowledge": [
+          "state list"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.state-model"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "contract-blocking-questions"
+  ],
+  "expect_counts": {
+    "contract-blocking-questions": 1
+  }
+}

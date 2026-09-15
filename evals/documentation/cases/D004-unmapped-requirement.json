@@ -1,0 +1,27 @@
+{
+  "id": "D004",
+  "kind": "evidence-binding",
+  "title": "Required knowledge without a requirement mapping is unbound",
+  "contract": {
+    "id": "eval.unmapped-requirement",
+    "required_knowledge": ["recovery guarantees"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "claims": [
+    {
+      "id": "CLAIM-OTHER",
+      "statement": "An unrelated accepted claim.",
+      "status": "accepted",
+      "authority": "canonical-documentation",
+      "revision": 1,
+      "requires": ["REQ-OTHER"]
+    }
+  ],
+  "expect_state": "partial",
+  "expect_finding": "unmapped-requirement"
+}

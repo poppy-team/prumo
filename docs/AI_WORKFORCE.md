@@ -22,7 +22,7 @@ Roles remain stable even when models/providers change. Model routing can therefo
 
 ## Core documentation/context capabilities
 
-v0.2 treats these as general engineering capabilities:
+Prumo treats these as general engineering capabilities:
 
 - user/developer/operations documentation;
 - documentation site/publishing;

@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/raillen/prumo/main/schemas/harness-checkpoint.schema.json",
   "title": "HarnessCheckpoint",
   "description": "Crash-safe NativeAgent safe-point snapshot.",
   "type": "object",

@@ -15,6 +15,6 @@ If you are an AI system using this framework:
 11. Update only documentation actually impacted by stable behavior changes.
 12. Before completion, record evidence, task/project intelligence where available, then garbage-collect temporary context.
 13. CI, tests and recorded evidence—not model confidence—determine completion.
-14. Go v0.5 is the active implementation. Python v0.3 remains a read-only compatibility oracle.
+14. Go v0.6 is the active implementation. Python v0.3 remains a read-only compatibility oracle.
 
 Legacy v0.1 projects may still contain YAML. Read it only for compatibility/migration; new canonical output must use Markdown + JSON.

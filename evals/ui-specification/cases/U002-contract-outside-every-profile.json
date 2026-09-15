@@ -1,0 +1,34 @@
+{
+  "id": "U002",
+  "kind": "ui-specification",
+  "title": "A contract no profile composes is never evaluated",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.orphan-panel",
+        "role": "ui",
+        "required_knowledge": [
+          "panel states"
+        ],
+        "blocking_questions": [
+          "Which states?"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "contract-composition"
+  ],
+  "expect_counts": {
+    "contract-composition": 1
+  }
+}

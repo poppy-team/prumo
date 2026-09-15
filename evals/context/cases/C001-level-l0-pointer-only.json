@@ -1,0 +1,10 @@
+{
+  "id": "C001",
+  "kind": "disclosure",
+  "title": "L0 discloses a pointer and no content",
+  "level": "L0",
+  "content": "# Title\n\nintro line\n\n## Section A\n\nbody a\n",
+  "expect_revealed": [],
+  "expect_absent": ["Title", "intro line", "Section A", "body a"],
+  "expect_full": false
+}

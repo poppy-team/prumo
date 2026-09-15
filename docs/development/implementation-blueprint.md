@@ -1,4 +1,8 @@
-# Prumo v0.4 Implementation Blueprint
+# Prumo Implementation Blueprint
+
+> **Version scope**: the Python→Go migration documented below is the historical
+> v0.3→v0.4 boundary. Later phases remain current. Classification:
+> `docs/AUTHORITY_MAP.json` (`drift_exempt`).
 
 ## Objective
 

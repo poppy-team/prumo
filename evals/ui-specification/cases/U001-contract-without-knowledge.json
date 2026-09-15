@@ -1,0 +1,31 @@
+{
+  "id": "U001",
+  "kind": "ui-specification",
+  "title": "A contract that states no required knowledge can never be checked",
+  "spec": {
+    "contracts": [
+      {
+        "id": "ui.command-palette",
+        "role": "ui",
+        "blocking_questions": [
+          "Which states?"
+        ]
+      }
+    ],
+    "profiles": [
+      {
+        "id": "tui",
+        "version": 1,
+        "contracts": [
+          "ui.command-palette"
+        ]
+      }
+    ]
+  },
+  "expect_findings": [
+    "contract-knowledge"
+  ],
+  "expect_counts": {
+    "contract-knowledge": 1
+  }
+}

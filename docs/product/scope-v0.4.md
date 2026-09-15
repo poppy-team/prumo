@@ -111,11 +111,13 @@ Python v0.3 remains as **executable oracle** during migration:
 - All Go development validated against Python conformance
 - Python deprecated only after 100% critical contract parity
 
-## v0.5 Addendum — Pre-TUI Foundation Waves
+## Current-line Addendum — Pre-TUI Foundation Waves
 
-The deep research analysis (2026-09-14) identified structural gaps between
-the harness headless completion and the TUI spike. These are tracked as
-implementation waves W0–W14 in `docs/development/waves.md`.
+The deep research analysis and the Documentation Control Plane Deep Audit
+(2026-09-14) identified structural gaps between the harness headless
+completion and the TUI spike. These are tracked as implementation waves
+W0–W21 in `docs/development/waves.md`. The current release line is v0.6
+(Go, headless harness).
 
 Key additions to scope:
 
@@ -128,6 +130,12 @@ Key additions to scope:
 - **Semantic design tokens** — three-tier system (primitive → semantic → component).
 - **Accessibility contracts** — surface-specific (TUI, desktop, web, CLI).
 - **Behavioral eval corpus** — evaluation infrastructure before automated loops.
+- **Documentation Control Plane** (W15) — canonical knowledge vs governed projections; readiness is semantic requirement → claim → evidence, not keyword presence.
+- **Agent Surface Compiler** (W16) — AGENTS/Copilot/Cursor/Claude surfaces compiled from canonical knowledge with freshness checks.
+- **Semantic impact graph** (W17) — Goal-driven pre-change plan and post-change delta.
+- **Publishing & AI retrieval** (W18) — site projections, `llms.txt`, read-only docs MCP.
+- **Continuous documentation verification** (W19) — deterministic-first docs gauntlet.
+- **Lifecycle & intelligence** (W20–W21) — localization/media/versioning, metrics, adoption.
 
 These items are in scope for the current development cycle and gate the H10
 TUI spike start.

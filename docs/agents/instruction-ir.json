@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "token_budget": {
+    "root": 420,
+    "scope": 200
+  },
+  "rules": [
+    {
+      "id": "docs-entrypoint",
+      "scope": "",
+      "precedence": 10,
+      "text": "Start with `ENTRYPOINT.md`, `FRAMEWORK.md`, and `docs/PRUMO.md`.",
+      "sources": ["ENTRYPOINT.md", "FRAMEWORK.md", "docs/PRUMO.md"]
+    },
+    {
+      "id": "provider-neutral-core",
+      "scope": "",
+      "precedence": 20,
+      "text": "Preserve provider-neutral core policy.",
+      "sources": ["FRAMEWORK.md", "docs/architecture/dependency-rules.md"]
+    },
+    {
+      "id": "lean-progressive-context",
+      "scope": "",
+      "precedence": 30,
+      "text": "Follow Lean Progressive Context: smallest sufficient context, progressive expansion, bounded output.",
+      "sources": ["docs/LEAN_PROGRESSIVE_CONTEXT.md"]
+    },
+    {
+      "id": "workforce-registry",
+      "scope": "",
+      "precedence": 40,
+      "text": "Treat `src/prumo/resources/catalog/catalog.json` as the canonical workforce registry.",
+      "sources": ["docs/AI_WORKFORCE.md"]
+    },
+    {
+      "id": "adapters-not-core",
+      "scope": "",
+      "precedence": 50,
+      "text": "Platform-specific behavior belongs in adapters, not core policy.",
+      "sources": ["FRAMEWORK.md", "docs/architecture/dependency-rules.md"]
+    },
+    {
+      "id": "canonical-formats",
+      "scope": "",
+      "precedence": 60,
+      "text": "New human-maintained project artifacts use Markdown or JSON only.",
+      "sources": ["docs/DOCUMENTATION_SYSTEM.md"]
+    },
+    {
+      "id": "no-new-yaml",
+      "scope": "",
+      "precedence": 70,
+      "text": "YAML support is legacy read compatibility; do not generate new YAML artifacts.",
+      "sources": ["docs/DOCUMENTATION_SYSTEM.md"]
+    },
+    {
+      "id": "derived-not-canonical",
+      "scope": "",
+      "precedence": 80,
+      "text": "Derived indexes, summaries and Working Context Capsules belong in runtime/cache and must not become canonical files.",
+      "sources": ["docs/architecture/documentation-control-plane.md"]
+    },
+    {
+      "id": "schema-on-contract-change",
+      "scope": "",
+      "precedence": 90,
+      "text": "Add/adjust JSON Schema whenever machine contracts change.",
+      "sources": ["schemas", "docs/architecture/documentation-compiler.md"]
+    },
+    {
+      "id": "tests-for-core-behavior",
+      "scope": "",
+      "precedence": 100,
+      "text": "Add tests for resolver, Goals, compiler, validation, scaffolding and migration behavior.",
+      "sources": ["docs/development/testing-strategy.md"]
+    },
+    {
+      "id": "short-entrypoints",
+      "scope": "",
+      "precedence": 110,
+      "text": "Keep `ENTRYPOINT.md` and generated adapters short.",
+      "sources": ["ENTRYPOINT.md"]
+    },
+    {
+      "id": "no-vendor-defaults",
+      "scope": "",
+      "precedence": 120,
+      "text": "Do not encode one project's preferred model roster as a framework default.",
+      "sources": ["FRAMEWORK.md"]
+    },
+    {
+      "id": "no-mandatory-provider",
+      "scope": "",
+      "precedence": 130,
+      "text": "Do not make any orchestrator/model provider mandatory for the core framework.",
+      "sources": ["FRAMEWORK.md"]
+    },
+    {
+      "id": "context-mechanism-budget",
+      "scope": "",
+      "precedence": 140,
+      "text": "New context mechanisms must report token/cost impact and have a stopping condition.",
+      "sources": ["docs/LEAN_PROGRESSIVE_CONTEXT.md"]
+    },
+    {
+      "id": "experimental-off-by-default",
+      "scope": "",
+      "precedence": 150,
+      "text": "Deep recursive execution remains experimental and disabled by default.",
+      "sources": ["FRAMEWORK.md"]
+    }
+  ]
+}

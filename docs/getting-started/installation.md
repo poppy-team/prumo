@@ -1,6 +1,6 @@
-# Installing Prumo v0.4
+# Installing Prumo
 
-Prumo v0.4 distributes a single static binary. Python is not required to run the Go CLI.
+Prumo distributes a single static binary. Python is not required to run the Go CLI.
 
 ## Development Build
 

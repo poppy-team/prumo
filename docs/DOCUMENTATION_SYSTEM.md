@@ -147,6 +147,34 @@ Migration: required
 
 Then update only affected canonical sources.
 
+## Documentation Control Plane
+
+Canonical knowledge and typed contracts are the source; every human page, agent
+instruction file, context pack, site page, translation/media artifact and
+AI-retrieval surface is a **governed projection** with explicit authority,
+provenance, lifecycle and verification. The lifecycle is:
+
+```text
+Goal/intent → pre-change impact → DocumentationPlan → implementation + evidence
+→ KnowledgeDelta → semantic readiness → DocumentationDelta → deterministic
+projections → verification → publish/agent surfaces → freshness → Context GC
+```
+
+Rules:
+
+1. Readiness is semantic (requirement → claim → evidence), never keyword presence
+   or evidence count.
+2. Missing knowledge creates a gap; documentation is never invented to fill it.
+3. Agent instructions are compiled from canonical knowledge with fingerprints and
+   freshness checks; vendor formats are replaceable adapters.
+4. "Not applicable" is explicit; silent omission is not.
+5. Deterministic verification runs before model-assisted critique, and a model
+   critic cannot override a deterministic failure.
+6. Historical/legacy docs are excluded from current agent context by default.
+
+Architecture decision: `docs/adr/010-documentation-control-plane.md`.
+Delivery waves: W15–W21 in `docs/development/waves.md`.
+
 ## Documentation site
 
 The framework goal is a documentation site that grows with the project.

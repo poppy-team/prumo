@@ -1,0 +1,21 @@
+{
+  "id": "D005",
+  "kind": "evidence-binding",
+  "title": "A requirement with no claim is unbound, not satisfied by prose",
+  "contract": {
+    "id": "eval.missing-claim",
+    "required_knowledge": ["recovery guarantees"]
+  },
+  "sources": [
+    {
+      "path": "docs/eval-evidence.md",
+      "content": "Crash recovery guarantees are documented here per long-running operation."
+    }
+  ],
+  "requirement_map": {
+    "recovery guarantees": "REQ-RECOVERY"
+  },
+  "claims": [],
+  "expect_state": "partial",
+  "expect_finding": "missing-claim"
+}

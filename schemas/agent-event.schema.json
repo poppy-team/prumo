@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/raillen/prumo/main/schemas/agent-event.schema.json",
   "title": "AgentEvent",
   "description": "Normalized harness timeline unit.",
   "type": "object",

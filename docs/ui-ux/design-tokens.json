@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "tiers": ["primitive", "semantic", "component"],
+  "tokens": [
+    { "id": "token:primitive.black", "tier": "primitive", "type": "color", "value": "#000000" },
+    { "id": "token:primitive.white", "tier": "primitive", "type": "color", "value": "#ffffff" },
+    { "id": "token:primitive.gray.100", "tier": "primitive", "type": "color", "value": "#f5f5f5" },
+    { "id": "token:primitive.gray.500", "tier": "primitive", "type": "color", "value": "#808080" },
+    { "id": "token:primitive.gray.800", "tier": "primitive", "type": "color", "value": "#303030" },
+    { "id": "token:primitive.green.500", "tier": "primitive", "type": "color", "value": "#2e7d32" },
+    { "id": "token:primitive.amber.500", "tier": "primitive", "type": "color", "value": "#b26a00" },
+    { "id": "token:primitive.red.500", "tier": "primitive", "type": "color", "value": "#c62828" },
+    { "id": "token:primitive.blue.500", "tier": "primitive", "type": "color", "value": "#1565c0" },
+    { "id": "token:primitive.space.1", "tier": "primitive", "type": "space", "value": "1" },
+    { "id": "token:primitive.space.2", "tier": "primitive", "type": "space", "value": "2" },
+    { "id": "token:primitive.space.4", "tier": "primitive", "type": "space", "value": "4" },
+    { "id": "token:primitive.radius.1", "tier": "primitive", "type": "radius", "value": "1" },
+    { "id": "token:primitive.motion.fast", "tier": "primitive", "type": "motion", "value": "80ms" },
+
+    { "id": "token:color.surface", "tier": "semantic", "type": "color", "value": "token:primitive.gray.100", "platforms": ["tui", "desktop", "web"] },
+    { "id": "token:color.panel", "tier": "semantic", "type": "color", "value": "token:primitive.white", "platforms": ["tui", "desktop", "web"] },
+    { "id": "token:color.border-subtle", "tier": "semantic", "type": "color", "value": "token:primitive.gray.500", "platforms": ["tui", "desktop", "web"] },
+    { "id": "token:color.text", "tier": "semantic", "type": "color", "value": "token:primitive.black", "contrast": { "against": "token:color.surface", "ratio": 16.0, "wcag": "AAA" } },
+    { "id": "token:color.text-muted", "tier": "semantic", "type": "color", "value": "token:primitive.gray.800", "contrast": { "against": "token:color.surface", "ratio": 7.0, "wcag": "AA" } },
+    { "id": "token:color.accent", "tier": "semantic", "type": "color", "value": "token:primitive.blue.500" },
+    { "id": "token:color.success", "tier": "semantic", "type": "color", "value": "token:primitive.green.500" },
+    { "id": "token:color.warning", "tier": "semantic", "type": "color", "value": "token:primitive.amber.500" },
+    { "id": "token:color.error", "tier": "semantic", "type": "color", "value": "token:primitive.red.500" },
+    { "id": "token:color.focus", "tier": "semantic", "type": "color", "value": "token:primitive.blue.500", "contrast": { "against": "token:color.surface", "ratio": 5.9, "wcag": "AA" } },
+
+    { "id": "token:tui.panel.border", "tier": "component", "type": "border", "value": "token:color.border-subtle", "platforms": ["tui"], "capability_fallback": "ASCII +/- when the terminal lacks Unicode box drawing" },
+    { "id": "token:tui.statusline", "tier": "component", "type": "color", "value": "token:color.panel", "platforms": ["tui"] },
+    { "id": "token:tui.command-palette.highlight", "tier": "component", "type": "color", "value": "token:color.accent", "platforms": ["tui"] },
+    { "id": "token:tui.approval.prompt", "tier": "component", "type": "color", "value": "token:color.warning", "platforms": ["tui"] }
+  ],
+  "themes": [
+    { "id": "theme.default", "extends": "token:color.surface", "overrides": {} },
+    { "id": "theme.no-color", "extends": "theme.default", "overrides": { "token:color.accent": "none", "token:color.success": "none", "token:color.warning": "none", "token:color.error": "none" } },
+    { "id": "theme.high-contrast", "extends": "theme.default", "high_contrast": true, "overrides": { "token:color.text-muted": "token:primitive.black" } },
+    { "id": "theme.reduced-motion", "extends": "theme.default", "reduced_motion": true, "overrides": { "token:primitive.motion.fast": "0ms" } }
+  ],
+  "density": ["comfortable", "compact"]
+}

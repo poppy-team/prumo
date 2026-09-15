@@ -21,6 +21,20 @@ jobs:
         run: go test -v -race ./...
       - name: Build Prumo CLI
         run: go build -o /tmp/prumo ./cmd/prumo
+      - name: Documentation authority gate
+        run: /tmp/prumo docs authority --path . --json
+      - name: Agent surface context-rot gate
+        run: /tmp/prumo docs agents verify --path . --json
+      - name: Documentation verification gate
+        run: /tmp/prumo docs verify --path . --json
+      - name: Documentation strict readiness gate
+        run: /tmp/prumo docs verify --path . --strict --json
+      - name: Terminology gate
+        run: /tmp/prumo docs glossary --path . --json
+      - name: Documentation version policy gate
+        run: /tmp/prumo docs version --path . --json
+      - name: Documentation gauntlet (deterministic rounds)
+        run: /tmp/prumo docs gauntlet --path . --json
       - name: CLI smoke test
         run: |
           rm -rf /tmp/prumo-smoke

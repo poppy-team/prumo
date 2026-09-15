@@ -70,4 +70,4 @@ Intermediate agent output should be compact and operational. Long reasoning narr
 
 ## Completion
 
-An agent declaration has no authority. Required gates/evidence, documentation impact evaluation, intelligence update and cleanup determine completion.
+An agent declaration has no authority. Required gates/evidence, documentation impact evaluation (pre-change `DocumentationPlan` at lock, post-change `DocumentationDelta`), intelligence update and cleanup determine completion.

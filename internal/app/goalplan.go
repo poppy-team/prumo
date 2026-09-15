@@ -17,6 +17,10 @@ type GoalPlanInput struct {
 	Scope     string
 	Preview   planning.Preview
 	Readiness docengine.ReadinessReport
+	// Plan is the Goal documentation preflight (W17.7). An empty plan means the
+	// Goal has not been through preflight, which the output reports instead of
+	// silently assuming there is no documentation impact.
+	Plan docengine.DocumentationPlan
 }
 
 // GoalPlanOutput is the Goal/Plan integration result. A simple Goal that does
@@ -27,6 +31,11 @@ type GoalPlanOutput struct {
 	Tasks            []map[string]any   `json:"tasks,omitempty"`
 	GammaRationale   string             `json:"rationale"`
 	DocumentationGap []docengine.Impact `json:"documentation_gap,omitempty"`
+	// DocumentationPlan is the preflight plan this Goal was proposed with.
+	DocumentationPlan *docengine.DocumentationPlan `json:"documentation_plan,omitempty"`
+	// PlanFindings are the plan's own findings (silent N/A, duplicates, missing
+	// reasons). They are surfaced, never swallowed.
+	PlanFindings []docengine.SemanticFinding `json:"plan_findings,omitempty"`
 }
 
 // ProposeGoalPlan produces or proposes Goal intent/acceptance criteria for a
@@ -46,6 +55,16 @@ func ProposeGoalPlan(input GoalPlanInput, explicitlyRequested bool) (GoalPlanOut
 		Goal:           goal,
 		PlanRequired:   planRequired,
 		GammaRationale: rationale,
+	}
+	if len(input.Plan.Obligations) > 0 || input.Plan.Goal != "" {
+		plan := input.Plan
+		out.DocumentationPlan = &plan
+		out.DocumentationGap = plan.PlanImpacts()
+		if len(plan.Findings) == 0 {
+			out.PlanFindings = plan.Validate()
+		} else {
+			out.PlanFindings = plan.Findings
+		}
 	}
 	if planRequired {
 		out.Tasks = buildTasks(input)
@@ -128,6 +147,11 @@ func planNeeded(input GoalPlanInput, explicitlyRequested bool) (bool, string) {
 		return false, "simple scope: Goal without task decomposition"
 	}
 }
+
+// AffectedContracts lists the contracts the scope's accepted decisions touch,
+// in deterministic order. It is exported so the preflight plan can be built
+// from the same set the task DAG uses (W17.7).
+func AffectedContracts(p planning.Preview) []string { return affectedContracts(p) }
 
 func affectedContracts(p planning.Preview) []string {
 	seen := map[string]bool{}

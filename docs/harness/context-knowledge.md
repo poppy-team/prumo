@@ -61,8 +61,11 @@ Knowledge IR → Document IR → dependency DAG → incremental evaluator →
 renderer → canonical serializer → atomic writer. Stable IDs, SHA-256
 fingerprints, reverse invalidation via DAG order, red-green digests,
 CAS/no-op writes, whole-file generation, atomic replace, artifact manifests,
-provenance. AST-aware Markdown regions + JSON Pointer/Patch are the next
-increment (interfaces reserved).
+provenance. Managed regions, structural Markdown sections (ATX headings +
+fenced code blocks) and RFC 6902 JSON Patch are **implemented** (`regions.go`,
+`sections.go`; GAP-007 done nos limites). A full Markdown AST (Setext, lists,
+tables) remains deferred (DOC-GAP-026, W21) — do not describe it as pending
+delivery of an already-shipped capability.
 
 ## Human Documentation Runtime (HD0–HD4 baseline)
 

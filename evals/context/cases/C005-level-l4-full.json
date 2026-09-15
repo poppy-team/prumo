@@ -1,0 +1,10 @@
+{
+  "id": "C005",
+  "kind": "disclosure",
+  "title": "L4 discloses the whole item and reports completeness",
+  "level": "L4",
+  "content": "# Title\n\nintro line\n\n## Section A\n\nbody a\n",
+  "expect_revealed": ["# Title", "intro line", "body a"],
+  "expect_absent": [],
+  "expect_full": true
+}
