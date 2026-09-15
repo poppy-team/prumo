@@ -111,3 +111,41 @@ item. Novos gaps entram no fim com o próximo número livre.
 ## 4. Fora deste Goal (não entra na conta)
 
 Desktop/TUI (prumo-code), execução cloud/microVM (H18), federação A2A (H17), site público/i18n (HD5+), polish visual, `prumo-code` em si.
+
+## 5. Documentation Control Plane Gaps (DOC-GAP-001 – DOC-GAP-030)
+
+Source: `PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md` (2026-09-14).
+Mapeados diretamente para as Waves W0–W21 em `docs/development/waves.md`.
+
+| ID | Item | Tier | Wave | Status | Próximo passo |
+|----|------|------|------|--------|---------------|
+| DOC-GAP-001 | Authority/version drift não prevenido mecanicamente | P0 | W0, W1 | ⬜ open | Regra de drift e gate CI em W0 |
+| DOC-GAP-002 | Semantic coverage/readiness excessivamente léxico (ANY-word bug) | P0 | W15 | 🟡 fixing | Substituir por matching semântico/estruturado em W15 (fix imediato em coverage.go) |
+| DOC-GAP-003 | Verificação de evidência baseada em mera contagem | P0 | W15 | ⬜ open | Vincular evidência por ID, tipo e revisão |
+| DOC-GAP-004 | Contradições entre documentos não barram completion | P0 | W15, W19 | ⬜ open | Ligar motor de contradições ao gate |
+| DOC-GAP-005 | Fiação Goal → DocumentationPlan incompleta | P0 | W17 | ⬜ open | Preflight em Goal lock e postflight em delta |
+| DOC-GAP-006 | Lint de HumanDocs valida apenas estrutura, não verdade/semântica | P0 | W10, W19 | ⬜ open | Verificador em camadas em W19 |
+| DOC-GAP-007 | Instruções de agente como verdade paralela e obsoleta (context-rot) | P0 | W4, W16 | ⬜ open | AgentInstructionIR e compilador de superfícies |
+| DOC-GAP-008 | Análise de impacto não cobre tipos semânticos suficientes | P0 | W17 | ⬜ open | Triggers por símbolo, API, schema e UI |
+| DOC-GAP-009 | Pacotes de documentação fragmentados no runtime | P0 | W15 | ⬜ open | Coordenador do control plane em W15 |
+| DOC-GAP-010 | Documentação "ready" diverge da verdade do código | P0 | W15 | ⬜ open | Relatório de dogfood semântico |
+| DOC-GAP-011 | Modelo DocumentationUnit necessita semântica mais rica | P1 | W3, W10 | ⬜ open | Schema expandido em W10 |
+| DOC-GAP-012 | Unidades de contexto e docs humanos não unificados | P1 | W3 | ⬜ open | Grafo único de KnowledgeUnits |
+| DOC-GAP-013 | Publicação HD5+ ainda deferida | P1 | W18 | ⬜ open | Adaptador Starlight e gerador de rotas |
+| DOC-GAP-014 | Ausência de projeções AI-native (llms.txt, MCP) | P1 | W18 | ⬜ open | Gerar /llms.txt e expor MCP de docs |
+| DOC-GAP-015 | Documentação de UI/UX necessita ciclo de vida | P1 | W5, W20 | ⬜ open | Contratos especializados de UI em W5 |
+| DOC-GAP-016 | Evidência visual sem semântica de frescor | P1 | W20 | ⬜ open | MediaRecord vinculado a estado de UI |
+| DOC-GAP-017 | Fundação de tradução necessita ciclo de QA completo | P1 | W6, W20 | ⬜ open | Terminology, glossário e pseudo-localização |
+| DOC-GAP-018 | Temas/personalização sem contratos explícitos | P1 | W9 | ⬜ open | Design tokens como API versionada |
+| DOC-GAP-019 | Documentação de referência de API/CLI não orientada a contratos | P1 | W18 | ⬜ open | Adaptadores de referência de contratos de máquina |
+| DOC-GAP-020 | Exemplos não são unidades de documentação executáveis | P1 | W19 | ⬜ open | Execução e teste de exemplos no pipeline |
+| DOC-GAP-021 | Documentação de release/depreciação/migração sem ciclo estruturado | P1 | W20 | ⬜ open | Política de versão e plano de release |
+| DOC-GAP-022 | Observabilidade documental subespecificada | P1 | W21 | ⬜ open | Métricas integradas ao Project Intelligence |
+| DOC-GAP-023 | Feedback de usuário/suporte não alimenta planning documental | P2 | W21 | ⬜ open | Rastrear falhas de intenção documental |
+| DOC-GAP-024 | Workforce documental necessita especialização por impacto | P2 | W21 | ⬜ open | Roteamento dinâmico de skills por tipo de impacto |
+| DOC-GAP-025 | Segurança e visibilidade documental necessitam política de projeção | P2 | W21 | ⬜ open | Filtro de visibilidade público vs interno |
+| DOC-GAP-026 | Edição com AST completo de Markdown (listas/tabelas) | P2 | W21 | ⬜ open | Parser AST completo no doccompile |
+| DOC-GAP-027 | Performance de build em monorepos/grandes repositórios | P2 | W21 | ⬜ open | Benchmarking de invalidação e build |
+| DOC-GAP-028 | Adoção e migração brownfield de documentação | P2 | W21 | ⬜ open | Descoberta semântica e proposta de bindings |
+| DOC-GAP-029 | Débito documental como classe de débito tipada | P2 | W21 | ⬜ open | Integração com registro de dívida técnica |
+| DOC-GAP-030 | Rastreabilidade e explicabilidade no nível de consulta | P2 | W21 | ⬜ open | Proveniência de query registrada no ContextManifest |

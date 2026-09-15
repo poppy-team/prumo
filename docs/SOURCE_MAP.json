@@ -535,9 +535,13 @@
         {
           "title": "14-09_00h33-deep-research-report.md",
           "role": "local deep research"
+        },
+        {
+          "title": "PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md",
+          "role": "documentation control plane deep audit"
         }
       ],
-      "semantic_role": "implementation waves"
+      "semantic_role": "implementation waves (W0-W21) & gap register mapping"
     },
     {
       "local_path": "docs/product/tui-spike-h10.md",

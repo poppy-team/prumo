@@ -1,6 +1,6 @@
 # Manual de Instalação
 
-## Escolha o método
+## Escolha o método e caminhos (Installation paths)
 
 | Cenário | Método |
 |---------|--------|

@@ -1,6 +1,6 @@
 # Prumo v0.4 Scope
 
-## In Scope
+## In-Scope Capabilities
 
 ### Core Runtime Migration
 - Go Core & CLI replacing Python runtime

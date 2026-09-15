@@ -43,12 +43,13 @@ and remains to be extended to remote transport + generated bindings.
 ## Post-harness: Implementation Waves
 
 The split gate is READY (conditional). Before the H10 TUI spike,
-implementation waves W0–W14 address structural gaps identified by deep
-research analysis. See `docs/development/waves.md` for canonical wave
-definitions and entry/exit criteria.
+implementation waves W0–W21 address structural gaps identified by deep
+research analysis and the Documentation Control Plane Deep Audit.
+See `docs/development/waves.md` for canonical wave definitions and entry/exit criteria.
 
 | Priority | Waves | Focus |
 |----------|-------|-------|
-| P0 | W0–W7 | Authority cleanup, schema conformance, KnowledgeUnit, ContextManifest, UI contracts, locale, Gauntlet schema |
-| P1 | W8–W14 | Shared Product Contract, design tokens, doc compiler, accessibility, reconnect/replay, evals, Framework update |
-| Gate | — | P0 complete + W8/W9/W11/W12 → H10 TUI spike may begin |
+| P0 | W0–W7, W15 | Authority cleanup, schema conformance, KnowledgeUnit, ContextManifest, UI contracts, locale, Gauntlet schema, Semantic Readiness v2 |
+| P1 | W8–W14, W16–W19 | Shared Product Contract, design tokens, doc compiler, accessibility, reconnect/replay, evals, Framework update, Agent surfaces, Impact graph, Publishing/AI retrieval, Continuous verification |
+| P1/P2 | W20–W21 | Documentation lifecycle (i18n/media/versioning) & Intelligence, adoption & scale |
+| Gate | — | P0 complete + W8/W9/W11/W12/W15 → H10 TUI spike may begin |

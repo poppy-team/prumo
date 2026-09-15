@@ -239,14 +239,15 @@
 
 ---
 
-## Pre-TUI Waves (W0–W14)
+## Pre-TUI Waves (W0–W21)
 
 **Dependencies**: Harness headless split gate READY (HA0–HA11).
 
 Canonical specification: `docs/development/waves.md`.
 
 These waves address structural gaps identified by deep research analysis
-(2026-09-14) that must be resolved before the H10 TUI spike:
+and the Documentation Control Plane Deep Audit (2026-09-14) that must be
+resolved before or alongside the H10 TUI spike:
 
 - **W0–W2** (P0): Authority/version cleanup, schema/runtime conformance, format cleanup.
 - **W3–W4** (P0): KnowledgeUnit foundation, ContextManifest, progressive disclosure L0–L4.
@@ -257,8 +258,14 @@ These waves address structural gaps identified by deep research analysis
 - **W10–W11** (P1): Documentation compiler contracts, accessibility/TUI contracts.
 - **W12** (P1): Reconnect/replay client-facing verification.
 - **W13–W14** (P1): Behavioral eval corpus, Framework invariants update.
+- **W15** (P0): Semantic Documentation Control Plane & Readiness v2 (replaces lexical/word matching).
+- **W16** (P1): Agent Surface Compiler & Context-Rot Guard (compiled AGENTS/Cursor/Copilot/Claude).
+- **W17** (P1): Semantic Impact Graph & Documentation Delta Orchestration (Goal-driven).
+- **W18** (P1): Documentation Publishing & AI Retrieval Plane (HD5–HD7, Starlight, llms.txt, MCP).
+- **W19** (P1): Continuous Documentation Verification & Docs Gauntlet Runtime.
+- **W20–W21** (P1/P2): Documentation Lifecycle (i18n/media/release) & Intelligence/Adoption.
 
-**Exit Gate**: All P0 waves complete; P1 waves W8, W9, W11, W12 complete.
+**Exit Gate**: All P0 waves (W0–W7, W15) complete; P1 waves W8, W9, W11, W12 complete.
 TUI spike (H10) may begin. Remaining P1 waves complete before H10 exit evaluation.
 
 ---
@@ -430,6 +437,6 @@ Canonical specification: `docs/runtime/adoption-engine.md`.
 ## Phase Detail Rule
 
 Only **M0** and **M1** are fully detailed above. M2–M4 have sufficient detail
-for planning. Pre-TUI waves (W0–W14) are detailed in `docs/development/waves.md`.
+for planning. Pre-TUI waves (W0–W21) are detailed in `docs/development/waves.md`.
 M5–M12 remain architectural — they will be detailed when their dependencies
 are mature and implementation begins.

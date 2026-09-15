@@ -7,7 +7,7 @@
 - Python v0.3 remains the compatibility oracle until Go reaches critical-contract parity.
 - Quality evidence must expose infrastructure failures instead of masking them as passes.
 
-## Test Pyramid
+## Test Levels (Pyramid)
 
 ### Unit
 
@@ -96,7 +96,7 @@ Every provider declares:
 - supported risk profiles;
 - cleanup ownership.
 
-Normalized evidence records test run, assertion/finding, artifact pointer, environment/toolchain fingerprint, seed/corpus, retries/flakiness, timing, failure category, and provenance.
+Evidence expectations and normalized evidence records include test run, assertion/finding, artifact pointer, environment/toolchain fingerprint, seed/corpus, retries/flakiness, timing, failure category, and provenance.
 
 ## Failure Taxonomy
 
