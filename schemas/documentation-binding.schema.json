@@ -11,6 +11,15 @@
     "authority": { "enum": ["locked-protocol", "accepted-adr", "canonical-documentation", "generated-reference", "external-source", "agent-proposal"] },
     "answered_questions": { "type": "array", "items": { "type": "string" } },
     "evidence": { "type": "array", "items": { "type": "string" } },
+    "applicability": {
+      "description": "Whether the project owes this contract now. Absent means applicable, so an obligation can never be waived by omission.",
+      "enum": ["applicable", "not-applicable"]
+    },
+    "not_applicable_reason": {
+      "description": "Required when applicability is not-applicable: the reason a reviewer reads instead of re-deriving why the gate went quiet.",
+      "type": "string",
+      "minLength": 1
+    },
     "requirement_map": {
       "description": "Required-knowledge phrase to stable requirement ID. Without it a requirement is unmapped and readiness cannot pass (W15.3).",
       "type": "object",
@@ -55,5 +64,11 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "applicability": { "const": "not-applicable" } }, "required": ["applicability"] },
+      "then": { "required": ["not_applicable_reason"] }
+    }
+  ],
   "additionalProperties": false
 }

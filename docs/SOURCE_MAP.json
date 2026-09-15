@@ -514,6 +514,16 @@
    "semantic_role": "trust layers, connector primitives, config safety, artifact markers, supply chain, security contracts, safe mode, classification, egress, secrets, redaction, audit"
   },
   {
+   "local_path": "docs/ui-ux/interaction.md",
+   "notion_pages": [],
+   "semantic_role": "canonical interaction specification: input methods, keyboard map, focus and selection semantics, terminal size classes and mouse policy; `ui.interaction` and `tui.interaction` bind to it"
+  },
+  {
+   "local_path": "docs/ui-ux/state-matrix.json",
+   "notion_pages": [],
+   "semantic_role": "canonical UI state matrix: every state in the closed vocabulary with explicit applicability, user-visible text and recovery behaviour; the `ui.state-model` contract binds to it"
+  },
+  {
    "local_path": "schemas/adoption-migration-proposal.schema.json",
    "notion_pages": [
     {

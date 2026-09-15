@@ -286,6 +286,28 @@ permissions, file tree, embedded + remote daemon modes.
 
 **Exit Gate**: Acceptance criteria 1–4 from `tui-spike-h10.md` pass once end-to-end.
 
+**Progress**: Fase A complete (2026-09-15) — the UI gate is live before the first
+line of TUI code.
+
+- `prumo.json` declares `cap:tui`, so the 16 `ui.*`/`tui.*` contracts and the 10
+  `accessibility.*` sub-contracts apply to this repository instead of being
+  skipped as not applicable (7 → 33 applicable contracts).
+- The `tui` documentation profile is now reachable: `ResolveProfiles` did not map
+  the `tui` capability, and did not union the capabilities a composed profile
+  declares, so the profile selected 26 contracts and the applicability filter
+  removed all 26 again.
+- A binding may declare `applicability: not-applicable` with a required
+  `not_applicable_reason`; a waiver without a reason fails closed to `missing`.
+  19 contracts carry reviewable waivers naming why their surface does not exist
+  yet; the 7 the vertical slice owes are bound to real artifacts.
+- Specification written for the vertical slice: `docs/ui-ux/state-matrix.json`
+  (all 22 states), `docs/ui-ux/interaction.md`, plus the terminal screen-reader
+  strategy and the visual evidence/capture/regression policy in
+  `docs/architecture/visual-constitution.md`.
+
+**Remaining**: the `tui/` package itself (Fase B/C). `prumo docs verify --strict`
+is green, so the gate is met rather than deferred.
+
 ---
 
 ## M5 — Documentation System v2

@@ -152,7 +152,14 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 **Entry**: W3 complete (contracts need stable IDs).  
 **Exit**: TUI profile (`tui`) exists and is composable; component/state/token schemas validate.
 
-**Status**: ✅ complete 2026-09-14 — 14 specialized `ui.*` contracts (incl. `ui.personalization`) plus `tui.interaction`/`tui.accessibility`; `ui.documentation` deprecated; `tui` profile composable; `ui-component-contract` and `ui-state-matrix` schemas with the full 22-state applicability set and component→implementation traceability.
+**Status**: ✅ complete 2026-09-14, with the state matrix delivered in H10 — 14 specialized `ui.*` contracts (incl. `ui.personalization`) plus `tui.interaction`/`tui.accessibility`; `ui.documentation` deprecated; `tui` profile composable; `ui-component-contract` and `ui-state-matrix` schemas with the full 22-state applicability set and component→implementation traceability.
+
+> **Correction (2026-09-15):** this wave was reported as also delivering the state
+> matrix artifact. It did not: only the schema existed, and nothing noticed because
+> the `ui.*` contracts had no bindings and the `tui` profile was never composed, so
+> they were never evaluated. `docs/ui-ux/state-matrix.json` landed in H10 and is now
+> enforced by `TestStateMatrixIsCompleteAndExplicit`. Recorded in
+> `docs/harness/gap-register.md` (DOC-GAP-015).
 
 ---
 

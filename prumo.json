@@ -1,0 +1,119 @@
+{
+  "version": 3,
+  "protocol": {
+    "compatible": ">=3 <4",
+    "version": 3
+  },
+  "framework": {
+    "name": "prumo",
+    "version": "0.6.0"
+  },
+  "project": {
+    "name": "prumo",
+    "description": "Prumo develops itself with Prumo. This manifest declares what this repository is, so the documentation and agent-surface gates apply to the framework's own repository instead of being skipped as not applicable.",
+    "type": [
+      "cli",
+      "library",
+      "tui"
+    ]
+  },
+  "documentation": {
+    "entrypoint": "docs/PRUMO.md",
+    "canonical_format": "markdown",
+    "source_locale": "en",
+    "audiences": [
+      "user",
+      "developer",
+      "operations",
+      "agent"
+    ],
+    "site": {
+      "enabled": true,
+      "generated": true,
+      "public_internal_views": true,
+      "source": "docs"
+    },
+    "virtual_chunking": true
+  },
+  "context": {
+    "architecture": "progressive-context-architecture",
+    "methodology": "lean-progressive-context",
+    "mode": "progressive",
+    "budget_profile": "medium",
+    "deep_recursion": {
+      "enabled": false,
+      "experimental": true
+    },
+    "profiles": {
+      "small": {
+        "context_hard_tokens": 6000,
+        "context_target_tokens": 3000,
+        "max_delegation_depth": 0,
+        "max_expansion_rounds": 1,
+        "output_hard_tokens": 1000,
+        "output_target_tokens": 500
+      },
+      "medium": {
+        "context_hard_tokens": 16000,
+        "context_target_tokens": 8000,
+        "max_delegation_depth": 1,
+        "max_expansion_rounds": 2,
+        "output_hard_tokens": 3000,
+        "output_target_tokens": 1500
+      },
+      "large": {
+        "context_hard_tokens": 32000,
+        "context_target_tokens": 16000,
+        "max_delegation_depth": 1,
+        "max_expansion_rounds": 3,
+        "output_hard_tokens": 6000,
+        "output_target_tokens": 3000
+      }
+    },
+    "runtime": {
+      "completed_context_ttl": "0d",
+      "database": ".prumo/runtime/prumo.db",
+      "failed_context_ttl": "7d"
+    }
+  },
+  "intelligence": {
+    "distinguish_observed_estimated": true,
+    "enabled": true,
+    "path": ".prumo/history/project-intelligence.json",
+    "task_reports": true,
+    "track_cost": true,
+    "track_input_tokens": true,
+    "track_output_tokens": true
+  },
+  "orchestration": {
+    "autonomy": "agentic",
+    "orchestrator": "prumo",
+    "protocol": "POP"
+  },
+  "goals": {
+    "active_goal": null,
+    "active_phase": "H10"
+  },
+  "ai": {
+    "autonomy": "agentic",
+    "orchestrator": "prumo",
+    "preferred_models": [
+      {
+        "id": "openai-compat",
+        "provider": "openai-compat",
+        "note": "Provider-neutral OpenAI-compatible route. The endpoint and model come from the environment; no vendor is baked in."
+      },
+      {
+        "id": "anthropic",
+        "provider": "anthropic",
+        "note": "A second, independent vendor route so no single provider is mandatory for Prumo's own development."
+      }
+    ]
+  },
+  "features": [
+    "lean-progressive-context",
+    "deterministic-conformance",
+    "continuous-documentation",
+    "documentation-control-plane"
+  ]
+}
