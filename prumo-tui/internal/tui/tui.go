@@ -2,6 +2,9 @@ package tui
 
 import (
 	"context"
+	"fmt"
+	"github.com/raillen/prumo-tui/internal/llm/models"
+	"time"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -119,6 +122,9 @@ type appModel struct {
 	commandDialog     dialog.CommandDialog
 	commands          []dialog.Command
 
+	showModelDialog bool
+	modelDialog     dialog.ModelDialog
+
 	showInitDialog bool
 	initDialog     dialog.InitDialogCmp
 
@@ -149,6 +155,8 @@ func (a appModel) Init() tea.Cmd {
 	cmd = a.sessionDialog.Init()
 	cmds = append(cmds, cmd)
 	cmd = a.commandDialog.Init()
+	cmds = append(cmds, cmd)
+	cmd = a.modelDialog.Init()
 	cmds = append(cmds, cmd)
 	cmd = a.initDialog.Init()
 	cmds = append(cmds, cmd)
@@ -360,6 +368,23 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showInitDialog = msg.Show
 		return a, nil
 
+	case dialog.ModelsLoadedMsg:
+		d, cmd := a.modelDialog.Update(msg)
+		a.modelDialog = d.(dialog.ModelDialog)
+		return a, cmd
+
+	case dialog.CloseModelDialogMsg:
+		a.showModelDialog = false
+		return a, nil
+
+	case dialog.ModelSelectedMsg:
+		a.showModelDialog = false
+		model, err := a.app.CoderAgent.Update(models.ModelID(msg.Model))
+		if err != nil {
+			return a, util.ReportError(err)
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Model: %s", model.Name))
+
 	case dialog.CloseInitDialogMsg:
 		a.showInitDialog = false
 		if msg.Initialize {
@@ -443,6 +468,9 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.showFilepicker = false
 				a.filepicker.ToggleFilepicker(a.showFilepicker)
 			}
+			if a.showModelDialog {
+				a.showModelDialog = false
+			}
 			if a.showMultiArgumentsDialog {
 				a.showMultiArgumentsDialog = false
 			}
@@ -475,6 +503,16 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, nil
 		// The model picker is deferred: the harness exposes no models
 		// operation, so the key has nothing to open.
+		case key.Matches(msg, keys.Models):
+			if a.showModelDialog {
+				a.showModelDialog = false
+				return a, nil
+			}
+			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog {
+				a.showModelDialog = true
+				return a, a.loadModels()
+			}
+			return a, nil
 		case key.Matches(msg, keys.SwitchTheme):
 			if !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog {
 				// Show theme switcher dialog
@@ -581,6 +619,16 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if a.showModelDialog {
+		d, modelCmd := a.modelDialog.Update(msg)
+		a.modelDialog = d.(dialog.ModelDialog)
+		cmds = append(cmds, modelCmd)
+		// Only block key messages; everything else flows down.
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
 	if a.showCommandDialog {
 		d, commandCmd := a.commandDialog.Update(msg)
 		a.commandDialog = d.(dialog.CommandDialog)
@@ -652,6 +700,21 @@ func (a *appModel) moveToPage(pageID page.PageID) tea.Cmd {
 	}
 
 	return tea.Batch(cmds...)
+}
+
+// loadModels asks the harness what the provider can serve.
+//
+// It is a command rather than a call because the answer crosses a socket: a
+// view that blocked on it would freeze the client while the daemon thinks.
+func (a *appModel) loadModels() tea.Cmd {
+	runner := a.app.Runner
+	provider := config.Get().Provider
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		models, err := runner.AvailableModels(ctx, provider)
+		return dialog.ModelsLoadedMsg{Models: models, Err: err}
+	}
 }
 
 // View renders the component for the terminal.
@@ -781,6 +844,21 @@ func (a appModel) viewString() string {
 		)
 	}
 
+	if a.showModelDialog {
+		overlay := a.modelDialog.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(
+			col,
+			row,
+			overlay,
+			appView,
+			true,
+		)
+	}
+
 	if a.showCommandDialog {
 		overlay := a.commandDialog.View().Content
 		row := lipgloss.Height(appView) / 2
@@ -846,6 +924,7 @@ func New(app *app.App) tea.Model {
 		currentPage:   startPage,
 		loadedPages:   make(map[page.PageID]bool),
 		status:        core.NewStatusCmp(app),
+		modelDialog:   dialog.NewModelDialogCmp(),
 		help:          dialog.NewHelpCmp(),
 		quit:          dialog.NewQuitCmp(),
 		sessionDialog: dialog.NewSessionDialogCmp(),

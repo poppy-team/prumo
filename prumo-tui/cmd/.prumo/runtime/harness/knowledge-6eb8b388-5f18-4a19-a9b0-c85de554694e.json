@@ -1,0 +1,36 @@
+{
+  "records": [
+    {
+      "id": "ku:evidence.run-6eb8b388-5f18-4a19-a9b0-c85de554694e-final",
+      "kind": "evidence",
+      "title": "run 6eb8b388-5f18-4a19-a9b0-c85de554694e complete",
+      "body": "phase=complete stop=completed checkpoint=6eb8b388-5f18-4a19-a9b0-c85de554694e-latest",
+      "authority": "reference",
+      "trust": "high",
+      "status": "active",
+      "provenance": "run:6eb8b388-5f18-4a19-a9b0-c85de554694e:finish",
+      "updated_at": "2026-09-17T14:13:46.143445169Z"
+    },
+    {
+      "id": "ku:requirement.run-6eb8b388-5f18-4a19-a9b0-c85de554694e",
+      "kind": "requirement",
+      "title": "/model",
+      "authority": "canonical",
+      "trust": "high",
+      "status": "active",
+      "provenance": "run:6eb8b388-5f18-4a19-a9b0-c85de554694e:goal",
+      "updated_at": "2026-09-17T14:13:45.764640084Z"
+    }
+  ],
+  "rels": [
+    {
+      "from": "ku:evidence.run-6eb8b388-5f18-4a19-a9b0-c85de554694e-final",
+      "type": "evidences",
+      "to": "ku:requirement.run-6eb8b388-5f18-4a19-a9b0-c85de554694e"
+    }
+  ],
+  "aliases": {
+    "ev-6eb8b388-5f18-4a19-a9b0-c85de554694e-final": "ku:evidence.run-6eb8b388-5f18-4a19-a9b0-c85de554694e-final",
+    "req-6eb8b388-5f18-4a19-a9b0-c85de554694e": "ku:requirement.run-6eb8b388-5f18-4a19-a9b0-c85de554694e"
+  }
+}

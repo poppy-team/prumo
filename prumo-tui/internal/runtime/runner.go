@@ -50,6 +50,7 @@ type Client interface {
 	Approve(ctx context.Context, runID, requestID string) error
 	Deny(ctx context.Context, runID, requestID, reason string) error
 	List(ctx context.Context) ([]prumo.RunStatus, error)
+	Models(ctx context.Context, r prumo.ModelsRequest) ([]string, error)
 }
 
 // Runner implements the agent surface the view layer consumes, over the
@@ -215,10 +216,17 @@ func (r *Runner) Run(ctx context.Context, sessionID, content string, _ ...messag
 	}
 
 	model := r.Model()
+	// A model chosen from the harness's own list arrives as an id, with no
+	// separate wire name: sending the empty APIModel would ask the daemon for
+	// its default instead of for what the user picked.
+	modelName := model.APIModel
+	if modelName == "" {
+		modelName = string(model.ID)
+	}
 	if _, err := r.client.Start(ctx, StartRequest{
 		Goal:      content,
 		Provider:  r.provider,
-		Model:     model.APIModel,
+		Model:     modelName,
 		MaxTurns:  r.maxTurns,
 		RunID:     sessionID,
 		Workspace: r.workspace,
@@ -421,6 +429,17 @@ func (r *Runner) ListRuns(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// AvailableModels asks the harness what the provider can serve.
+//
+// It is a pass-through on purpose: the catalogue belongs to the provider, and
+// the client's only job is to ask and show it.
+func (r *Runner) AvailableModels(ctx context.Context, provider string) ([]string, error) {
+	if r.client == nil {
+		return nil, errors.New("no harness attached")
+	}
+	return r.client.Models(ctx, prumo.ModelsRequest{Provider: provider})
 }
 
 // Approve answers a permission request, satisfying permission.Responder.
