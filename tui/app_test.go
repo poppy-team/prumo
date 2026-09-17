@@ -84,10 +84,8 @@ func press(t *testing.T, model *Model, key string) (*Model, tea.Cmd) {
 	return next.(*Model), cmd
 }
 
-// TestVerticalSliceFlow drives palette → goal → run → stream → evidence, which
-// is H10 acceptance criterion 2's shape without the terminal. The one step it
-// cannot cover is approving a permission: the protocol has no op for that yet,
-// and the gap register records it.
+// TestVerticalSliceFlow drives palette → goal → run → stream → approval →
+// evidence, which is H10 acceptance criterion 2's shape without the terminal.
 func TestVerticalSliceFlow(t *testing.T) {
 	ops := &stubOps{}
 	model := newTestModel(t, ops)
@@ -143,7 +141,36 @@ func TestVerticalSliceFlow(t *testing.T) {
 		}
 	}
 
-	// 4. evidence: a terminal status moves the view there with no restart.
+	// 4. approval: the run stops on a permission request. The view must stay on
+	// the run panel (it has a question to ask), say so, and answer the request
+	// the daemon named.
+	ops.events = append(ops.events,
+		ev("4", "permission_wait", map[string]any{"tool": "edit.delete", "request_id": "perm-c1"}))
+	ops.status = prumo.RunStatus{
+		RunID: "R-test-1", Status: "awaiting_approval", Phase: "yield",
+		PendingPermissions: []string{"perm-c1"},
+	}
+	result, err = model.Session.Poll(context.Background())
+	if err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	model = update(t, model, pollMsg{result: result})
+	if model.Stage() != StageRun {
+		t.Fatalf("stage while waiting for approval = %q, want the run panel", model.Stage())
+	}
+	if rendered := model.View().Content; !strings.Contains(rendered, "a to approve") {
+		t.Errorf("the run panel does not offer the decision:\n%s", rendered)
+	}
+	model, cmd = press(t, model, "a")
+	if cmd == nil {
+		t.Fatal("approving produced no command")
+	}
+	model = update(t, model, cmd())
+	if len(ops.approved) != 1 || ops.approved[0] != "perm-c1" {
+		t.Fatalf("approval did not reach the protocol: %v", ops.approved)
+	}
+
+	// 5. evidence: a terminal status moves the view there with no restart.
 	ops.status = prumo.RunStatus{RunID: "R-test-1", Status: "complete", Phase: "complete", StopReason: "max turns reached"}
 	result, err = model.Session.Poll(context.Background())
 	if err != nil {
@@ -156,6 +183,43 @@ func TestVerticalSliceFlow(t *testing.T) {
 	evidence := model.View().Content
 	if !strings.Contains(evidence, "complete") || !strings.Contains(evidence, "max turns reached") {
 		t.Errorf("evidence view is missing the terminal accounting:\n%s", evidence)
+	}
+}
+
+// TestDenyKeyAnswersThePermission is the other half of the surface: refusing
+// must reach the protocol too, and the key must not invent a request.
+func TestDenyKeyAnswersThePermission(t *testing.T) {
+	ops := &stubOps{}
+	model := newTestModel(t, ops)
+	session, err := StartSession(context.Background(), ops, StartConfig{Goal: "deny me"})
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	model = update(t, model, sessionMsg{session: session})
+
+	// Nothing pending: the key reports that instead of answering nothing.
+	model, cmd := press(t, model, "d")
+	if cmd != nil {
+		t.Fatal("denying with nothing pending must not reach the protocol")
+	}
+	if len(ops.denied) != 0 || !strings.Contains(model.View().Content, "nothing is waiting for approval") {
+		t.Fatalf("the panel did not say why nothing happened:\n%s", model.View().Content)
+	}
+
+	ops.status = prumo.RunStatus{
+		RunID: "R-test-1", Status: "awaiting_approval", Phase: "yield",
+		PendingPermissions: []string{"perm-c1"},
+	}
+	if _, err := session.Poll(context.Background()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	model, cmd = press(t, model, "d")
+	if cmd == nil {
+		t.Fatal("denying a pending request produced no command")
+	}
+	model = update(t, model, cmd())
+	if len(ops.denied) != 1 || !strings.HasPrefix(ops.denied[0], "perm-c1|") {
+		t.Fatalf("denial did not reach the protocol: %v", ops.denied)
 	}
 }
 

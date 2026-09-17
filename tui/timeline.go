@@ -122,11 +122,11 @@ func (t *Timeline) reindex() {
 // failure or a success are special-cased; everything else is ordinary activity.
 func severityOf(kind string) Severity {
 	switch {
-	case kind == "run.finished", kind == "completed", kind == "tool_call_ready":
+	case kind == "run.finished", kind == "completed", kind == "tool_call_ready", kind == "permission_approved":
 		return SeveritySuccess
 	case kind == "warning", kind == "permission_wait":
 		return SeverityWarning
-	case kind == "error", kind == "failed", kind == "permission_denied", kind == "cancelled":
+	case kind == "error", kind == "failed", kind == "permission_denied", kind == "permission_rejected", kind == "cancelled":
 		return SeverityError
 	default:
 		return SeverityInfo
@@ -159,6 +159,10 @@ func titleOf(ev prumo.Event) string {
 		return "permission denied: " + stringField(ev.Payload, "tool", "tool")
 	case "permission_wait":
 		return "waiting for approval: " + stringField(ev.Payload, "tool", "tool")
+	case "permission_approved":
+		return "permission approved"
+	case "permission_rejected":
+		return "permission rejected"
 	case "usage",
 		"usage_updated":
 		return "usage updated"

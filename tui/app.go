@@ -117,6 +117,11 @@ type pollMsg struct{ result PollResult }
 
 type pollErrMsg struct{ err error }
 
+// permissionErrMsg carries a failed approval/denial. It is separate from
+// pollErrMsg because the run is fine: the decision did not reach it, and saying
+// "lost the daemon" would be a different (and wrong) story.
+type permissionErrMsg struct{ err error }
+
 type runErrMsg struct{ err error }
 
 // Init starts the poll loop when a session is already attached. The normal path
@@ -179,9 +184,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pollMsg:
 		for _, ev := range message.result.Events {
 			m.Timeline.Append(ev)
-			if ev.Kind == "permission_wait" {
-				m.status = "approval requested — this build cannot answer it yet (see the gap register)"
-			}
+		}
+		if _, waiting := m.Session.PendingPermission(); waiting {
+			m.status = "approval requested — a to approve, d to deny"
 		}
 		if message.result.Finished {
 			m.stage = StageEvidence
@@ -189,6 +194,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, nextTick()
+
+	case permissionErrMsg:
+		m.err = message.err
+		m.status = "could not answer the permission: " + message.err.Error()
+		return m, nil
 
 	case pollErrMsg:
 		// A dropped connection is a state, not a crash: say so and keep the
@@ -281,8 +291,46 @@ func (m *Model) handleRunKey(key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.status = "back to the palette"
 	case "ctrl+r":
 		return m.reconnect()
+	case "a":
+		return m.answerPermission(true)
+	case "d":
+		return m.answerPermission(false)
 	}
 	return m, nil
+}
+
+// answerPermission sends the user's decision for the request the run is waiting
+// on. With nothing pending the key only says so: there is no such thing as
+// approving a request that was never made.
+func (m *Model) answerPermission(allow bool) (tea.Model, tea.Cmd) {
+	if m.Session == nil {
+		m.status = "no run yet"
+		return m, nil
+	}
+	if _, waiting := m.Session.PendingPermission(); !waiting {
+		m.status = "nothing is waiting for approval"
+		return m, nil
+	}
+	session := m.Session
+	if allow {
+		m.status = "approving…"
+	} else {
+		m.status = "denying…"
+	}
+	return m, func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		var err error
+		if allow {
+			err = session.Approve(ctx)
+		} else {
+			err = session.Deny(ctx, "denied in the run panel")
+		}
+		if err != nil {
+			return permissionErrMsg{err: err}
+		}
+		return tickMsg{}
+	}
 }
 
 func (m *Model) runCommand(id string) (tea.Model, tea.Cmd) {
@@ -455,6 +503,11 @@ func (m *Model) runView() string {
 		if entry.Detail != "" {
 			b.WriteString("    " + m.Styles.Muted().Render(entry.Detail) + "\n")
 		}
+	}
+	// A key nobody is told about is a key nobody presses: the panel says what
+	// it is waiting for and how to answer it.
+	if _, waiting := m.Session.PendingPermission(); waiting {
+		b.WriteString("\n" + m.Styles.Focus().Render("approval requested — a to approve, d to deny") + "\n")
 	}
 	return b.String()
 }

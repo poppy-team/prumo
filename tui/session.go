@@ -21,6 +21,12 @@ type Ops interface {
 	Events(ctx context.Context, runID string) ([]prumo.Event, error)
 	Status(ctx context.Context, runID string) (prumo.RunStatus, error)
 	Cancel(ctx context.Context, runID string) error
+	// Approve and Deny answer a permission request the run stopped on. They
+	// take the request id explicitly because that is the protocol's shape; the
+	// view reaches them through Session, which already knows which request is
+	// pending.
+	Approve(ctx context.Context, runID, requestID string) error
+	Deny(ctx context.Context, runID, requestID, reason string) error
 }
 
 // Session is one run observed over the Agent Protocol.
@@ -38,6 +44,10 @@ type Session struct {
 	cursor   int
 	status   prumo.RunStatus
 	finished bool
+	// pending is the permission request the daemon reports the run is waiting
+	// on. The status is authoritative: the daemon reads it off the live run, so
+	// a client that reconnected still learns what to answer.
+	pending string
 }
 
 // StartConfig is what the palette's "run goal" action needs to launch a run.
@@ -123,8 +133,42 @@ func (s *Session) Poll(ctx context.Context) (PollResult, error) {
 	s.cursor = len(events)
 
 	s.status = status
-	s.finished = status.Status != "running"
+	if len(status.PendingPermissions) > 0 {
+		s.pending = status.PendingPermissions[0]
+	} else {
+		s.pending = ""
+	}
+	// Waiting for approval is not an ending. Treating it as one would drop the
+	// view out of the run panel at the exact moment it has a question to ask.
+	s.finished = status.Status != "running" && status.Status != "awaiting_approval"
 	return PollResult{Events: fresh, Status: status, Finished: s.finished}, nil
+}
+
+// PendingPermission is the request the run is waiting on, if any.
+func (s *Session) PendingPermission() (string, bool) {
+	if s.pending == "" {
+		return "", false
+	}
+	return s.pending, true
+}
+
+// Approve answers the pending request, and the run continues.
+func (s *Session) Approve(ctx context.Context) error {
+	requestID, ok := s.PendingPermission()
+	if !ok {
+		return errors.New("tui: no permission is pending")
+	}
+	return s.ops.Approve(ctx, s.RunID, requestID)
+}
+
+// Deny refuses the pending request. The run then fails the way a policy denial
+// fails; nothing executes.
+func (s *Session) Deny(ctx context.Context, reason string) error {
+	requestID, ok := s.PendingPermission()
+	if !ok {
+		return errors.New("tui: no permission is pending")
+	}
+	return s.ops.Deny(ctx, s.RunID, requestID, reason)
 }
 
 // Status is the last status observed.

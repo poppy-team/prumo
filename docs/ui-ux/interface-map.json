@@ -291,9 +291,9 @@
               "tokens": ["token:tui.approval.prompt"],
               "inputs": ["a", "d", "esc"],
               "implementation": {
-                "path": "tui/app.go",
-                "status": "not-implemented",
-                "absent_reason": "The Agent Protocol has no op to answer a permission request: the runner sets PendingPerms on the run state and nothing consumes it, so a client can render permission_wait and cannot approve it. Tracked as GAP-046. The element is described here so the gap is visible in the interface, not only in the gap register."
+                "symbol": "tui.Session.Approve",
+                "path": "tui/session.go",
+                "status": "implemented"
               }
             }
           ]

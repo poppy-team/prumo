@@ -19,6 +19,10 @@ type stubOps struct {
 	eventsErr error
 	cancelled int
 	started   []prumo.StartRequest
+	// approved and denied record what the view answered, so a test can assert
+	// the decision reached the protocol rather than only changing the screen.
+	approved []string
+	denied   []string
 	// calls records the order the protocol ops were invoked in. Allowing test
 	// files to observe ordering without moving either op behind an interface is
 	// enough here: order *is* the contract Poll depends on.
@@ -53,6 +57,21 @@ func (s *stubOps) Status(context.Context, string) (prumo.RunStatus, error) {
 func (s *stubOps) Cancel(context.Context, string) error {
 	s.cancelled++
 	s.status.Status = "cancelled"
+	return nil
+}
+
+func (s *stubOps) Approve(_ context.Context, _, requestID string) error {
+	s.approved = append(s.approved, requestID)
+	s.status.PendingPermissions = nil
+	s.status.Status = "running"
+	return nil
+}
+
+func (s *stubOps) Deny(_ context.Context, _, requestID, reason string) error {
+	s.denied = append(s.denied, requestID+"|"+reason)
+	s.status.PendingPermissions = nil
+	s.status.Status = "failed"
+	s.status.StopReason = "permission denied"
 	return nil
 }
 
@@ -179,5 +198,70 @@ func TestCancelReachesTheDaemon(t *testing.T) {
 	}
 	if ops.cancelled != 1 {
 		t.Fatalf("cancel calls = %d, want 1", ops.cancelled)
+	}
+}
+
+// TestPollTreatsAwaitingApprovalAsInFlight pins the distinction the approval
+// surface depends on: a run waiting for a decision is not finished. Reading it
+// as finished would drop the view out of the run panel exactly when it has a
+// question to ask.
+func TestPollTreatsAwaitingApprovalAsInFlight(t *testing.T) {
+	ops := &stubOps{}
+	session, _ := StartSession(context.Background(), ops, StartConfig{Goal: "g"})
+	ops.status = prumo.RunStatus{RunID: "R-test-1", Status: "awaiting_approval", Phase: "yield", PendingPermissions: []string{"perm-c1"}}
+	result, err := session.Poll(context.Background())
+	if err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if result.Finished || session.Finished() {
+		t.Fatal("awaiting approval must not report Finished")
+	}
+	requestID, ok := session.PendingPermission()
+	if !ok || requestID != "perm-c1" {
+		t.Fatalf("pending request = %q %v", requestID, ok)
+	}
+	// A parked run (no pending request) is still an ending.
+	ops.status = prumo.RunStatus{RunID: "R-test-1", Status: "yielded", Phase: "yield"}
+	if _, err := session.Poll(context.Background()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if !session.Finished() {
+		t.Fatal("a yielded run with nothing pending is finished")
+	}
+	if _, ok := session.PendingPermission(); ok {
+		t.Fatal("a parked run has no pending request")
+	}
+}
+
+func TestApproveSendsThePendingRequest(t *testing.T) {
+	ops := &stubOps{}
+	session, _ := StartSession(context.Background(), ops, StartConfig{Goal: "g"})
+	if err := session.Approve(context.Background()); err == nil {
+		t.Fatal("approving with nothing pending must be refused")
+	}
+	ops.status = prumo.RunStatus{RunID: "R-test-1", Status: "awaiting_approval", Phase: "yield", PendingPermissions: []string{"perm-c1"}}
+	if _, err := session.Poll(context.Background()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if err := session.Approve(context.Background()); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	if len(ops.approved) != 1 || ops.approved[0] != "perm-c1" {
+		t.Fatalf("approve did not reach the protocol: %v", ops.approved)
+	}
+}
+
+func TestDenySendsThePendingRequest(t *testing.T) {
+	ops := &stubOps{}
+	session, _ := StartSession(context.Background(), ops, StartConfig{Goal: "g"})
+	ops.status = prumo.RunStatus{RunID: "R-test-1", Status: "awaiting_approval", Phase: "yield", PendingPermissions: []string{"perm-c9"}}
+	if _, err := session.Poll(context.Background()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if err := session.Deny(context.Background(), "outside the workspace"); err != nil {
+		t.Fatalf("deny: %v", err)
+	}
+	if len(ops.denied) != 1 || ops.denied[0] != "perm-c9|outside the workspace" {
+		t.Fatalf("deny did not reach the protocol: %v", ops.denied)
 	}
 }
