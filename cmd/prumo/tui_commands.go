@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -41,9 +44,10 @@ func runTui(asJSON bool, args []string) int {
 	defer cancel()
 
 	// A named --socket means the caller already has a daemon; starting a
-	// second one would fight it for the store lock.
+	// second one would fight it for the store lock. A --remote endpoint means
+	// the daemon is elsewhere for the same reason.
 	var supervised *tui.Daemon
-	if f["socket"] == "" {
+	if f["socket"] == "" && f["remote"] == "" {
 		supervised = tui.NewDaemon(abs)
 		if err := supervised.Start(ctx, 15*time.Second); err != nil {
 			return serviceError(asJSON, err)
@@ -51,9 +55,9 @@ func runTui(asJSON bool, args []string) int {
 		defer supervised.Stop()
 	}
 
-	client := prumo.Client{SocketPath: tui.SocketPathFor(abs)}
-	if socket := f["socket"]; socket != "" {
-		client = prumo.Client{SocketPath: socket}
+	client, err := tuiClient(f, tui.SocketPathFor(abs))
+	if err != nil {
+		return serviceError(asJSON, err)
 	}
 	if err := waitForDaemon(ctx, client, 5*time.Second); err != nil {
 		return serviceError(asJSON, err)
@@ -76,6 +80,50 @@ func runTui(asJSON bool, args []string) int {
 		return serviceError(asJSON, err)
 	}
 	return exitOK
+}
+
+// tuiClient maps the TUI's flags onto an SDK client.
+//
+// A remote endpoint is the same client at another address rather than a second
+// code path — that is the whole of H10 criterion 4, and it only holds because
+// the TUI talks to the daemon exclusively through the public SDK.
+func tuiClient(f map[string]string, workspaceSocket string) (prumo.Client, error) {
+	addr := f["remote"]
+	if addr == "" {
+		if socket := f["socket"]; socket != "" {
+			return prumo.Client{SocketPath: socket}, nil
+		}
+		return prumo.Client{SocketPath: workspaceSocket}, nil
+	}
+	token := f["token"]
+	if token == "" {
+		if file := f["token-file"]; file != "" {
+			data, err := os.ReadFile(file)
+			if err != nil {
+				return prumo.Client{}, fmt.Errorf("token file: %w", err)
+			}
+			token = strings.TrimSpace(string(data))
+		}
+	}
+	if token == "" {
+		token = os.Getenv("PRUMO_DAEMON_TOKEN")
+	}
+	if token == "" {
+		return prumo.Client{}, fmt.Errorf("--remote %s requires a token (--token/--token-file/PRUMO_DAEMON_TOKEN)", addr)
+	}
+	conf := &tls.Config{MinVersion: tls.VersionTLS12}
+	if ca := f["remote-tls-cert"]; ca != "" {
+		pem, err := os.ReadFile(ca)
+		if err != nil {
+			return prumo.Client{}, fmt.Errorf("ca cert: %w", err)
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(pem) {
+			return prumo.Client{}, fmt.Errorf("ca cert: no certificates parsed")
+		}
+		conf.RootCAs = pool
+	}
+	return *prumo.DialRemote(addr, token, conf), nil
 }
 
 // waitForDaemon confirms the endpoint answers before the TUI takes the screen.

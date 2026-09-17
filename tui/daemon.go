@@ -33,6 +33,11 @@ type Daemon struct {
 	Binary string
 	// Workspace is the repository root the daemon serves.
 	Workspace string
+	// Args are extra flags for `agent serve` (e.g. --permission ask). The TUI
+	// does not set them itself: the run policy belongs to the daemon's
+	// configuration, and a client that silently chose it would be deciding
+	// something that is not its business.
+	Args []string
 
 	cmd  *exec.Cmd
 	sock string
@@ -82,7 +87,8 @@ func (d *Daemon) Start(ctx context.Context, readyTimeout time.Duration) error {
 	if err := os.MkdirAll(filepath.Dir(d.sock), 0o755); err != nil {
 		return fmt.Errorf("tui: cannot create runtime dir: %w", err)
 	}
-	cmd := exec.Command(binary, "agent", "serve", "--path", d.Workspace)
+	args := append([]string{"agent", "serve", "--path", d.Workspace}, d.Args...)
+	cmd := exec.Command(binary, args...)
 	// The daemon's stdout is a human line ("serving harness daemon on …");
 	// keeping it off the terminal is what lets the TUI own the screen.
 	cmd.Stdout = nil

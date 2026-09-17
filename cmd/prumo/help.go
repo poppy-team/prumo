@@ -753,7 +753,11 @@ var commandRegistry = map[string]CommandInfo{
 		Flags: []string{
 			"--path <dir>         Workspace root (default: .)",
 			"--socket <path>      Attach to an existing daemon instead of starting one",
-			"--provider <name>    fake|openai-compat|anthropic (default: fake)",
+			"--remote <addr>      Attach over TCP+TLS instead (requires a token)",
+			"--token <t>          Remote token (or --token-file / PRUMO_DAEMON_TOKEN)",
+			"--token-file <p>     File holding the remote token",
+			"--remote-tls-cert <p> CA cert pinning the remote server",
+			"--provider <name>    fake|fake-tools|openai-compat|anthropic (default: fake)",
 			"--model <id>         Model id for real providers",
 			"--max-turns <n>      Max turns (default: 5)",
 			"--theme <id>         theme.default|theme.high-contrast|theme.no-color|theme.reduced-motion",
@@ -762,6 +766,7 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo tui --path .",
 			"prumo tui --theme theme.no-color",
 			"prumo tui --socket .prumo/runtime/harness/agentd.sock",
+			"prumo tui --remote 127.0.0.1:7777 --token-file .prumo/agentd.token",
 		},
 	},
 	"ui": {
