@@ -17,7 +17,7 @@ var errTestRefused = errors.New("quota exhausted")
 // newTestModel wires the model to a scripted endpoint. The whole point of the
 // split is visible here: the flow is driven by messages, so it needs neither a
 // terminal nor a daemon process.
-func newTestModel(t *testing.T, ops Ops) *Model {
+func newTestModel(t testing.TB, ops Ops) *Model {
 	t.Helper()
 	styles, err := NewStyles(theme.DefaultTheme)
 	if err != nil {
@@ -41,7 +41,7 @@ func typeString(t *testing.T, model *Model, text string) *Model {
 
 // update feeds one message and adapts the tea.Model result back to the concrete
 // model the tests hold.
-func update(t *testing.T, model *Model, msg tea.Msg) *Model {
+func update(t testing.TB, model *Model, msg tea.Msg) *Model {
 	t.Helper()
 	next, _ := model.Update(msg)
 	concrete, ok := next.(*Model)
