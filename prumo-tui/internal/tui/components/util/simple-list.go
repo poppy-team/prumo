@@ -1,9 +1,9 @@
 package utilComponents
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
@@ -65,7 +65,7 @@ func (c *simpleListCmp[T]) Init() tea.Cmd {
 
 func (c *simpleListCmp[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, simpleListKeys.Up) || (c.useAlphaNumericKeys && key.Matches(msg, simpleListKeys.UpAlpha)):
 			if c.selectedIdx > 0 {
@@ -109,7 +109,9 @@ func (c *simpleListCmp[T]) SetMaxWidth(width int) {
 	c.maxWidth = width
 }
 
-func (c *simpleListCmp[T]) View() string {
+// View renders the component for the terminal.
+func (c *simpleListCmp[T]) View() tea.View { return tea.NewView(c.viewString()) }
+func (c *simpleListCmp[T]) viewString() string {
 	t := theme.CurrentTheme()
 	baseStyle := styles.BaseStyle()
 

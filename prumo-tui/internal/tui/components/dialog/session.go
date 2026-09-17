@@ -1,9 +1,9 @@
 package dialog
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
@@ -77,7 +77,7 @@ func (s *sessionDialogCmp) Init() tea.Cmd {
 
 func (s *sessionDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, sessionKeys.Up) || key.Matches(msg, sessionKeys.K):
 			if s.selectedIdx > 0 {
@@ -105,7 +105,9 @@ func (s *sessionDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, nil
 }
 
-func (s *sessionDialogCmp) View() string {
+// View renders the component for the terminal.
+func (s *sessionDialogCmp) View() tea.View { return tea.NewView(s.viewString()) }
+func (s *sessionDialogCmp) viewString() string {
 	t := theme.CurrentTheme()
 	baseStyle := styles.BaseStyle()
 

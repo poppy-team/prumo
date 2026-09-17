@@ -3,9 +3,9 @@ package page
 import (
 	"context"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/completions"
 	"github.com/raillen/prumo-tui/internal/message"
@@ -75,7 +75,7 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.setSidebar()
 		}
 		p.session = msg
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.ShowCompletionDialog):
 			p.showCompletionDialog = true
@@ -101,7 +101,7 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, contextCmd)
 
 		// Enter closes the dialog rather than also sending what it selected.
-		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
 			if keyMsg.String() == "enter" {
 				return p, tea.Batch(cmds...)
 			}
@@ -157,15 +157,17 @@ func (p *chatPage) GetSize() (int, int) {
 	return p.layout.GetSize()
 }
 
-func (p *chatPage) View() string {
-	layoutView := p.layout.View()
+// View renders the component for the terminal.
+func (p *chatPage) View() tea.View { return tea.NewView(p.viewString()) }
+func (p *chatPage) viewString() string {
+	layoutView := p.layout.View().Content
 
 	if p.showCompletionDialog {
 		_, layoutHeight := p.layout.GetSize()
 		editorWidth, editorHeight := p.editor.GetSize()
 
 		p.completionDialog.SetWidth(editorWidth)
-		overlay := p.completionDialog.View()
+		overlay := p.completionDialog.View().Content
 
 		layoutView = layout.PlaceOverlay(
 			0,

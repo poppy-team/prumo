@@ -1,9 +1,9 @@
 package layout
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 )
 
@@ -85,17 +85,19 @@ func (s *splitPaneLayout) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, tea.Batch(cmds...)
 }
 
-func (s *splitPaneLayout) View() string {
+// View renders the component for the terminal.
+func (s *splitPaneLayout) View() tea.View { return tea.NewView(s.viewString()) }
+func (s *splitPaneLayout) viewString() string {
 	var topSection string
 
 	if s.leftPanel != nil && s.rightPanel != nil {
-		leftView := s.leftPanel.View()
-		rightView := s.rightPanel.View()
+		leftView := s.leftPanel.View().Content
+		rightView := s.rightPanel.View().Content
 		topSection = lipgloss.JoinHorizontal(lipgloss.Top, leftView, rightView)
 	} else if s.leftPanel != nil {
-		topSection = s.leftPanel.View()
+		topSection = s.leftPanel.View().Content
 	} else if s.rightPanel != nil {
-		topSection = s.rightPanel.View()
+		topSection = s.rightPanel.View().Content
 	} else {
 		topSection = ""
 	}
@@ -103,10 +105,10 @@ func (s *splitPaneLayout) View() string {
 	var finalView string
 
 	if s.bottomPanel != nil && topSection != "" {
-		bottomView := s.bottomPanel.View()
+		bottomView := s.bottomPanel.View().Content
 		finalView = lipgloss.JoinVertical(lipgloss.Left, topSection, bottomView)
 	} else if s.bottomPanel != nil {
-		finalView = s.bottomPanel.View()
+		finalView = s.bottomPanel.View().Content
 	} else {
 		finalView = topSection
 	}

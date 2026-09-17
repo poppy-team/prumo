@@ -3,9 +3,9 @@ package dialog
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 )
@@ -144,7 +144,9 @@ func (h *helpCmp) render() string {
 			lipgloss.Left,              // x
 			lipgloss.Top,               // y
 			lastPair,                   // content
-			lipgloss.WithWhitespaceBackground(t.Background()),
+			// v2 replaced the background-only option with one that takes the
+			// whole whitespace style, so the colour goes in a style.
+			lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Background(t.Background())),
 		))
 		content := baseStyle.Width(h.width).Render(
 			lipgloss.JoinHorizontal(
@@ -165,7 +167,9 @@ func (h *helpCmp) render() string {
 	return content
 }
 
-func (h *helpCmp) View() string {
+// View renders the component for the terminal.
+func (h *helpCmp) View() tea.View { return tea.NewView(h.viewString()) }
+func (h *helpCmp) viewString() string {
 	t := theme.CurrentTheme()
 	baseStyle := styles.BaseStyle()
 

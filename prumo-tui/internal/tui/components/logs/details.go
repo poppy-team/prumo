@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
@@ -114,7 +114,9 @@ func getLevelStyle(level string) lipgloss.Style {
 	}
 }
 
-func (i *detailCmp) View() string {
+// View renders the component for the terminal.
+func (i *detailCmp) View() tea.View { return tea.NewView(i.viewString()) }
+func (i *detailCmp) viewString() string {
 	t := theme.CurrentTheme()
 	return styles.ForceReplaceBackgroundWithLipgloss(i.viewport.View(), t.Background())
 }
@@ -126,8 +128,8 @@ func (i *detailCmp) GetSize() (int, int) {
 func (i *detailCmp) SetSize(width int, height int) tea.Cmd {
 	i.width = width
 	i.height = height
-	i.viewport.Width = i.width
-	i.viewport.Height = i.height
+	i.viewport.SetWidth(i.width)
+	i.viewport.SetHeight(i.height)
 	i.updateContent()
 	return nil
 }
@@ -138,6 +140,6 @@ func (i *detailCmp) BindingKeys() []key.Binding {
 
 func NewLogsDetails() DetailComponent {
 	return &detailCmp{
-		viewport: viewport.New(0, 0),
+		viewport: viewport.New(),
 	}
 }

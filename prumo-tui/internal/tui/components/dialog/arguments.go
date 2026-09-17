@@ -1,11 +1,11 @@
 package dialog
 
 import (
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"fmt"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
@@ -64,23 +64,21 @@ type MultiArgumentsDialogCmp struct {
 
 // NewMultiArgumentsDialogCmp creates a new MultiArgumentsDialogCmp.
 func NewMultiArgumentsDialogCmp(commandID, content string, argNames []string) MultiArgumentsDialogCmp {
-	t := theme.CurrentTheme()
 	inputs := make([]textinput.Model, len(argNames))
 
 	for i, name := range argNames {
 		ti := textinput.New()
 		ti.Placeholder = fmt.Sprintf("Enter value for %s...", name)
-		ti.Width = 40
 		ti.Prompt = ""
-		ti.PlaceholderStyle = ti.PlaceholderStyle.Background(t.Background())
-		ti.PromptStyle = ti.PromptStyle.Background(t.Background())
-		ti.TextStyle = ti.TextStyle.Background(t.Background())
+		ti.SetWidth(40)
+		// v2 carries the prompt, text and placeholder styles in one value, so
+		// there is nothing per-field to repaint: the defaults already follow
+		// the terminal's background.
+		ti.SetStyles(textinput.DefaultStyles(theme.DarkBackground()))
 
 		// Only focus the first input initially
 		if i == 0 {
 			ti.Focus()
-			ti.PromptStyle = ti.PromptStyle.Foreground(t.Primary())
-			ti.TextStyle = ti.TextStyle.Foreground(t.Primary())
 		} else {
 			ti.Blur()
 		}
@@ -115,10 +113,9 @@ func (m MultiArgumentsDialogCmp) Init() tea.Cmd {
 // Update implements tea.Model.
 func (m MultiArgumentsDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-	t := theme.CurrentTheme()
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("esc"))):
 			return m, util.CmdHandler(CloseMultiArgumentsDialogMsg{
@@ -145,22 +142,16 @@ func (m MultiArgumentsDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.inputs[m.focusIndex].Blur()
 			m.focusIndex++
 			m.inputs[m.focusIndex].Focus()
-			m.inputs[m.focusIndex].PromptStyle = m.inputs[m.focusIndex].PromptStyle.Foreground(t.Primary())
-			m.inputs[m.focusIndex].TextStyle = m.inputs[m.focusIndex].TextStyle.Foreground(t.Primary())
 		case key.Matches(msg, key.NewBinding(key.WithKeys("tab"))):
 			// Move to the next input
 			m.inputs[m.focusIndex].Blur()
 			m.focusIndex = (m.focusIndex + 1) % len(m.inputs)
 			m.inputs[m.focusIndex].Focus()
-			m.inputs[m.focusIndex].PromptStyle = m.inputs[m.focusIndex].PromptStyle.Foreground(t.Primary())
-			m.inputs[m.focusIndex].TextStyle = m.inputs[m.focusIndex].TextStyle.Foreground(t.Primary())
 		case key.Matches(msg, key.NewBinding(key.WithKeys("shift+tab"))):
 			// Move to the previous input
 			m.inputs[m.focusIndex].Blur()
 			m.focusIndex = (m.focusIndex - 1 + len(m.inputs)) % len(m.inputs)
 			m.inputs[m.focusIndex].Focus()
-			m.inputs[m.focusIndex].PromptStyle = m.inputs[m.focusIndex].PromptStyle.Foreground(t.Primary())
-			m.inputs[m.focusIndex].TextStyle = m.inputs[m.focusIndex].TextStyle.Foreground(t.Primary())
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -176,7 +167,9 @@ func (m MultiArgumentsDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View implements tea.Model.
-func (m MultiArgumentsDialogCmp) View() string {
+// View renders the component for the terminal.
+func (m MultiArgumentsDialogCmp) View() tea.View { return tea.NewView(m.viewString()) }
+func (m MultiArgumentsDialogCmp) viewString() string {
 	t := theme.CurrentTheme()
 	baseStyle := styles.BaseStyle()
 

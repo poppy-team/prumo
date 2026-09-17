@@ -8,10 +8,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/message"
@@ -162,7 +162,7 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 		m.attachments = append(m.attachments, msg.Attachment)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if key.Matches(msg, DeleteKeyMaps.AttachmentDeleteMode) {
 			m.deleteMode = true
 			return m, nil
@@ -172,8 +172,8 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.attachments = nil
 			return m, nil
 		}
-		if m.deleteMode && len(msg.Runes) > 0 && unicode.IsDigit(msg.Runes[0]) {
-			num := int(msg.Runes[0] - '0')
+		if m.deleteMode && len([]rune(msg.Text)) > 0 && unicode.IsDigit([]rune(msg.Text)[0]) {
+			num := int([]rune(msg.Text)[0] - '0')
 			m.deleteMode = false
 			if num < 10 && len(m.attachments) > num {
 				if num == 0 {
@@ -216,7 +216,9 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *editorCmp) View() string {
+// View renders the component for the terminal.
+func (m *editorCmp) View() tea.View { return tea.NewView(m.viewString()) }
+func (m *editorCmp) viewString() string {
 	t := theme.CurrentTheme()
 
 	// Style the prompt with theme colors
@@ -286,14 +288,16 @@ func CreateTextArea(existing *textarea.Model) textarea.Model {
 	textMutedColor := t.TextMuted()
 
 	ta := textarea.New()
-	ta.BlurredStyle.Base = styles.BaseStyle().Background(bgColor).Foreground(textColor)
-	ta.BlurredStyle.CursorLine = styles.BaseStyle().Background(bgColor)
-	ta.BlurredStyle.Placeholder = styles.BaseStyle().Background(bgColor).Foreground(textMutedColor)
-	ta.BlurredStyle.Text = styles.BaseStyle().Background(bgColor).Foreground(textColor)
-	ta.FocusedStyle.Base = styles.BaseStyle().Background(bgColor).Foreground(textColor)
-	ta.FocusedStyle.CursorLine = styles.BaseStyle().Background(bgColor)
-	ta.FocusedStyle.Placeholder = styles.BaseStyle().Background(bgColor).Foreground(textMutedColor)
-	ta.FocusedStyle.Text = styles.BaseStyle().Background(bgColor).Foreground(textColor)
+	// v2 carries the focused and blurred states in one Styles value, so they are
+	// built once and set, instead of being assigned field by field.
+	taStyles := textarea.DefaultStyles(theme.DarkBackground())
+	for _, state := range []*textarea.StyleState{&taStyles.Blurred, &taStyles.Focused} {
+		state.Base = styles.BaseStyle().Background(bgColor).Foreground(textColor)
+		state.CursorLine = styles.BaseStyle().Background(bgColor)
+		state.Placeholder = styles.BaseStyle().Background(bgColor).Foreground(textMutedColor)
+		state.Text = styles.BaseStyle().Background(bgColor).Foreground(textColor)
+	}
+	ta.SetStyles(taStyles)
 
 	ta.Prompt = " "
 	ta.ShowLineNumbers = false

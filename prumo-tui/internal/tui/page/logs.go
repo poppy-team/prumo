@@ -1,9 +1,9 @@
 package page
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/tui/components/logs"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
@@ -41,11 +41,13 @@ func (p *logsPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, tea.Batch(cmds...)
 }
 
-func (p *logsPage) View() string {
+// View renders the component for the terminal.
+func (p *logsPage) View() tea.View { return tea.NewView(p.viewString()) }
+func (p *logsPage) viewString() string {
 	style := styles.BaseStyle().Width(p.width).Height(p.height)
 	return style.Render(lipgloss.JoinVertical(lipgloss.Top,
-		p.table.View(),
-		p.details.View(),
+		p.table.View().Content,
+		p.details.View().Content,
 	))
 }
 

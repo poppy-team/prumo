@@ -20,7 +20,7 @@ import (
 	"syscall"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 
 	prumo "github.com/raillen/prumo/sdk/prumo"
 

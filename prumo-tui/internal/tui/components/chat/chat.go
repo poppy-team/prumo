@@ -3,7 +3,7 @@ package chat
 import (
 	"fmt"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/message"
 	"github.com/raillen/prumo-tui/internal/session"

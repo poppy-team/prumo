@@ -1,9 +1,9 @@
 package layout
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 )
 
@@ -41,7 +41,9 @@ func (c *container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return c, cmd
 }
 
-func (c *container) View() string {
+// View renders the component for the terminal.
+func (c *container) View() tea.View { return tea.NewView(c.viewString()) }
+func (c *container) viewString() string {
 	t := theme.CurrentTheme()
 	style := lipgloss.NewStyle()
 	width := c.width
@@ -75,7 +77,7 @@ func (c *container) View() string {
 		PaddingBottom(c.paddingBottom).
 		PaddingLeft(c.paddingLeft)
 
-	return style.Render(c.content.View())
+	return style.Render(c.content.View().Content)
 }
 
 func (c *container) SetSize(width, height int) tea.Cmd {

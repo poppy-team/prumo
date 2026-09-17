@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/llm/models"
 	"github.com/raillen/prumo-tui/internal/pubsub"
@@ -113,7 +113,9 @@ func formatTokensAndCost(tokens, contextWindow int64, cost float64) string {
 	return fmt.Sprintf("Context: %s, Cost: %s", formattedTokens, formattedCost)
 }
 
-func (m statusCmp) View() string {
+// View renders the component for the terminal.
+func (m statusCmp) View() tea.View { return tea.NewView(m.viewString()) }
+func (m statusCmp) viewString() string {
 	t := theme.CurrentTheme()
 	// The client shows the model it asked for, not a catalogue entry: what
 	// actually served the run is the harness's answer, reported per run.

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/table"
+	tea "charm.land/bubbletea/v2"
 	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/pubsub"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
@@ -61,7 +61,9 @@ func (i *tableCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return i, tea.Batch(cmds...)
 }
 
-func (i *tableCmp) View() string {
+// View renders the component for the terminal.
+func (i *tableCmp) View() tea.View { return tea.NewView(i.viewString()) }
+func (i *tableCmp) viewString() string {
 	t := theme.CurrentTheme()
 	defaultStyles := table.DefaultStyles()
 	defaultStyles.Selected = defaultStyles.Selected.Foreground(t.Primary())

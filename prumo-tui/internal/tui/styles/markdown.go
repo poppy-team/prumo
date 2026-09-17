@@ -1,9 +1,8 @@
 package styles
 
 import (
-	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/glamour/ansi"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/glamour/v2"
+	"charm.land/glamour/v2/ansi"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 )
 
@@ -274,11 +273,8 @@ func generateMarkdownStyleConfig() ansi.StyleConfig {
 	}
 }
 
-// adaptiveColorToString converts a lipgloss.AdaptiveColor to the appropriate
+// adaptiveColorToString converts a theme.AdaptiveColor to the appropriate
 // hex color string based on the current terminal background
-func adaptiveColorToString(color lipgloss.AdaptiveColor) string {
-	if lipgloss.HasDarkBackground() {
-		return color.Dark
-	}
-	return color.Light
+func adaptiveColorToString(color theme.AdaptiveColor) string {
+	return color.String()
 }

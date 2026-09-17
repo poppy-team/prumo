@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 )
 
 // Spinner wraps the bubbles spinner for non-interactive mode
@@ -31,7 +31,7 @@ func (m spinnerModel) Init() tea.Cmd {
 
 func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		m.quitting = true
 		return m, tea.Quit
 	case spinner.TickMsg:
@@ -46,7 +46,9 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m spinnerModel) View() string {
+// View renders the component for the terminal.
+func (m spinnerModel) View() tea.View { return tea.NewView(m.viewString()) }
+func (m spinnerModel) viewString() string {
 	if m.quitting {
 		return ""
 	}

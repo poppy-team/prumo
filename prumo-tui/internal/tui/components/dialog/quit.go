@@ -3,9 +3,9 @@ package dialog
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
@@ -62,7 +62,7 @@ func (q *quitDialogCmp) Init() tea.Cmd {
 
 func (q *quitDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, helpKeys.LeftRight) || key.Matches(msg, helpKeys.Tab):
 			q.selectedNo = !q.selectedNo
@@ -81,7 +81,9 @@ func (q *quitDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return q, nil
 }
 
-func (q *quitDialogCmp) View() string {
+// View renders the component for the terminal.
+func (q *quitDialogCmp) View() tea.View { return tea.NewView(q.viewString()) }
+func (q *quitDialogCmp) viewString() string {
 	t := theme.CurrentTheme()
 	baseStyle := styles.BaseStyle()
 
