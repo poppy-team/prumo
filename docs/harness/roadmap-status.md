@@ -32,7 +32,7 @@ Snapshot: `2026-09-11-d41f18bb65f5`. ACCEPTED != implemented. Truth table:
 - [x] HA4 checkpoint/restart/resume
 - [~] HA5 Coding ACI + Sandbox baseline (baseline usable, hardening continues)
 - [x] headless coding Run end-to-end (`prumo agent run` → tool → checkpoint)
-- [~] versioned public protocol (envelope + 3 schemas + negotiation kernel v0.1.0 + `prumo agent protocol` + checked-in IDL manifest with code-conformance tests; typed public SDK `sdk/prumo` with boundary test; generated bindings for other languages pending)
+- [~] versioned public protocol (envelope + 3 schemas + negotiation kernel v0.2.0 + `prumo agent protocol` + checked-in IDL manifest with code-conformance tests; typed public SDK `sdk/prumo` with boundary test; v0.2.0 added the `approve`/`deny` ops and a run waiting for a decision is observable as `awaiting_approval`; generated bindings for other languages pending)
 - [~] reconnect/replay (resume+handoff CLI done; JSONL event replay via `prumo agent events` done; local daemon `serve/ps/logs` with restart-safe reconnect done; remote TCP+TLS+token done nos limites — CA corporativa e hardening futuro)
 
 Verdict: NOT READY for split — see `HARNESS_IMPLEMENTATION_REPORT.md`.

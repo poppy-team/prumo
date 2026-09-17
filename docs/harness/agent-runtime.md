@@ -38,5 +38,8 @@ permission lifecycle, budget hook, ACI executor wiring, `prumo agent run`.
 `prumo agent run` persists a JSONL timeline (`run.started/finished` plus
 permission/model lifecycle events) replayable via `prumo agent events`;
 `prumo agent protocol` negotiates the versioned protocol kernel
-(`internal/harness/protocol`, v0.1.0).
+(`internal/harness/protocol`, v0.2.0 — v0.1.0 plus the approval ops).
+A run that yields for approval writes a checkpoint carrying
+`pending_tools`/`pending_permissions`; `Runner.ResolvePermission` records the
+decision and rewinds the run so the turn continues.
 Partial: compaction/steering policies, daemon scheduling, PTY lifecycle.

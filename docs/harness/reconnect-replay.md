@@ -31,7 +31,14 @@ view without owning canonical state.
 3. list / status run         → recover authoritative run state
 4. events(run_id)            → rebuild the timeline
 5. resume streaming          → continue from the last observed event
+6. answer if waiting         → approve/deny the request the status names
 ```
+
+Step 6 is not optional for a run that stopped for approval: `status` reports
+`awaiting_approval` and lists the pending request ids, so a client that
+reconnected still knows what to answer. The TUI reaches it through the same
+`approve`/`deny` ops as a first connection — reconnect is a state transition,
+not a different code path.
 
 ## Failure and recovery behaviour
 

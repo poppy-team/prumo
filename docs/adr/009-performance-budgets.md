@@ -9,6 +9,15 @@ Proposed (thresholds pending benchmark corpus)
 - GAP-036 asked for performance budgets and TTL/memory-pressure decisions.
 - Measured baselines exist (2026-09-11, i7-3632QM): context compile ~6.8ms,
   BM25 search ~0.78ms, NativeAgent run-step ~7µs; fuzz 1.5M execs clean.
+- A redraw baseline was added on the same reference hardware (2026-09-17,
+  i7-3632QM) for the H10 criterion 5 window of 200 event rows:
+  `tui.Model.View` 4.38 ms/frame (83 KB, 1846 allocs), `tui.Timeline.Append`
+  146 µs/op (2 allocs), `tui.Session.Poll` with a full log and an advanced
+  cursor 45 µs/op (1 alloc). Two facts the numbers state: the frame is linear
+  in visible rows, which is why the window is capped; and an append re-indexes
+  the window, so one new event on a full timeline costs a full-window copy —
+  negligible against the 250 ms poll, and worth knowing rather than assuming.
+  Measured by `tui/redraw_test.go`; no threshold has been derived from it yet.
 - Budgets are already enforced for agent work (tokens/money/time/tool-calls,
   hard/soft modes, `internal/budget`) — GAP-036 is about the harness's own
   performance envelopes, not agent budgets.

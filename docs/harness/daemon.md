@@ -1,20 +1,34 @@
-# Harness daemon (local)
+# Harness daemon (local + remote)
 
-Package `internal/harness/daemon`. A local Unix-socket server hosting
-headless runs: `start/status/list/events/cancel/protocol` as JSON lines.
+Package `internal/harness/daemon`. A daemon hosting headless runs:
+`start/status/list/events/cancel/steer/approve/deny/schedule/unschedule/jobs/protocol`
+as JSON lines over a Unix socket, or over TCP+TLS+token when `--listen` is set
+(`remote.go`; the same dispatch serves both transports).
 
 - Run records (`daemon-run-<id>.json`) and the JSONL timeline
   (`events-<id>.jsonl`) persist under the store dir, so clients can
   disconnect, the daemon can restart, and runs stay observable
-  (reconnect baseline; remote transport is future work).
+  (reconnect baseline).
 - Cancellation is cooperative at state-machine safe points; cancelled runs
-  record `cancelled`, permission waits record `yielded`.
-- CLI: `prumo agent serve --path . [--socket ...]` blocks until SIGINT/
-SIGTERM; `prumo agent ps` lists runs; `prumo agent logs --run <id>`
-replays the timeline. `serve` uses the Coding ACI workspace; providers
-resolve via `model.ForName` (fake default, real adapters need keys/URLs).
+  record `cancelled`. A run that parks records `yielded`; a run waiting for a
+  client decision records **`awaiting_approval`** and names the request ids in
+  `pending_permissions`. The two are deliberately distinct: conflating them
+  would make a client either wait forever on a parked run or leave the panel on
+  one that needs an answer.
+- CLI: `prumo agent serve --path . [--socket ...] [--permission allow|ask|deny]
+  [--ask-kind <kinds>]` blocks until SIGINT/SIGTERM; `prumo agent ps` lists runs
+  (and the request ids a run is waiting on); `prumo agent logs --run <id>`
+  replays the timeline. `serve` uses the Coding ACI workspace; providers
+  resolve via `model.ForName` (fake/fake-tools default, real adapters need
+  keys/URLs).
 - Steering: `op steer` (CLI `agent steer`, SDK `Steer`, ACP `Prompt`)
   injects follow-up input into live runs (refused when terminal).
+- Approvals: `op approve` / `op deny` (CLI `agent approve|deny`, SDK
+  `Approve`/`Deny`, TUI `a`/`d`) answer the permission request a run stopped
+  on. The decision is recorded in the permission trail and the turn continues;
+  a denial fails the run without executing the tool. A run waiting for
+  approval stays in the daemon's live map — a run a client cannot reach is a
+  run a client cannot answer — and is dropped once it reaches a terminal state.
 - Scheduling: `schedule/unschedule/jobs` ops (CLI + SDK) persist cron-like
   jobs; the serve loop fires due jobs once each (no catch-up storms).
   `prumo agent schedule --goal ... --every 3600`. Start failures back off

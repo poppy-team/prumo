@@ -60,6 +60,18 @@ approve → evidence), with zero `internal/` imports.
 5. Redraw on a ~200-line event stream stays under the spike budget measured
    in ADR 009 methodology (baseline recorded, no threshold invented).
 
+## Evidence (2026-09-17)
+
+| # | Criterion | Evidence |
+|---|-----------|----------|
+| 1 | Public-surface boundary | `tui/boundary_test.go::TestBoundaryNoInternalImports` |
+| 2 | Live flow including one approval | `tui/live_test.go::TestLiveDaemonFlow` for the daemon flow; `tui/app_test.go::TestVerticalSliceFlow` now drives palette → goal → stream → **approve** → evidence without a terminal; `TestLiveRemoteDaemonFlow` does the same over TLS. The approval ops are protocol 0.2.0 (`approve`/`deny` + `awaiting_approval` + `pending_permissions`), and `tui/redraw_test.go` covers the frame budget |
+| 3 | Kill/restart/reconnect without corruption | `tui/live_test.go` (`CommandReconnect`) + `internal/harness/daemon/reconnect_client_test.go` |
+| 4 | Remote mode over TCP+TLS+token | `tui/remote_test.go::TestLiveRemoteDaemonFlow` — the same client at another address, including the approval, and a wrong token is refused |
+| 5 | Redraw on a ~200-line stream | `tui/redraw_test.go`: 200 rows, `View` 4.38 ms/frame (1846 allocs), `Timeline.Append` 146 µs/op, `Session.Poll` 45 µs/op (i7-3632QM). Recorded in ADR 009; no threshold invented, and the criterion was explicitly non-blocking |
+
+Criteria 1–4 pass end to end; 5 is recorded as a baseline.
+
 ## Stopping condition
 
 Spike ends when criteria 1–4 pass once end-to-end (recorded as evidence in
