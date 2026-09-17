@@ -121,6 +121,20 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 	switch name {
 	case "", "fake":
 		return NewFake(map[string][]ScriptStep{"*": {{Kind: "text", Text: "hello"}, {Kind: "complete"}}}), nil
+	case "fake-tools":
+		// Deterministic and offline, but it asks for one tool. The plain fake
+		// never does, so nothing in a live run ever reached the permission
+		// gate — which is how the approval surface stayed unimplemented
+		// without anyone noticing. fs.read is deliberately harmless.
+		return NewFake(map[string][]ScriptStep{"*": {
+			{Kind: "text", Text: "reading the workspace"},
+			{Kind: "tool_call", Tool: &agent.ToolCall{
+				ID: "c1", TurnID: "turn-1", Name: "fs.read",
+				Arguments:      map[string]any{"path": "README.md"},
+				IdempotencyKey: "fake-tools:c1",
+			}},
+			{Kind: "complete"},
+		}}), nil
 	case "openai-compat":
 		if baseURL == "" {
 			baseURL = envOr("PRUMO_MODEL_BASE_URL", "")

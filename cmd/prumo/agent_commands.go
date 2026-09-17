@@ -68,6 +68,10 @@ func runAgent(asJSON bool, args []string) int {
 		return runAgentLogs(asJSON, args[1:])
 	case "steer":
 		return runAgentSteer(asJSON, args[1:])
+	case "approve":
+		return runAgentPermission(asJSON, args[1:], true)
+	case "deny":
+		return runAgentPermission(asJSON, args[1:], false)
 	case "stop":
 		return runAgentStop(asJSON, args[1:])
 	case "schedule":
@@ -144,6 +148,12 @@ func runAgentRun(asJSON bool, args []string) int {
 				{Kind: "complete"},
 			},
 		})
+	case "fake-tools":
+		var err error
+		provider, err = model.ForName("fake-tools", "", "", modelName)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
 	case "openai-compat":
 		if baseURL == "" {
 			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
@@ -158,7 +168,7 @@ func runAgentRun(asJSON bool, args []string) int {
 		}
 		provider = model.NewAnthropic(baseURL, apiKey, modelName)
 	default:
-		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|openai-compat|anthropic)", providerName))
+		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic)", providerName))
 	}
 
 	dir := filepath.Join(root, ".prumo", "runtime", "harness")
@@ -196,7 +206,11 @@ func runAgentRun(asJSON bool, args []string) int {
 	}
 	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
-	engine := perm.New(perm.Policy{DefaultAction: agent.PermissionAllow, DenyPrefixes: []string{"/etc", ".."}, AskKinds: []string{"destructive"}})
+	policy, err := permissionPolicy(f)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	engine := perm.New(policy)
 	checkpoints := checkpoint.New(dir)
 	strict := false
 	if _, ok := f["strict"]; ok {
@@ -304,6 +318,21 @@ func runAgentResume(asJSON bool, args []string) int {
 	cp, err := store.Latest(runID)
 	if err != nil {
 		return serviceError(asJSON, err)
+	}
+	// A run stopped for approval has to be answered, not stepped past. Saying
+	// so is the honest outcome: the checkpoint carries the pending request, but
+	// not the conversation, so a one-shot resume cannot continue the turn.
+	if len(cp.State.PendingPerms) > 0 {
+		result := map[string]any{
+			"run_id": runID, "resumed_from": cp.ID, "phase": string(cp.State.Phase),
+			"pending_permissions": cp.State.PendingPerms, "resumed": false,
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Run %s is waiting for approval: %s\n", runID, strings.Join(cp.State.PendingPerms, ", "))
+		fmt.Printf("Answer it against a live daemon: prumo agent approve --run %s --request <id>\n", runID)
+		return exitOK
 	}
 	provider := model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "text", Text: "resumed"}, {Kind: "complete"}}})
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
@@ -488,7 +517,11 @@ func runAgentServe(asJSON bool, args []string) int {
 		return serviceError(asJSON, err)
 	}
 	defer release()
-	srv := daemon.New(sock, store, daemon.Deps{Tools: tools, Workspace: root})
+	policy, err := permissionPolicy(f)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	srv := daemon.New(sock, store, daemon.Deps{Tools: tools, Workspace: root, PermPolicy: policy})
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	if !asJSON {
@@ -616,7 +649,15 @@ func runAgentPs(asJSON bool, args []string) int {
 	}
 	for _, r := range runs {
 		m, _ := r.(map[string]any)
-		fmt.Printf("%s %s %s\n", m["run_id"], m["status"], m["phase"])
+		line := fmt.Sprintf("%s %s %s", m["run_id"], m["status"], m["phase"])
+		if ids, ok := m["pending_permissions"].([]any); ok && len(ids) > 0 {
+			parts := make([]string, 0, len(ids))
+			for _, id := range ids {
+				parts = append(parts, fmt.Sprint(id))
+			}
+			line += " waiting-for=" + strings.Join(parts, ",")
+		}
+		fmt.Println(line)
 	}
 	return exitOK
 }
@@ -665,6 +706,67 @@ func runAgentSteer(asJSON bool, args []string) int {
 		return printEnvelope(protocol.OkEnvelope(res))
 	}
 	fmt.Printf("Steered %s\n", runID)
+	return exitOK
+}
+
+// permissionPolicy reads --permission (allow|ask|deny) and --ask-kind (a comma
+// separated list of tool kinds). With no flags it is the daemon default, so an
+// unconfigured run behaves exactly as it did before the flags existed.
+func permissionPolicy(f map[string]string) (perm.Policy, error) {
+	policy := daemon.DefaultPermPolicy()
+	switch f["permission"] {
+	case "":
+	case "allow":
+		policy.DefaultAction = agent.PermissionAllow
+	case "ask":
+		policy.DefaultAction = agent.PermissionAsk
+	case "deny":
+		policy.DefaultAction = agent.PermissionDeny
+	default:
+		return policy, fmt.Errorf("unknown --permission %q (allow|ask|deny)", f["permission"])
+	}
+	if v, ok := f["ask-kind"]; ok && v != "" {
+		policy.AskKinds = strings.Split(v, ",")
+	}
+	return policy, nil
+}
+
+// runAgentPermission answers a permission request on a live daemon. Approving
+// and denying share one path: the daemon sees a different decision, not a
+// different operation.
+func runAgentPermission(asJSON bool, args []string, allow bool) int {
+	f := agentFlags(args)
+	verb := "deny"
+	if allow {
+		verb = "approve"
+	}
+	runID := f["run"]
+	if runID == "" {
+		return serviceError(asJSON, fmt.Errorf("%s requires --run <id>", verb))
+	}
+	requestID := f["request"]
+	if requestID == "" {
+		return serviceError(asJSON, fmt.Errorf("%s requires --request <id> (see `prumo agent ps`)", verb))
+	}
+	op := "deny"
+	if allow {
+		op = "approve"
+	}
+	res, err := daemonClient(f).Call(map[string]any{"op": op, "run_id": runID, "request_id": requestID, "reason": f["reason"]})
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if ok, _ := res["ok"].(bool); !ok {
+		return serviceError(asJSON, fmt.Errorf("%v", res["error"]))
+	}
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(res))
+	}
+	decision := "Denied"
+	if allow {
+		decision = "Approved"
+	}
+	fmt.Printf("%s %s (%s)\n", decision, requestID, runID)
 	return exitOK
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/daemon"
 	"github.com/raillen/prumo/internal/harness/model"
+	"github.com/raillen/prumo/internal/harness/perm"
 	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 )
 
@@ -141,6 +142,125 @@ func TestAgentPsLogsAgainstDaemon(t *testing.T) {
 		t.Fatalf("agent logs failed: code=%d out=%s", code, out)
 	}
 }
+
+// TestAgentApprovePendingPermission drives the CLI the way an operator does:
+// find the pending request with `agent ps`, answer it with `agent approve`, and
+// watch the run finish.
+func TestAgentApprovePendingPermission(t *testing.T) {
+	dir := t.TempDir()
+	sock := filepath.Join(dir, "agentd.sock")
+	srv := daemon.New(sock, filepath.Join(dir, "store"), daemon.Deps{
+		NewProvider: func(name, baseURL, apiKey, mdl string) (model.Provider, error) {
+			return model.ForName("fake-tools", "", "", "")
+		},
+		Tools:      cliStubTools{},
+		PermPolicy: perm.Policy{DefaultAction: agent.PermissionAsk},
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = srv.Serve(ctx) }()
+	c := daemon.Client{SocketPath: sock}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, err := c.Protocol(); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("daemon did not come up")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if _, err := c.Start("read the readme", "fake-tools", "R-pcli", 1); err != nil {
+		t.Fatal(err)
+	}
+	var requestID string
+	deadline = time.Now().Add(10 * time.Second)
+	for {
+		st, err := c.Status("R-pcli")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if st["ok"] == true && st["status"] == "awaiting_approval" {
+			ids, _ := st["pending_permissions"].([]any)
+			if len(ids) == 1 {
+				requestID, _ = ids[0].(string)
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("run never asked for approval: %v", st)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	code, out := captureOutput(func() int {
+		return run([]string{"agent", "ps", "--socket", sock})
+	})
+	if code != 0 || !strings.Contains(out, "waiting-for="+requestID) {
+		t.Fatalf("agent ps must name the pending request: code=%d out=%s", code, out)
+	}
+	code, out = captureOutput(func() int {
+		return run([]string{"agent", "approve", "--run", "R-pcli", "--request", requestID, "--socket", sock})
+	})
+	if code != 0 || !strings.Contains(out, "Approved") {
+		t.Fatalf("agent approve failed: code=%d out=%s", code, out)
+	}
+	deadline = time.Now().Add(10 * time.Second)
+	for {
+		st, err := c.Status("R-pcli")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if st["ok"] == true && st["status"] == "complete" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("run did not continue after approval: %v", st)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	// Answering a second time is refused rather than silently accepted.
+	code, out = captureOutput(func() int {
+		return run([]string{"agent", "approve", "--run", "R-pcli", "--request", requestID, "--socket", sock})
+	})
+	if code == 0 {
+		t.Fatalf("approving a finished run must fail: %s", out)
+	}
+}
+
+func TestAgentPermissionFlags(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want agent.PermissionDecision
+	}{
+		{[]string{}, agent.PermissionAllow},
+		{[]string{"--permission", "ask"}, agent.PermissionAsk},
+		{[]string{"--permission", "deny"}, agent.PermissionDeny},
+	} {
+		policy, err := permissionPolicy(agentFlags(tc.args))
+		if err != nil {
+			t.Fatalf("%v: %v", tc.args, err)
+		}
+		if policy.DefaultAction != tc.want {
+			t.Fatalf("%v: default = %s, want %s", tc.args, policy.DefaultAction, tc.want)
+		}
+	}
+	if _, err := permissionPolicy(agentFlags([]string{"--permission", "sometimes"})); err == nil {
+		t.Fatal("an unknown permission mode must be refused")
+	}
+	if policy, _ := permissionPolicy(agentFlags([]string{"--ask-kind", "destructive,network"})); len(policy.AskKinds) != 2 {
+		t.Fatalf("ask-kind not parsed: %v", policy.AskKinds)
+	}
+}
+
+func TestAgentApproveValidatesFlags(t *testing.T) {
+	if code, _ := captureOutput(func() int { return run([]string{"agent", "approve"}) }); code == 0 {
+		t.Fatal("approve without --run must fail")
+	}
+	if code, _ := captureOutput(func() int { return run([]string{"agent", "deny", "--run", "R-1"}) }); code == 0 {
+		t.Fatal("deny without --request must fail")
+	}
+}
+
 func TestDaemonClientRemoteMapping(t *testing.T) {
 	dir := t.TempDir()
 	tok := filepath.Join(dir, "token")

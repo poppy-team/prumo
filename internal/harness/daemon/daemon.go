@@ -446,6 +446,18 @@ func (s *Server) opList() map[string]any {
 	if err != nil {
 		return map[string]any{"ok": true, "runs": []any{}}
 	}
+	// A run waiting for approval is listed as such and names its request, so an
+	// operator can find what to answer without reading the event log.
+	s.mu.Lock()
+	pending := map[string][]string{}
+	for id, ar := range s.runs {
+		if ar != nil && ar.runner != nil {
+			if st := ar.runner.StateCopy(); len(st.PendingPerms) > 0 {
+				pending[id] = append([]string{}, st.PendingPerms...)
+			}
+		}
+	}
+	s.mu.Unlock()
 	out := []any{}
 	for _, e := range entries {
 		name := e.Name()
@@ -460,7 +472,12 @@ func (s *Server) opList() map[string]any {
 		if err := json.Unmarshal(data, &rec); err != nil {
 			continue
 		}
-		out = append(out, map[string]any{"run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase})
+		row := map[string]any{"run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "pending_permissions": []string{}}
+		if ids, ok := pending[rec.RunID]; ok {
+			row["status"] = "awaiting_approval"
+			row["pending_permissions"] = ids
+		}
+		out = append(out, row)
 	}
 	sort.Slice(out, func(i, j int) bool {
 		a, _ := out[i].(map[string]any)
