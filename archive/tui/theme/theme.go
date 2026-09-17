@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package theme resolves the canonical design-token set into concrete values
 // for one theme.
 //

@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package tui is the Prumo terminal client.
 //
 // It is a *client* of the harness, never a part of it: it reaches the daemon

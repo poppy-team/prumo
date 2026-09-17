@@ -1,13 +1,17 @@
 {
   "id": "ui:prumo-code-shell",
   "version": 1,
-  "surface": "Prumo Code TUI — app shell and run panel (H10 spike)",
-  "note": "Canonical interface map for the terminal client. Structure, labels, intent and placement are declared here; symbols are proven against tui/**/*.go by `prumo ui verify`. A declared element always wins over a derived one, and divergence is a finding rather than a silent pick.",
-  "platforms": ["tui"],
+  "surface": "Prumo Code TUI \u2014 app shell and run panel (H10 spike)",
+  "note": "Canonical interface map for the terminal client. Structure, labels, intent and placement are declared here; symbols are proven against tui/**/*.go by `prumo ui verify`. A declared element always wins over a derived one, and divergence is a finding rather than a silent pick. Superseded as the shipping interface: the from-scratch client described here was archived to `archive/tui/` and its strategy replaced by ADR 013, which builds the client on the archived OpenCode Go view layer. This map still verifies that archived artifact; the shipping client's own map is owed.",
+  "platforms": [
+    "tui"
+  ],
   "states_source": "docs/ui-ux/state-matrix.json",
   "tokens_source": "docs/ui-ux/design-tokens.json",
   "derivation": {
-    "sources": ["tui/**/*.go"],
+    "sources": [
+      "archive/tui/**/*.go"
+    ],
     "mode": "verify-only"
   },
   "tree": [
@@ -15,30 +19,76 @@
       "id": "node:shell",
       "kind": "shell",
       "role": "Application root: one stage at a time, palette-first navigation",
-      "slot": { "region": "root", "order": 0, "align": "stretch", "stack": "column" },
-      "size_classes": ["compact", "standard", "wide"],
-      "states": ["default", "focus", "high-contrast"],
-      "tokens": ["token:color.surface"],
-      "implementation": { "symbol": "tui.Model", "path": "tui/app.go", "status": "implemented" },
+      "slot": {
+        "region": "root",
+        "order": 0,
+        "align": "stretch",
+        "stack": "column"
+      },
+      "size_classes": [
+        "compact",
+        "standard",
+        "wide"
+      ],
+      "states": [
+        "default",
+        "focus",
+        "high-contrast"
+      ],
+      "tokens": [
+        "token:color.surface"
+      ],
+      "implementation": {
+        "symbol": "tui.Model",
+        "path": "tui/app.go",
+        "status": "implemented"
+      },
       "children": [
         {
           "id": "node:titlebar",
           "kind": "region",
           "role": "Product identity line, shared by every stage",
-          "slot": { "region": "header", "order": 0, "align": "start" },
-          "size_classes": ["compact", "standard", "wide"],
-          "tokens": ["token:color.text"],
+          "slot": {
+            "region": "header",
+            "order": 0,
+            "align": "start"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "tokens": [
+            "token:color.text"
+          ],
           "children": [
             {
               "id": "node:titlebar-text",
               "kind": "text",
               "label": "Prumo",
               "role": "Names the product; the only brand surface in the client",
-              "slot": { "region": "header", "order": 0, "align": "start" },
-              "size_classes": ["compact", "standard", "wide"],
-              "states": ["default", "high-contrast"],
-              "tokens": ["token:color.text"],
-              "implementation": { "symbol": "tui.Model.View", "path": "tui/app.go", "status": "implemented" }
+              "slot": {
+                "region": "header",
+                "order": 0,
+                "align": "start"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "default",
+                "high-contrast"
+              ],
+              "tokens": [
+                "token:color.text"
+              ],
+              "implementation": {
+                "symbol": "tui.Model.View",
+                "path": "tui/app.go",
+                "status": "implemented"
+              }
             }
           ]
         },
@@ -46,8 +96,18 @@
           "id": "node:body",
           "kind": "region",
           "role": "Stage area: exactly one stage owns the keyboard",
-          "slot": { "region": "body", "order": 1, "align": "stretch", "weight": 1, "stack": "column" },
-          "size_classes": ["compact", "standard", "wide"],
+          "slot": {
+            "region": "body",
+            "order": 1,
+            "align": "stretch",
+            "weight": 1,
+            "stack": "column"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
           "children": [
             {
               "id": "node:palette",
@@ -55,37 +115,112 @@
               "label": "Command palette",
               "role": "Palette-first entry point: every action is reachable from here",
               "intent": "Let a user act without having to know which pane a feature lives in",
-              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "row", "condition": "stage = palette" },
-              "size_classes": ["compact", "standard", "wide"],
-              "states": ["default", "focus", "empty", "loading"],
-              "tokens": ["token:tui.command-palette.highlight", "token:color.text-muted"],
-              "inputs": ["down", "up", "ctrl+p", "ctrl+n", "enter", "esc"],
-              "implementation": { "symbol": "tui.Palette", "path": "tui/palette.go", "status": "implemented" },
+              "slot": {
+                "region": "body",
+                "order": 0,
+                "align": "stretch",
+                "stack": "row",
+                "condition": "stage = palette"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "default",
+                "focus",
+                "empty",
+                "loading"
+              ],
+              "tokens": [
+                "token:tui.command-palette.highlight",
+                "token:color.text-muted"
+              ],
+              "inputs": [
+                "down",
+                "up",
+                "ctrl+p",
+                "ctrl+n",
+                "enter",
+                "esc"
+              ],
+              "implementation": {
+                "symbol": "tui.Palette",
+                "path": "tui/palette.go",
+                "status": "implemented"
+              },
               "children": [
                 {
                   "id": "node:palette-list",
                   "kind": "list",
                   "label": "Ranked commands",
                   "role": "Ranked matches for the current query, best first",
-                  "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["default", "focus", "selected", "empty", "narrow-viewport"],
-                  "tokens": ["token:tui.command-palette.highlight"],
-                  "inputs": ["down", "up"],
-                  "implementation": { "symbol": "tui.Palette.Matches", "path": "tui/palette.go", "status": "implemented" },
+                  "slot": {
+                    "region": "body",
+                    "order": 0,
+                    "align": "stretch",
+                    "stack": "column"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default",
+                    "focus",
+                    "selected",
+                    "empty",
+                    "narrow-viewport"
+                  ],
+                  "tokens": [
+                    "token:tui.command-palette.highlight"
+                  ],
+                  "inputs": [
+                    "down",
+                    "up"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.Palette.Matches",
+                    "path": "tui/palette.go",
+                    "status": "implemented"
+                  },
                   "children": [
                     {
                       "id": "node:palette-row",
                       "kind": "button",
-                      "label": "› <command title>",
+                      "label": "\u203a <command title>",
                       "role": "One selectable command; the selected row also shows its description",
                       "intent": "Make the highlighted action the obvious one to accept",
-                      "slot": { "region": "body", "order": 0, "align": "start" },
-                      "size_classes": ["compact", "standard", "wide"],
-                      "states": ["default", "focus", "selected"],
-                      "tokens": ["token:tui.command-palette.highlight", "token:color.text"],
-                      "inputs": ["enter", "pointer"],
-                      "implementation": { "symbol": "tui.Command", "path": "tui/palette.go", "status": "implemented" }
+                      "slot": {
+                        "region": "body",
+                        "order": 0,
+                        "align": "start"
+                      },
+                      "size_classes": [
+                        "compact",
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "focus",
+                        "selected"
+                      ],
+                      "tokens": [
+                        "token:tui.command-palette.highlight",
+                        "token:color.text"
+                      ],
+                      "inputs": [
+                        "enter",
+                        "pointer"
+                      ],
+                      "implementation": {
+                        "symbol": "tui.Command",
+                        "path": "tui/palette.go",
+                        "status": "implemented"
+                      }
                     },
                     {
                       "id": "node:palette-empty",
@@ -93,23 +228,59 @@
                       "label": "no command matches \"<query>\"",
                       "role": "States the empty filter result instead of rendering a blank panel",
                       "intent": "A blank panel reads as a broken palette; the message says the query is the reason",
-                      "slot": { "region": "body", "order": 1, "align": "start" },
-                      "size_classes": ["compact", "standard", "wide"],
-                      "states": ["empty"],
-                      "tokens": ["token:color.text-muted"],
-                      "implementation": { "symbol": "tui.Palette.Empty", "path": "tui/palette.go", "status": "implemented" }
+                      "slot": {
+                        "region": "body",
+                        "order": 1,
+                        "align": "start"
+                      },
+                      "size_classes": [
+                        "compact",
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "empty"
+                      ],
+                      "tokens": [
+                        "token:color.text-muted"
+                      ],
+                      "implementation": {
+                        "symbol": "tui.Palette.Empty",
+                        "path": "tui/palette.go",
+                        "status": "implemented"
+                      }
                     },
                     {
                       "id": "node:palette-query",
                       "kind": "input",
                       "label": "query: <text>",
                       "role": "The fuzzy filter, shown as text rather than stored invisibly",
-                      "slot": { "region": "body", "order": 2, "align": "start" },
-                      "size_classes": ["compact", "standard", "wide"],
-                      "states": ["default", "focus", "read-only"],
-                      "tokens": ["token:color.text-muted"],
-                      "inputs": ["paste"],
-                      "implementation": { "symbol": "tui.Palette.SetQuery", "path": "tui/palette.go", "status": "implemented" }
+                      "slot": {
+                        "region": "body",
+                        "order": 2,
+                        "align": "start"
+                      },
+                      "size_classes": [
+                        "compact",
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "focus",
+                        "read-only"
+                      ],
+                      "tokens": [
+                        "token:color.text-muted"
+                      ],
+                      "inputs": [
+                        "paste"
+                      ],
+                      "implementation": {
+                        "symbol": "tui.Palette.SetQuery",
+                        "path": "tui/palette.go",
+                        "status": "implemented"
+                      }
                     }
                   ]
                 }
@@ -121,36 +292,100 @@
               "label": "Goal prompt",
               "role": "Collects the goal text before a run starts",
               "intent": "One field, one decision: what should the agent do",
-              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column", "condition": "stage = goal" },
-              "size_classes": ["compact", "standard", "wide"],
-              "states": ["focus", "default", "error"],
-              "tokens": ["token:color.focus"],
-              "inputs": ["enter", "esc", "paste"],
-              "implementation": { "symbol": "tui.StageGoal", "path": "tui/app.go", "status": "implemented" },
+              "slot": {
+                "region": "body",
+                "order": 0,
+                "align": "stretch",
+                "stack": "column",
+                "condition": "stage = goal"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "focus",
+                "default",
+                "error"
+              ],
+              "tokens": [
+                "token:color.focus"
+              ],
+              "inputs": [
+                "enter",
+                "esc",
+                "paste"
+              ],
+              "implementation": {
+                "symbol": "tui.StageGoal",
+                "path": "tui/app.go",
+                "status": "implemented"
+              },
               "children": [
                 {
                   "id": "node:goal-field",
                   "kind": "input",
                   "label": "goal",
                   "role": "The goal text, with a visible cursor",
-                  "slot": { "region": "body", "order": 0, "align": "stretch" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["focus", "error"],
-                  "tokens": ["token:color.focus", "token:color.text"],
-                  "inputs": ["enter", "esc", "backspace", "paste"],
-                  "implementation": { "symbol": "tui.StartConfig", "path": "tui/session.go", "status": "implemented" }
+                  "slot": {
+                    "region": "body",
+                    "order": 0,
+                    "align": "stretch"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "focus",
+                    "error"
+                  ],
+                  "tokens": [
+                    "token:color.focus",
+                    "token:color.text"
+                  ],
+                  "inputs": [
+                    "enter",
+                    "esc",
+                    "backspace",
+                    "paste"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.StartConfig",
+                    "path": "tui/session.go",
+                    "status": "implemented"
+                  }
                 },
                 {
                   "id": "node:goal-route-hint",
                   "kind": "text",
-                  "label": "provider <name> · max turns <n>",
+                  "label": "provider <name> \u00b7 max turns <n>",
                   "role": "States the route the goal will run on, before it runs",
                   "intent": "A run that used the wrong provider is expensive; saying which one is cheap",
-                  "slot": { "region": "body", "order": 1, "align": "start" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["default", "read-only"],
-                  "tokens": ["token:color.text-muted"],
-                  "implementation": { "symbol": "tui.StartConfig", "path": "tui/session.go", "status": "implemented" }
+                  "slot": {
+                    "region": "body",
+                    "order": 1,
+                    "align": "start"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default",
+                    "read-only"
+                  ],
+                  "tokens": [
+                    "token:color.text-muted"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.StartConfig",
+                    "path": "tui/session.go",
+                    "status": "implemented"
+                  }
                 }
               ]
             },
@@ -160,34 +395,94 @@
               "label": "Run panel",
               "role": "Live view of the run in flight",
               "intent": "Show what the agent is doing while it does it, not after",
-              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column", "condition": "stage = run" },
-              "size_classes": ["compact", "standard", "wide"],
-              "states": ["active", "loading", "partial", "error", "offline", "reconnecting", "permission-requested"],
-              "tokens": ["token:color.accent", "token:color.error"],
-              "inputs": ["esc", "ctrl+r"],
-              "implementation": { "symbol": "tui.StageRun", "path": "tui/app.go", "status": "implemented" },
+              "slot": {
+                "region": "body",
+                "order": 0,
+                "align": "stretch",
+                "stack": "column",
+                "condition": "stage = run"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "active",
+                "loading",
+                "partial",
+                "error",
+                "offline",
+                "reconnecting",
+                "permission-requested"
+              ],
+              "tokens": [
+                "token:color.accent",
+                "token:color.error"
+              ],
+              "inputs": [
+                "esc",
+                "ctrl+r"
+              ],
+              "implementation": {
+                "symbol": "tui.StageRun",
+                "path": "tui/app.go",
+                "status": "implemented"
+              },
               "children": [
                 {
                   "id": "node:run-heading",
                   "kind": "text",
                   "label": "run <run id>",
                   "role": "Identifies the run the panel is showing",
-                  "slot": { "region": "body", "order": 0, "align": "start" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["default"],
-                  "tokens": ["token:color.text"],
-                  "implementation": { "symbol": "tui.Session", "path": "tui/session.go", "status": "implemented" }
+                  "slot": {
+                    "region": "body",
+                    "order": 0,
+                    "align": "start"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default"
+                  ],
+                  "tokens": [
+                    "token:color.text"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.Session",
+                    "path": "tui/session.go",
+                    "status": "implemented"
+                  }
                 },
                 {
                   "id": "node:run-goal-line",
                   "kind": "text",
                   "label": "goal: <goal text>",
                   "role": "Restates the goal so the stream is readable without the prompt",
-                  "slot": { "region": "body", "order": 1, "align": "start" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["default"],
-                  "tokens": ["token:color.text-muted"],
-                  "implementation": { "symbol": "tui.StartSession", "path": "tui/session.go", "status": "implemented" }
+                  "slot": {
+                    "region": "body",
+                    "order": 1,
+                    "align": "start"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default"
+                  ],
+                  "tokens": [
+                    "token:color.text-muted"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.StartSession",
+                    "path": "tui/session.go",
+                    "status": "implemented"
+                  }
                 },
                 {
                   "id": "node:timeline",
@@ -195,34 +490,97 @@
                   "label": "timeline",
                   "role": "Bounded event stream with per-row severity",
                   "intent": "Bound the view so a long run cannot turn the terminal into unbounded scrollback",
-                  "slot": { "region": "body", "order": 2, "align": "stretch", "weight": 1, "stack": "column" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["loading", "partial", "success", "warning", "error"],
-                  "tokens": ["token:color.success", "token:color.warning", "token:color.error"],
-                  "inputs": ["PgUp", "PgDn", "pointer"],
-                  "implementation": { "symbol": "tui.Timeline", "path": "tui/timeline.go", "status": "implemented" },
+                  "slot": {
+                    "region": "body",
+                    "order": 2,
+                    "align": "stretch",
+                    "weight": 1,
+                    "stack": "column"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "loading",
+                    "partial",
+                    "success",
+                    "warning",
+                    "error"
+                  ],
+                  "tokens": [
+                    "token:color.success",
+                    "token:color.warning",
+                    "token:color.error"
+                  ],
+                  "inputs": [
+                    "PgUp",
+                    "PgDn",
+                    "pointer"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.Timeline",
+                    "path": "tui/timeline.go",
+                    "status": "implemented"
+                  },
                   "children": [
                     {
                       "id": "node:timeline-row",
                       "kind": "text",
                       "label": "<index> <event title>",
                       "role": "One event, numbered continuously so rows that aged out stay visible as absent",
-                      "slot": { "region": "body", "order": 0, "align": "start" },
-                      "size_classes": ["compact", "standard", "wide"],
-                      "states": ["default", "success", "warning", "error"],
-                      "tokens": ["token:color.text", "token:color.text-muted"],
-                      "implementation": { "symbol": "tui.Entry", "path": "tui/timeline.go", "status": "implemented" }
+                      "slot": {
+                        "region": "body",
+                        "order": 0,
+                        "align": "start"
+                      },
+                      "size_classes": [
+                        "compact",
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "success",
+                        "warning",
+                        "error"
+                      ],
+                      "tokens": [
+                        "token:color.text",
+                        "token:color.text-muted"
+                      ],
+                      "implementation": {
+                        "symbol": "tui.Entry",
+                        "path": "tui/timeline.go",
+                        "status": "implemented"
+                      }
                     },
                     {
                       "id": "node:timeline-detail",
                       "kind": "text",
-                      "label": "<key=value …>",
+                      "label": "<key=value \u2026>",
                       "role": "Deterministic payload detail, keys sorted so the same event always renders identically",
-                      "slot": { "region": "body", "order": 1, "align": "start" },
-                      "size_classes": ["standard", "wide"],
-                      "states": ["read-only"],
-                      "tokens": ["token:color.text-muted"],
-                      "implementation": { "symbol": "tui.Entry.Detail", "path": "tui/timeline.go", "status": "implemented" }
+                      "slot": {
+                        "region": "body",
+                        "order": 1,
+                        "align": "start"
+                      },
+                      "size_classes": [
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "read-only"
+                      ],
+                      "tokens": [
+                        "token:color.text-muted"
+                      ],
+                      "implementation": {
+                        "symbol": "tui.Entry.Detail",
+                        "path": "tui/timeline.go",
+                        "status": "implemented"
+                      }
                     }
                   ]
                 }
@@ -234,34 +592,96 @@
               "label": "Evidence",
               "role": "Terminal accounting for the run that just stopped",
               "intent": "Answer \"how did it end\" from the protocol, without reading the daemon's private files",
-              "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column", "condition": "stage = evidence" },
-              "size_classes": ["compact", "standard", "wide"],
-              "states": ["success", "error", "warning", "read-only"],
-              "tokens": ["token:color.accent"],
-              "inputs": ["esc", "ctrl+r"],
-              "implementation": { "symbol": "tui.StageEvidence", "path": "tui/app.go", "status": "implemented" },
+              "slot": {
+                "region": "body",
+                "order": 0,
+                "align": "stretch",
+                "stack": "column",
+                "condition": "stage = evidence"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "success",
+                "error",
+                "warning",
+                "read-only"
+              ],
+              "tokens": [
+                "token:color.accent"
+              ],
+              "inputs": [
+                "esc",
+                "ctrl+r"
+              ],
+              "implementation": {
+                "symbol": "tui.StageEvidence",
+                "path": "tui/app.go",
+                "status": "implemented"
+              },
               "children": [
                 {
                   "id": "node:evidence-rows",
                   "kind": "list",
-                  "label": "run · status · phase · stop reason · events seen · aged out · store",
+                  "label": "run \u00b7 status \u00b7 phase \u00b7 stop reason \u00b7 events seen \u00b7 aged out \u00b7 store",
                   "role": "The accountable facts of the run, each on its own labelled row",
-                  "slot": { "region": "body", "order": 0, "align": "stretch", "stack": "column" },
-                  "size_classes": ["compact", "standard", "wide"],
-                  "states": ["default", "success", "warning", "error"],
-                  "tokens": ["token:color.accent", "token:color.text-muted"],
-                  "implementation": { "symbol": "tui.Evidence", "path": "tui/session.go", "status": "implemented" },
+                  "slot": {
+                    "region": "body",
+                    "order": 0,
+                    "align": "stretch",
+                    "stack": "column"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default",
+                    "success",
+                    "warning",
+                    "error"
+                  ],
+                  "tokens": [
+                    "token:color.accent",
+                    "token:color.text-muted"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.Evidence",
+                    "path": "tui/session.go",
+                    "status": "implemented"
+                  },
                   "children": [
                     {
                       "id": "node:evidence-row",
                       "kind": "text",
                       "label": "<field>: <value>",
                       "role": "One accountable fact",
-                      "slot": { "region": "body", "order": 0, "align": "start" },
-                      "size_classes": ["compact", "standard", "wide"],
-                      "states": ["default", "read-only"],
-                      "tokens": ["token:color.accent"],
-                      "implementation": { "symbol": "tui.Evidence.Summary", "path": "tui/session.go", "status": "implemented" }
+                      "slot": {
+                        "region": "body",
+                        "order": 0,
+                        "align": "start"
+                      },
+                      "size_classes": [
+                        "compact",
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "read-only"
+                      ],
+                      "tokens": [
+                        "token:color.accent"
+                      ],
+                      "implementation": {
+                        "symbol": "tui.Evidence.Summary",
+                        "path": "tui/session.go",
+                        "status": "implemented"
+                      }
                     }
                   ]
                 },
@@ -271,25 +691,59 @@
                   "label": "the richer artifacts (evidence, budget, permissions) live in the store above; this panel reports what the protocol states",
                   "role": "States the boundary between what the panel shows and what the daemon owns",
                   "intent": "A client that reaches into the daemon's private files is not a protocol client; saying so prevents the shortcut",
-                  "slot": { "region": "body", "order": 1, "align": "start" },
-                  "size_classes": ["standard", "wide"],
-                  "states": ["read-only"],
-                  "tokens": ["token:color.text-muted"],
-                  "implementation": { "symbol": "tui.Evidence.Summary", "path": "tui/session.go", "status": "implemented" }
+                  "slot": {
+                    "region": "body",
+                    "order": 1,
+                    "align": "start"
+                  },
+                  "size_classes": [
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "read-only"
+                  ],
+                  "tokens": [
+                    "token:color.text-muted"
+                  ],
+                  "implementation": {
+                    "symbol": "tui.Evidence.Summary",
+                    "path": "tui/session.go",
+                    "status": "implemented"
+                  }
                 }
               ]
             },
             {
               "id": "node:approval-prompt",
               "kind": "button",
-              "label": "Approve / deny the pending permission (a approve · d deny, default deny)",
+              "label": "Approve / deny the pending permission (a approve \u00b7 d deny, default deny)",
               "role": "The inline answer to a permission request raised by a run",
               "intent": "A run that yields on permission_wait must be answerable without leaving the client",
-              "slot": { "region": "overlay", "order": 0, "align": "center", "condition": "a run yielded on permission_wait" },
-              "size_classes": ["compact", "standard", "wide"],
-              "states": ["permission-requested", "permission-denied", "destructive-confirmation"],
-              "tokens": ["token:tui.approval.prompt"],
-              "inputs": ["a", "d", "esc"],
+              "slot": {
+                "region": "overlay",
+                "order": 0,
+                "align": "center",
+                "condition": "a run yielded on permission_wait"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "permission-requested",
+                "permission-denied",
+                "destructive-confirmation"
+              ],
+              "tokens": [
+                "token:tui.approval.prompt"
+              ],
+              "inputs": [
+                "a",
+                "d",
+                "esc"
+              ],
               "implementation": {
                 "symbol": "tui.Session.Approve",
                 "path": "tui/session.go",
@@ -301,15 +755,38 @@
         {
           "id": "node:statusline",
           "kind": "status",
-          "label": "<stage> · <status> · theme <theme id>",
+          "label": "<stage> \u00b7 <status> \u00b7 theme <theme id>",
           "role": "Always-present line stating what the client is doing and how it is themed",
           "intent": "A user must never have to guess which surface has the keyboard",
-          "slot": { "region": "footer", "order": 0, "align": "stretch" },
-          "size_classes": ["compact", "standard", "wide"],
-          "states": ["default", "reconnecting", "offline", "narrow-viewport", "high-contrast"],
-          "tokens": ["token:tui.statusline", "token:color.text-muted"],
-          "inputs": ["pointer"],
-          "implementation": { "symbol": "tui.Styles.Statusbar", "path": "tui/styles.go", "status": "implemented" }
+          "slot": {
+            "region": "footer",
+            "order": 0,
+            "align": "stretch"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "default",
+            "reconnecting",
+            "offline",
+            "narrow-viewport",
+            "high-contrast"
+          ],
+          "tokens": [
+            "token:tui.statusline",
+            "token:color.text-muted"
+          ],
+          "inputs": [
+            "pointer"
+          ],
+          "implementation": {
+            "symbol": "tui.Styles.Statusbar",
+            "path": "tui/styles.go",
+            "status": "implemented"
+          }
         }
       ]
     }
