@@ -326,12 +326,14 @@ line of TUI code.
   the boundary real and makes the remote mode the same client with another
   address rather than a second code path.
 
-**Remaining**: criterion 2's approval step, and criteria 4–5. The Agent Protocol
-has **no op to answer a permission request** — the runner sets
-`PendingPerms` and nothing consumes it, so the TUI can render
-`permission_wait` but cannot approve it. Tracked as GAP-046. Criterion 4
-(live remote TLS+token flow) and criterion 5 (redraw budget per ADR 009
-methodology) are unmeasured; tracked as GAP-047.
+**Remaining**: none for the spike itself. Criterion 2's approval step, criterion 4
+(live remote TLS+token) and criterion 5 (redraw budget per ADR 009 methodology)
+are all closed — the protocol gained the approval operations, and the remote flow
+and the 200-row baseline are recorded. The spike's **client** is superseded:
+**ADR 013** archives `tui/` to `archive/tui-poc/` and adopts the archived OpenCode
+Go view layer as the foundation of a separate `prumo-tui` module. What the spike
+produced outlives it — the approval operations, `awaiting_approval`, the redraw
+baseline, and a boundary that ADR 013 makes structural rather than merely tested.
 
 **Remaining (Fase A gate)**: none — `prumo docs verify --strict` is green, so the
 gate is met rather than deferred.

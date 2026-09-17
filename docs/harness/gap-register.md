@@ -117,6 +117,12 @@ item. Novos gaps entram no fim com o próximo número livre.
 
 Desktop/TUI (prumo-code), execução cloud/microVM (H18), federação A2A (H17), site público/i18n (HD5+), polish visual, `prumo-code` em si.
 
+> Nota (2026-09-17): o cliente do spike H10 foi arquivado em `archive/tui-poc/` e o
+> cliente do produto passa a ser `prumo-tui`, sobre a base OpenCode Go — decisão em
+> **ADR 013**. As provas de GAP-046/GAP-047 seguem válidas sem alteração: o que elas
+> fixaram (as ops de aprovação, o estado `awaiting_approval`, o baseline de redraw)
+> vive no protocolo e nos contratos, não no cliente arquivado.
+
 ## 5. Documentation Control Plane Gaps (DOC-GAP-001 – DOC-GAP-033)
 
 Source: `PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md` (2026-09-14,

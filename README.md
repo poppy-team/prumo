@@ -183,4 +183,8 @@ Use `docs/PRUMO.md` as the repository documentation router. Do not load the enti
 
 ## License and contribution
 
+Prumo is released under the [MIT License](LICENSE). Code derived from other
+projects, and the revisions it was taken from, are recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 Before contributing, read `AGENTS.md`, the [coding standards](docs/development/coding-standards.md), the [dependency rules](docs/architecture/dependency-rules.md), and the [testing strategy](docs/development/testing-strategy.md).

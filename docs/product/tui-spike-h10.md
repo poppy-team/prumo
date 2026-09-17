@@ -1,6 +1,13 @@
 # H10 — TUI Spike Scope (Prumo Code first client)
 
-Status: PROPOSED (becomes the Goal contract when the H10 increment starts).
+> **Superseded as a client strategy by [ADR 013](../adr/013-tui-foundation.md)
+> (2026-09-17).** The spike ran its course — criteria 1–4 pass end to end and 5 is
+> measured — and its from-scratch client is archived to `archive/tui-poc/`. The
+> shipping terminal client is built on the archived OpenCode Go view layer, in a
+> separate `prumo-tui` module. This document is kept as the record of what the
+> spike required and proved; it is no longer the plan for the client.
+
+Status: SUPERSEDED (accepted 2026-09-17, having been PROPOSED while the H10 increment ran).
 Sources: Living Book pages 13 (TUI spec), 14 (tech matrix), 18 (roadmap), 21 (Stack H), 23 (Shared Product Contract) — snapshot `2026-09-11-d41f18bb65f5`.
 
 ## Goal
