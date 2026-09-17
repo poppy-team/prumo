@@ -34,6 +34,7 @@ func (s *stubTools) Execute(ctx context.Context, call agent.ToolCall) (agent.Too
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
 
+func (s *stubTools) OperationOf(string) string { return "" }
 func (s *stubTools) KindOf(name string) string {
 	if kind, ok := s.kinds[name]; ok {
 		return kind

@@ -122,6 +122,8 @@ func (c *CountingTools) Execute(ctx context.Context, call agent.ToolCall) (agent
 
 func (c *CountingTools) KindOf(name string) string { return c.Base.KindOf(name) }
 
+func (c *CountingTools) OperationOf(name string) string { return c.Base.OperationOf(name) }
+
 // ReportsCopy returns collected reports.
 func (c *CountingTools) ReportsCopy() []ToolReport {
 	c.mu.Lock()

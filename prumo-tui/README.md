@@ -50,6 +50,11 @@ What the integration required from the core, and got:
    between, so no client could stream a conversation. It now emits
    `text_delta`, `reasoning_delta` and `tool_call_ready`, and a run that stopped
    for a decision says `run.paused` rather than `run.finished`.
+2. **The timeline reports file changes.** A tool that edits a file emits
+   `file.changed` with the path and the operation, so what a run touched is a
+   fact on the record rather than something only the daemon's side-effect
+   journal knows. The statusline shows the count; a full changed-files panel is
+   a UI decision still to be made, not a missing event.
 
 Deferred deliberately, because the harness cannot answer them yet — not because
 they were too hard:
@@ -57,8 +62,9 @@ they were too hard:
 2. **Model picker and custom-command dialogs** — removed. They need a models
    operation on the protocol, and a decided command surface. A client with its
    own list would be asserting what it cannot verify.
-3. **File-history sidebar** — removed. The timeline carries no file-change or
-   diff events; that is a gap in the event vocabulary, not a client bug.
+3. **File-history sidebar** — still absent. The events exist now; the panel
+   needs its own design (the upstream one showed versions and diffs, which the
+   harness does not report).
 4. **Tool-call previews** are driven by the ACI catalog (`fs.read`,
    `edit.patch`, `process.exec`, …) with open argument maps, so a renamed
    parameter renders rather than breaks.

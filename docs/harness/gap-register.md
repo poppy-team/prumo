@@ -117,6 +117,13 @@ item. Novos gaps entram no fim com o próximo número livre.
 
 Desktop/TUI (prumo-code), execução cloud/microVM (H18), federação A2A (H17), site público/i18n (HD5+), polish visual, `prumo-code` em si.
 
+> Nota (2026-09-17): a integração do cliente expôs duas lacunas de vocabulário, ambas
+> fechadas no core: o timeline passou a carregar conteúdo do modelo (`text_delta`,
+> `reasoning_delta`, `tool_call_ready`) e a reportar mudanças de arquivo
+> (`file.changed`, com caminho e operação, vindos do catálogo ACI pelo port
+> `ToolExecutor.OperationOf`). Um run que apenas parou para decisão emite `run.paused`,
+> não `run.finished`.
+>
 > Nota (2026-09-17): o cliente do spike H10 foi arquivado em `archive/tui-poc/` e o
 > cliente do produto passa a ser `prumo-tui`, sobre a base OpenCode Go — decisão em
 > **ADR 013**. As provas de GAP-046/GAP-047 seguem válidas sem alteração: o que elas

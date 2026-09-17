@@ -67,6 +67,14 @@ func (a Adapter) KindOf(name string) string {
 	return string(a.descriptorFor(name, "").Kind)
 }
 
+// OperationOf reports no file change.
+//
+// An MCP server is somebody else's process: it may write files, but it never
+// told us which, and inferring one from a tool name would be a guess dressed as
+// a fact. A server that wants its changes reported needs to say so in the
+// descriptor, at which point this returns it.
+func (a Adapter) OperationOf(string) string { return "" }
+
 // Fanout routes mcp.* calls to the MCP adapter, everything else to Base.
 type Fanout struct {
 	Base harnessruntime.ToolExecutor
@@ -85,6 +93,13 @@ func (f Fanout) KindOf(name string) string {
 		return f.MCP.KindOf(name)
 	}
 	return f.Base.KindOf(name)
+}
+
+func (f Fanout) OperationOf(name string) string {
+	if len(name) > 4 && name[:4] == "mcp." {
+		return f.MCP.OperationOf(name)
+	}
+	return f.Base.OperationOf(name)
 }
 
 func (f Fanout) Specs(ctx context.Context) ([]agent.ToolSpec, error) {

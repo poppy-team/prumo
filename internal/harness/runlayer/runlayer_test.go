@@ -16,7 +16,8 @@ type stubBase struct{ kind string }
 func (s stubBase) Execute(_ context.Context, call agent.ToolCall) (agent.ToolResult, error) {
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
-func (s stubBase) KindOf(string) string { return s.kind }
+func (s stubBase) OperationOf(string) string { return "" }
+func (s stubBase) KindOf(string) string      { return s.kind }
 
 func TestBudgetHardFail(t *testing.T) {
 	tr := NewTracker(10, 0, 1)

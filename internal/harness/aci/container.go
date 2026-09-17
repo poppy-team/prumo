@@ -158,6 +158,8 @@ func NewContainer(root, image string, runner Runner) *ContainerExecutor {
 
 func (e *ContainerExecutor) KindOf(name string) string { return e.Host.KindOf(name) }
 
+func (e *ContainerExecutor) OperationOf(name string) string { return e.Host.OperationOf(name) }
+
 // containerTools are executed inside the container; everything else runs on
 // the host against the mounted workspace.
 func containerTools() map[string]bool {

@@ -13,7 +13,8 @@ func (b *baseTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolR
 	b.calls = append(b.calls, call.Name)
 	return agent.ToolResult{ToolCallID: call.ID, Output: "base"}, nil
 }
-func (b *baseTools) KindOf(string) string { return "read-only" }
+func (b *baseTools) OperationOf(string) string { return "" }
+func (b *baseTools) KindOf(string) string      { return "read-only" }
 
 func TestFanoutRoutes(t *testing.T) {
 	clientSide, serverSide := NewPipe()

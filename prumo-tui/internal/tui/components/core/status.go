@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/raillen/prumo-tui/internal/app"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ type StatusCmp interface {
 }
 
 type statusCmp struct {
+	app        *app.App
 	info       util.InfoMsg
 	width      int
 	messageTTL time.Duration
@@ -139,6 +141,21 @@ func (m statusCmp) viewString() string {
 		status += tokensStyle.Render(tokens)
 	}
 
+	// What the run touched, from the harness's own file.changed events. It sits
+	// beside the token accounting because both answer the same question: what
+	// did this run cost me. A count of zero is not shown — the absence of
+	// changes is not news.
+	if m.app != nil && m.app.Runner != nil && m.session.ID != "" {
+		if changes := m.app.Runner.Changes(m.session.ID); len(changes) > 0 {
+			changed := styles.Padded().
+				Background(t.BackgroundDarker()).
+				Foreground(t.Text()).
+				Render(fmt.Sprintf("%d changed", len(changes)))
+			tokenInfoWidth += lipgloss.Width(changed)
+			status += changed
+		}
+	}
+
 	diagnostics := styles.Padded().
 		Background(t.BackgroundDarker()).
 		Render(m.projectDiagnostics())
@@ -212,7 +229,7 @@ func (m statusCmp) model() string {
 		Render(model.Name)
 }
 
-func NewStatusCmp() StatusCmp {
+func NewStatusCmp(app *app.App) StatusCmp {
 	helpWidget = getHelpWidget()
 
 	return &statusCmp{

@@ -68,6 +68,9 @@ type Runner struct {
 	maxTurns  int
 	workspace string
 	active    map[string]context.CancelFunc
+	// changes is what the harness reported per session, kept so the view can
+	// ask without re-reading the timeline on every frame.
+	changes map[string][]Change
 }
 
 // Options configures a runner.
@@ -101,12 +104,41 @@ func NewRunner(opts Options) *Runner {
 		maxTurns:    opts.MaxTurns,
 		workspace:   opts.Workspace,
 		active:      map[string]context.CancelFunc{},
+		changes:     map[string][]Change{},
 	}
 }
 
 // SetPermissions attaches the permission service. The app builds both, and the
 // runner needs it to raise the requests the view presents.
 func (r *Runner) SetPermissions(p *permission.Service) { r.permissions = p }
+
+// Change is one file a run changed.
+type Change struct {
+	Path      string
+	Operation string
+	Tool      string
+}
+
+// Changes returns the files this session's run has changed, in the order the
+// harness reported them.
+//
+// It is derived state: the daemon's timeline is the record, and this is what the
+// view folds it into. A client that restarted re-reads the events and rebuilds
+// the same list.
+func (r *Runner) Changes(sessionID string) []Change {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]Change{}, r.changes[sessionID]...)
+}
+
+func (r *Runner) recordChange(sessionID string, change Change) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.changes == nil {
+		r.changes = map[string][]Change{}
+	}
+	r.changes[sessionID] = append(r.changes[sessionID], change)
+}
 
 // Model reports the model the client asks for.
 func (r *Runner) Model() models.Model {
@@ -301,6 +333,20 @@ func (r *Runner) observe(ctx context.Context, sessionID string, out chan<- agent
 // fold turns one protocol event into conversation state. It reports whether the
 // view should redraw.
 func (r *Runner) fold(ev Event, sessionID string, current *turn) bool {
+	// A file change is a fact about the run, not a turn in the conversation, so
+	// it is recorded without opening an assistant message for it.
+	if ev.Kind == "file.changed" {
+		path := stringOf(ev.Payload, "path")
+		if path == "" {
+			return false
+		}
+		r.recordChange(sessionID, Change{
+			Path:      path,
+			Operation: stringOf(ev.Payload, "operation"),
+			Tool:      stringOf(ev.Payload, "tool"),
+		})
+		return false
+	}
 	if current.id == "" {
 		msg, err := r.messages.Create(context.Background(), sessionID, message.CreateMessageParams{Role: message.Assistant})
 		if err != nil {

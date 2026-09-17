@@ -12,9 +12,10 @@ import (
 )
 
 type stubTools struct {
-	results map[string]agent.ToolResult
-	kinds   map[string]string
-	calls   []string
+	results    map[string]agent.ToolResult
+	kinds      map[string]string
+	operations map[string]string
+	calls      []string
 }
 
 func (s *stubTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolResult, error) {
@@ -25,7 +26,8 @@ func (s *stubTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolR
 	}
 	return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: "ok"}, nil
 }
-func (s *stubTools) KindOf(name string) string { return s.kinds[name] }
+func (s *stubTools) OperationOf(name string) string { return s.operations[name] }
+func (s *stubTools) KindOf(name string) string      { return s.kinds[name] }
 
 func TestSimpleCompletion(t *testing.T) {
 	fake := model.NewFake(map[string][]model.ScriptStep{"*": []model.ScriptStep{{Kind: "text", Text: "hi"}, {Kind: "complete"}}})
@@ -156,6 +158,84 @@ func TestResolvePermissionRequiresAPendingRequest(t *testing.T) {
 	r := NewRunner(Services{Perms: perm.New(perm.Policy{})}, "R8", "S1")
 	if err := r.ResolvePermission("perm-c1", true, "operator", ""); err == nil {
 		t.Fatal("answering with nothing pending must be refused")
+	}
+}
+
+// TestFileChangeIsReportedAsAnEvent is the vocabulary a client needs to show
+// what a run touched: the change is a fact about the run, so it belongs on the
+// timeline rather than only in the daemon's private side-effect journal.
+func TestFileChangeIsReportedAsAnEvent(t *testing.T) {
+	fake := model.NewFake(map[string][]model.ScriptStep{"*": {
+		{Kind: "tool_call", Tool: &agent.ToolCall{
+			ID: "c1", Name: "edit.patch",
+			Arguments: map[string]any{"path": "internal/x.go"}, IdempotencyKey: "k",
+		}},
+		{Kind: "complete"},
+	}})
+	tools := &stubTools{
+		kinds:      map[string]string{"edit.patch": "side-effecting"},
+		operations: map[string]string{"edit.patch": "modified"},
+	}
+	var events []agent.AgentEvent
+	r := NewRunner(Services{
+		Models: fake, Tools: tools,
+		Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+		Events:      func(ev agent.AgentEvent) { events = append(events, ev) },
+	}, "R-file", "S1")
+	r.MaxTurns = 1
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "patch it"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	var changed *agent.AgentEvent
+	kinds := make([]string, 0, len(events))
+	for i := range events {
+		kinds = append(kinds, events[i].Kind)
+		if events[i].Kind == "file.changed" {
+			changed = &events[i]
+		}
+	}
+	if changed == nil {
+		t.Fatalf("no file.changed event among %v", kinds)
+	}
+	if changed.Payload["path"] != "internal/x.go" {
+		t.Fatalf("the event does not name the file it reports: %v", changed.Payload)
+	}
+	if changed.Payload["operation"] != "modified" {
+		t.Fatalf("the event does not name the operation: %v", changed.Payload)
+	}
+}
+
+// TestToolWithoutFileOperationReportsNoChange keeps the event honest: a tool
+// that cannot name a change reports none. Decorating every call would make the
+// event say nothing.
+func TestToolWithoutFileOperationReportsNoChange(t *testing.T) {
+	fake := model.NewFake(map[string][]model.ScriptStep{"*": {
+		{Kind: "tool_call", Tool: &agent.ToolCall{
+			ID: "c1", Name: "process.exec",
+			Arguments: map[string]any{"command": "true"}, IdempotencyKey: "k",
+		}},
+		{Kind: "complete"},
+	}})
+	tools := &stubTools{kinds: map[string]string{"process.exec": "side-effecting"}}
+	var events []agent.AgentEvent
+	r := NewRunner(Services{
+		Models: fake, Tools: tools,
+		Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+		Events:      func(ev agent.AgentEvent) { events = append(events, ev) },
+	}, "R-exec", "S1")
+	r.MaxTurns = 1
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "run it"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	for _, ev := range events {
+		if ev.Kind == "file.changed" {
+			t.Fatalf("a command that cannot name its file change must not claim one: %v", ev.Payload)
+		}
 	}
 }
 

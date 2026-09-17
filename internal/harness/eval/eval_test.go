@@ -33,6 +33,7 @@ func (t tools) Execute(_ context.Context, c agent.ToolCall) (agent.ToolResult, e
 	}
 	return agent.ToolResult{ToolCallID: c.ID, Output: "ok"}, nil
 }
+func (t tools) OperationOf(string) string { return "" }
 func (t tools) KindOf(n string) string {
 	if n == "edit.delete" {
 		return "destructive"

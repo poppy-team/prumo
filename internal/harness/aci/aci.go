@@ -19,24 +19,29 @@ type Tool struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Kind        string `json:"kind"` // read-only|idempotent|side-effecting|destructive
+	// FileOperation is the change this tool makes to a file: created, modified,
+	// moved or deleted. Empty means the tool does not report a file change —
+	// either because it does not touch files, or because it can touch anything
+	// (`process.exec`), in which case naming one would be a guess.
+	FileOperation string `json:"file_operation,omitempty"`
 }
 
 // Catalog is the gradual ACI surface (HA5 baseline).
 func Catalog() []Tool {
 	return []Tool{
-		{"fs.read", "bounded file read", "read-only"},
-		{"fs.list", "list directory", "read-only"},
-		{"fs.search", "search text", "read-only"},
-		{"code.symbols", "list symbols (fallback: grep)", "read-only"},
-		{"code.diagnostics", "go vet style diagnostics", "read-only"},
-		{"edit.patch", "apply unified patch (guarded)", "side-effecting"},
-		{"edit.create", "create file", "side-effecting"},
-		{"edit.delete", "delete file", "destructive"},
-		{"edit.move", "move file", "side-effecting"},
-		{"process.exec", "run command in workspace", "side-effecting"},
-		{"test.run", "run go test", "idempotent"},
-		{"git.status", "git status --short", "read-only"},
-		{"git.diff", "git diff (bounded)", "read-only"},
+		{"fs.read", "bounded file read", "read-only", ""},
+		{"fs.list", "list directory", "read-only", ""},
+		{"fs.search", "search text", "read-only", ""},
+		{"code.symbols", "list symbols (fallback: grep)", "read-only", ""},
+		{"code.diagnostics", "go vet style diagnostics", "read-only", ""},
+		{"edit.patch", "apply unified patch (guarded)", "side-effecting", "modified"},
+		{"edit.create", "create file", "side-effecting", "created"},
+		{"edit.delete", "delete file", "destructive", "deleted"},
+		{"edit.move", "move file", "side-effecting", "moved"},
+		{"process.exec", "run command in workspace", "side-effecting", ""},
+		{"test.run", "run go test", "idempotent", ""},
+		{"git.status", "git status --short", "read-only", ""},
+		{"git.diff", "git diff (bounded)", "read-only", ""},
 	}
 }
 
@@ -57,6 +62,20 @@ type Executor struct {
 func New(root string) *Executor {
 	abs, _ := filepath.Abs(root)
 	return &Executor{Root: abs, OutputMax: 32 * 1024, Redact: egress.MustNewRedactor()}
+}
+
+// OperationOf reports the file change a tool makes, if it makes one.
+//
+// The catalogue is where a tool is defined, so the answer lives here rather
+// than in the caller: a scheduler that matched on tool names would be the first
+// place outside this file to know the catalogue.
+func (e *Executor) OperationOf(name string) string {
+	for _, t := range Catalog() {
+		if t.Name == name {
+			return t.FileOperation
+		}
+	}
+	return ""
 }
 
 func (e *Executor) KindOf(name string) string {

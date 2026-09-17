@@ -36,7 +36,8 @@ type daemonTestTools struct{}
 func (daemonTestTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolResult, error) {
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
-func (daemonTestTools) KindOf(string) string { return "read-only" }
+func (daemonTestTools) OperationOf(string) string { return "" }
+func (daemonTestTools) KindOf(string) string      { return "read-only" }
 
 func serveSDKTestDaemon(t *testing.T, dir string) (sdk.Client, context.CancelFunc) {
 	t.Helper()

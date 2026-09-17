@@ -34,6 +34,9 @@ type Services struct {
 type ToolExecutor interface {
 	Execute(ctx context.Context, call agent.ToolCall) (agent.ToolResult, error)
 	KindOf(toolName string) string
+	// OperationOf reports the file change a tool makes (created, modified,
+	// moved, deleted), or "" when it makes none it can name.
+	OperationOf(toolName string) string
 }
 
 // Runner holds mutable conversation buffers; canonical state stays in
@@ -374,6 +377,11 @@ func (r *Runner) Step(ctx context.Context) error {
 			r.Obs = append(r.Obs, agent.Observation{ID: "obs-" + tc.ID, TurnID: r.State.TurnID, ToolCallID: tc.ID, Content: res.Output, CreatedAt: agent.Now()})
 			if res.ExitCode == 0 {
 				r.AfterSideEffects = true
+				if op := r.Svc.Tools.OperationOf(tc.Name); op != "" {
+					if path, _ := tc.Arguments["path"].(string); path != "" {
+						r.emitLocked("file.changed", map[string]any{"path": path, "operation": op, "tool": tc.Name})
+					}
+				}
 			}
 		}
 		r.State.Phase = agent.PhaseRecordObservation
