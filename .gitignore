@@ -33,3 +33,10 @@ PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md
 
 # Snapshot archives (large binaries)
 *.zip
+
+# Runtime state can appear wherever a workspace root is, including inside nested
+# modules and test directories. It is derived and never canonical, so the rule is
+# path-agnostic: the anchored .prumo/runtime/ above only covers the repository
+# root, which is how a nested module's store slipped into a commit.
+**/.prumo/runtime/
+**/.prumo/cache/
