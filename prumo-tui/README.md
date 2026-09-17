@@ -39,35 +39,38 @@ runs, and the conversation is folded from the run's event log.
 
 ## Status
 
-**In progress — the module does not compile yet.** The structural import is
-done (dependencies resolve; `go mod tidy` succeeds) and the remaining work is a
-bounded, listable set:
+**Builds and runs on the Charm v2 stack.** The migration from the upstream
+Bubble Tea v1 stack is done, the harness integration is in place, and the client
+starts, supervises a daemon and drives a run.
 
-1. **Permission dialog previews.** `internal/tui/components/dialog/permission.go`
-   renders per-tool previews using the upstream tool names and argument structs
-   (`tools.BashToolName`, `EditPermissionsParams`, …). Prumo's tool names come
-   from the ACI catalog (`fs.read`, `edit.patch`, `process.exec`, …) and its
-   arguments are open maps, so these previews must be rewritten against our
-   catalog. This is the approval surface, so it is the first thing to finish.
-2. **Model picker and custom-command dialogs** — removed. Both need protocol
-   surface Prumo does not expose yet: a models operation, and a source for
-   commands. They will come back when the harness can answer them, not before.
-3. **File-history sidebar** — removed with the same reasoning: the timeline
-   carries no file-change or diff events yet. That is a real gap in the event
-   vocabulary, not a client bug.
-4. **`tui.go` wiring.** The root model still calls the upstream `app` shape in a
-   few places; it now receives `internal/app`, which is backed by
-   `internal/runtime.Runner`.
-5. **`cmd/prumo-tui`** — the entrypoint is not written yet.
-6. **Streaming assistant text needs a harness change.** The run timeline
-   currently carries run lifecycle and permission events, not model deltas, so
-   `internal/runtime.Runner` folds `text_delta` / `reasoning_delta` /
-   `tool_call_ready` defensively — the harness must emit them for the client to
-   stream a real conversation. This is the one change the integration requires
-   on the core side.
+What the integration required from the core, and got:
+
+1. **The run timeline now carries content, not just lifecycle.** It previously
+   emitted `run.started`, `context.compiled` and `run.finished` and nothing in
+   between, so no client could stream a conversation. It now emits
+   `text_delta`, `reasoning_delta` and `tool_call_ready`, and a run that stopped
+   for a decision says `run.paused` rather than `run.finished`.
+
+Deferred deliberately, because the harness cannot answer them yet — not because
+they were too hard:
+
+2. **Model picker and custom-command dialogs** — removed. They need a models
+   operation on the protocol, and a decided command surface. A client with its
+   own list would be asserting what it cannot verify.
+3. **File-history sidebar** — removed. The timeline carries no file-change or
+   diff events; that is a gap in the event vocabulary, not a client bug.
+4. **Tool-call previews** are driven by the ACI catalog (`fs.read`,
+   `edit.patch`, `process.exec`, …) with open argument maps, so a renamed
+   parameter renders rather than breaks.
+
+Still owed:
+
+5. **This client's own interface map.** `docs/ui-ux/interface-map.json` verifies
+   the archived spike; the shipping client has no map yet.
 
 ## Boundary
 
-`TestBoundaryNoInternalImports`-style enforcement belongs here too: this module
-must never import `github.com/raillen/prumo/internal/...`. It is not written yet,
-and it is the first test to add when the module compiles.
+`boundary_test.go` fails the build if this module ever imports
+`github.com/raillen/prumo/internal/...`, transitively and including test files.
+ADR 013 made the boundary structural by moving the client into its own module;
+this is the check that keeps structure from being undone by a single import.
