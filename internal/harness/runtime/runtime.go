@@ -166,6 +166,66 @@ func (r *Runner) SeedMessages(msgs []agent.Message) {
 	r.Messages = append([]agent.Message{}, msgs...)
 }
 
+// persist writes the current state as a new checkpoint revision. Safe points
+// and permission yields both use it, because a run that stops for approval is
+// exactly the run that has to be recoverable. Caller holds mu.
+func (r *Runner) persist() error {
+	if r.Svc.Checkpoints == nil {
+		return nil
+	}
+	r.State.Revision++
+	r.State.UpdatedAt = agent.Now()
+	cp := agent.Checkpoint{
+		ID:        fmt.Sprintf("%s-r%d", r.State.RunID, r.State.Revision),
+		RunID:     r.State.RunID,
+		State:     r.State,
+		CreatedAt: agent.Now(),
+	}
+	return r.Svc.Checkpoints.Save(cp)
+}
+
+// ResolvePermission answers a pending permission request: it records the
+// decision in the engine and rewinds the run to re-evaluate it, so the turn
+// continues from where it stopped. Denying needs no special case — the
+// re-evaluation returns deny and the run fails the way a policy denial does.
+func (r *Runner) ResolvePermission(requestID string, allow bool, actor, reason string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.State.Phase != agent.PhaseYield || len(r.State.PendingPerms) == 0 {
+		return fmt.Errorf("no pending permission for run %s", r.State.RunID)
+	}
+	if r.Svc.Perms == nil {
+		return fmt.Errorf("no permission engine configured for run %s", r.State.RunID)
+	}
+	pending := false
+	for _, id := range r.State.PendingPerms {
+		if id == requestID {
+			pending = true
+		}
+	}
+	if !pending {
+		return fmt.Errorf("no pending permission %q for run %s", requestID, r.State.RunID)
+	}
+	if allow {
+		r.Svc.Perms.Approve(requestID, actor)
+	} else {
+		r.Svc.Perms.Deny(requestID, actor, reason)
+	}
+	r.State.PendingPerms = nil
+	r.State.PendingTools = nil
+	r.State.StopReason = ""
+	r.State.Phase = agent.PhasePermissionCheck
+	kind := "permission_approved"
+	if !allow {
+		kind = "permission_rejected"
+	}
+	r.emit(kind, map[string]any{"request_id": requestID, "actor": actor, "decision": kind})
+	if err := r.persist(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Step advances exactly one Phase. Callers loop until Complete/Failed,
 // checkpointing between steps to survive process restarts. The whole
 // advance runs under mu: Inject/StateCopy may enqueue steering and snapshot
@@ -269,7 +329,18 @@ func (r *Runner) Step(ctx context.Context) error {
 				r.State.Phase = agent.PhaseYield
 				r.State.StopReason = "permission wait: " + tc.ID
 				r.State.PendingPerms = []string{res.RequestID}
-				r.emit("permission_wait", map[string]any{"tool": tc.Name})
+				// The pending call travels with the state: a resumed run (or a
+				// daemon answering the request) needs the tool it stopped on,
+				// and the request id is what a client answers with.
+				r.State.PendingTools = append([]agent.ToolCall{}, r.ToolQ...)
+				r.emit("permission_wait", map[string]any{"tool": tc.Name, "request_id": res.RequestID})
+				if err := r.persist(); err != nil {
+					// Refusing to wait is honest: a pending approval nobody can
+					// find on disk is worse than a failed run.
+					r.State.Phase = agent.PhaseFailed
+					r.State.StopReason = "checkpoint failed at permission wait: " + err.Error()
+					return err
+				}
 				return nil
 			}
 		}
@@ -334,13 +405,8 @@ func (r *Runner) Step(ctx context.Context) error {
 			r.State.StopReason = "no tool calls and no completion"
 		}
 	case agent.PhaseCheckpoint:
-		if r.Svc.Checkpoints != nil {
-			r.State.Revision++
-			r.State.UpdatedAt = agent.Now()
-			cp := agent.Checkpoint{ID: fmt.Sprintf("%s-r%d", r.State.RunID, r.State.Revision), RunID: r.State.RunID, State: r.State, CreatedAt: agent.Now()}
-			if err := r.Svc.Checkpoints.Save(cp); err != nil {
-				return err
-			}
+		if err := r.persist(); err != nil {
+			return err
 		}
 		if r.State.StopReason == "completed" {
 			r.State.Phase = agent.PhaseComplete

@@ -26,17 +26,26 @@ type Policy struct {
 type Engine struct {
 	Policy Policy
 	Log    []agent.PermissionResolution
+	// resolutions indexes decisions already taken, so re-evaluating the same
+	// request does not ask again. Without it an approval would be recorded and
+	// then ignored, which is what left the permission gate unanswerable.
+	resolutions map[string]agent.PermissionResolution
 }
 
 func New(p Policy) *Engine {
 	if p.DefaultAction == "" {
 		p.DefaultAction = agent.PermissionAsk
 	}
-	return &Engine{Policy: p}
+	return &Engine{Policy: p, resolutions: map[string]agent.PermissionResolution{}}
 }
 
 // Evaluate returns a persistable resolution.
 func (e *Engine) Evaluate(req agent.PermissionRequest, toolKind string, actor string) agent.PermissionResolution {
+	// A decision already taken for this request outranks the policy: that is
+	// what makes an approval durable across a re-evaluation.
+	if res, ok := e.resolutions[req.ID]; ok {
+		return res
+	}
 	decision := e.Policy.DefaultAction
 	reason := "default policy"
 	for _, a := range e.Policy.AllowActions {
@@ -92,6 +101,16 @@ func (e *Engine) Deny(reqID, actor, reason string) agent.PermissionResolution {
 
 func (e *Engine) record(reqID string, d agent.PermissionDecision, reason, actor string) agent.PermissionResolution {
 	res := agent.PermissionResolution{RequestID: reqID, Decision: d, Reason: reason, Scope: "once", Actor: actor, DecidedAt: time.Now().UTC().Format(time.RFC3339Nano)}
+	if e.resolutions == nil {
+		e.resolutions = map[string]agent.PermissionResolution{}
+	}
+	e.resolutions[reqID] = res
 	e.Log = append(e.Log, res)
 	return res
+}
+
+// Resolution returns a decision already recorded for a request, if any.
+func (e *Engine) Resolution(reqID string) (agent.PermissionResolution, bool) {
+	res, ok := e.resolutions[reqID]
+	return res, ok
 }

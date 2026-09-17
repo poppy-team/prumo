@@ -80,7 +80,10 @@ func TestPermissionDenial(t *testing.T) {
 func TestPermissionResume(t *testing.T) {
 	fake := model.NewFake(map[string][]model.ScriptStep{"*": []model.ScriptStep{{Kind: "tool_call", Tool: &agent.ToolCall{ID: "c1", Name: "edit.patch", IdempotencyKey: "k"}}, {Kind: "complete"}}})
 	engine := perm.New(perm.Policy{DefaultAction: agent.PermissionAsk})
-	r := NewRunner(Services{Models: fake, Tools: &stubTools{}, Perms: engine, Checkpoints: checkpoint.New(t.TempDir())}, "R4", "S1")
+	tools := &stubTools{}
+	dir := t.TempDir()
+	r := NewRunner(Services{Models: fake, Tools: tools, Perms: engine, Checkpoints: checkpoint.New(dir)}, "R4", "S1")
+	r.MaxTurns = 1
 	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
 	if err := r.RunUntilDone(context.Background()); err != nil {
 		t.Fatal(err)
@@ -88,12 +91,71 @@ func TestPermissionResume(t *testing.T) {
 	if r.State.Phase != agent.PhaseYield {
 		t.Fatalf("expected yield on ask, got %s", r.State.Phase)
 	}
-	// Approver allows; re-run with allow policy resumes to execute.
-	r.Svc.Perms = perm.New(perm.Policy{DefaultAction: agent.PermissionAllow})
-	r.State.Phase = agent.PhaseExecuteTool
-	r.MaxTurns = 1
+	// A run waiting for approval must be recoverable, and must carry the call
+	// it stopped on: a client cannot answer a request it cannot name.
+	if len(r.State.PendingPerms) != 1 || len(r.State.PendingTools) != 1 {
+		t.Fatalf("pending state not carried: perms=%v tools=%v", r.State.PendingPerms, r.State.PendingTools)
+	}
+	cp, err := checkpoint.New(dir).Latest("R4")
+	if err != nil {
+		t.Fatalf("a yield for approval must leave a checkpoint: %v", err)
+	}
+	if len(cp.State.PendingPerms) != 1 || len(cp.State.PendingTools) != 1 {
+		t.Fatalf("checkpoint lost the pending state: %+v", cp.State)
+	}
+	// Nothing decided yet: the pending request has no resolution on the engine.
+	if _, decided := engine.Resolution("perm-c1"); decided {
+		t.Fatal("no decision should exist before the client answers")
+	}
+	// A request id that is not pending must be refused, not silently accepted.
+	if err := r.ResolvePermission("perm-other", true, "operator", ""); err == nil {
+		t.Fatal("unknown request id must be refused")
+	}
+	// Answer by the real path — no Phase hack — and the turn finishes.
+	if err := r.ResolvePermission(r.State.PendingPerms[0], true, "operator", ""); err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
 	if err := r.RunUntilDone(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+	if len(tools.calls) != 1 || tools.calls[0] != "edit.patch" {
+		t.Fatalf("approved tool did not execute: %v (phase %s)", tools.calls, r.State.Phase)
+	}
+	if r.State.Phase != agent.PhaseComplete {
+		t.Fatalf("phase after approval = %s, want complete", r.State.Phase)
+	}
+}
+
+func TestResolvePermissionRejectionFailsTheRun(t *testing.T) {
+	fake := model.NewFake(map[string][]model.ScriptStep{"*": []model.ScriptStep{{Kind: "tool_call", Tool: &agent.ToolCall{ID: "c1", Name: "edit.delete", IdempotencyKey: "k"}}, {Kind: "complete"}}})
+	tools := &stubTools{}
+	r := NewRunner(Services{
+		Models: fake, Tools: tools,
+		Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAsk}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R7", "S1")
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.ResolvePermission(r.State.PendingPerms[0], false, "operator", "outside the workspace"); err != nil {
+		t.Fatalf("reject: %v", err)
+	}
+	if err := r.RunUntilDone(context.Background()); err == nil {
+		t.Fatal("a rejected permission must fail the run")
+	}
+	if r.State.Phase != agent.PhaseFailed {
+		t.Fatalf("phase after rejection = %s, want failed", r.State.Phase)
+	}
+	if len(tools.calls) != 0 {
+		t.Fatalf("a rejected tool must not execute: %v", tools.calls)
+	}
+}
+
+func TestResolvePermissionRequiresAPendingRequest(t *testing.T) {
+	r := NewRunner(Services{Perms: perm.New(perm.Policy{})}, "R8", "S1")
+	if err := r.ResolvePermission("perm-c1", true, "operator", ""); err == nil {
+		t.Fatal("answering with nothing pending must be refused")
 	}
 }
 
