@@ -170,6 +170,16 @@ export class Client {
     await this.call({ op: "steer", run_id: runID, message });
   }
 
+  /** Answer a pending permission request, letting the run continue. */
+  async approve(runID: string, requestID: string): Promise<void> {
+    await this.call({ op: "approve", run_id: runID, request_id: requestID });
+  }
+
+  /** Refuse a pending permission request; the run then fails without executing. */
+  async deny(runID: string, requestID: string, reason = ""): Promise<void> {
+    await this.call({ op: "deny", run_id: runID, request_id: requestID, reason });
+  }
+
   async protocol(): Promise<Record<string, unknown>> {
     return this.call({ op: "protocol" });
   }
@@ -177,7 +187,7 @@ export class Client {
   async wait(runID: string, pollMs = 100): Promise<RunStatus> {
     for (;;) {
       const st = await this.status(runID);
-      if (st.status !== "running") {
+      if (st.status !== "running" && st.status !== "awaiting_approval") {
         return st;
       }
       await new Promise((r) => setTimeout(r, pollMs));

@@ -59,7 +59,7 @@
     }
   },
   "x-manifest": {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "min_compatible": "0.1.0",
     "transport": [
       "unix-socket+jsonl (local)"
@@ -119,6 +119,20 @@
       {
         "name": "protocol",
         "args": []
+      },
+      {
+        "name": "approve",
+        "args": [
+          "run_id",
+          "request_id"
+        ]
+      },
+      {
+        "name": "deny",
+        "args": [
+          "run_id",
+          "request_id"
+        ]
       }
     ],
     "schemas": [
@@ -137,7 +151,9 @@
       "run already active",
       "run not active",
       "no tool executor configured",
-      "client version required"
+      "client version required",
+      "permission request required",
+      "no pending permission"
     ]
   }
 }

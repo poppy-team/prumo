@@ -14,6 +14,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/daemon"
 	"github.com/raillen/prumo/internal/harness/model"
+	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 )
 
 func TestAgentRunResumeHandoff(t *testing.T) {
@@ -45,7 +46,7 @@ func TestAgentProtocolManifest(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("protocol manifest failed: code=%d", code)
 	}
-	for _, want := range []string{`"start"`, `"cancel"`, `"protocol"`, `"0.1.0"`} {
+	for _, want := range []string{`"start"`, `"cancel"`, `"protocol"`, `"approve"`, `"deny"`, `"0.2.0"`} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("manifest missing %s:\n%s", want, out)
 		}
@@ -69,7 +70,7 @@ func TestAgentEventsAndProtocol(t *testing.T) {
 	code, out = captureOutput(func() int {
 		return run([]string{"agent", "protocol", "--client", "0.1.0"})
 	})
-	if code != 0 || !strings.Contains(out, "protocol 0.1.0") {
+	if code != 0 || !strings.Contains(out, "protocol "+harnessprotocol.Version) {
 		t.Fatalf("agent protocol failed: code=%d out=%s", code, out)
 	}
 	code, _ = captureOutput(func() int {

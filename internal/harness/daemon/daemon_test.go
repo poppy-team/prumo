@@ -2,30 +2,53 @@ package daemon
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/model"
+	"github.com/raillen/prumo/internal/harness/perm"
 	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 	harnessruntime "github.com/raillen/prumo/internal/harness/runtime"
 )
 
 type stubTools struct {
+	mu    sync.Mutex
 	block bool
 	calls int
+	kinds map[string]string
 }
 
 func (s *stubTools) Execute(ctx context.Context, call agent.ToolCall) (agent.ToolResult, error) {
+	s.mu.Lock()
 	s.calls++
+	s.mu.Unlock()
 	if s.block {
 		<-ctx.Done()
 		return agent.ToolResult{}, ctx.Err()
 	}
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
-func (s *stubTools) KindOf(string) string { return "read-only" }
+
+func (s *stubTools) KindOf(name string) string {
+	if kind, ok := s.kinds[name]; ok {
+		return kind
+	}
+	return "read-only"
+}
+
+// callCount reads the execution count under the lock: the run goroutine
+// increments it while the test observes the daemon over a socket, which is not
+// a Go happens-before edge.
+func (s *stubTools) callCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.calls
+}
 
 func fakeDeps(block bool) Deps {
 	return Deps{
@@ -43,8 +66,13 @@ func fakeDeps(block bool) Deps {
 
 func serveForTest(t *testing.T, dir string, block bool) (*Server, Client, context.CancelFunc) {
 	t.Helper()
+	return serveDepsForTest(t, dir, fakeDeps(block))
+}
+
+func serveDepsForTest(t *testing.T, dir string, deps Deps) (*Server, Client, context.CancelFunc) {
+	t.Helper()
 	sock := filepath.Join(dir, "agentd.sock")
-	srv := New(sock, filepath.Join(dir, "store"), fakeDeps(block))
+	srv := New(sock, filepath.Join(dir, "store"), deps)
 	ctx, cancel := context.WithCancel(context.Background())
 	served := make(chan struct{})
 	go func() {
@@ -214,5 +242,102 @@ func TestDispatchSteer(t *testing.T) {
 	}
 	if res := srv.dispatch(map[string]any{"op": "steer", "run_id": "R-live"}); res["ok"] != false {
 		t.Fatalf("steer without message must fail: %v", res)
+	}
+}
+
+// approvalDeps scripts one tool call whose kind requires approval, so the run
+// stops at the permission gate exactly as a destructive edit would.
+func approvalDeps(tools *stubTools) Deps {
+	return Deps{
+		NewProvider: func(name, baseURL, apiKey, mdl string) (model.Provider, error) {
+			return model.NewFake(map[string][]model.ScriptStep{
+				"*": {{Kind: "tool_call", Tool: &agent.ToolCall{ID: "c1", Name: "edit.delete", IdempotencyKey: "k1"}}, {Kind: "complete"}},
+			}), nil
+		},
+		Tools:      tools,
+		PermPolicy: perm.Policy{DefaultAction: agent.PermissionAllow, AskKinds: []string{"destructive"}},
+	}
+}
+
+func pendingPermission(t *testing.T, st map[string]any) string {
+	t.Helper()
+	ids, _ := st["pending_permissions"].([]any)
+	if len(ids) != 1 {
+		t.Fatalf("status must name exactly one pending request: %v", st)
+	}
+	id, _ := ids[0].(string)
+	return id
+}
+
+// TestDaemonApprovePermission is H10 criterion 2's mechanism: a run stops at a
+// permission gate, a client answers over the protocol, and the run continues
+// and finishes without the daemon being restarted.
+func TestDaemonApprovePermission(t *testing.T) {
+	dir := t.TempDir()
+	tools := &stubTools{kinds: map[string]string{"edit.delete": "destructive"}}
+	_, c, cancel := serveDepsForTest(t, dir, approvalDeps(tools))
+	defer cancel()
+
+	if _, err := c.Start("delete something", "fake", "R-approve", 1); err != nil {
+		t.Fatal(err)
+	}
+	requestID := pendingPermission(t, waitStatus(t, c, "R-approve", "awaiting_approval"))
+
+	res, err := c.Approve("R-approve", requestID)
+	if err != nil || res["ok"] != true {
+		t.Fatalf("approve failed: %v %v", err, res)
+	}
+	waitStatus(t, c, "R-approve", "complete")
+	if got := tools.callCount(); got != 1 {
+		t.Fatalf("approved tool executed %d times, want 1", got)
+	}
+	// The decision is on the audit trail, not only in memory.
+	data, err := os.ReadFile(filepath.Join(dir, "store", "permissions-R-approve.jsonl"))
+	if err != nil {
+		t.Fatalf("permission trail missing: %v", err)
+	}
+	if !strings.Contains(string(data), "approved by client") {
+		t.Fatalf("audit trail does not record the approval:\n%s", data)
+	}
+	if _, err := c.Events("R-approve"); err != nil {
+		t.Fatal(err)
+	}
+	// A finished run is gone from the live map: answering it is not an option.
+	if res, err := c.Approve("R-approve", requestID); err != nil || res["ok"] != false {
+		t.Fatalf("approving an inactive run must fail: %v %v", err, res)
+	}
+}
+
+func TestDaemonDenyPermission(t *testing.T) {
+	dir := t.TempDir()
+	tools := &stubTools{kinds: map[string]string{"edit.delete": "destructive"}}
+	_, c, cancel := serveDepsForTest(t, dir, approvalDeps(tools))
+	defer cancel()
+
+	if _, err := c.Start("delete something", "fake", "R-deny", 1); err != nil {
+		t.Fatal(err)
+	}
+	requestID := pendingPermission(t, waitStatus(t, c, "R-deny", "awaiting_approval"))
+
+	res, err := c.Deny("R-deny", requestID, "outside the workspace")
+	if err != nil || res["ok"] != true {
+		t.Fatalf("deny failed: %v %v", err, res)
+	}
+	waitStatus(t, c, "R-deny", "failed")
+	if got := tools.callCount(); got != 0 {
+		t.Fatalf("a rejected tool must not execute, got %d calls", got)
+	}
+}
+
+func TestPermissionOpValidatesItsArguments(t *testing.T) {
+	srv := New(t.TempDir()+"/s.sock", t.TempDir(), fakeDeps(false))
+	if res := srv.dispatch(map[string]any{"op": "approve"}); res["error"] != "run_id required" {
+		t.Fatalf("approve without run_id must fail: %v", res)
+	}
+	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-x"}); res["error"] != "permission request required" {
+		t.Fatalf("approve without a request id must fail: %v", res)
+	}
+	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-gone", "request_id": "perm-1"}); res["ok"] != false {
+		t.Fatalf("approve on an inactive run must fail: %v", res)
 	}
 }

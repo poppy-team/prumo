@@ -167,6 +167,34 @@ func DumpPermissions(path string, engine *perm.Engine) error {
 	return nil
 }
 
+// SavePermissions rewrites a run's permission audit trail.
+//
+// DumpPermissions appends, which is right for a one-shot CLI run (one call per
+// process). A daemon persists a run's artifacts every time it stops, and a run
+// that stops for approval stops twice — appending there would duplicate the
+// whole log. This variant is idempotent by construction.
+func SavePermissions(path string, engine *perm.Engine) error {
+	if engine == nil {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	var out []byte
+	for _, res := range engine.Log {
+		data, err := json.Marshal(res)
+		if err != nil {
+			return err
+		}
+		out = append(out, append(data, '\n')...)
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, out, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
 // WriteEvidence validates and persists the run's protocol evidence record.
 func WriteEvidence(path, runID, phase, stopReason string, usage map[string]float64, reports []ToolReport) (evidence.Record, error) {
 	rec := evidence.Record{

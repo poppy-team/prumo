@@ -3,7 +3,7 @@
 // Boundary invariant: this package imports stdlib only — never
 // prumo/internal. It is the client surface the future prumo-code repo (and
 // any third-party client) builds against. Wire shape follows
-// schemas/protocol-manifest.json v0.1.0.
+// schemas/protocol-manifest.json v0.2.0.
 package prumo
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 // ProtocolVersion is the IDL this SDK speaks.
-const ProtocolVersion = "0.1.0"
+const ProtocolVersion = "0.2.0"
 
 // Client talks to a harness daemon over its Unix socket.
 type Client struct {
@@ -136,6 +136,10 @@ type RunStatus struct {
 	Phase      string `json:"phase"`
 	StopReason string `json:"stop_reason"`
 	Active     bool   `json:"active"`
+	// PendingPermissions are the request ids awaiting a client decision. A run
+	// waiting for approval reports status "awaiting_approval" and names what it
+	// is waiting on, so a client that reconnected can still answer.
+	PendingPermissions []string `json:"pending_permissions"`
 }
 
 // StartRequest launches a headless run.
@@ -178,6 +182,7 @@ func (c Client) Status(ctx context.Context, runID string) (RunStatus, error) {
 	st.Phase, _ = out["phase"].(string)
 	st.StopReason, _ = out["stop_reason"].(string)
 	st.Active, _ = out["active"].(bool)
+	st.PendingPermissions = toStrSlice(out["pending_permissions"])
 	return st, nil
 }
 
@@ -236,6 +241,19 @@ func (c Client) Cancel(ctx context.Context, runID string) error {
 // Steer injects follow-up input into an active run (refused when terminal).
 func (c Client) Steer(ctx context.Context, runID, message string) error {
 	_, err := c.call(ctx, map[string]any{"op": "steer", "run_id": runID, "message": message})
+	return err
+}
+
+// Approve answers a pending permission request, letting the run continue.
+func (c Client) Approve(ctx context.Context, runID, requestID string) error {
+	_, err := c.call(ctx, map[string]any{"op": "approve", "run_id": runID, "request_id": requestID})
+	return err
+}
+
+// Deny refuses a pending permission request. The run then fails the way a
+// policy denial fails; nothing executes.
+func (c Client) Deny(ctx context.Context, runID, requestID, reason string) error {
+	_, err := c.call(ctx, map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
 	return err
 }
 

@@ -1,8 +1,8 @@
 // Package daemon hosts headless Harness runs behind a local Unix-socket
-// server: start/status/list/events/cancel/protocol. Run records and the
-// JSONL timeline persist under the store dir, so a client can disconnect,
-// the daemon can restart, and runs remain observable (reconnect baseline;
-// remote transport is future work).
+// server (start/status/list/events/cancel/steer/approve/deny/protocol), or
+// over TCP+TLS+token when a remote address is configured. Run records and the
+// JSONL timeline persist under the store dir, so a client can disconnect, the
+// daemon can restart, and runs remain observable (reconnect baseline).
 package daemon
 
 import (
@@ -58,6 +58,19 @@ type Deps struct {
 	// Workspace is the default context/tool root for runs that do not
 	// carry their own (CLI serve sets it to the project root).
 	Workspace string
+	// PermPolicy decides tool permissions. The zero value means "the default
+	// policy" (allow, ask for destructive), so leaving it unset does not
+	// silently turn every tool call into an approval request.
+	PermPolicy perm.Policy
+}
+
+// DefaultPermPolicy is the policy a daemon runs with when none is configured.
+func DefaultPermPolicy() perm.Policy {
+	return perm.Policy{
+		DefaultAction: agent.PermissionAllow,
+		DenyPrefixes:  []string{"/etc", ".."},
+		AskKinds:      []string{"destructive"},
+	}
 }
 
 // Server hosts runs on a Unix socket.
@@ -65,6 +78,7 @@ type Server struct {
 	SocketPath string
 	StoreDir   string
 	Deps       Deps
+	policy     perm.Policy
 
 	mu   sync.Mutex
 	runs map[string]*activeRun
@@ -73,10 +87,29 @@ type Server struct {
 	seq  int
 }
 
-// activeRun tracks a live run: cancel stops it, runner accepts steering.
+// activeRun tracks a live run: cancel stops it, runner accepts steering and
+// permission decisions.
+//
+// A run waiting for approval stays here rather than being discarded: it is not
+// finished, and a run a client cannot reach is a run a client cannot answer.
 type activeRun struct {
 	cancel context.CancelFunc
+	ctx    context.Context
 	runner *harnessruntime.Runner
+
+	engine   *perm.Engine
+	tracker  *runlayer.Tracker
+	counting *runlayer.CountingTools
+	kstore   *knowledge.Store
+
+	// mu guards timeline, which the runner's event callback appends to while
+	// the persistence step reads it.
+	mu       sync.Mutex
+	timeline []agent.AgentEvent
+
+	// busy is true while the run loop is advancing, so an approval cannot
+	// start a second loop over the same state. Guarded by Server.mu.
+	busy bool
 }
 
 // New creates a server; call Serve to block.
@@ -84,7 +117,10 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 	if deps.NewProvider == nil {
 		deps.NewProvider = model.ForName
 	}
-	return &Server{SocketPath: socketPath, StoreDir: storeDir, Deps: deps, runs: map[string]*activeRun{}}
+	if deps.PermPolicy.DefaultAction == "" {
+		deps.PermPolicy = DefaultPermPolicy()
+	}
+	return &Server{SocketPath: socketPath, StoreDir: storeDir, Deps: deps, policy: deps.PermPolicy, runs: map[string]*activeRun{}}
 }
 
 func (s *Server) recordPath(runID string) string {
@@ -205,6 +241,10 @@ func (s *Server) dispatch(msg map[string]any) map[string]any {
 		return s.opCancel(str(msg, "run_id"))
 	case "steer":
 		return s.opSteer(str(msg, "run_id"), str(msg, "message"))
+	case "approve":
+		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "reason"), true)
+	case "deny":
+		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "reason"), false)
 	case "schedule":
 		return s.opSchedule(msg)
 	case "unschedule":
@@ -258,28 +298,26 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 		cancel()
 		return map[string]any{"ok": false, "error": "run already active: " + runID}
 	}
-	s.runs[runID] = &activeRun{cancel: cancel}
+	ar := &activeRun{cancel: cancel, ctx: runCtx, busy: true}
+	s.runs[runID] = ar
 	s.mu.Unlock()
 
 	s.saveRecord(RunRecord{RunID: runID, Status: "running"})
 	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-started", RunID: runID, Kind: "run.started", Payload: map[string]any{"goal": goal, "provider": providerName}, CreatedAt: agent.Now()})
 
-	go s.execute(runCtx, runID, goal, provider, tools, workspace, maxTurns)
+	go s.execute(runCtx, runID, goal, provider, tools, workspace, maxTurns, ar)
 	return map[string]any{"ok": true, "run_id": runID}
 }
 
-func (s *Server) execute(ctx context.Context, runID, goal string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int) {
-	defer func() {
-		s.mu.Lock()
-		delete(s.runs, runID)
-		s.mu.Unlock()
-	}()
+// execute builds one run's collaborators and hands them to observe. Every
+// artifact the run produces is written by observe, so a run that stops for
+// approval and then continues still ends with exactly one coherent record.
+func (s *Server) execute(ctx context.Context, runID, goal string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int, ar *activeRun) {
 	dir := s.StoreDir
 	tracker := runlayer.NewTracker(0, 0, 0)
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
-	engine := perm.New(perm.Policy{DefaultAction: agent.PermissionAllow, DenyPrefixes: []string{"/etc", ".."}, AskKinds: []string{"destructive"}})
+	engine := perm.New(s.policy)
 	checkpoints := checkpoint.New(filepath.Join(dir, "checkpoints"))
-	var timeline []agent.AgentEvent
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
 		Models:      provider,
 		Tools:       counting,
@@ -287,7 +325,9 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 		Checkpoints: checkpoints,
 		Events: func(ev agent.AgentEvent) {
 			s.appendEvent(runID, ev)
-			timeline = append(timeline, ev)
+			ar.mu.Lock()
+			ar.timeline = append(ar.timeline, ev)
+			ar.mu.Unlock()
 		},
 		ContextManifest: func(_ context.Context, _ agent.NativeAgentState) (string, error) {
 			m := contextv2.CompileWorkspace(runID, goal, workspace, 8000, "L1")
@@ -299,40 +339,67 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 			return "ctx-" + runID, nil
 		},
 	}, runID, "S-daemon")
-	s.mu.Lock()
-	if ar, ok := s.runs[runID]; ok {
-		ar.runner = runner
-	}
-	s.mu.Unlock()
 	runner.MaxTurns = maxTurns
 	runner.Svc.ConsumeBudget = tracker.ConsumeUsage
 	runner.SeedMessages([]agent.Message{{ID: "m1", Role: agent.RoleUser, Content: goal, CreatedAt: agent.Now()}})
 	kstore := knowledge.New()
 	knowledge.SeedRequirement(kstore, runID, goal)
+
+	s.mu.Lock()
+	ar.runner = runner
+	ar.engine = engine
+	ar.tracker = tracker
+	ar.counting = counting
+	ar.kstore = kstore
+	s.mu.Unlock()
+
+	s.observe(ctx, runID, ar)
+}
+
+// observe advances a run to its next stopping point and persists the result.
+// It runs once per start, and once per answered permission request.
+func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
+	runner := ar.runner
 	err := runner.RunUntilDone(ctx)
+	phase := runner.State.Phase
 	status := "complete"
-	if err != nil {
+	switch {
+	case err != nil && ctx.Err() != nil:
+		status = "cancelled"
+	case err != nil:
 		status = "failed"
-		if ctx.Err() != nil {
-			status = "cancelled"
-		}
-	} else if runner.State.Phase == agent.PhaseYield {
+	case phase == agent.PhaseYield && len(runner.State.PendingPerms) > 0:
+		// Waiting for a client decision is its own status: "yielded" means the
+		// run parked, and conflating them would make a client either wait
+		// forever on a parked run or leave the panel on one that needs it.
+		status = "awaiting_approval"
+	case phase == agent.PhaseYield:
 		status = "yielded"
-		if ctx.Err() != nil {
-			status = "cancelled"
-		}
 	}
-	knowledge.SeedEvidence(kstore, runID, string(runner.State.Phase), runner.State.StopReason, runID+"-latest")
-	_ = kstore.Save(filepath.Join(dir, "knowledge-"+runID+".json"))
-	_ = tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
-	_ = runlayer.DumpPermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), engine)
+	dir := s.StoreDir
+	ar.mu.Lock()
+	timeline := append([]agent.AgentEvent{}, ar.timeline...)
+	ar.mu.Unlock()
+	knowledge.SeedEvidence(ar.kstore, runID, string(phase), runner.State.StopReason, runID+"-latest")
+	_ = ar.kstore.Save(filepath.Join(dir, "knowledge-"+runID+".json"))
+	_ = ar.tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
+	_ = runlayer.SavePermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), ar.engine)
 	_, _ = runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
-		runID, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy())
+		runID, string(phase), runner.State.StopReason, ar.tracker.Snapshot(), ar.counting.ReportsCopy())
 	_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
-	_, _ = checkpoints.Prune(5)
+	_, _ = checkpoint.New(filepath.Join(dir, "checkpoints")).Prune(5)
 	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-finished", RunID: runID, Kind: "run.finished",
-		Payload: map[string]any{"status": status, "phase": string(runner.State.Phase)}, CreatedAt: agent.Now()})
-	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(runner.State.Phase), StopReason: runner.State.StopReason})
+		Payload: map[string]any{"status": status, "phase": string(phase)}, CreatedAt: agent.Now()})
+	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(phase), StopReason: runner.State.StopReason})
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if status == "awaiting_approval" {
+		ar.busy = false
+		return
+	}
+	// Anything else is done: a parked run must not leak in the map.
+	delete(s.runs, runID)
 }
 
 func (s *Server) opStatus(runID string) map[string]any {
@@ -342,8 +409,10 @@ func (s *Server) opStatus(runID string) map[string]any {
 	s.mu.Lock()
 	ar, active := s.runs[runID]
 	var runner *harnessruntime.Runner
+	busy := false
 	if active && ar != nil {
 		runner = ar.runner
+		busy = ar.busy
 	}
 	s.mu.Unlock()
 	data, err := os.ReadFile(s.recordPath(runID))
@@ -354,11 +423,22 @@ func (s *Server) opStatus(runID string) map[string]any {
 	if err := json.Unmarshal(data, &rec); err != nil {
 		return map[string]any{"ok": false, "error": "corrupt record " + runID}
 	}
+	pending := []string{}
 	if active && runner != nil {
 		live := runner.StateCopy()
 		rec.Phase = string(live.Phase)
+		pending = append(pending, live.PendingPerms...)
+		// The record is written when a run stops. While the loop is advancing
+		// it is stale, and while the run waits it is the live state that tells
+		// a client there is something to answer.
+		switch {
+		case busy:
+			rec.Status = "running"
+		case live.Phase == agent.PhaseYield && len(live.PendingPerms) > 0:
+			rec.Status = "awaiting_approval"
+		}
 	}
-	return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "stop_reason": rec.StopReason, "active": active}
+	return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "stop_reason": rec.StopReason, "active": active, "pending_permissions": pending}
 }
 
 func (s *Server) opList() map[string]any {
@@ -460,6 +540,40 @@ func (s *Server) opSteer(runID, message string) map[string]any {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
 	return map[string]any{"ok": true, "steered": true}
+}
+
+// opPermission answers a pending permission request and lets the run continue.
+// Approve and deny are the same op with a different decision, so the two share
+// one code path and one set of validations.
+func (s *Server) opPermission(runID, requestID, reason string, allow bool) map[string]any {
+	if runID == "" {
+		return map[string]any{"ok": false, "error": "run_id required"}
+	}
+	if requestID == "" {
+		return map[string]any{"ok": false, "error": "permission request required"}
+	}
+	s.mu.Lock()
+	ar, ok := s.runs[runID]
+	if !ok || ar == nil || ar.runner == nil {
+		s.mu.Unlock()
+		return map[string]any{"ok": false, "error": "run not active: " + runID}
+	}
+	if ar.busy {
+		s.mu.Unlock()
+		return map[string]any{"ok": false, "error": "run is advancing: " + runID}
+	}
+	ar.busy = true
+	ctx := ar.ctx
+	s.mu.Unlock()
+
+	if err := ar.runner.ResolvePermission(requestID, allow, "client", reason); err != nil {
+		s.mu.Lock()
+		ar.busy = false
+		s.mu.Unlock()
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	go s.observe(ctx, runID, ar)
+	return map[string]any{"ok": true, "run_id": runID, "request_id": requestID, "approved": allow}
 }
 
 // ---- Client ----
@@ -571,6 +685,16 @@ func (c Client) Events(runID string) (map[string]any, error) {
 // Cancel stops an active run.
 func (c Client) Cancel(runID string) (map[string]any, error) {
 	return c.call(map[string]any{"op": "cancel", "run_id": runID})
+}
+
+// Approve answers a pending permission request, letting the run continue.
+func (c Client) Approve(runID, requestID string) (map[string]any, error) {
+	return c.call(map[string]any{"op": "approve", "run_id": runID, "request_id": requestID})
+}
+
+// Deny refuses a pending permission request.
+func (c Client) Deny(runID, requestID, reason string) (map[string]any, error) {
+	return c.call(map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
 }
 
 // Protocol negotiates versions.

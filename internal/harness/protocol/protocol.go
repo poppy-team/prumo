@@ -9,8 +9,10 @@ import (
 	"strings"
 )
 
-// Version is the current Harness protocol version.
-const Version = "0.1.0"
+// Version is the current Harness protocol version. 0.2.0 added the approval
+// ops; MinCompatible stays at 0.1.0 because the additions are additive and an
+// older client keeps working against the ops it already knew.
+const Version = "0.2.0"
 
 // MinCompatible is the oldest client protocol the engine still speaks.
 const MinCompatible = "0.1.0"
