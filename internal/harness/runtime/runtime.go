@@ -154,6 +154,9 @@ func (r *Runner) maybeCompactLocked() {
 }
 
 func (r *Runner) emitLocked(kind string, payload map[string]any) {
+	if r.Svc.Events == nil {
+		return
+	}
 	r.Svc.Events(agent.AgentEvent{ID: fmt.Sprintf("ev-%d", len(payload)+1), RunID: r.State.RunID, TurnID: r.State.TurnID, Kind: kind, Payload: payload, CreatedAt: agent.Now()})
 }
 
@@ -277,6 +280,20 @@ func (r *Runner) Step(ctx context.Context) error {
 			default:
 			}
 			r.Events = append(r.Events, ev)
+			// The model's stream reaches clients as events, not only as state:
+			// a client that could not see the deltas could render a run's
+			// lifecycle but never its conversation. Payloads stay minimal
+			// because the timeline is replayed whole.
+			switch ev.Kind {
+			case agent.EventTextDelta:
+				r.emitLocked("text_delta", map[string]any{"text": ev.Text})
+			case agent.EventReasoningDelta:
+				r.emitLocked("reasoning_delta", map[string]any{"text": ev.Text})
+			case agent.EventToolCallReady:
+				if ev.ToolCall != nil {
+					r.emitLocked("tool_call_ready", map[string]any{"id": ev.ToolCall.ID, "name": ev.ToolCall.Name})
+				}
+			}
 			if ev.Kind == agent.EventUsageUpdated && ev.Usage != nil && r.Svc.ConsumeBudget != nil {
 				if err := r.Svc.ConsumeBudget(*ev.Usage); err != nil {
 					r.State.Phase = agent.PhaseFailed

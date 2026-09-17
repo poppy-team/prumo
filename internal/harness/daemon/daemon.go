@@ -388,8 +388,16 @@ func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
 		runID, string(phase), runner.State.StopReason, ar.tracker.Snapshot(), ar.counting.ReportsCopy())
 	_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
 	_, _ = checkpoint.New(filepath.Join(dir, "checkpoints")).Prune(5)
-	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-finished", RunID: runID, Kind: "run.finished",
-		Payload: map[string]any{"status": status, "phase": string(phase)}, CreatedAt: agent.Now()})
+	// "finished" is for a run that ended. A run that stopped for a decision has
+	// not ended, and calling that finished would tell every client the opposite
+	// of what the status says.
+	if status == "complete" || status == "failed" || status == "cancelled" {
+		s.appendEvent(runID, agent.AgentEvent{ID: runID + "-finished", RunID: runID, Kind: "run.finished",
+			Payload: map[string]any{"status": status, "phase": string(phase)}, CreatedAt: agent.Now()})
+	} else {
+		s.appendEvent(runID, agent.AgentEvent{ID: runID + "-paused", RunID: runID, Kind: "run.paused",
+			Payload: map[string]any{"status": status, "phase": string(phase)}, CreatedAt: agent.Now()})
+	}
 	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(phase), StopReason: runner.State.StopReason})
 
 	s.mu.Lock()
