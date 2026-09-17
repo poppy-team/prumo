@@ -229,6 +229,8 @@ func (s *Server) dispatch(msg map[string]any) map[string]any {
 	switch str(msg, "op") {
 	case "protocol":
 		return map[string]any{"ok": true, "version": harnessprotocol.Version, "min_compatible": harnessprotocol.MinCompatible, "schemas": harnessprotocol.Schemas, "ops": harnessprotocol.Ops}
+	case "models":
+		return s.opModels(msg)
 	case "start":
 		return s.opStart(msg)
 	case "status":
@@ -408,6 +410,30 @@ func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
 	}
 	// Anything else is done: a parked run must not leak in the map.
 	delete(s.runs, runID)
+}
+
+// opModels asks a provider what it can serve.
+//
+// The answer belongs to the harness: which models exist is a property of the
+// provider, and a client that carried its own list would be asserting something
+// it cannot verify. A provider that cannot enumerate says so by returning what
+// it was configured with rather than an empty list.
+func (s *Server) opModels(msg map[string]any) map[string]any {
+	providerName := str(msg, "provider")
+	if providerName == "" {
+		providerName = "fake"
+	}
+	provider, err := s.Deps.NewProvider(providerName, str(msg, "base_url"), str(msg, "api_key"), str(msg, "model"))
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	models, err := provider.Models(ctx)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true, "provider": providerName, "models": models}
 }
 
 func (s *Server) opStatus(runID string) map[string]any {
@@ -720,6 +746,11 @@ func (c Client) Approve(runID, requestID string) (map[string]any, error) {
 // Deny refuses a pending permission request.
 func (c Client) Deny(runID, requestID, reason string) (map[string]any, error) {
 	return c.call(map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
+}
+
+// Models asks a provider what it can serve.
+func (c Client) Models(provider, baseURL, model string) (map[string]any, error) {
+	return c.call(map[string]any{"op": "models", "provider": provider, "base_url": baseURL, "model": model})
 }
 
 // Protocol negotiates versions.

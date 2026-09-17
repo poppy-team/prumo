@@ -88,6 +88,8 @@ func runAgent(asJSON bool, args []string) int {
 		return runAgentACP(asJSON, args[1:])
 	case "providers":
 		return runAgentProviders(asJSON, args[1:])
+	case "models":
+		return runAgentModels(asJSON, args[1:])
 	default:
 		return exitUsage
 	}
@@ -952,6 +954,32 @@ func runAgentGC(asJSON bool, args []string) int {
 		}))
 	}
 	fmt.Printf("pruned %d checkpoints, removed %d orphan artifacts\n", rep.CheckpointsPruned, len(rep.ArtifactsRemoved))
+	return exitOK
+}
+
+// runAgentModels asks a live daemon what a provider can serve. The catalogue
+// belongs to the harness: a client that carried its own would be asserting what
+// it cannot verify.
+func runAgentModels(asJSON bool, args []string) int {
+	f := agentFlags(args)
+	res, err := daemonClient(f).Models(f["provider"], f["base-url"], f["model"])
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if ok, _ := res["ok"].(bool); !ok {
+		return serviceError(asJSON, fmt.Errorf("%v", res["error"]))
+	}
+	models, _ := res["models"].([]any)
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(res))
+	}
+	if len(models) == 0 {
+		fmt.Println("no models reported")
+		return exitOK
+	}
+	for _, m := range models {
+		fmt.Println(m)
+	}
 	return exitOK
 }
 

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "HarnessProtocolManifest",
-  "description": "Versioned IDL baseline for the Prumo Harness local protocol. Generated from internal/harness/protocol; do not hand-edit without updating Manifest() — manifest_test.go enforces equality.",
+  "description": "Versioned IDL baseline for the Prumo Harness local protocol. Generated from internal/harness/protocol; do not hand-edit without updating Manifest() \u2014 manifest_test.go enforces equality.",
   "type": "object",
   "required": [
     "version",
@@ -59,7 +59,7 @@
     }
   },
   "x-manifest": {
-    "version": "0.2.0",
+    "version": "0.3.0",
     "min_compatible": "0.1.0",
     "transport": [
       "unix-socket+jsonl (local)"
@@ -133,6 +133,10 @@
           "run_id",
           "request_id"
         ]
+      },
+      {
+        "name": "models",
+        "args": []
       }
     ],
     "schemas": [

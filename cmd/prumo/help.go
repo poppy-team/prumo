@@ -675,7 +675,7 @@ var commandRegistry = map[string]CommandInfo{
 		Name:        "agent",
 		Category:    "Harness",
 		Summary:     "Headless Prumo-native agent harness (run/serve/ps/logs/events/...)",
-		Usage:       "prumo agent <run|resume|handoff|events|protocol|serve|ps|logs|steer|approve|deny|stop|schedule|unschedule|jobs|promote|acp|gc|providers> [flags]",
+		Usage:       "prumo agent <run|resume|handoff|events|protocol|serve|ps|logs|steer|approve|deny|stop|schedule|unschedule|jobs|promote|acp|gc|providers|models> [flags]",
 		Description: "Runs the NativeAgent state machine headlessly: context, model, tools, permissions, checkpoints. Provider-neutral (fake|fake-tools|openai-compat|anthropic); external agents via AgentProvider adapters. A run that needs approval stops with status awaiting_approval and is answered with approve/deny.",
 		Flags: []string{
 			"--goal <text>        Goal for agent run (default: headless run)",
@@ -740,6 +740,7 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo agent deny --run R-agent-1 --request perm-c1 --reason 'outside the workspace'",
 			"prumo agent logs --run R-agent-1",
 			"prumo agent providers",
+			"prumo agent models --provider openai-compat --model gpt-4o-mini",
 		},
 	},
 	"tui": {

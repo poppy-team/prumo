@@ -180,6 +180,12 @@ export class Client {
     await this.call({ op: "deny", run_id: runID, request_id: requestID, reason });
   }
 
+  /** Ask the harness what a provider can serve. */
+  async models(provider = "", model = ""): Promise<string[]> {
+    const res = await this.call({ op: "models", provider, model });
+    return (res["models"] ?? []) as string[];
+  }
+
   async protocol(): Promise<Record<string, unknown>> {
     return this.call({ op: "protocol" });
   }

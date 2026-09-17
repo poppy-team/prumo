@@ -4,7 +4,7 @@
 package protocol
 
 // Ops lists every daemon/CLI protocol operation in stable order.
-var Ops = []string{"start", "status", "list", "events", "cancel", "steer", "schedule", "unschedule", "jobs", "protocol", "approve", "deny"}
+var Ops = []string{"start", "status", "list", "events", "cancel", "steer", "schedule", "unschedule", "jobs", "protocol", "approve", "deny", "models"}
 
 // ErrorCodes lists stable machine-readable error codes.
 var ErrorCodes = []string{
@@ -37,6 +37,9 @@ var OpArgs = map[string][]string{
 	"protocol":   {},
 	"approve":    {"run_id", "request_id"},
 	"deny":       {"run_id", "request_id"},
+	// Models has no required argument: asking the default provider is the
+	// common case, and the rest identify a provider to ask instead.
+	"models": {},
 }
 
 // Manifest returns the full IDL document.

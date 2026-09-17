@@ -47,9 +47,18 @@ func TestAgentProtocolManifest(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("protocol manifest failed: code=%d", code)
 	}
-	for _, want := range []string{`"start"`, `"cancel"`, `"protocol"`, `"approve"`, `"deny"`, `"0.2.0"`} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("manifest missing %s:\n%s", want, out)
+	// The version is asserted from the constant, and the ops by name: a test
+	// that pins either literally turns every protocol addition into a test edit,
+	// which is how a test stops being read.
+	want := []string{`"start"`, `"cancel"`, `"protocol"`, `"approve"`, `"deny"`, `"models"`, `"` + harnessprotocol.Version + `"`}
+	for _, w := range want {
+		if !strings.Contains(out, w) {
+			t.Fatalf("manifest missing %s:\n%s", w, out)
+		}
+	}
+	for _, op := range harnessprotocol.Ops {
+		if !strings.Contains(out, `"`+op+`"`) {
+			t.Fatalf("manifest does not list op %s:\n%s", op, out)
 		}
 	}
 }
@@ -87,7 +96,8 @@ type cliStubTools struct{}
 func (cliStubTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolResult, error) {
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
-func (cliStubTools) KindOf(string) string { return "read-only" }
+func (cliStubTools) OperationOf(string) string { return "" }
+func (cliStubTools) KindOf(string) string      { return "read-only" }
 
 func TestAgentPsLogsAgainstDaemon(t *testing.T) {
 	dir := t.TempDir()

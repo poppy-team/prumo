@@ -1,7 +1,7 @@
 // Generated from schemas/protocol-manifest.json — DO NOT EDIT.
 // Regenerate: go run ./sdk/typescript/gen
 
-export const PROTOCOL_VERSION = "0.2.0";
+export const PROTOCOL_VERSION = "0.3.0";
 export const PROTOCOL_MIN_COMPATIBLE = "0.1.0";
 
 export type OpName =
@@ -16,7 +16,8 @@ export type OpName =
   | "jobs" |
   | "protocol" |
   | "approve" |
-  | "deny";
+  | "deny" |
+  | "models";
 
 export interface OpArgs {
   "start": ["goal"];
@@ -31,6 +32,7 @@ export interface OpArgs {
   "protocol": [];
   "approve": ["run_id", "request_id"];
   "deny": ["run_id", "request_id"];
+  "models": [];
 }
 
 export interface RunStatus {

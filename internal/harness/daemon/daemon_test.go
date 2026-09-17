@@ -138,6 +138,24 @@ func TestDispatchCoversManifestOps(t *testing.T) {
 		t.Fatalf("protocol op must serve ops: %v", res)
 	}
 }
+
+// TestDaemonModelsOp pins the op that keeps a client from carrying its own
+// catalogue: the answer comes from the provider, through the harness.
+func TestDaemonModelsOp(t *testing.T) {
+	srv := New(filepath.Join(t.TempDir(), "s.sock"), t.TempDir(), fakeDeps(false))
+	res := srv.dispatch(map[string]any{"op": "models"})
+	if res["ok"] != true {
+		t.Fatalf("models op failed: %v", res)
+	}
+	models, _ := res["models"].([]string)
+	if len(models) == 0 || models[0] != "fake-default" {
+		t.Fatalf("models = %v, want the provider's own list", res["models"])
+	}
+	if res["provider"] != "fake" {
+		t.Fatalf("the answer must name who it asked: %v", res["provider"])
+	}
+}
+
 func TestDaemonRunLifecycle(t *testing.T) {
 	dir := t.TempDir()
 	_, c, cancel := serveForTest(t, dir, false)

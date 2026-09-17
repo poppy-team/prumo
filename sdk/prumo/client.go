@@ -3,7 +3,7 @@
 // Boundary invariant: this package imports stdlib only — never
 // prumo/internal. It is the client surface the future prumo-code repo (and
 // any third-party client) builds against. Wire shape follows
-// schemas/protocol-manifest.json v0.2.0.
+// schemas/protocol-manifest.json v0.3.0.
 package prumo
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 // ProtocolVersion is the IDL this SDK speaks.
-const ProtocolVersion = "0.2.0"
+const ProtocolVersion = "0.3.0"
 
 // Client talks to a harness daemon over its Unix socket.
 type Client struct {
@@ -255,6 +255,39 @@ func (c Client) Approve(ctx context.Context, runID, requestID string) error {
 func (c Client) Deny(ctx context.Context, runID, requestID, reason string) error {
 	_, err := c.call(ctx, map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
 	return err
+}
+
+// ModelsRequest identifies the provider to ask about.
+//
+// Empty fields mean "the daemon's default", which is the common case: a client
+// usually wants to know what the harness it is attached to can serve, not what
+// some other endpoint could.
+type ModelsRequest struct {
+	Provider string
+	BaseURL  string
+	Model    string
+}
+
+// Models asks the harness what a provider can serve.
+//
+// The client does not keep its own catalogue: which models exist is a property
+// of the provider, and only the process that talks to it can answer.
+func (c Client) Models(ctx context.Context, r ModelsRequest) ([]string, error) {
+	msg := map[string]any{"op": "models"}
+	if r.Provider != "" {
+		msg["provider"] = r.Provider
+	}
+	if r.BaseURL != "" {
+		msg["base_url"] = r.BaseURL
+	}
+	if r.Model != "" {
+		msg["model"] = r.Model
+	}
+	out, err := c.call(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return toStrSlice(out["models"]), nil
 }
 
 // Job is one scheduled run template.

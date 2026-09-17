@@ -1,7 +1,7 @@
 # Harness daemon (local + remote)
 
 Package `internal/harness/daemon`. A daemon hosting headless runs:
-`start/status/list/events/cancel/steer/approve/deny/schedule/unschedule/jobs/protocol`
+`start/status/list/events/cancel/steer/approve/deny/schedule/unschedule/jobs/models/protocol`
 as JSON lines over a Unix socket, or over TCP+TLS+token when `--listen` is set
 (`remote.go`; the same dispatch serves both transports).
 
@@ -23,6 +23,12 @@ as JSON lines over a Unix socket, or over TCP+TLS+token when `--listen` is set
   keys/URLs).
 - Steering: `op steer` (CLI `agent steer`, SDK `Steer`, ACP `Prompt`)
   injects follow-up input into live runs (refused when terminal).
+- Model discovery: `op models` (CLI `agent models`, SDK `Models`) asks a provider
+  what it can serve, through the harness. The client does not carry a
+  catalogue: which models exist is a property of the provider, and only the
+  process talking to it can answer. A provider that cannot enumerate (Anthropic
+  exposes no listing) returns what it was configured with rather than an empty
+  list.
 - Approvals: `op approve` / `op deny` (CLI `agent approve|deny`, SDK
   `Approve`/`Deny`, TUI `a`/`d`) answer the permission request a run stopped
   on. The decision is recorded in the permission trail and the turn continues;
