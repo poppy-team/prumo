@@ -14,6 +14,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/perm"
 	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 	harnessruntime "github.com/raillen/prumo/internal/harness/runtime"
+	prumo "github.com/raillen/prumo/sdk/prumo"
 )
 
 type stubTools struct {
@@ -360,3 +361,84 @@ func TestPermissionOpValidatesItsArguments(t *testing.T) {
 		t.Fatalf("approve on an inactive run must fail: %v", res)
 	}
 }
+
+func TestDaemonDiff(t *testing.T) {
+	dir := t.TempDir()
+	srv, c, cancel := serveDepsForTest(t, dir, fakeDeps(false))
+	defer cancel()
+
+	// A run that recorded a diff
+	srv.saveDiff("R-diff", "foo.txt", "patch", "--- a/foo.txt\n+++ b/foo.txt\n@@ -1 +1 @@\n-old\n+new")
+
+	// Asking for the changed file succeeds
+	res, err := c.Diff("R-diff", "foo.txt")
+	if err != nil {
+		t.Fatalf("diff failed: %v", err)
+	}
+	if res["ok"] != true || res["kind"] != "patch" || !strings.Contains(res["content"].(string), "+new") {
+		t.Fatalf("unexpected diff response: %v", res)
+	}
+
+	// Asking for an untouched file fails with descriptive error
+	res, err = c.Diff("R-diff", "untouched.txt")
+	if err != nil {
+		t.Fatalf("call failed: %v", err)
+	}
+	if res["ok"] == true || !strings.Contains(res["error"].(string), "file not modified by run") {
+		t.Fatalf("untouched file must report not modified: %v", res)
+	}
+
+	// Missing arguments fail
+	if res := srv.dispatch(map[string]any{"op": "diff"}); res["error"] != "run_id required" {
+		t.Fatalf("missing run_id must error: %v", res)
+	}
+	if res := srv.dispatch(map[string]any{"op": "diff", "run_id": "R-1"}); res["error"] != "path required" {
+		t.Fatalf("missing path must error: %v", res)
+	}
+}
+
+func TestDaemonSubscribe(t *testing.T) {
+	dir := t.TempDir()
+	srv, c, cancel := serveDepsForTest(t, dir, fakeDeps(false))
+	defer cancel()
+
+	// Start a run
+	if _, err := c.Start("say hello", "fake", "R-sub", 1); err != nil {
+		t.Fatal(err)
+	}
+	waitStatus(t, c, "R-sub", "complete")
+
+	// Subscribe using sdk/prumo.Client
+	sdkClient := prumo.Client{SocketPath: srv.SocketPath}
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancelCtx()
+
+	events, err := sdkClient.Subscribe(ctx, "R-sub", 0)
+	if err != nil {
+		t.Fatalf("subscribe failed: %v", err)
+	}
+
+	var received []prumo.Event
+	for ev := range events {
+		received = append(received, ev)
+	}
+
+	if len(received) == 0 {
+		t.Fatalf("expected events over subscription, got 0")
+	}
+
+	// Reconnecting with cursor
+	cursor := len(received) - 1
+	events2, err := sdkClient.Subscribe(ctx, "R-sub", cursor)
+	if err != nil {
+		t.Fatalf("subscribe with cursor failed: %v", err)
+	}
+	var received2 []prumo.Event
+	for ev := range events2 {
+		received2 = append(received2, ev)
+	}
+	if len(received2) != 1 {
+		t.Fatalf("expected 1 event with cursor %d, got %d", cursor, len(received2))
+	}
+}
+

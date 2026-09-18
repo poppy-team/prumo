@@ -1,8 +1,8 @@
 {
-  "id": "ui:prumo-code-shell",
+  "id": "ui:prumo-tui",
   "version": 1,
-  "surface": "Prumo Code TUI \u2014 app shell and run panel (H10 spike)",
-  "note": "Canonical interface map for the terminal client. Structure, labels, intent and placement are declared here; symbols are proven against tui/**/*.go by `prumo ui verify`. A declared element always wins over a derived one, and divergence is a finding rather than a silent pick. Superseded as the shipping interface: the from-scratch client described here was archived to `archive/tui/` and its strategy replaced by ADR 013, which builds the client on the archived OpenCode Go view layer. This map still verifies that archived artifact; the shipping client's own map is owed.",
+  "surface": "prumo-tui — the shipping terminal client (chat shell, dialogs, statusline)",
+  "note": "Canonical interface map for the terminal client that ships: ADR 013 built it on the archived OpenCode Go view layer and the from-scratch client moved to `archive/tui/`, which keeps its own map beside it. Structure, labels, intent and placement are declared here; symbols are proven against `prumo-tui/**/*.go` by `prumo ui verify`. A declared element always wins over a derived one, and divergence is a finding rather than a silent pick. States come from `docs/ui-ux/state-matrix.json`, which describes this same surface.",
   "platforms": [
     "tui"
   ],
@@ -10,7 +10,7 @@
   "tokens_source": "docs/ui-ux/design-tokens.json",
   "derivation": {
     "sources": [
-      "archive/tui/**/*.go"
+      "prumo-tui/**/*.go"
     ],
     "mode": "verify-only"
   },
@@ -18,7 +18,7 @@
     {
       "id": "node:shell",
       "kind": "shell",
-      "role": "Application root: one stage at a time, palette-first navigation",
+      "role": "Application root: one page at a time, with dialogs drawn over it",
       "slot": {
         "region": "root",
         "order": 0,
@@ -33,40 +33,40 @@
       "states": [
         "default",
         "focus",
-        "high-contrast"
+        "narrow-viewport",
+        "high-contrast",
+        "alternate-theme"
       ],
       "tokens": [
         "token:color.surface"
       ],
       "implementation": {
-        "symbol": "tui.Model",
-        "path": "tui/app.go",
+        "symbol": "tui.New",
+        "path": "prumo-tui/internal/tui/tui.go",
         "status": "implemented"
       },
       "children": [
         {
-          "id": "node:titlebar",
+          "id": "node:header",
           "kind": "region",
-          "role": "Product identity line, shared by every stage",
+          "role": "Identity line, drawn above the page",
           "slot": {
             "region": "header",
             "order": 0,
-            "align": "start"
+            "align": "start",
+            "stack": "row"
           },
           "size_classes": [
             "compact",
             "standard",
             "wide"
           ],
-          "tokens": [
-            "token:color.text"
-          ],
           "children": [
             {
-              "id": "node:titlebar-text",
+              "id": "node:header-identity",
               "kind": "text",
-              "label": "Prumo",
-              "role": "Names the product; the only brand surface in the client",
+              "label": "◆ Prumo",
+              "role": "Names the client on the empty transcript; the only brand surface in the client",
               "slot": {
                 "region": "header",
                 "order": 0,
@@ -85,8 +85,8 @@
                 "token:color.text"
               ],
               "implementation": {
-                "symbol": "tui.Model.View",
-                "path": "tui/app.go",
+                "symbol": "page.NewChatPage",
+                "path": "prumo-tui/internal/tui/page/chat.go",
                 "status": "implemented"
               }
             }
@@ -95,7 +95,7 @@
         {
           "id": "node:body",
           "kind": "region",
-          "role": "Stage area: exactly one stage owns the keyboard",
+          "role": "The page area: exactly one page owns it",
           "slot": {
             "region": "body",
             "order": 1,
@@ -110,17 +110,17 @@
           ],
           "children": [
             {
-              "id": "node:palette",
+              "id": "node:chat-pane",
               "kind": "pane",
-              "label": "Command palette",
-              "role": "Palette-first entry point: every action is reachable from here",
-              "intent": "Let a user act without having to know which pane a feature lives in",
+              "label": "Conversation",
+              "role": "The transcript above the composer: where a run is read and driven",
+              "intent": "One place to see what the agent is doing while it does it, and to answer it",
               "slot": {
                 "region": "body",
                 "order": 0,
                 "align": "stretch",
-                "stack": "row",
-                "condition": "stage = palette"
+                "stack": "column",
+                "condition": "page = chat"
               },
               "size_classes": [
                 "compact",
@@ -129,370 +129,26 @@
               ],
               "states": [
                 "default",
-                "focus",
-                "empty",
-                "loading"
+                "focus"
               ],
               "tokens": [
-                "token:tui.command-palette.highlight",
-                "token:color.text-muted"
-              ],
-              "inputs": [
-                "down",
-                "up",
-                "ctrl+p",
-                "ctrl+n",
-                "enter",
-                "esc"
+                "token:color.panel"
               ],
               "implementation": {
-                "symbol": "tui.Palette",
-                "path": "tui/palette.go",
+                "symbol": "page.NewChatPage",
+                "path": "prumo-tui/internal/tui/page/chat.go",
                 "status": "implemented"
               },
               "children": [
                 {
-                  "id": "node:palette-list",
+                  "id": "node:transcript",
                   "kind": "list",
-                  "label": "Ranked commands",
-                  "role": "Ranked matches for the current query, best first",
+                  "label": "Transcript",
+                  "role": "The conversation, folded from the run's own event log",
+                  "intent": "A client that restarted rebuilds this from the record rather than remembering it",
                   "slot": {
                     "region": "body",
                     "order": 0,
-                    "align": "stretch",
-                    "stack": "column"
-                  },
-                  "size_classes": [
-                    "compact",
-                    "standard",
-                    "wide"
-                  ],
-                  "states": [
-                    "default",
-                    "focus",
-                    "selected",
-                    "empty",
-                    "narrow-viewport"
-                  ],
-                  "tokens": [
-                    "token:tui.command-palette.highlight"
-                  ],
-                  "inputs": [
-                    "down",
-                    "up"
-                  ],
-                  "implementation": {
-                    "symbol": "tui.Palette.Matches",
-                    "path": "tui/palette.go",
-                    "status": "implemented"
-                  },
-                  "children": [
-                    {
-                      "id": "node:palette-row",
-                      "kind": "button",
-                      "label": "\u203a <command title>",
-                      "role": "One selectable command; the selected row also shows its description",
-                      "intent": "Make the highlighted action the obvious one to accept",
-                      "slot": {
-                        "region": "body",
-                        "order": 0,
-                        "align": "start"
-                      },
-                      "size_classes": [
-                        "compact",
-                        "standard",
-                        "wide"
-                      ],
-                      "states": [
-                        "default",
-                        "focus",
-                        "selected"
-                      ],
-                      "tokens": [
-                        "token:tui.command-palette.highlight",
-                        "token:color.text"
-                      ],
-                      "inputs": [
-                        "enter",
-                        "pointer"
-                      ],
-                      "implementation": {
-                        "symbol": "tui.Command",
-                        "path": "tui/palette.go",
-                        "status": "implemented"
-                      }
-                    },
-                    {
-                      "id": "node:palette-empty",
-                      "kind": "text",
-                      "label": "no command matches \"<query>\"",
-                      "role": "States the empty filter result instead of rendering a blank panel",
-                      "intent": "A blank panel reads as a broken palette; the message says the query is the reason",
-                      "slot": {
-                        "region": "body",
-                        "order": 1,
-                        "align": "start"
-                      },
-                      "size_classes": [
-                        "compact",
-                        "standard",
-                        "wide"
-                      ],
-                      "states": [
-                        "empty"
-                      ],
-                      "tokens": [
-                        "token:color.text-muted"
-                      ],
-                      "implementation": {
-                        "symbol": "tui.Palette.Empty",
-                        "path": "tui/palette.go",
-                        "status": "implemented"
-                      }
-                    },
-                    {
-                      "id": "node:palette-query",
-                      "kind": "input",
-                      "label": "query: <text>",
-                      "role": "The fuzzy filter, shown as text rather than stored invisibly",
-                      "slot": {
-                        "region": "body",
-                        "order": 2,
-                        "align": "start"
-                      },
-                      "size_classes": [
-                        "compact",
-                        "standard",
-                        "wide"
-                      ],
-                      "states": [
-                        "default",
-                        "focus",
-                        "read-only"
-                      ],
-                      "tokens": [
-                        "token:color.text-muted"
-                      ],
-                      "inputs": [
-                        "paste"
-                      ],
-                      "implementation": {
-                        "symbol": "tui.Palette.SetQuery",
-                        "path": "tui/palette.go",
-                        "status": "implemented"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "node:goal-prompt",
-              "kind": "pane",
-              "label": "Goal prompt",
-              "role": "Collects the goal text before a run starts",
-              "intent": "One field, one decision: what should the agent do",
-              "slot": {
-                "region": "body",
-                "order": 0,
-                "align": "stretch",
-                "stack": "column",
-                "condition": "stage = goal"
-              },
-              "size_classes": [
-                "compact",
-                "standard",
-                "wide"
-              ],
-              "states": [
-                "focus",
-                "default",
-                "error"
-              ],
-              "tokens": [
-                "token:color.focus"
-              ],
-              "inputs": [
-                "enter",
-                "esc",
-                "paste"
-              ],
-              "implementation": {
-                "symbol": "tui.StageGoal",
-                "path": "tui/app.go",
-                "status": "implemented"
-              },
-              "children": [
-                {
-                  "id": "node:goal-field",
-                  "kind": "input",
-                  "label": "goal",
-                  "role": "The goal text, with a visible cursor",
-                  "slot": {
-                    "region": "body",
-                    "order": 0,
-                    "align": "stretch"
-                  },
-                  "size_classes": [
-                    "compact",
-                    "standard",
-                    "wide"
-                  ],
-                  "states": [
-                    "focus",
-                    "error"
-                  ],
-                  "tokens": [
-                    "token:color.focus",
-                    "token:color.text"
-                  ],
-                  "inputs": [
-                    "enter",
-                    "esc",
-                    "backspace",
-                    "paste"
-                  ],
-                  "implementation": {
-                    "symbol": "tui.StartConfig",
-                    "path": "tui/session.go",
-                    "status": "implemented"
-                  }
-                },
-                {
-                  "id": "node:goal-route-hint",
-                  "kind": "text",
-                  "label": "provider <name> \u00b7 max turns <n>",
-                  "role": "States the route the goal will run on, before it runs",
-                  "intent": "A run that used the wrong provider is expensive; saying which one is cheap",
-                  "slot": {
-                    "region": "body",
-                    "order": 1,
-                    "align": "start"
-                  },
-                  "size_classes": [
-                    "compact",
-                    "standard",
-                    "wide"
-                  ],
-                  "states": [
-                    "default",
-                    "read-only"
-                  ],
-                  "tokens": [
-                    "token:color.text-muted"
-                  ],
-                  "implementation": {
-                    "symbol": "tui.StartConfig",
-                    "path": "tui/session.go",
-                    "status": "implemented"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "node:run-panel",
-              "kind": "pane",
-              "label": "Run panel",
-              "role": "Live view of the run in flight",
-              "intent": "Show what the agent is doing while it does it, not after",
-              "slot": {
-                "region": "body",
-                "order": 0,
-                "align": "stretch",
-                "stack": "column",
-                "condition": "stage = run"
-              },
-              "size_classes": [
-                "compact",
-                "standard",
-                "wide"
-              ],
-              "states": [
-                "active",
-                "loading",
-                "partial",
-                "error",
-                "offline",
-                "reconnecting",
-                "permission-requested"
-              ],
-              "tokens": [
-                "token:color.accent",
-                "token:color.error"
-              ],
-              "inputs": [
-                "esc",
-                "ctrl+r"
-              ],
-              "implementation": {
-                "symbol": "tui.StageRun",
-                "path": "tui/app.go",
-                "status": "implemented"
-              },
-              "children": [
-                {
-                  "id": "node:run-heading",
-                  "kind": "text",
-                  "label": "run <run id>",
-                  "role": "Identifies the run the panel is showing",
-                  "slot": {
-                    "region": "body",
-                    "order": 0,
-                    "align": "start"
-                  },
-                  "size_classes": [
-                    "compact",
-                    "standard",
-                    "wide"
-                  ],
-                  "states": [
-                    "default"
-                  ],
-                  "tokens": [
-                    "token:color.text"
-                  ],
-                  "implementation": {
-                    "symbol": "tui.Session",
-                    "path": "tui/session.go",
-                    "status": "implemented"
-                  }
-                },
-                {
-                  "id": "node:run-goal-line",
-                  "kind": "text",
-                  "label": "goal: <goal text>",
-                  "role": "Restates the goal so the stream is readable without the prompt",
-                  "slot": {
-                    "region": "body",
-                    "order": 1,
-                    "align": "start"
-                  },
-                  "size_classes": [
-                    "compact",
-                    "standard",
-                    "wide"
-                  ],
-                  "states": [
-                    "default"
-                  ],
-                  "tokens": [
-                    "token:color.text-muted"
-                  ],
-                  "implementation": {
-                    "symbol": "tui.StartSession",
-                    "path": "tui/session.go",
-                    "status": "implemented"
-                  }
-                },
-                {
-                  "id": "node:timeline",
-                  "kind": "list",
-                  "label": "timeline",
-                  "role": "Bounded event stream with per-row severity",
-                  "intent": "Bound the view so a long run cannot turn the terminal into unbounded scrollback",
-                  "slot": {
-                    "region": "body",
-                    "order": 2,
                     "align": "stretch",
                     "weight": 1,
                     "stack": "column"
@@ -503,33 +159,35 @@
                     "wide"
                   ],
                   "states": [
+                    "empty",
                     "loading",
                     "partial",
                     "success",
-                    "warning",
-                    "error"
+                    "error",
+                    "read-only",
+                    "reconnecting"
                   ],
                   "tokens": [
-                    "token:color.success",
-                    "token:color.warning",
-                    "token:color.error"
+                    "token:color.text",
+                    "token:color.text-muted"
                   ],
                   "inputs": [
-                    "PgUp",
-                    "PgDn",
-                    "pointer"
+                    "pgup",
+                    "pgdn",
+                    "ctrl+u",
+                    "ctrl+d"
                   ],
                   "implementation": {
-                    "symbol": "tui.Timeline",
-                    "path": "tui/timeline.go",
+                    "symbol": "chat.NewMessagesCmp",
+                    "path": "prumo-tui/internal/tui/components/chat/list.go",
                     "status": "implemented"
                   },
                   "children": [
                     {
-                      "id": "node:timeline-row",
+                      "id": "node:transcript-turn",
                       "kind": "text",
-                      "label": "<index> <event title>",
-                      "role": "One event, numbered continuously so rows that aged out stay visible as absent",
+                      "label": "<author> · <text>",
+                      "role": "One message, rendered with its own markdown, reasoning and tool calls",
                       "slot": {
                         "region": "body",
                         "order": 0,
@@ -542,62 +200,130 @@
                       ],
                       "states": [
                         "default",
-                        "success",
-                        "warning",
-                        "error"
+                        "partial",
+                        "success"
                       ],
                       "tokens": [
                         "token:color.text",
                         "token:color.text-muted"
                       ],
                       "implementation": {
-                        "symbol": "tui.Entry",
-                        "path": "tui/timeline.go",
+                        "symbol": "message.Message",
+                        "path": "prumo-tui/internal/message/message.go",
                         "status": "implemented"
                       }
                     },
                     {
-                      "id": "node:timeline-detail",
+                      "id": "node:transcript-activity",
                       "kind": "text",
-                      "label": "<key=value \u2026>",
-                      "role": "Deterministic payload detail, keys sorted so the same event always renders identically",
+                      "label": "Thinking… · Waiting for tool response… · Generating…",
+                      "role": "Names what the run is doing while it does it, so a wait is legible rather than ambiguous",
+                      "intent": "A spinner alone says something is happening; the verb says what",
                       "slot": {
                         "region": "body",
                         "order": 1,
                         "align": "start"
                       },
                       "size_classes": [
+                        "compact",
                         "standard",
                         "wide"
                       ],
                       "states": [
-                        "read-only"
+                        "active",
+                        "partial"
                       ],
                       "tokens": [
-                        "token:color.text-muted"
+                        "token:color.accent"
                       ],
                       "implementation": {
-                        "symbol": "tui.Entry.Detail",
-                        "path": "tui/timeline.go",
+                        "symbol": "agent.AgentEvent",
+                        "path": "prumo-tui/internal/agent/agent.go",
                         "status": "implemented"
                       }
                     }
                   ]
+                },
+                {
+                  "id": "node:composer",
+                  "kind": "input",
+                  "label": "> goal",
+                  "role": "Where a goal is typed and sent",
+                  "intent": "One field, one decision: what should the agent do",
+                  "slot": {
+                    "region": "body",
+                    "order": 1,
+                    "align": "stretch"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default",
+                    "focus",
+                    "read-only"
+                  ],
+                  "tokens": [
+                    "token:color.focus",
+                    "token:color.text"
+                  ],
+                  "inputs": [
+                    "enter",
+                    "ctrl+e",
+                    "backspace",
+                    "paste"
+                  ],
+                  "implementation": {
+                    "symbol": "chat.NewEditorCmp",
+                    "path": "prumo-tui/internal/tui/components/chat/editor.go",
+                    "status": "implemented"
+                  }
+                },
+                {
+                  "id": "node:transcript-status",
+                  "kind": "text",
+                  "label": "press enter to send the message · press esc to cancel",
+                  "role": "States the keys the focused surface answers to, next to it",
+                  "intent": "A shortcut nobody can find is not a shortcut",
+                  "slot": {
+                    "region": "body",
+                    "order": 2,
+                    "align": "start"
+                  },
+                  "size_classes": [
+                    "compact",
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default",
+                    "active"
+                  ],
+                  "tokens": [
+                    "token:color.text-muted"
+                  ],
+                  "implementation": {
+                    "symbol": "chat.NewMessagesCmp",
+                    "path": "prumo-tui/internal/tui/components/chat/list.go",
+                    "status": "implemented"
+                  }
                 }
               ]
             },
             {
-              "id": "node:evidence-panel",
+              "id": "node:logs-pane",
               "kind": "pane",
-              "label": "Evidence",
-              "role": "Terminal accounting for the run that just stopped",
-              "intent": "Answer \"how did it end\" from the protocol, without reading the daemon's private files",
+              "label": "Logs",
+              "role": "The client's own log, kept apart from the conversation",
+              "intent": "A failure the statusline cannot hold is still readable somewhere",
               "slot": {
                 "region": "body",
                 "order": 0,
                 "align": "stretch",
                 "stack": "column",
-                "condition": "stage = evidence"
+                "condition": "page = logs"
               },
               "size_classes": [
                 "compact",
@@ -605,33 +331,28 @@
                 "wide"
               ],
               "states": [
-                "success",
-                "error",
-                "warning",
+                "default",
                 "read-only"
               ],
               "tokens": [
-                "token:color.accent"
-              ],
-              "inputs": [
-                "esc",
-                "ctrl+r"
+                "token:color.panel"
               ],
               "implementation": {
-                "symbol": "tui.StageEvidence",
-                "path": "tui/app.go",
+                "symbol": "page.NewLogsPage",
+                "path": "prumo-tui/internal/tui/page/logs.go",
                 "status": "implemented"
               },
               "children": [
                 {
-                  "id": "node:evidence-rows",
+                  "id": "node:logs-table",
                   "kind": "list",
-                  "label": "run \u00b7 status \u00b7 phase \u00b7 stop reason \u00b7 events seen \u00b7 aged out \u00b7 store",
-                  "role": "The accountable facts of the run, each on its own labelled row",
+                  "label": "log records",
+                  "role": "One row per record, with severity and time",
                   "slot": {
                     "region": "body",
                     "order": 0,
                     "align": "stretch",
+                    "weight": 1,
                     "stack": "column"
                   },
                   "size_classes": [
@@ -641,62 +362,31 @@
                   ],
                   "states": [
                     "default",
-                    "success",
-                    "warning",
-                    "error"
+                    "selected",
+                    "empty",
+                    "read-only"
                   ],
                   "tokens": [
-                    "token:color.accent",
-                    "token:color.text-muted"
+                    "token:color.text"
                   ],
                   "implementation": {
-                    "symbol": "tui.Evidence",
-                    "path": "tui/session.go",
+                    "symbol": "logs.NewLogsTable",
+                    "path": "prumo-tui/internal/tui/components/logs/table.go",
                     "status": "implemented"
-                  },
-                  "children": [
-                    {
-                      "id": "node:evidence-row",
-                      "kind": "text",
-                      "label": "<field>: <value>",
-                      "role": "One accountable fact",
-                      "slot": {
-                        "region": "body",
-                        "order": 0,
-                        "align": "start"
-                      },
-                      "size_classes": [
-                        "compact",
-                        "standard",
-                        "wide"
-                      ],
-                      "states": [
-                        "default",
-                        "read-only"
-                      ],
-                      "tokens": [
-                        "token:color.accent"
-                      ],
-                      "implementation": {
-                        "symbol": "tui.Evidence.Summary",
-                        "path": "tui/session.go",
-                        "status": "implemented"
-                      }
-                    }
-                  ]
+                  }
                 },
                 {
-                  "id": "node:evidence-scope-note",
+                  "id": "node:logs-detail",
                   "kind": "text",
-                  "label": "the richer artifacts (evidence, budget, permissions) live in the store above; this panel reports what the protocol states",
-                  "role": "States the boundary between what the panel shows and what the daemon owns",
-                  "intent": "A client that reaches into the daemon's private files is not a protocol client; saying so prevents the shortcut",
+                  "label": "<key=value …>",
+                  "role": "The selected record's attributes, each on its own line",
                   "slot": {
                     "region": "body",
                     "order": 1,
-                    "align": "start"
+                    "align": "stretch"
                   },
                   "size_classes": [
+                    "compact",
                     "standard",
                     "wide"
                   ],
@@ -707,57 +397,21 @@
                     "token:color.text-muted"
                   ],
                   "implementation": {
-                    "symbol": "tui.Evidence.Summary",
-                    "path": "tui/session.go",
+                    "symbol": "logs.NewLogsDetails",
+                    "path": "prumo-tui/internal/tui/components/logs/details.go",
                     "status": "implemented"
                   }
                 }
               ]
-            },
-            {
-              "id": "node:approval-prompt",
-              "kind": "button",
-              "label": "Approve / deny the pending permission (a approve \u00b7 d deny, default deny)",
-              "role": "The inline answer to a permission request raised by a run",
-              "intent": "A run that yields on permission_wait must be answerable without leaving the client",
-              "slot": {
-                "region": "overlay",
-                "order": 0,
-                "align": "center",
-                "condition": "a run yielded on permission_wait"
-              },
-              "size_classes": [
-                "compact",
-                "standard",
-                "wide"
-              ],
-              "states": [
-                "permission-requested",
-                "permission-denied",
-                "destructive-confirmation"
-              ],
-              "tokens": [
-                "token:tui.approval.prompt"
-              ],
-              "inputs": [
-                "a",
-                "d",
-                "esc"
-              ],
-              "implementation": {
-                "symbol": "tui.Session.Approve",
-                "path": "tui/session.go",
-                "status": "implemented"
-              }
             }
           ]
         },
         {
           "id": "node:statusline",
           "kind": "status",
-          "label": "<stage> \u00b7 <status> \u00b7 theme <theme id>",
-          "role": "Always-present line stating what the client is doing and how it is themed",
-          "intent": "A user must never have to guess which surface has the keyboard",
+          "label": "<model> · <message> · Context: <tokens>, Cost: <cost> · <n> changed",
+          "role": "Always-present line stating the model in use, what just happened, and what the run cost",
+          "intent": "A user must never have to guess which model answered or what the run spent",
           "slot": {
             "region": "footer",
             "order": 0,
@@ -770,7 +424,8 @@
           ],
           "states": [
             "default",
-            "reconnecting",
+            "warning",
+            "error",
             "offline",
             "narrow-viewport",
             "high-contrast"
@@ -779,12 +434,536 @@
             "token:tui.statusline",
             "token:color.text-muted"
           ],
+          "implementation": {
+            "symbol": "core.NewStatusCmp",
+            "path": "prumo-tui/internal/tui/components/core/status.go",
+            "status": "implemented"
+          },
+          "children": [
+            {
+              "id": "node:status-accounting",
+              "kind": "text",
+              "label": "in <tokens> · cache <tokens> · out <tokens> · $<cost> · ~$<cost>/req",
+              "role": "What the session spent, by kind, with the average request — summed from the harness's own usage events",
+              "intent": "A metered token, a cached one and an output token are priced differently, so the statusline keeps them apart and never claims a share of a context window the harness did not state",
+              "slot": {
+                "region": "footer",
+                "order": 0,
+                "align": "start"
+              },
+              "size_classes": [
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "default",
+                "success"
+              ],
+              "tokens": [
+                "token:color.text"
+              ],
+              "implementation": {
+                "symbol": "session.Session",
+                "path": "prumo-tui/internal/session/session.go",
+                "status": "implemented"
+              }
+            },
+            {
+              "id": "node:status-changes",
+              "kind": "text",
+              "label": "<n> changed",
+              "role": "How many files the run touched, from the harness's file.changed events",
+              "intent": "The count is a fact on the run's own record, not a local tally",
+              "slot": {
+                "region": "footer",
+                "order": 1,
+                "align": "start"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "default",
+                "success"
+              ],
+              "tokens": [
+                "token:color.text"
+              ],
+              "implementation": {
+                "symbol": "runtime.Runner.Changes",
+                "path": "prumo-tui/internal/runtime/runner.go",
+                "status": "implemented"
+              }
+            },
+            {
+              "id": "node:status-message",
+              "kind": "text",
+              "label": "<info · warning · error text>",
+              "role": "What just happened, in words, with a colour that repeats rather than carries the meaning",
+              "slot": {
+                "region": "footer",
+                "order": 2,
+                "align": "stretch"
+              },
+              "size_classes": [
+                "compact",
+                "standard",
+                "wide"
+              ],
+              "states": [
+                "default",
+                "warning",
+                "error"
+              ],
+              "tokens": [
+                "token:color.warning",
+                "token:color.error"
+              ],
+              "implementation": {
+                "symbol": "util.InfoMsg",
+                "path": "prumo-tui/internal/tui/util/util.go",
+                "status": "implemented"
+              }
+            }
+          ]
+        },
+        {
+          "id": "node:commands-dialog",
+          "kind": "menu",
+          "label": "Commands",
+          "role": "The entry point every action is reachable from",
+          "intent": "A user does not have to know which key a feature lives behind",
+          "slot": {
+            "region": "overlay",
+            "order": 0,
+            "align": "center",
+            "condition": "ctrl+k on the chat page"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "focus"
+          ],
+          "tokens": [
+            "token:tui.command-palette.highlight",
+            "token:color.text-muted"
+          ],
           "inputs": [
-            "pointer"
+            "up",
+            "down",
+            "enter",
+            "esc"
           ],
           "implementation": {
-            "symbol": "tui.Styles.Statusbar",
-            "path": "tui/styles.go",
+            "symbol": "dialog.NewCommandDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/commands.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:sessions-dialog",
+          "kind": "list",
+          "label": "Sessions",
+          "role": "The runs the daemon knows, so a client that started later can re-attach",
+          "intent": "Selecting a session re-reads its log rather than starting a new one",
+          "slot": {
+            "region": "overlay",
+            "order": 1,
+            "align": "center",
+            "condition": "ctrl+s on the chat page"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "empty",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.accent",
+            "token:color.text-muted"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewSessionDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/session.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:models-dialog",
+          "kind": "list",
+          "label": "Models",
+          "role": "What the provider can serve, as the harness answered",
+          "intent": "The catalogue belongs to the harness; the client asks and shows",
+          "slot": {
+            "region": "overlay",
+            "order": 2,
+            "align": "center",
+            "condition": "ctrl+o on the chat page"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "loading",
+            "empty",
+            "error"
+          ],
+          "tokens": [
+            "token:color.accent",
+            "token:color.text-muted"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewModelDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/models.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:themes-dialog",
+          "kind": "list",
+          "label": "Themes",
+          "role": "The registered palettes, switched live",
+          "slot": {
+            "region": "overlay",
+            "order": 3,
+            "align": "center",
+            "condition": "ctrl+t"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "alternate-theme",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.accent"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewThemeDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/theme.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:filepicker",
+          "kind": "list",
+          "label": "Files",
+          "role": "The workspace's files, for reading and for naming in a goal",
+          "slot": {
+            "region": "overlay",
+            "order": 4,
+            "align": "center",
+            "condition": "ctrl+f"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "read-only",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.accent",
+            "token:color.text-muted"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewFilepickerCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/filepicker.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:completion-menu",
+          "kind": "list",
+          "label": "@ <path>",
+          "role": "Files and folders matching what was typed after @",
+          "slot": {
+            "region": "overlay",
+            "order": 5,
+            "align": "start",
+            "condition": "the composer holds an open @ completion"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "empty",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.accent"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewCompletionDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/complete.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:approval-dialog",
+          "kind": "button",
+          "label": "Approve · allow for the session · deny",
+          "role": "The answer to a permission gate a run yielded on",
+          "intent": "A run that stops for a decision is answered without leaving the client",
+          "slot": {
+            "region": "overlay",
+            "order": 6,
+            "align": "center",
+            "condition": "the run's timeline reported permission_wait"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "permission-requested",
+            "permission-denied",
+            "destructive-confirmation"
+          ],
+          "tokens": [
+            "token:tui.approval.prompt",
+            "token:color.warning"
+          ],
+          "inputs": [
+            "a",
+            "d",
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewPermissionDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/permission.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:quit-dialog",
+          "kind": "button",
+          "label": "Quit prumo-tui?",
+          "role": "Confirms leaving, so no chord ends a session by accident",
+          "slot": {
+            "region": "overlay",
+            "order": 7,
+            "align": "center",
+            "condition": "ctrl+q, or ctrl+c with no run in flight"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "destructive-confirmation",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.warning"
+          ],
+          "inputs": [
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewQuitCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/quit.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:help-dialog",
+          "kind": "list",
+          "label": "Keymap for the current surface",
+          "role": "The keys the focused surface answers to, listed from the bindings themselves",
+          "intent": "Discoverability is a requirement, not a courtesy",
+          "slot": {
+            "region": "overlay",
+            "order": 8,
+            "align": "center",
+            "condition": "ctrl+_"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "read-only",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.text-muted",
+            "token:color.text"
+          ],
+          "inputs": [
+            "esc",
+            "up",
+            "down"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewHelpCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/help.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:init-dialog",
+          "kind": "button",
+          "label": "Initialize this project",
+          "role": "Offers the workspace's agent memory file on first use",
+          "slot": {
+            "region": "overlay",
+            "order": 9,
+            "align": "center",
+            "condition": "the workspace has no harness store yet"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "default",
+            "focus"
+          ],
+          "tokens": [
+            "token:color.accent"
+          ],
+          "inputs": [
+            "enter",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewInitDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/init.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:files-dialog",
+          "kind": "list",
+          "label": "Files this run changed",
+          "role": "What the run touched, from the harness's own file.changed events",
+          "intent": "A count in the statusline says how many; this says which",
+          "slot": {
+            "region": "overlay",
+            "order": 10,
+            "align": "center",
+            "condition": "ctrl+g on the chat page"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "empty",
+            "read-only"
+          ],
+          "tokens": [
+            "token:color.accent",
+            "token:color.text-muted"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewFilesDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/files.go",
+            "status": "implemented"
+          }
+        },
+        {
+          "id": "node:jobs-dialog",
+          "kind": "list",
+          "label": "Runs on a schedule",
+          "role": "What the daemon repeats, read when the panel opens",
+          "intent": "A schedule nobody can see is a schedule nobody can stop",
+          "slot": {
+            "region": "overlay",
+            "order": 11,
+            "align": "center",
+            "condition": "the palette's Scheduled runs entry"
+          },
+          "size_classes": [
+            "compact",
+            "standard",
+            "wide"
+          ],
+          "states": [
+            "selected",
+            "empty",
+            "read-only"
+          ],
+          "tokens": [
+            "token:color.accent",
+            "token:color.text-muted"
+          ],
+          "inputs": [
+            "up",
+            "down",
+            "d",
+            "esc"
+          ],
+          "implementation": {
+            "symbol": "dialog.NewJobsDialogCmp",
+            "path": "prumo-tui/internal/tui/components/dialog/jobs.go",
             "status": "implemented"
           }
         }
@@ -793,74 +972,88 @@
   ],
   "edges": [
     {
-      "kind": "focus",
-      "from": "node:palette",
-      "to": "node:goal-prompt",
-      "label": "the run-goal command opens the goal prompt",
-      "condition": "the selected command starts a run"
-    },
-    {
-      "kind": "focus",
-      "from": "node:goal-prompt",
-      "to": "node:run-panel",
-      "label": "an accepted goal starts the run and moves focus to it",
-      "condition": "the goal is non-empty and the daemon accepts the run"
-    },
-    {
-      "kind": "focus",
-      "from": "node:goal-prompt",
-      "to": "node:palette",
-      "label": "esc discards the goal and returns focus to the palette",
-      "condition": "the user dismisses the prompt"
-    },
-    {
-      "kind": "focus",
-      "from": "node:run-panel",
-      "to": "node:evidence-panel",
-      "label": "a terminal status moves the view to the evidence panel",
-      "condition": "the run leaves the running state"
-    },
-    {
-      "kind": "focus",
-      "from": "node:evidence-panel",
-      "to": "node:palette",
-      "label": "esc returns to the palette, which is always one chord away",
-      "condition": "always"
-    },
-    {
-      "kind": "navigates-to",
-      "from": "node:palette",
-      "to": "node:evidence-panel",
-      "label": "show evidence",
-      "condition": "a session exists"
-    },
-    {
       "kind": "data",
-      "from": "node:run-panel",
-      "to": "node:timeline",
-      "label": "polled AgentEvent batches, appended newest last",
-      "condition": "the run has not reached a terminal status"
-    },
-    {
-      "kind": "data",
-      "from": "node:evidence-panel",
-      "to": "node:evidence-rows",
-      "label": "the run's terminal accounting as the protocol states it",
-      "condition": "the run stopped"
-    },
-    {
-      "kind": "event",
       "from": "node:body",
       "to": "node:statusline",
-      "label": "the active stage and its status text",
+      "label": "the model in use, what just happened, and what the run cost",
       "condition": "every redraw"
     },
     {
+      "kind": "focus",
+      "from": "node:composer",
+      "to": "node:transcript",
+      "label": "a sent goal moves attention to what the run produces",
+      "condition": "the daemon accepts the run"
+    },
+    {
+      "kind": "event",
+      "from": "node:completion-menu",
+      "to": "node:composer",
+      "label": "the chosen path is written into the goal text",
+      "condition": "enter on a completion"
+    },
+    {
+      "kind": "navigates-to",
+      "from": "node:chat-pane",
+      "to": "node:logs-pane",
+      "label": "ctrl+l shows the client's own log; esc or q returns",
+      "condition": "no run in flight"
+    },
+    {
       "kind": "blocks",
-      "from": "node:approval-prompt",
-      "to": "node:run-panel",
-      "label": "a run that yields on permission_wait cannot proceed without an approval answer",
-      "condition": "the permission engine returns ask for a tool call"
+      "from": "node:approval-dialog",
+      "to": "node:transcript",
+      "label": "a run that yielded on permission_wait does not proceed until the gate is answered",
+      "condition": "the harness asks for approval"
+    },
+    {
+      "kind": "data",
+      "from": "node:approval-dialog",
+      "to": "node:transcript",
+      "label": "approve or deny travels back over the protocol, and the run's continuation arrives as events",
+      "condition": "an answer is sent"
+    },
+    {
+      "kind": "data",
+      "from": "node:sessions-dialog",
+      "to": "node:transcript",
+      "label": "the selected run's log is folded back into the transcript",
+      "condition": "a session the daemon knows is selected"
+    },
+    {
+      "kind": "data",
+      "from": "node:models-dialog",
+      "to": "node:statusline",
+      "label": "the chosen model is what subsequent runs ask the harness for",
+      "condition": "a model is selected"
+    },
+    {
+      "kind": "overlay",
+      "from": "node:commands-dialog",
+      "to": "node:body",
+      "label": "the palette is drawn over the page it acts on",
+      "condition": "ctrl+k on the chat page"
+    },
+    {
+      "kind": "focus",
+      "from": "node:help-dialog",
+      "to": "node:shell",
+      "label": "esc closes the keymap back to the surface it described",
+      "condition": "always"
+    },
+    {
+      "kind": "data",
+      "from": "node:status-changes",
+      "to": "node:files-dialog",
+      "label": "both read the same run record, so the count and the list cannot disagree",
+      "condition": "the panel is opened"
+    },
+    {
+      "kind": "data",
+      "from": "node:jobs-dialog",
+      "to": "node:statusline",
+      "label": "stopping a recurring run is reported where every other failure is",
+      "condition": "a job is stopped"
     }
   ]
 }

@@ -4,7 +4,7 @@
 > (2026-09-17).** The spike ran its course — criteria 1–4 pass end to end and 5 is
 > measured — and its from-scratch client is archived to `archive/tui-poc/`. The
 > shipping terminal client is built on the archived OpenCode Go view layer, in a
-> separate `prumo-tui` module. This document is kept as the record of what the
+> separate `prumo-agent tui` module. This document is kept as the record of what the
 > spike required and proved; it is no longer the plan for the client.
 
 Status: SUPERSEDED (accepted 2026-09-17, having been PROPOSED while the H10 increment ran).
@@ -13,7 +13,7 @@ Sources: Living Book pages 13 (TUI spec), 14 (tech matrix), 18 (roadmap), 21 (St
 ## Goal
 
 Prove that the Prumo Harness can drive a real Zed-like terminal client:
-one Go/Bubble Tea v2 binary that connects to `prumo agentd` over the Agent
+one Go/Bubble Tea v2 binary that connects to `prumo-agent agentd` over the Agent
 Protocol and delivers the agent-first core loop (palette → run → stream →
 approve → evidence), with zero `internal/` imports.
 

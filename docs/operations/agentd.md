@@ -1,8 +1,8 @@
 # prumo-agentd operations
 
-The local daemon (`prumo agent serve`) is single-instance per project root
+The local daemon (`prumo-agent agent serve`) is single-instance per project root
 (PID lock at `.prumo/runtime/harness/agentd.pid`, stale takeover when the
-pid is dead), refuses a second server, and stops via `prumo agent stop`
+pid is dead), refuses a second server, and stops via `prumo-agent agent stop`
 (SIGTERM; stale locks are cleared with a message).
 
 Timelines rotate at 2000 JSONL lines (newest 1000 kept); checkpoints prune
@@ -21,7 +21,7 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=%h/Documentos/Projetos/prumo
-ExecStart=%h/go/bin/prumo agent serve --path %h/Documentos/Projetos/prumo
+ExecStart=%h/go/bin/prumo-agent agent serve --path %h/Documentos/Projetos/prumo
 Restart=on-failure
 RestartSec=5
 

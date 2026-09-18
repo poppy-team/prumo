@@ -26,7 +26,7 @@ approved baseline; no agent suggestion is silently promoted.
 
 ### 2. Goal-specific planning closes only the relevant gaps
 
-- Planning and readiness are goal-scoped: `prumo plan --goal <id>`,
+- Planning and readiness are goal-scoped: `prumo-agent plan --goal <id>`,
   `docs readiness --goal <id>`; the documentation engine ignores unrelated
   contracts when computing coverage for a Goal (M5 regression suite).
 - The sample loop only touches `product.vision` and `project.scope`; unrelated
@@ -47,7 +47,7 @@ approved baseline; no agent suggestion is silently promoted.
 
 - Session checkpoint persisted under `.ai/plan/sessions/<id>.json` as
   `session.Checkpoint()` (`internal/app/sessionstore.go`, E-G07).
-- `prumo plan resume` recompiles context from canonical decisions + open
+- `prumo-agent plan resume` recompiles context from canonical decisions + open
   questions + checkpoint (`internal/app/resume_test.go`,
   `internal/planning/session_test.go`); no transcript is reintroduced.
 

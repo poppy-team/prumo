@@ -37,7 +37,6 @@ func NewPrumoTheme() *PrumoTheme {
 	lightSecondary := "#7b5bb6" // Secondary purple
 	lightAccent := "#d68c27"    // Accent orange/gold
 	lightRed := "#d1383d"       // Error red
-	lightOrange := "#d68c27"    // Warning orange
 	lightGreen := "#3d9a57"     // Success green
 	lightCyan := "#318795"      // Info cyan
 	lightYellow := "#b0851f"    // Emphasized text
@@ -46,35 +45,65 @@ func NewPrumoTheme() *PrumoTheme {
 	theme := &PrumoTheme{}
 
 	// Base colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.PrimaryColor = AdaptiveColor{
 		Dark:  darkPrimary,
-		Light: lightPrimary,
+		Light: "#3871bf",
 	}
 	theme.SecondaryColor = AdaptiveColor{
 		Dark:  darkSecondary,
 		Light: lightSecondary,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.AccentColor = AdaptiveColor{
 		Dark:  darkAccent,
-		Light: lightAccent,
+		Light: "#966728",
 	}
 
 	// Status colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.ErrorColor = AdaptiveColor{
 		Dark:  darkRed,
-		Light: lightRed,
+		Light: "#cf373c",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#966728",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  darkGreen,
-		Light: lightGreen,
+		Light: "#387e4b",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.InfoColor = AdaptiveColor{
 		Dark:  darkCyan,
-		Light: lightCyan,
+		Light: "#307a87",
 	}
 
 	// Text colors
@@ -82,13 +111,23 @@ func NewPrumoTheme() *PrumoTheme {
 		Dark:  darkForeground,
 		Light: lightForeground,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextMutedColor = AdaptiveColor{
-		Dark:  darkComment,
-		Light: lightComment,
+		Dark:  "#898989",
+		Light: "#707070",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextEmphasizedColor = AdaptiveColor{
 		Dark:  darkYellow,
-		Light: lightYellow,
+		Light: "#8b6c21",
 	}
 
 	// Background colors

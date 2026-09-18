@@ -18,9 +18,9 @@ that observation:
   (`obs-<run>.jsonl`, `evidence-<run>.jsonl`) for one run the operator started,
   on that operator's machine, and prunes them by retention policy. There is no
   aggregation endpoint, no vendor SDK and no phone-home path.
-- Documentation retrieval is a **read surface**: `prumo docs query` reads a
-  generated index, `prumo docs resources read` serves a resource over MCP, and
-  `prumo docs metrics` computes figures from repository state. None of these
+- Documentation retrieval is a **read surface**: `prumo-agent docs query` reads a
+  generated index, `prumo-agent docs resources read` serves a resource over MCP, and
+  `prumo-agent docs metrics` computes figures from repository state. None of these
   writes a query log, and adding one would make the natural-language text of
   every question a persisted artifact.
 - The framework's own trust model (`docs/security/trust-model.md`) classifies
@@ -39,7 +39,7 @@ that observation:
 1. **W21.2 and W21.3 are not implemented.** Prumo collects no retrieval or query
    telemetry, locally or remotely.
 2. **Documentation intelligence is derived from repository state only.** Every
-   figure in `prumo docs metrics` is computed by reading the repository:
+   figure in `prumo-agent docs metrics` is computed by reading the repository:
    coverage, stale translations, stale media, broken links, claim drift, token
    counts, documentation debt. A metric that would need to observe a reader is
    out of scope by construction.

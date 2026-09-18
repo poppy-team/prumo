@@ -1,0 +1,32 @@
+# digest sha256:a4be06bb0df29750
+                                                                                                                                            
+ ◆ Prumo unknown                                                                                                                            
+ https://github.com/raillen/prumo                                                                                                           
+                                                                                                                                            
+ cwd: /home/raillen/Documentos/Projetos/prumo/prumo-tui/internal/tui                                                                        
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+ press enter to send the message, write \ and enter to add a new line                                                                       
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ >                                                                                                                                          
+                                                                                                                                            
+ ctrl+? help                                                                                                                          fake  

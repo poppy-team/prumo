@@ -71,7 +71,7 @@ Invalid subjects include `update`, `wip`, `final`, and untracked prose without a
 gofmt -l cmd internal
 go test ./...
 go vet ./...
-go run ./cmd/prumo repo policy check
+go run ./cmd/prumo-agent repo policy check
 pytest
 ```
 
@@ -98,7 +98,7 @@ Report vulnerabilities privately through `SECURITY.md`. Do not open public Issue
 
 ## Troubleshooting
 
-- `prumo repo policy check` reports the local repository state.
-- `prumo repo policy plan --json` reports deterministic remediation.
-- Use `prumo repo policy apply --dry-run` before any remote remediation.
+- `prumo-agent repo policy check` reports the local repository state.
+- `prumo-agent repo policy plan --json` reports deterministic remediation.
+- Use `prumo-agent repo policy apply --dry-run` before any remote remediation.
 - Repository state changes require explicit commands and, when remote, appropriate credentials.

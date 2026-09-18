@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/raillen/prumo-tui/internal/runtime"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/tui/util"
@@ -19,6 +20,7 @@ type CloseModelDialogMsg struct{}
 
 // ModelsLoadedMsg carries what the harness said a provider can serve.
 type ModelsLoadedMsg struct {
+	Info   map[string]runtime.ModelCapabilities
 	Models []string
 	Err    error
 }
@@ -36,8 +38,11 @@ type ModelDialog interface {
 type modelDialogCmp struct {
 	width, height int
 	models        []string
-	cursor        int
-	err           error
+	// info is what each model declares it can do, by id. A model with no entry
+	// is one nobody declared — not one that was measured and found wanting.
+	info   map[string]runtime.ModelCapabilities
+	cursor int
+	err    error
 }
 
 // NewModelDialogCmp returns an empty picker; the list arrives as a message.
@@ -81,6 +86,19 @@ func (m *modelDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the component for the terminal.
 func (m *modelDialogCmp) View() tea.View { return tea.NewView(m.viewString()) }
+
+// features renders what a model declares, or says plainly that nobody declared
+// anything about it.
+func features(info runtime.ModelCapabilities) string {
+	if !info.Declared {
+		return "(not declared)"
+	}
+	if len(info.Features) == 0 {
+		return "(declared, nothing claimed)"
+	}
+	return "[" + strings.Join(info.Features, " ") + "]"
+}
+
 func (m *modelDialogCmp) viewString() string {
 	t := theme.CurrentTheme()
 	baseStyle := styles.BaseStyle()
@@ -110,12 +128,14 @@ func (m *modelDialogCmp) viewString() string {
 			if i == m.cursor {
 				row = row.Background(t.Primary()).Foreground(t.Background()).Bold(true)
 			}
-			rows = append(rows, row.Render(model))
+			rows = append(rows, row.Render(model+" "+features(m.info[model])))
 		}
 	}
 
+	// The legend exists because a model whose features nobody declared must not
+	// read as a model without features.
 	hint := baseStyle.Foreground(t.TextMuted()).Width(width).
-		Render("enter select · esc close")
+		Render("text reason vision tools audio · \"not declared\" = nobody said")
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,

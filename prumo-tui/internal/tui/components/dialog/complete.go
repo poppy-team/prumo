@@ -155,7 +155,7 @@ func (c *completionDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					logging.Info("Query", query)
 					items, err := c.completionProvider.GetChildEntries(query)
 					if err != nil {
-						logging.Error("Failed to get child entries", err)
+						logging.Error("Failed to get child entries", "error", err)
 					}
 
 					c.listView.SetItems(items)
@@ -189,7 +189,7 @@ func (c *completionDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			items, err := c.completionProvider.GetChildEntries("")
 			if err != nil {
-				logging.Error("Failed to get child entries", err)
+				logging.Error("Failed to get child entries", "error", err)
 			}
 
 			c.listView.SetItems(items)
@@ -247,7 +247,7 @@ func NewCompletionDialogCmp(completionProvider CompletionProvider) CompletionDia
 
 	items, err := completionProvider.GetChildEntries("")
 	if err != nil {
-		logging.Error("Failed to get child entries", err)
+		logging.Error("Failed to get child entries", "error", err)
 	}
 
 	li := utilComponents.NewSimpleList(

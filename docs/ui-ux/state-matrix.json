@@ -1,14 +1,16 @@
 {
-  "id": "ui:prumo-code-shell",
-  "surface": "Prumo Code TUI — app shell and run panel (H10 spike)",
-  "note": "Every state in the closed vocabulary is declared. Applicability is explicit and a non-applicable state states why, so an unimplemented state can never be mistaken for an unconsidered one (W5, W11).",
+  "id": "ui:prumo-tui",
+  "surface": "prumo-tui — the shipping terminal client (chat shell, dialogs, statusline)",
+  "note": "State vocabulary of the shipping client, which ADR 013 built on the archived OpenCode Go view layer; the archived from-scratch client keeps its own matrix at archive/tui/state-matrix.json. Every state in the closed vocabulary is declared. Applicability is explicit and a non-applicable state states why, so an unimplemented state can never be mistaken for an unconsidered one (W5, W11). Where a state applies to the surface but the client does not draw it yet, applicability stays true and the implementation trace in docs/ui-ux/interface-map.json carries `not-implemented` with its reason — the two artifacts tell the same story.",
   "states": [
     {
       "state": "default",
       "applicable": true,
-      "user_visible_text": "Palette prompt with the active goal's phase and no run in flight.",
-      "recovery": "Not a failure state; the palette is the entry point.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "The shell with no run in flight: the header names the client, the editor holds focus, and the statusline names the model being asked for.",
+      "recovery": "Not a failure state. Typing a goal and pressing enter starts a run; ctrl+s lists the runs the daemon already knows.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "hover",
@@ -19,155 +21,253 @@
     {
       "state": "focus",
       "applicable": true,
-      "user_visible_text": "The focused pane's border is drawn with the `focus` token; the focused row is the palette or list selection.",
-      "recovery": "Focus is never hidden and never trapped; `Esc` returns focus one level toward the palette.",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "Exactly one surface holds the keyboard: the composer, or a dialog drawn over the page until it closes. The composer is the only editable line and carries the `>` prompt, so a frame says where the keyboard is without relying on colour.",
+      "recovery": "Focus is never trapped: esc dismisses the topmost layer and every dialog closes back to the surface that opened it. A focus token that changes the composer's border glyph as well as its colour is owed — `styles.FocusedBorder` exists and nothing uses it, so the marker today is the prompt and the caret rather than a border.",
+      "evidence": [
+        "golden-frame",
+        "manual"
+      ]
     },
     {
       "state": "active",
       "applicable": true,
-      "user_visible_text": "A command has been accepted and its first event is pending.",
-      "recovery": "A bounded spinner; if no event arrives within the request timeout the surface moves to `error`.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "A run is in flight. The transcript draws a spinner next to a verb naming what the run is doing — Thinking, Waiting for tool response, Building tool call, Generating.",
+      "recovery": "esc or ctrl+c asks the daemon to stop the run; the daemon owns the loop, the client only asks.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "selected",
       "applicable": true,
-      "user_visible_text": "The selected palette row or list item is drawn with the `accent` token.",
-      "recovery": "Selection is always one row; `Esc` clears it without side effects.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "The selected row of a list — sessions, commands, models, themes, files — is drawn with the accent colour and shows its description.",
+      "recovery": "Moving the selection never has a side effect; enter acts on it and esc closes the list.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "disabled",
-      "applicable": true,
-      "user_visible_text": "A palette action that cannot run yet is rendered with `text-muted` and a one-line reason.",
-      "recovery": "The reason names what must change; a disabled action without a reason is a defect.",
-      "evidence": ["golden-frame"]
+      "applicable": false,
+      "reason": "The command menu lists only actions that can run: there is no disabled row, and therefore no muted label with a reason to render. An action the client cannot perform is not offered rather than offered-and-explained — the compaction entry states where the capability lives rather than being drawn unavailable.",
+      "recovery": "Not applicable until the client has an action it must show as unavailable."
     },
     {
       "state": "empty",
       "applicable": true,
-      "user_visible_text": "No goal is selected, or a list has no entries: a single line naming the next action.",
-      "recovery": "The empty state is an instruction, not an apology: it names the key or command that fills it.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "A session with no messages: a single line naming the next action, beside the client's identity.",
+      "recovery": "The empty state is an instruction, not an apology: it names the key that fills it.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "loading",
       "applicable": true,
-      "user_visible_text": "Spinner plus the elapsed budget, so a long wait is legible rather than ambiguous.",
-      "recovery": "Bounded by the run budget; on exhaustion the surface moves to `error` with the stop reason.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "The transcript says `Loading...` while a session's messages are rendered, so a first frame that takes a moment is legible rather than blank.",
+      "recovery": "Bounded by one render pass; a session that cannot be read is reported in the statusline as an error.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "partial",
       "applicable": true,
-      "user_visible_text": "Streamed events are rendered as they arrive; the timeline is explicitly incomplete.",
-      "recovery": "Incompleteness is stated, never implied: the header shows the run is streaming.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "Streamed text, reasoning and tool calls are drawn as they arrive. The stream is explicitly incomplete: the spinner names what the run is doing until it stops.",
+      "recovery": "Incompleteness is stated, never implied. esc cancels the run and the transcript keeps what arrived.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "success",
       "applicable": true,
-      "user_visible_text": "Terminal run outcome plus the evidence and gate result for the run.",
+      "user_visible_text": "The run finished: the transcript carries the answer, and the statusline reports what the run spent **by kind** — input, cached and output tokens, the cost, and the average per request — beside how many files it changed, all from the harness's own usage and file.changed events.",
       "recovery": "Not a failure state.",
-      "evidence": ["golden-frame"]
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "warning",
       "applicable": true,
-      "user_visible_text": "A non-blocking condition, drawn with the `warning` token, always naming its subject.",
-      "recovery": "Warnings never require action to continue; they are recorded in the timeline.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "A non-blocking condition in the statusline, drawn with the warning colour and a message that names its subject.",
+      "recovery": "Warnings never block: they clear on their own TTL and the run continues.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "error",
       "applicable": true,
-      "user_visible_text": "The diagnostic code and message from the protocol envelope, never a bare rendering of an internal error.",
-      "recovery": "Names the failing operation and the next observable action (retry, correct, or inspect the log).",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "The statusline reports the failure in words, carrying the harness's own message rather than a rendering of an internal error.",
+      "recovery": "Names the failing operation; the goal can be re-issued, and a run whose daemon went away is reported instead of being drawn as still running.",
+      "evidence": [
+        "golden-frame",
+        "manual"
+      ]
     },
     {
       "state": "offline",
       "applicable": true,
-      "user_visible_text": "The daemon endpoint is unreachable; the status line says so and the last known run state is shown as stale.",
-      "recovery": "The client retries on the declared interval and surfaces the attempt count; it never silently retries forever.",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "The daemon endpoint is unreachable. The statusline carries `offline` with the attempt count it stopped at, and the transcript is left as the record of what was last known.",
+      "recovery": "The client retries a poll that failed before it calls the link lost — eight attempts, each one shown as `reconnecting k/8` so a wait can be told from a hang — and only then reports the failure and stops the run. Re-attaching afterwards is a deliberate act: selecting the session again, or re-issuing the goal.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "reconnecting",
       "applicable": true,
-      "user_visible_text": "Reconnect attempt with a replay indicator so replayed events are distinguishable from live ones.",
-      "recovery": "Replay is idempotent by event ID: reconnect must not duplicate timeline rows or corrupt UI state.",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "The statusline says `reconnecting k/8` while the client is retrying its link to the daemon, above what the run spent, because a user who cannot reach the daemon needs to know that first.",
+      "recovery": "A link that answers again clears the indicator; one that does not ends in `offline` with the failure the user is left reading. Re-attaching reads the run's own log, so the transcript is rebuilt rather than remembered and a client that restarted mid-run arrives at the same conversation and the same spend. The fold resumes from where it stopped, so a reconnect cannot duplicate a turn or double-count usage.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "permission-requested",
       "applicable": true,
-      "user_visible_text": "The pending permission with its tool, scope and target, and the keys that approve or deny.",
-      "recovery": "Denying is always available and never requires typing; the default selection is deny.",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "The approval dialog names the tool, its description and a preview of what it would do — a command, a diff or a URL — with the keys that answer it. The statusline says the same thing in words (`Permission required: <tool> — a to allow, s for the session, d to deny`), so a frame states what is waiting without the dialog having to be read.",
+      "recovery": "Denying is always available and never requires typing, and it is announced where it can be answered: the dialog and the statusline carry the same key list. The dialog opens from the harness's own permission_wait event and closes when the answer is sent.",
+      "evidence": [
+        "golden-frame",
+        "manual"
+      ]
     },
     {
       "state": "permission-denied",
       "applicable": true,
-      "user_visible_text": "The run reports the denied permission as the stop reason rather than as an error.",
-      "recovery": "The operator can re-issue the run after changing the permission policy; no state is lost.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "The statusline names the decision and its subject — `Denied process.exec. The run stops.` — and the transcript keeps what the run produced before the gate.",
+      "recovery": "The operator can re-issue the goal after changing the harness's policy. The daemon reports the run as failed, and from its account a denial is indistinguishable from any other stop; the client is the only place the difference exists, so it is the place that says which stop this was.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "read-only",
       "applicable": true,
-      "user_visible_text": "The file tree is read-only in the spike; it renders paths and never offers a write affordance.",
-      "recovery": "Editing is opened in the external editor, which owns the write.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "The transcript is a stream, not a form: it scrolls without a selection and no row is editable. The logs page is a read-only table with a detail pane.",
+      "recovery": "Writing happens in the workspace, through the run. The client offers no write affordance of its own.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "destructive-confirmation",
       "applicable": true,
-      "user_visible_text": "Confirmation names the exact action and target, and states what will not be recoverable.",
-      "recovery": "Cancelling is the default key and leaves the run in its previous state.",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "Quitting asks first, and the approval dialog names the exact action and target before it happens.",
+      "recovery": "Cancelling is the default and leaves everything as it was; ctrl+c never exits silently.",
+      "evidence": [
+        "golden-frame",
+        "manual"
+      ]
     },
     {
       "state": "narrow-viewport",
       "applicable": true,
-      "user_visible_text": "Below the compact width class the file tree collapses and the run timeline stays primary.",
-      "recovery": "No horizontal scrolling; content reflows or truncates with an explicit truncation marker.",
-      "evidence": ["golden-frame"]
+      "user_visible_text": "Below the compact width class the panes stack, the statusline drops its optional segments rather than overflowing, and any row that loses its tail ends with a truncation marker.",
+      "recovery": "No horizontal scrolling, at any width: the frame is fitted to the terminal it was drawn for.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "alternate-theme",
-      "applicable": false,
-      "reason": "Out of scope for H10: docs/product/tui-spike-h10.md excludes themes from the spike, so no theme-selection surface exists. The no-color and high-contrast token themes are still shipped and exercised.",
-      "recovery": "Not applicable until a theme-selection surface ships."
+      "applicable": true,
+      "user_visible_text": "ctrl+t lists the registered palettes and switches the one in use; the choice is held in the client's configuration.",
+      "recovery": "A theme is a display choice. Changing it never changes what the run did, and the transcript is re-rendered rather than re-read.",
+      "evidence": [
+        "golden-frame"
+      ]
     },
     {
       "state": "high-contrast",
       "applicable": true,
-      "user_visible_text": "The high-contrast token theme, plus a no-color mode in which every semantic distinction is carried by text or shape rather than color.",
-      "recovery": "Selected by terminal capability, not by user preference, in the spike.",
-      "evidence": ["golden-frame", "manual"]
+      "user_visible_text": "A terminal without colour support draws the same interface: every distinction is carried by text or glyph, and a locale that cannot render the Unicode set gets the ASCII one instead.",
+      "recovery": "Selected by terminal capability, not by preference.",
+      "evidence": [
+        "golden-frame",
+        "manual"
+      ]
     },
     {
       "state": "alternate-locale",
       "applicable": false,
-      "reason": "Out of scope for H10: docs/product/tui-spike-h10.md excludes i18n packs, so the spike ships one source locale and has no locale-switching surface.",
+      "reason": "The client ships one source locale and has no locale-switching surface: its own strings are English and the run's text arrives from the harness verbatim. i18n packs are out of scope until a locale surface ships.",
       "recovery": "Not applicable until a locale surface ships."
     }
   ],
   "transitions": [
-    { "from": "default", "to": "active", "trigger": "palette action accepted" },
-    { "from": "active", "to": "loading", "trigger": "run start acknowledged" },
-    { "from": "loading", "to": "partial", "trigger": "first streamed event" },
-    { "from": "partial", "to": "permission-requested", "trigger": "tool requires approval" },
-    { "from": "permission-requested", "to": "partial", "trigger": "permission approved" },
-    { "from": "permission-requested", "to": "permission-denied", "trigger": "permission denied" },
-    { "from": "partial", "to": "success", "trigger": "run completed and evidence recorded" },
-    { "from": "partial", "to": "error", "trigger": "diagnostic returned or budget exhausted" },
-    { "from": "loading", "to": "error", "trigger": "request timeout without an event" },
-    { "from": "final", "to": "offline", "trigger": "daemon endpoint unreachable" },
-    { "from": "offline", "to": "reconnecting", "trigger": "retry interval elapsed" },
-    { "from": "reconnecting", "to": "partial", "trigger": "reconnected and replayed to the live tail" },
-    { "from": "reconnecting", "to": "offline", "trigger": "retry failed" }
+    {
+      "from": "default",
+      "to": "active",
+      "trigger": "a goal is sent and the daemon accepts the run"
+    },
+    {
+      "from": "active",
+      "to": "loading",
+      "trigger": "the run is acknowledged before its first event"
+    },
+    {
+      "from": "loading",
+      "to": "partial",
+      "trigger": "the first streamed delta is folded"
+    },
+    {
+      "from": "partial",
+      "to": "permission-requested",
+      "trigger": "the timeline reports permission_wait"
+    },
+    {
+      "from": "permission-requested",
+      "to": "partial",
+      "trigger": "approve is answered over the protocol"
+    },
+    {
+      "from": "permission-requested",
+      "to": "permission-denied",
+      "trigger": "deny is answered over the protocol"
+    },
+    {
+      "from": "partial",
+      "to": "success",
+      "trigger": "the run reaches a terminal status"
+    },
+    {
+      "from": "partial",
+      "to": "error",
+      "trigger": "the daemon reports a failure, or the run cannot be read"
+    },
+    {
+      "from": "active",
+      "to": "default",
+      "trigger": "esc or ctrl+c cancels the run"
+    },
+    {
+      "from": "default",
+      "to": "empty",
+      "trigger": "a session is selected that has produced no messages"
+    },
+    {
+      "from": "empty",
+      "to": "active",
+      "trigger": "the first goal of that session is sent"
+    },
+    {
+      "from": "error",
+      "to": "reconnecting",
+      "trigger": "a session is selected again or the goal is re-issued"
+    },
+    {
+      "from": "reconnecting",
+      "to": "partial",
+      "trigger": "the run's log is folded back into the transcript"
+    },
+    {
+      "from": "reconnecting",
+      "to": "error",
+      "trigger": "the run is not known to the daemon"
+    }
   ]
 }

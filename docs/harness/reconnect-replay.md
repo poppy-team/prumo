@@ -52,9 +52,9 @@ not a different code path.
 
 ## Operator diagnostics
 
-- `prumo agent logs <run>` — run record and event tail.
-- `prumo agent ps` — live runs and their state.
-- `prumo agent events <run> --json` — machine-readable replay for incident bundles.
+- `prumo-agent agent logs <run>` — run record and event tail.
+- `prumo-agent agent ps` — live runs and their state.
+- `prumo-agent agent events <run> --json` — machine-readable replay for incident bundles.
 
 ## TUI state recovery
 

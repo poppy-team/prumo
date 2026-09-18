@@ -2,7 +2,7 @@
 
 # Status
 
-Proposed (thresholds pending benchmark corpus)
+Accepted (2026-09-17) as policy. The thresholds stay deliberately unstated until a measured distribution exists — that is what this ADR decides, not a gap in it.
 
 # Context
 

@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-17
-**Context:** H10 (terminal client), W22 (interface map), GAP-046/GAP-047, `prumo-tui`
+**Context:** H10 (terminal client), W22 (interface map), GAP-046/GAP-047, `prumo-agent tui`
 **Supersedes:** the from-scratch client approach recorded in `docs/product/tui-spike-h10.md`
 
 ## Context
@@ -43,8 +43,8 @@ client whose runtime is the Prumo harness.
 foundation.** Prumo does not rename a fork; it takes a proven view layer and
 replaces everything underneath it.
 
-**2. The client is its own Go module.** `prumo-tui` (module
-`github.com/raillen/prumo-tui`) depends on the Prumo core only through
+**2. The client is its own Go module.** `prumo-agent tui` (module
+`github.com/raillen/prumo-agent tui`) depends on the Prumo core only through
 `github.com/raillen/prumo/sdk/prumo`. The core does not depend on the client.
 
 The direction document proposed placing the client at `internal/tui/`. That is
@@ -99,7 +99,7 @@ its license, the exact revision and what was and was not derived. The upstream
   than `go.mod` requires, which the second module makes load-bearing.
 - **The map moves with the client.** `docs/ui-ux/interface-map.json` declares its
   sources as the old package path and names its symbols. Archiving the spike
-  without retargeting it fails `prumo ui verify` with unresolved symbols. The
+  without retargeting it fails `prumo-agent ui verify` with unresolved symbols. The
   retarget is part of the work, not an afterthought.
 - **The client polls, it is not pushed to.** Upstream was written against a live
   event broker; the harness protocol exposes replay plus status. The adapter

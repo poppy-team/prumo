@@ -25,11 +25,13 @@ htmlcov/
 
 # Notion imports (derived, on-demand)
 .prumo/imports/
+.commandcode/
 
 # Scratch / deep-research reports and audits at root
 *-deep-research-report.md
 PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md
 *DEEP_AUDIT*.md
+*AUDITORIA*.md
 
 # Snapshot archives (large binaries)
 *.zip

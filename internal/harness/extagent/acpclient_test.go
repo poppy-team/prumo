@@ -146,7 +146,7 @@ func TestACPLiveDogfood(t *testing.T) {
 		t.Skip("set PRUMO_LIVE_ACP=1 to run the live ACP dogfood")
 	}
 	bin := filepath.Join(t.TempDir(), "prumo-acp-test")
-	build := exec.Command("go", "build", "-o", bin, "./cmd/prumo")
+	build := exec.Command("go", "build", "-o", bin, "./cmd/prumo-agent")
 	build.Dir = "../../.."
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %s %v", out, err)

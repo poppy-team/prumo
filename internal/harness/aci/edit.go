@@ -50,7 +50,11 @@ func (e *Executor) editPatch(call agent.ToolCall, arg func(string) string) agent
 		return fail("temp file: %s", err.Error())
 	}
 	tmpName := tmp.Name()
-	_, _ = tmp.WriteString(patch)
+	if _, err := tmp.WriteString(patch); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fail("write patch temp file: %s", err.Error())
+	}
 	_ = tmp.Close()
 	defer os.Remove(tmpName)
 

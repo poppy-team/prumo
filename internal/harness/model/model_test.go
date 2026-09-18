@@ -2,6 +2,9 @@ package model
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -111,3 +114,59 @@ func TestFakeStreamingToolArgs(t *testing.T) {
 		t.Fatal("expected events")
 	}
 }
+
+func TestOpenAICompatMultipartImagePayload(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer srv.Close()
+
+	p := NewOpenAICompat(srv.URL, "test-key", "gpt-4o")
+	req := agent.ModelRequest{
+		RequestID: "req-img",
+		TurnID:    "T1",
+		Messages: []agent.Message{
+			{
+				ID:   "m1",
+				Role: agent.RoleUser,
+				Parts: []agent.ContentPart{
+					{Type: "text", Text: "describe:"},
+					{Type: "image", MimeType: "image/png", Data: "iVBORw0KGgoAAA=="},
+				},
+			},
+		},
+	}
+	ch, err := p.Stream(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+
+	msgs, ok := receivedBody["messages"].([]any)
+	if !ok || len(msgs) != 1 {
+		t.Fatalf("expected 1 message in payload, got: %v", receivedBody)
+	}
+	msgMap := msgs[0].(map[string]any)
+	parts, ok := msgMap["content"].([]any)
+	if !ok || len(parts) != 2 {
+		t.Fatalf("expected 2 content parts, got: %v", msgMap["content"])
+	}
+	p0 := parts[0].(map[string]any)
+	if p0["type"] != "text" || p0["text"] != "describe:" {
+		t.Errorf("part 0 mismatch: %v", p0)
+	}
+	p1 := parts[1].(map[string]any)
+	if p1["type"] != "image_url" {
+		t.Errorf("part 1 not image_url: %v", p1)
+	}
+	imgURL, ok := p1["image_url"].(map[string]any)
+	if !ok || imgURL["url"] != "data:image/png;base64,iVBORw0KGgoAAA==" {
+		t.Errorf("part 1 url mismatch: %v", imgURL)
+	}
+}
+

@@ -1,0 +1,31 @@
+# digest sha256:aeb5e87cb9727992
+                                                                                                                                            
+ ┃ row 0 of the conversation                                                                                                                
+                                                                                                                                            
+ ┃ row 1 of the conversation                                                                                                                
+                                                                                                                                            
+ ┃ row 2 of the conversation                                                                                                                
+                                                                                                                                            
+ ┃ row 3 of the conversation       ╭─────────────────────────────────────────────────────────────────────╮                                  
+                                   │                                                                     │░                                 
+                                   │ Permission Required                                                 │░                                 
+                                   │                                                                     │░                                 
+                                   │ Tool: process.exec                                                  │░                                 
+                                   │                                                                     │░                                 
+                                   │   go test ./...                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                                                                     │░                                 
+                                   │                      Allow (a)    Allow for session (s)    Deny (d) │░                                 
+                                   │                                                                     │░                                 
+                                   ╰─────────────────────────────────────────────────────────────────────╯░                                 
+                                    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                 
+ press enter to send the message, write \ and enter to add a new line                                                                       
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ >                                                                                                                                          
+                                                                                                                                            
+ ctrl+? help  in 0 · out 0 · $0.0000  Permission required: process.exec — a to allow, s for the session, d to deny                    fake  

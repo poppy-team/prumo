@@ -46,7 +46,7 @@ prumo --json plan questions --session PLAN-SAMPLE --path ./copy
 1. **Answer the blocker** — an explicit user decision, owner attributed.
 
    ```sh
-   prumo plan answer --session PLAN-SAMPLE --path ./copy \
+   prumo-agent plan answer --session PLAN-SAMPLE --path ./copy \
      --question Q1 --classification explicit-decision --actor owner \
      --statement "Networking, observability and storage backends are out of scope for the first delivery."
    # resolved Q1 (explicit-decision): open questions now 1
@@ -55,7 +55,7 @@ prumo --json plan questions --session PLAN-SAMPLE --path ./copy
 2. **Answer the remaining question** — a constraint for the vision contract.
 
    ```sh
-   prumo plan answer --session PLAN-SAMPLE --path ./copy \
+   prumo-agent plan answer --session PLAN-SAMPLE --path ./copy \
      --question Q2 --classification constraint --actor owner \
      --statement "CLI operators and automation harnesses define the primary outcome; reviewers are secondary."
    # resolved Q2 (constraint): open questions now 0
@@ -64,7 +64,7 @@ prumo --json plan questions --session PLAN-SAMPLE --path ./copy
 3. **Review the canonical decisions** recorded in the session.
 
    ```sh
-   prumo plan decisions --session PLAN-SAMPLE --path ./copy
+   prumo-agent plan decisions --session PLAN-SAMPLE --path ./copy
    ```
 
 4. **Document impacts** — the accepted decisions imply a proposed delta touching
@@ -72,7 +72,7 @@ prumo --json plan questions --session PLAN-SAMPLE --path ./copy
    docs; that is the authoring step below.
 
    ```sh
-   prumo plan delta --session PLAN-SAMPLE --path ./copy
+   prumo-agent plan delta --session PLAN-SAMPLE --path ./copy
    ```
 
 5. **Author the scope document and bind it** (repository governance). In this
@@ -80,7 +80,7 @@ prumo --json plan questions --session PLAN-SAMPLE --path ./copy
    binding to replay this step truthfully.
 
    ```sh
-   prumo plan delta --apply --session PLAN-SAMPLE --path ./copy
+   prumo-agent plan delta --apply --session PLAN-SAMPLE --path ./copy
    # delta DD-… state=applied, evidence=[DP-Q1-dec, DP-Q2-dec], ready=true
    ```
 
@@ -94,7 +94,7 @@ prumo --json plan questions --session PLAN-SAMPLE --path ./copy
 7. **Propose the goal** — acceptance criteria plus the task DAG when requested.
 
    ```sh
-   prumo plan blueprint --plan --session PLAN-SAMPLE --path ./copy
+   prumo-agent plan blueprint --plan --session PLAN-SAMPLE --path ./copy
    ```
 
 ## Why it matters

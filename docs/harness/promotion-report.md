@@ -37,7 +37,7 @@ descriptors, budget envelopes, modelregistry routing, context baseline,
 experience handoff) but no unified NativeAgent, no ModelProvider boundary,
 no FakeProvider suite, no reentrant loop, no idempotent journal, no gateway
 with Handoff rule, no typed Handoff v2, no Context v2/RRF/MMR, no Knowledge
-Delta engine, no doc DAG/CAS, no team ownership guard, no `prumo agent`.
+Delta engine, no doc DAG/CAS, no team ownership guard, no `prumo-agent agent`.
 All now have baseline implementations under `internal/harness/*` (see
 roadmap-status for partial/deferred marks). No fake-completion: docs state
 partial/deferred explicitly.

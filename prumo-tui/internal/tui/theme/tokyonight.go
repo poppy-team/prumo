@@ -52,23 +52,43 @@ func NewTokyoNightTheme() *TokyoNightTheme {
 		Dark:  darkPurple,
 		Light: lightPurple,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.AccentColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#7a5d55",
 	}
 
 	// Status colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.ErrorColor = AdaptiveColor{
 		Dark:  darkRed,
-		Light: lightRed,
+		Light: "#944592",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#7a5d55",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  darkGreen,
-		Light: lightGreen,
+		Light: "#3d63a5",
 	}
 	theme.InfoColor = AdaptiveColor{
 		Dark:  darkBlue,
@@ -80,8 +100,13 @@ func NewTokyoNightTheme() *TokyoNightTheme {
 		Dark:  darkForeground,
 		Light: lightForeground,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextMutedColor = AdaptiveColor{
-		Dark:  darkComment,
+		Dark:  "#818bbd",
 		Light: lightComment,
 	}
 	theme.TextEmphasizedColor = AdaptiveColor{

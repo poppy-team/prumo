@@ -84,7 +84,7 @@ Agents must:
 
 Authority order, roles (canonical/projection/historical) and drift rules are
 canonical in `docs/governance/authority.md`. The machine-readable classification
-lives in `docs/AUTHORITY_MAP.json` and is verified by `prumo docs authority`
+lives in `docs/AUTHORITY_MAP.json` and is verified by `prumo-agent docs authority`
 (CI gate `docs-authority`). Agent/provider adapters are projections and may not
 introduce independent project facts.
 

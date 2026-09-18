@@ -19,7 +19,7 @@ We establish the **Language Engineering & Safety Skills Subsystem** within the P
 Key architectural mechanisms:
 - **Executable Contracts**: Each skill follows Lean Progressive Context (`SKILL.md` bounded core, `checks/`, `templates/`, `references/`, `scripts/`) and registers machine selectors, required capabilities, and required evidence in `skills.json` under schema_version 2.
 - **Escape-Hatch Registry**: Banned constructs (e.g. `reinterpret_cast`, raw `malloc`/`free`, `(void*)`, `@ptrCast`, `@trusted`, suppressions) cannot be introduced without formal registration in `.prumo/escape-hatches.json` or inline annotations with explicit safety invariants and quarantine boundaries (`schemas/escape-hatch.schema.json`).
-- **Native Go Tooling**: Embedded `prumo tool check-escape-hatches` scanner provides instant verification in CLI, pre-commit hooks, and CI pipelines.
+- **Native Go Tooling**: Embedded `prumo-agent tool check-escape-hatches` scanner provides instant verification in CLI, pre-commit hooks, and CI pipelines.
 - **Adaptive Quality Gates & Evidence**: Automated generation of `evidence.json` matching `schemas/evidence.schema.json` verifying compiler warnings, linters, and sanitizers (ASan, UBSan, TSan, Valgrind).
 - **Connector Compilation**: Host connectors (Antigravity, OpenCode, Codex, Claude Code, Gemini) emit language skills, rules, and audit hooks directly into target harnesses.
 

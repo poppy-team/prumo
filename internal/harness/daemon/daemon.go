@@ -7,6 +7,7 @@ package daemon
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -85,6 +86,16 @@ type Server struct {
 	ln   net.Listener
 	rln  net.Listener
 	seq  int
+
+	subsMu      sync.Mutex
+	subscribers map[string][]chan map[string]any
+}
+
+// DiffRecord records what a run changed in one file (ADR 014).
+type DiffRecord struct {
+	Path    string `json:"path"`
+	Kind    string `json:"kind"`
+	Content string `json:"content"`
 }
 
 // activeRun tracks a live run: cancel stops it, runner accepts steering and
@@ -120,7 +131,14 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 	if deps.PermPolicy.DefaultAction == "" {
 		deps.PermPolicy = DefaultPermPolicy()
 	}
-	return &Server{SocketPath: socketPath, StoreDir: storeDir, Deps: deps, policy: deps.PermPolicy, runs: map[string]*activeRun{}}
+	return &Server{
+		SocketPath:  socketPath,
+		StoreDir:    storeDir,
+		Deps:        deps,
+		policy:      deps.PermPolicy,
+		runs:        map[string]*activeRun{},
+		subscribers: map[string][]chan map[string]any{},
+	}
 }
 
 func (s *Server) recordPath(runID string) string {
@@ -156,6 +174,21 @@ func (s *Server) appendEvent(runID string, ev agent.AgentEvent) {
 	defer f.Close()
 	_, _ = f.Write(append(data, '\n'))
 	_ = RotateLog(path, 2000)
+
+	s.subsMu.Lock()
+	chans := append([]chan map[string]any{}, s.subscribers[runID]...)
+	s.subsMu.Unlock()
+	if len(chans) > 0 {
+		var evMap map[string]any
+		_ = json.Unmarshal(data, &evMap)
+		push := map[string]any{"op": "event", "run_id": runID, "event": evMap}
+		for _, ch := range chans {
+			select {
+			case ch <- push:
+			default:
+			}
+		}
+	}
 }
 
 // Serve blocks until ctx is cancelled.
@@ -204,20 +237,48 @@ func (s *Server) handle(conn net.Conn) {
 	sc := bufio.NewScanner(conn)
 	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
 	w := bufio.NewWriter(conn)
+	var writeMu sync.Mutex
+	safeWrite := func(v map[string]any) error {
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		return writeMsg(w, v)
+	}
+
+	var subCancel context.CancelFunc
+	defer func() {
+		if subCancel != nil {
+			subCancel()
+		}
+	}()
+
 	for sc.Scan() {
 		var msg map[string]any
 		if err := json.Unmarshal(sc.Bytes(), &msg); err != nil {
-			writeMsg(w, map[string]any{"ok": false, "error": "invalid json"})
+			_ = safeWrite(map[string]any{"ok": false, "error": "invalid json"})
 			continue
 		}
-		writeMsg(w, s.dispatch(msg))
+		if str(msg, "op") == "subscribe" {
+			if subCancel != nil {
+				subCancel()
+			}
+			var subCtx context.Context
+			subCtx, subCancel = context.WithCancel(context.Background())
+			go s.handleSubscribe(subCtx, msg, safeWrite)
+			continue
+		}
+		_ = safeWrite(s.dispatch(msg))
 	}
 }
 
-func writeMsg(w *bufio.Writer, v map[string]any) {
-	data, _ := json.Marshal(v)
-	_, _ = w.Write(append(data, '\n'))
-	_ = w.Flush()
+func writeMsg(w *bufio.Writer, v map[string]any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	if _, err := w.Write(append(data, '\n')); err != nil {
+		return err
+	}
+	return w.Flush()
 }
 
 func str(m map[string]any, k string) string {
@@ -253,6 +314,13 @@ func (s *Server) dispatch(msg map[string]any) map[string]any {
 		return s.opUnschedule(msg)
 	case "jobs":
 		return s.opJobs()
+	case "diff":
+		return s.opDiff(msg)
+	case "subscribe":
+		if str(msg, "run_id") == "" {
+			return map[string]any{"ok": false, "error": "run_id required"}
+		}
+		return map[string]any{"ok": false, "error": "subscribe requires a streaming connection"}
 	default:
 		return map[string]any{"ok": false, "error": "unknown op"}
 	}
@@ -270,6 +338,13 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	provider, err := s.Deps.NewProvider(providerName, str(msg, "base_url"), str(msg, "api_key"), str(msg, "model"))
 	if err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	// A provider that runs work of its own needs to know where: a delegated turn
+	// launched in the daemon's directory would edit the wrong tree. The factory
+	// builds a provider from a name, a URL and a key — none of which is a
+	// workspace — so it is handed over here, and only to providers that ask.
+	if aware, ok := provider.(interface{ SetWorkspace(string) }); ok {
+		aware.SetWorkspace(s.Deps.Workspace)
 	}
 	maxTurns := 5
 	if v, ok := msg["max_turns"].(float64); ok && v > 0 {
@@ -304,27 +379,36 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	s.runs[runID] = ar
 	s.mu.Unlock()
 
+	modelName := str(msg, "model")
 	s.saveRecord(RunRecord{RunID: runID, Status: "running"})
 	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-started", RunID: runID, Kind: "run.started", Payload: map[string]any{"goal": goal, "provider": providerName}, CreatedAt: agent.Now()})
 
-	go s.execute(runCtx, runID, goal, provider, tools, workspace, maxTurns, ar)
+	go s.execute(runCtx, runID, goal, modelName, provider, tools, workspace, maxTurns, ar)
 	return map[string]any{"ok": true, "run_id": runID}
 }
 
 // execute builds one run's collaborators and hands them to observe. Every
 // artifact the run produces is written by observe, so a run that stops for
 // approval and then continues still ends with exactly one coherent record.
-func (s *Server) execute(ctx context.Context, runID, goal string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int, ar *activeRun) {
+func (s *Server) execute(ctx context.Context, runID, goal, modelName string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int, ar *activeRun) {
 	dir := s.StoreDir
 	tracker := runlayer.NewTracker(0, 0, 0)
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
 	engine := perm.New(s.policy)
 	checkpoints := checkpoint.New(filepath.Join(dir, "checkpoints"))
+	hasVision := false
+	if declared, err := model.LoadDeclarations(workspace); err == nil {
+		if caps, ok := declared.Models[modelName]; ok {
+			hasVision = caps.Vision
+		}
+	}
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
 		Models:      provider,
 		Tools:       counting,
 		Perms:       engine,
 		Checkpoints: checkpoints,
+		Workspace:   workspace,
+		HasVision:   hasVision,
 		Events: func(ev agent.AgentEvent) {
 			s.appendEvent(runID, ev)
 			ar.mu.Lock()
@@ -339,6 +423,9 @@ func (s *Server) execute(ctx context.Context, runID, goal string, provider model
 			s.appendEvent(runID, agent.AgentEvent{ID: runID + "-ctx", RunID: runID, Kind: "context.compiled",
 				Payload: map[string]any{"included": len(m.Included), "tokens": m.EstimatedTokens, "pressure": m.Pressure}, CreatedAt: agent.Now()})
 			return "ctx-" + runID, nil
+		},
+		RecordDiff: func(runID, path, kind, content string) {
+			s.saveDiff(runID, path, kind, content)
 		},
 	}, runID, "S-daemon")
 	runner.MaxTurns = maxTurns
@@ -433,7 +520,26 @@ func (s *Server) opModels(msg map[string]any) map[string]any {
 	if err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
-	return map[string]any{"ok": true, "provider": providerName, "models": models}
+
+	// What each model can do is declared by the workspace, not probed: no
+	// provider publishes its models' features in a form a client can read, so
+	// the daemon reports what somebody wrote down and marks the rest as
+	// undeclared. `models` keeps carrying bare ids for clients that only pick
+	// one; `model_info` carries what is known about each.
+	workspace := s.Deps.Workspace
+	if workspace == "" {
+		workspace = s.StoreDir
+	}
+	declared, err := model.LoadDeclarations(workspace)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+
+	return map[string]any{
+		"ok": true, "provider": providerName,
+		"models":     models,
+		"model_info": model.Describe(models, declared),
+	}
 }
 
 func (s *Server) opStatus(runID string) map[string]any {
@@ -554,6 +660,188 @@ func (s *Server) opEvents(runID string) map[string]any {
 		evs = evs[len(evs)-500:]
 	}
 	return map[string]any{"ok": true, "run_id": runID, "events": evs}
+}
+
+func (s *Server) diffPath(runID string) string {
+	return filepath.Join(s.StoreDir, "diffs-"+runID+".json")
+}
+
+func (s *Server) saveDiff(runID, path, kind, content string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	diffs := s.loadDiffsLocked(runID)
+	diffs[path] = DiffRecord{Path: path, Kind: kind, Content: content}
+	data, err := json.MarshalIndent(diffs, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.MkdirAll(s.StoreDir, 0o755)
+	tmp := s.diffPath(runID) + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err == nil {
+		_ = os.Rename(tmp, s.diffPath(runID))
+	}
+}
+
+func (s *Server) loadDiffsLocked(runID string) map[string]DiffRecord {
+	data, err := os.ReadFile(s.diffPath(runID))
+	if err != nil {
+		return map[string]DiffRecord{}
+	}
+	var m map[string]DiffRecord
+	if err := json.Unmarshal(data, &m); err != nil {
+		return map[string]DiffRecord{}
+	}
+	return m
+}
+
+// opDiff returns what a run changed in one file (ADR 014).
+func (s *Server) opDiff(msg map[string]any) map[string]any {
+	runID := str(msg, "run_id")
+	if runID == "" {
+		return map[string]any{"ok": false, "error": "run_id required"}
+	}
+	path := str(msg, "path")
+	if path == "" {
+		return map[string]any{"ok": false, "error": "path required"}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	diffs := s.loadDiffsLocked(runID)
+	entry, ok := diffs[path]
+	if !ok {
+		clean := filepath.Clean(path)
+		for k, v := range diffs {
+			if filepath.Clean(k) == clean {
+				entry = v
+				ok = true
+				break
+			}
+		}
+	}
+	if !ok {
+		return map[string]any{"ok": false, "error": "file not modified by run: " + path}
+	}
+	return map[string]any{
+		"ok":      true,
+		"path":    entry.Path,
+		"kind":    entry.Kind,
+		"content": entry.Content,
+	}
+}
+
+func (s *Server) readRawEvents(runID string) []map[string]any {
+	data, err := os.ReadFile(s.eventPath(runID))
+	if err != nil {
+		return nil
+	}
+	var evs []map[string]any
+	sc := bufio.NewScanner(bytes.NewReader(data))
+	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		var m map[string]any
+		if err := json.Unmarshal(line, &m); err == nil {
+			evs = append(evs, m)
+		}
+	}
+	return evs
+}
+
+// handleSubscribe streams live and replayed events over JSONL (ADR 014).
+func (s *Server) handleSubscribe(ctx context.Context, msg map[string]any, writeMsg func(map[string]any) error) {
+	runID := str(msg, "run_id")
+	if runID == "" {
+		_ = writeMsg(map[string]any{"ok": false, "error": "run_id required"})
+		return
+	}
+	from := 0
+	if f, ok := msg["from"].(float64); ok {
+		from = int(f)
+	} else if i, ok := msg["from"].(int); ok {
+		from = i
+	}
+
+	// Register subscriber first so no live events emitted during catch-up are dropped.
+	subCh := make(chan map[string]any, 128)
+	s.subsMu.Lock()
+	s.subscribers[runID] = append(s.subscribers[runID], subCh)
+	s.subsMu.Unlock()
+
+	defer func() {
+		s.subsMu.Lock()
+		cur := s.subscribers[runID]
+		for i, ch := range cur {
+			if ch == subCh {
+				s.subscribers[runID] = append(cur[:i], cur[i+1:]...)
+				break
+			}
+		}
+		s.subsMu.Unlock()
+	}()
+
+	existing := s.readRawEvents(runID)
+	if from < 0 || from > len(existing) {
+		_ = writeMsg(map[string]any{"ok": false, "error": fmt.Sprintf("cursor beyond event log: %d > %d", from, len(existing))})
+		return
+	}
+
+	// First line: subscribed acknowledgement carrying the honoured cursor.
+	if err := writeMsg(map[string]any{"op": "subscribed", "run_id": runID, "from": from}); err != nil {
+		return
+	}
+
+	sentIDs := make(map[string]bool)
+	for i := from; i < len(existing); i++ {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		ev := existing[i]
+		if id, ok := ev["id"].(string); ok && id != "" {
+			sentIDs[id] = true
+		}
+		if err := writeMsg(map[string]any{"op": "event", "run_id": runID, "event": ev}); err != nil {
+			return
+		}
+	}
+
+	// Check if run was already finished.
+	s.mu.Lock()
+	_, active := s.runs[runID]
+	s.mu.Unlock()
+	if !active {
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case evMsg, ok := <-subCh:
+			if !ok {
+				return
+			}
+			if ev, ok := evMsg["event"].(map[string]any); ok {
+				if id, ok := ev["id"].(string); ok && id != "" {
+					if sentIDs[id] {
+						continue
+					}
+					sentIDs[id] = true
+				}
+				if err := writeMsg(evMsg); err != nil {
+					return
+				}
+				kind, _ := ev["kind"].(string)
+				if kind == "run.finished" || kind == "run.completed" || kind == "run.failed" || kind == "run.cancelled" {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (s *Server) opCancel(runID string) map[string]any {
@@ -751,6 +1039,11 @@ func (c Client) Deny(runID, requestID, reason string) (map[string]any, error) {
 // Models asks a provider what it can serve.
 func (c Client) Models(provider, baseURL, model string) (map[string]any, error) {
 	return c.call(map[string]any{"op": "models", "provider": provider, "base_url": baseURL, "model": model})
+}
+
+// Diff reads what a run changed in one file (ADR 014).
+func (c Client) Diff(runID, path string) (map[string]any, error) {
+	return c.call(map[string]any{"op": "diff", "run_id": runID, "path": path})
 }
 
 // Protocol negotiates versions.

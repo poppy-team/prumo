@@ -21,10 +21,10 @@ Implemented capabilities:
   - Egress policy enforcement with TLS and destination host verification.
   - SecretReference model with `EnvSecretProvider` and `StaticSecretProvider` implementations.
   - Sensitive pattern and secret value `Redactor`.
-- **CLI Commands** (`cmd/prumo`):
-  - `prumo tool list`, `prumo tool inspect <id>`, `prumo tool evaluate <id> [target] [--safe]`.
-  - `prumo model list`, `prumo model route [--data-class <c>] [--tools] [--tokens <n>] [--latency <l>]`.
-  - `prumo env list`.
+- **CLI Commands** (`cmd/prumo-agent`):
+  - `prumo-agent tool list`, `prumo-agent tool inspect <id>`, `prumo-agent tool evaluate <id> [target] [--safe]`.
+  - `prumo-agent model list`, `prumo-agent model route [--data-class <c>] [--tools] [--tokens <n>] [--latency <l>]`.
+  - `prumo-agent env list`.
 
 All unit tests and end-to-end CLI tests passing.
 

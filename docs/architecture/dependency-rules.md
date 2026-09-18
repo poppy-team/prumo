@@ -62,7 +62,7 @@ internal/app          → MAY import: internal/protocol, internal/project, inter
 
 ### 3. CLI Layer
 ```
-cmd/prumo             → MAY import: internal/app, internal/protocol
+cmd/prumo-agent       → MAY import: internal/app, internal/protocol
                        → MUST NOT import: any internal/* besides app + protocol
 ```
 
@@ -125,17 +125,22 @@ External dependencies (when added) must be:
 ### First external dependency — the TUI stack
 
 Until the H10 terminal client, this module had no third-party dependency: every
-package was standard library only. `tui/` introduces the first two direct ones,
-and the rules above apply to them.
+package was standard library only. The terminal stack introduced the first
+direct ones, and the rules above apply to them.
+
+**Where they live moved.** ADR 013 took the client out of this module entirely:
+the stack is required by `prumo-agent tui`, and this module is standard-library only
+again — which is what makes the rule below a property of the repository rather
+than a convention someone remembers.
 
 | Aspect | Position |
 |--------|----------|
-| What | `charm.land/bubbletea/v2`, `charm.land/lipgloss/v2` (Stack H, accepted in `docs/product/tui-spike-h10.md`) |
-| Where | Only `tui/`. `internal/` stays standard-library-only, and the boundary test fails if that changes |
-| Pinned | Exact module versions in `go.mod`; the transitive set and its hashes in `go.sum` |
-| Verified | `go mod verify` is a CI step, so a mismatch fails the build |
-| Exit path | The renderer is behind `tui/styles.go` and the transport behind `tui/session.go` (`Ops`); the protocol, the daemon and the SDK do not depend on either framework |
-| Guardrail | The framework renders; it decides nothing. Ranking, bounding, classification and token resolution live in framework-free files, which is also what makes them testable without a terminal |
+| What | `charm.land/bubbletea/v2`, `charm.land/lipgloss/v2` and the rest of the Charm v2 tree (Stack H, accepted in `docs/product/tui-spike-h10.md`) |
+| Where | Only in the `prumo-agent tui` module. This module's `internal/` stays standard-library-only, and `prumo-agent tui/boundary_test.go` fails the build if the client ever imports `github.com/raillen/prumo/internal/...` |
+| Pinned | Exact module versions in `prumo-agent tui/go.mod`; the transitive set and its hashes in `prumo-agent tui/go.sum` |
+| Verified | `go mod verify` runs in the workflow's client job, so a mismatch fails the build |
+| Exit path | The renderer is behind `prumo-agent tui/internal/tui/styles` and the transport behind `prumo-agent tui/internal/runtime`, which is the only package in the client that knows the protocol exists; the protocol, the daemon and the SDK depend on neither framework |
+| Guardrail | The framework renders; it decides nothing. Folding a run's events, summing what it spent and resolving an icon set all live in framework-free files, which is also what makes them testable without a terminal |
 
 ## OPEN QUESTIONS
 

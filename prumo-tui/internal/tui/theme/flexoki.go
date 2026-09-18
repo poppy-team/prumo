@@ -66,21 +66,45 @@ func NewFlexokiTheme() *FlexokiTheme {
 	}
 
 	// Status colors
+	// The upstream value reaches 4.42:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.ErrorColor = AdaptiveColor{
-		Dark:  flexokiRed400,
+		Dark:  "#cf554a",
 		Light: flexokiRed600,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  flexokiYellow400,
-		Light: flexokiYellow600,
+		Light: "#7d7350",
 	}
+	// The upstream value reaches 4.39:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  flexokiGreen400,
-		Light: flexokiGreen600,
+		Light: "#697a27",
 	}
+	// The upstream value reaches 4.43:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.InfoColor = AdaptiveColor{
 		Dark:  flexokiCyan400,
-		Light: flexokiCyan600,
+		Light: "#337e76",
 	}
 
 	// Text colors
@@ -88,13 +112,26 @@ func NewFlexokiTheme() *FlexokiTheme {
 		Dark:  flexokiBase300,
 		Light: flexokiBase600,
 	}
+	// The upstream value reaches 2.61:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextMutedColor = AdaptiveColor{
-		Dark:  flexokiBase700,
-		Light: flexokiBase500,
+		Dark:  "#7f7d78",
+		Light: "#75736e",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextEmphasizedColor = AdaptiveColor{
 		Dark:  flexokiYellow400,
-		Light: flexokiYellow600,
+		Light: "#7d7350",
 	}
 
 	// Background colors

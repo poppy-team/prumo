@@ -46,17 +46,27 @@ func NewTronTheme() *TronTheme {
 	theme := &TronTheme{}
 
 	// Base colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.PrimaryColor = AdaptiveColor{
 		Dark:  darkCyan,
-		Light: lightCyan,
+		Light: "#027a92",
 	}
 	theme.SecondaryColor = AdaptiveColor{
 		Dark:  darkBlue,
 		Light: lightBlue,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.AccentColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#a35f06",
 	}
 
 	// Status colors
@@ -64,17 +74,32 @@ func NewTronTheme() *TronTheme {
 		Dark:  darkRed,
 		Light: lightRed,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#a35f06",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  darkGreen,
-		Light: lightGreen,
+		Light: "#04804f",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.InfoColor = AdaptiveColor{
 		Dark:  darkCyan,
-		Light: lightCyan,
+		Light: "#027a92",
 	}
 
 	// Text colors
@@ -82,13 +107,23 @@ func NewTronTheme() *TronTheme {
 		Dark:  darkForeground,
 		Light: lightForeground,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextMutedColor = AdaptiveColor{
-		Dark:  darkComment,
+		Dark:  "#64849d",
 		Light: lightComment,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextEmphasizedColor = AdaptiveColor{
 		Dark:  darkYellow,
-		Light: lightYellow,
+		Light: "#8a6b0a",
 	}
 
 	// Background colors

@@ -11,7 +11,19 @@ type Container interface {
 	tea.Model
 	Sizeable
 	Bindings
+	// SetFocused says whether this surface holds the keyboard. A container that
+	// is not focused draws its border differently rather than not at all: the
+	// layout cannot shift because focus moved.
+	SetFocused(bool)
 }
+
+// FocusMsg moves the keyboard to or from the surface that carries a border.
+//
+// It travels as a message rather than as a call because who holds the keyboard
+// is a decision of the shell — a dialog opening takes it away — and the surface
+// itself has no way to know.
+type FocusMsg struct{ Focused bool }
+
 type container struct {
 	width  int
 	height int
@@ -29,6 +41,36 @@ type container struct {
 	borderBottom bool
 	borderLeft   bool
 	borderStyle  lipgloss.Border
+
+	focused bool
+}
+
+// SetFocused records whether this container holds the keyboard.
+func (c *container) SetFocused(focused bool) { c.focused = focused }
+
+// focusedBorder thickens every line of a border.
+//
+// Focus changes the glyph as well as the colour on purpose: the contract
+// requires an indicator that survives a terminal without colour, and a border
+// that differs only in hue cannot carry it.
+func focusedBorder(b lipgloss.Border) lipgloss.Border {
+	heavy := map[string]string{
+		"─": "━", "│": "┃", "┌": "┏", "┐": "┓", "└": "┗", "┘": "┛",
+		"├": "┣", "┤": "┫", "┬": "┳", "┴": "┻", "┼": "╋",
+	}
+	swap := func(s string) string {
+		if thick, ok := heavy[s]; ok {
+			return thick
+		}
+		return s
+	}
+	return lipgloss.Border{
+		Top: swap(b.Top), Bottom: swap(b.Bottom), Left: swap(b.Left), Right: swap(b.Right),
+		TopLeft: swap(b.TopLeft), TopRight: swap(b.TopRight),
+		BottomLeft: swap(b.BottomLeft), BottomRight: swap(b.BottomRight),
+		MiddleLeft: swap(b.MiddleLeft), MiddleRight: swap(b.MiddleRight),
+		Middle: swap(b.Middle), MiddleTop: swap(b.MiddleTop), MiddleBottom: swap(b.MiddleBottom),
+	}
 }
 
 func (c *container) Init() tea.Cmd {
@@ -66,8 +108,14 @@ func (c *container) viewString() string {
 		if c.borderRight {
 			width--
 		}
-		style = style.Border(c.borderStyle, c.borderTop, c.borderRight, c.borderBottom, c.borderLeft)
-		style = style.BorderBackground(t.Background()).BorderForeground(t.BorderNormal())
+		border := c.borderStyle
+		foreground := t.BorderNormal()
+		if c.focused {
+			border = focusedBorder(border)
+			foreground = t.BorderFocused()
+		}
+		style = style.Border(border, c.borderTop, c.borderRight, c.borderBottom, c.borderLeft)
+		style = style.BorderBackground(t.Background()).BorderForeground(foreground)
 	}
 	style = style.
 		Width(width).

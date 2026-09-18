@@ -30,17 +30,17 @@ reference-project/
 
 1. **Validação do Projeto**:
    ```bash
-   prumo validate .
+   prumo-agent validate .
    ```
 2. **Diagnóstico do Projeto**:
    ```bash
-   prumo doctor .
+   prumo-agent doctor .
    ```
 3. **Compilar Adaptador para seu Agente**:
    ```bash
-   prumo compile --target antigravity .
-   prumo compile --target codex .
-   prumo compile --target claude-code .
+   prumo-agent compile --target antigravity .
+   prumo-agent compile --target codex .
+   prumo-agent compile --target claude-code .
    ```
 4. **Ciclo de Desenvolvimento com Metas**:
    Consulte [`docs/development/testing-strategy.md`](docs/development/testing-strategy.md) para o ciclo TDD/BDD com testes exaustivos.

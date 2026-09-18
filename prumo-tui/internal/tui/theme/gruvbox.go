@@ -72,35 +72,58 @@ func NewGruvboxTheme() *GruvboxTheme {
 	theme := &GruvboxTheme{}
 
 	// Base colors
+	// The upstream value reaches 3.73:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.PrimaryColor = AdaptiveColor{
 		Dark:  gruvboxDarkBlueBright,
-		Light: gruvboxLightBlueBright,
+		Light: "#437476",
 	}
+	// The upstream value reaches 3.73:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.SecondaryColor = AdaptiveColor{
 		Dark:  gruvboxDarkPurpleBright,
-		Light: gruvboxLightPurpleBright,
+		Light: "#985975",
 	}
+	// The upstream value reaches 3.41:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.AccentColor = AdaptiveColor{
 		Dark:  gruvboxDarkOrangeBright,
-		Light: gruvboxLightOrangeBright,
+		Light: "#ac5319",
 	}
 
 	// Status colors
+	// The upstream value reaches 4.29:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.ErrorColor = AdaptiveColor{
-		Dark:  gruvboxDarkRedBright,
+		Dark:  "#f95a42",
 		Light: gruvboxLightRedBright,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  gruvboxDarkYellowBright,
-		Light: gruvboxLightYellowBright,
+		Light: "#87672b",
 	}
+	// The upstream value reaches 2.73:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  gruvboxDarkGreenBright,
-		Light: gruvboxLightGreenBright,
+		Light: "#716f26",
 	}
+	// The upstream value reaches 3.73:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.InfoColor = AdaptiveColor{
 		Dark:  gruvboxDarkBlueBright,
-		Light: gruvboxLightBlueBright,
+		Light: "#437476",
 	}
 
 	// Text colors
@@ -108,13 +131,21 @@ func NewGruvboxTheme() *GruvboxTheme {
 		Dark:  gruvboxDarkFg1,
 		Light: gruvboxLightFg1,
 	}
+	// The upstream value reaches 4.29:1 against this surface; the
+	// accessibility contract asks 4.5:1 of text. The token is the same colour
+	// carried toward the theme's own foreground until it reached that floor.
 	theme.TextMutedColor = AdaptiveColor{
 		Dark:  gruvboxDarkFg4,
-		Light: gruvboxLightFg4,
+		Light: "#776a60",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextEmphasizedColor = AdaptiveColor{
 		Dark:  gruvboxDarkYellowBright,
-		Light: gruvboxLightYellowBright,
+		Light: "#87672b",
 	}
 
 	// Background colors

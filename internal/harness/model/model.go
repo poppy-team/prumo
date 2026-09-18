@@ -146,6 +146,13 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 			apiKey = envOr("PRUMO_MODEL_API_KEY", "")
 		}
 		return NewOpenAICompat(baseURL, apiKey, mdl), nil
+	case "opencode":
+		// A delegated turn: opencode runs it with its own tools, its own
+		// permission policy and its own authentication (including the models it
+		// serves for free). Prumo gets the answer and the spend, and never sees
+		// the tool calls — see OpenCode's doc comment for why that is stated
+		// rather than papered over.
+		return NewOpenCode(mdl), nil
 	case "anthropic":
 		if baseURL == "" {
 			baseURL = envOr("PRUMO_MODEL_BASE_URL", "")
@@ -155,7 +162,7 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 		}
 		return NewAnthropic(baseURL, apiKey, mdl), nil
 	default:
-		return nil, fmt.Errorf("unknown provider %s (fake|openai-compat|anthropic)", name)
+		return nil, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", name)
 	}
 }
 
@@ -267,7 +274,7 @@ func (o *OpenAICompat) Health(ctx context.Context) (string, error) {
 
 type chatMessage struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
 }
 
 func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
@@ -277,7 +284,34 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 	}
 	msgs := make([]chatMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
-		msgs = append(msgs, chatMessage{Role: string(m.Role), Content: m.Content})
+		role := string(m.Role)
+		if len(m.Parts) == 0 {
+			msgs = append(msgs, chatMessage{Role: role, Content: m.Content})
+			continue
+		}
+		parts := make([]any, 0, len(m.Parts))
+		for _, p := range m.Parts {
+			switch p.Type {
+			case "image":
+				mime := p.MimeType
+				if mime == "" {
+					mime = "image/png"
+				}
+				dataURL := fmt.Sprintf("data:%s;base64,%s", mime, p.Data)
+				parts = append(parts, map[string]any{
+					"type": "image_url",
+					"image_url": map[string]any{
+						"url": dataURL,
+					},
+				})
+			default:
+				parts = append(parts, map[string]any{
+					"type": "text",
+					"text": p.Text,
+				})
+			}
+		}
+		msgs = append(msgs, chatMessage{Role: role, Content: parts})
 	}
 	payload := map[string]any{"model": model, "messages": msgs, "stream": true}
 	if len(req.Tools) > 0 {
@@ -371,13 +405,27 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 				Usage *struct {
 					PromptTokens     int `json:"prompt_tokens"`
 					CompletionTokens int `json:"completion_tokens"`
+					// A cached prefix is reported inside the prompt count, not
+					// beside it: the detail is what says how much of the prompt
+					// the provider did not have to read again.
+					PromptTokensDetails *struct {
+						CachedTokens int `json:"cached_tokens"`
+					} `json:"prompt_tokens_details"`
 				} `json:"usage"`
 			}
 			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 				continue
 			}
 			if chunk.Usage != nil {
-				ch <- agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: &agent.Usage{InputTokens: chunk.Usage.PromptTokens, OutputTokens: chunk.Usage.CompletionTokens}}
+				usage := &agent.Usage{InputTokens: chunk.Usage.PromptTokens, OutputTokens: chunk.Usage.CompletionTokens}
+				if chunk.Usage.PromptTokensDetails != nil {
+					// The provider counts a cached token inside the prompt and
+					// reports it here too, so it is moved rather than added: a
+					// total that counted it twice would overstate the run.
+					usage.CacheReadTokens = chunk.Usage.PromptTokensDetails.CachedTokens
+					usage.InputTokens -= usage.CacheReadTokens
+				}
+				ch <- agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: usage}
 				continue
 			}
 			for _, c := range chunk.Choices {

@@ -10,10 +10,10 @@ import (
 )
 
 // Version is the current Harness protocol version. 0.2.0 added the approval
-// ops and 0.3.0 the model listing; MinCompatible stays at 0.1.0 because the
-// additions are additive and an older client keeps working against the ops it
-// already knew.
-const Version = "0.3.0"
+// ops, 0.3.0 the model listing, and 0.4.0 the diff read on demand and subscribe
+// push stream (ADR 014); MinCompatible stays at 0.1.0 because the additions are
+// additive and an older client keeps working against the ops it already knew.
+const Version = "0.4.0"
 
 // MinCompatible is the oldest client protocol the engine still speaks.
 const MinCompatible = "0.1.0"

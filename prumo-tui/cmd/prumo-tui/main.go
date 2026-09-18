@@ -26,34 +26,51 @@ import (
 
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/headless"
 	"github.com/raillen/prumo-tui/internal/llm/models"
+	"github.com/raillen/prumo-tui/internal/stream"
 	"github.com/raillen/prumo-tui/internal/tui"
+	"github.com/raillen/prumo-tui/internal/tui/styles"
 )
 
 func main() {
 	var (
-		workspace = flag.String("path", ".", "workspace root")
-		socket    = flag.String("socket", "", "attach to this daemon socket instead of starting one")
-		remote    = flag.String("remote", "", "attach to a daemon over TCP+TLS (requires --token)")
-		token     = flag.String("token", "", "remote token")
-		tokenFile = flag.String("token-file", "", "file holding the remote token")
-		tlsCert   = flag.String("remote-tls-cert", "", "CA certificate pinning the remote server")
-		theme     = flag.String("theme", "", "theme id")
-		provider  = flag.String("provider", "fake", "provider: fake|fake-tools|openai-compat|anthropic")
-		model     = flag.String("model", "", "model id asked of the harness")
-		maxTurns  = flag.Int("max-turns", 5, "maximum turns per run")
-		version   = flag.Bool("version", false, "print the client version and exit")
+		workspace     = flag.String("path", ".", "workspace root")
+		socket        = flag.String("socket", "", "attach to this daemon socket instead of starting one")
+		remote        = flag.String("remote", "", "attach to a daemon over TCP+TLS (requires --token)")
+		token         = flag.String("token", "", "remote token")
+		tokenFile     = flag.String("token-file", "", "file holding the remote token")
+		tlsCert       = flag.String("remote-tls-cert", "", "CA certificate pinning the remote server")
+		theme         = flag.String("theme", "", "theme id")
+		provider      = flag.String("provider", "fake", "provider: fake|fake-tools|openai-compat|anthropic")
+		model         = flag.String("model", "", "model id asked of the harness")
+		maxTurns      = flag.Int("max-turns", 5, "maximum turns per run")
+		reducedMotion = flag.Bool("reduced-motion", false, "state progress in words instead of animating it (also PRUMO_REDUCED_MOTION)")
+		prompt        = flag.String("prompt", "", "run this goal and print what happened, without the interface")
+		plain         = flag.Bool("plain", false, "with --prompt: print the run as prose, one fact per line")
+		asJSON        = flag.Bool("json", false, "with --prompt: print the run as one JSON object per fact")
+		version       = flag.Bool("version", false, "print the client version and exit")
 	)
 	flag.Parse()
 
 	if *version {
-		fmt.Println("prumo-tui", Version)
+		fmt.Println("prumo-agent-tui", Version)
 		return
 	}
+
+	// Which glyphs the terminal can render is decided before anything is drawn,
+	// since a replacement character where a label was meant cannot be undone.
+	styles.ResolveIcons()
 
 	abs, err := filepath.Abs(*workspace)
 	if err != nil {
 		fail(err)
+	}
+
+	// What the client wrote down for itself — its palette, so far — is read
+	// before the flags, so an explicit flag still wins over the last session.
+	if err := config.Load(); err != nil {
+		fmt.Fprintln(os.Stderr, "prumo-tui: ignoring the client's own settings:", err)
 	}
 
 	cfg := *config.Get()
@@ -64,6 +81,9 @@ func main() {
 	cfg.Provider = *provider
 	cfg.Model = *model
 	cfg.MaxTurns = *maxTurns
+	// Reduced motion is a preference a user sets once, so the environment is
+	// enough to hold it: a flag alone would have to be repeated on every launch.
+	cfg.ReducedMotion = *reducedMotion || envEnabled("PRUMO_REDUCED_MOTION")
 	cfg.SocketPath = *socket
 	cfg.RemoteAddr = *remote
 	cfg.Token = *token
@@ -77,9 +97,10 @@ func main() {
 	}
 	config.Set(cfg)
 
-	// The signal context is cancelled on interrupt; the program itself is
-	// what consumes the interrupt, so only the cleanup handle is kept.
-	_, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	// The signal context is cancelled on interrupt; the program itself is what
+	// consumes the interrupt. It also bounds the event bridge, which has to stop
+	// carrying events once the client is closing.
+	streamCtx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	client, err := buildClient(cfg, abs)
@@ -95,7 +116,21 @@ func main() {
 		Workspace: abs,
 	})
 
+	// A goal given on the command line is not an interactive session: there is
+	// nobody at the keyboard to answer a gate or read a repainting frame, so the
+	// run is printed instead of drawn.
+	if *prompt != "" {
+		if err := runHeadless(streamCtx, *prompt, application, *plain, *asJSON); err != nil {
+			fail(err)
+		}
+		return
+	}
+
 	program := tea.NewProgram(tui.New(application))
+	// The bridge is what turns the services' events into messages the model
+	// receives. Without it the program runs, draws and never learns that a run
+	// produced anything.
+	stream.Start(streamCtx, application, program)
 	if _, err := program.Run(); err != nil {
 		fail(err)
 	}
@@ -140,13 +175,22 @@ func buildClient(cfg config.Config, workspace string) (prumo.Client, error) {
 	}
 
 	sock := filepath.Join(workspace, ".prumo", "runtime", "harness", "agentd.sock")
+	client := prumo.Client{SocketPath: sock}
+
+	// A daemon left by an earlier run answers on this socket, and starting a
+	// second one only makes it print "daemon already running" at a user who did
+	// nothing wrong. Asking first is also cheaper than launching a process to
+	// find out.
+	if err := waitForDaemon(&client, 300*time.Millisecond); err == nil {
+		return client, nil
+	}
+
 	stop, err := startDaemon(workspace, sock)
 	if err != nil {
 		return prumo.Client{}, err
 	}
 	// The daemon outlives this call by design; its lifetime is the client's.
 	_ = stop
-	client := prumo.Client{SocketPath: sock}
 	if err := waitForDaemon(&client, 20*time.Second); err != nil {
 		return prumo.Client{}, err
 	}
@@ -183,15 +227,15 @@ func prumoBinary() (string, error) {
 		return fromEnv, nil
 	}
 	if exe, err := os.Executable(); err == nil {
-		sibling := filepath.Join(filepath.Dir(exe), "prumo")
+		sibling := filepath.Join(filepath.Dir(exe), "prumo-agent")
 		if _, err := os.Stat(sibling); err == nil {
 			return sibling, nil
 		}
 	}
-	if path, err := exec.LookPath("prumo"); err == nil {
+	if path, err := exec.LookPath("prumo-agent"); err == nil {
 		return path, nil
 	}
-	return "", fmt.Errorf("no prumo binary found: set PRUMO_BIN or put `prumo` on PATH")
+	return "", fmt.Errorf("no prumo-agent binary found: set PRUMO_BIN or put `prumo-agent` on PATH")
 }
 
 // waitForDaemon calls the daemon rather than sleeping: readiness is the thing
@@ -210,6 +254,29 @@ func waitForDaemon(client *prumo.Client, timeout time.Duration) error {
 			return fmt.Errorf("no harness daemon answered within %s: %w", timeout, last)
 		}
 		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// runHeadless prints a run instead of drawing it.
+func runHeadless(ctx context.Context, goal string, application *app.App, plain, asJSON bool) error {
+	mode := headless.ModePlain
+	if asJSON {
+		mode = headless.ModeJSON
+	}
+	_ = plain // plain is the default; the flag exists to say so out loud
+	return headless.Run(ctx, application, headless.Options{Goal: goal, Mode: mode, Out: os.Stdout})
+}
+
+// envEnabled reports whether an environment variable asks for a preference.
+//
+// Unset, "0", "false" and "no" mean no; anything else means yes, so a user does
+// not have to guess which spelling this client wanted.
+func envEnabled(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "", "0", "false", "no":
+		return false
+	default:
+		return true
 	}
 }
 

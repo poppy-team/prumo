@@ -22,7 +22,7 @@ jobs:
       - name: Validate governance policy
         run: go test ./internal/repositorypolicy ./internal/scm/github
       - name: Validate repository policy file
-        run: go run ./cmd/prumo repo policy check --json
+        run: go run ./cmd/prumo-agent repo policy check --json
       - name: Validate branch naming on pull requests
         if: github.event_name == 'pull_request'
         env:

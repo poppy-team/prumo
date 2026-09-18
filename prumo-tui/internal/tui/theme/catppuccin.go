@@ -19,17 +19,27 @@ func NewCatppuccinTheme() *CatppuccinTheme {
 	theme := &CatppuccinTheme{}
 
 	// Base colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.PrimaryColor = AdaptiveColor{
 		Dark:  mocha.Blue().Hex,
-		Light: latte.Blue().Hex,
+		Light: "#2462e1",
 	}
 	theme.SecondaryColor = AdaptiveColor{
 		Dark:  mocha.Mauve().Hex,
 		Light: latte.Mauve().Hex,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.AccentColor = AdaptiveColor{
 		Dark:  mocha.Peach().Hex,
-		Light: latte.Peach().Hex,
+		Light: "#9d583d",
 	}
 
 	// Status colors
@@ -37,17 +47,32 @@ func NewCatppuccinTheme() *CatppuccinTheme {
 		Dark:  mocha.Red().Hex,
 		Light: latte.Red().Hex,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  mocha.Peach().Hex,
-		Light: latte.Peach().Hex,
+		Light: "#9d583d",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  mocha.Green().Hex,
-		Light: latte.Green().Hex,
+		Light: "#46754b",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.InfoColor = AdaptiveColor{
 		Dark:  mocha.Blue().Hex,
-		Light: latte.Blue().Hex,
+		Light: "#2462e1",
 	}
 
 	// Text colors
@@ -55,13 +80,23 @@ func NewCatppuccinTheme() *CatppuccinTheme {
 		Dark:  mocha.Text().Hex,
 		Light: latte.Text().Hex,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextMutedColor = AdaptiveColor{
 		Dark:  mocha.Subtext0().Hex,
-		Light: latte.Subtext0().Hex,
+		Light: "#666980",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextEmphasizedColor = AdaptiveColor{
 		Dark:  mocha.Lavender().Hex,
-		Light: latte.Lavender().Hex,
+		Light: "#5b66a7",
 	}
 
 	// Background colors

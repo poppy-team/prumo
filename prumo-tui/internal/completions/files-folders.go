@@ -103,7 +103,25 @@ func (cg *filesAndFoldersContextGroup) getFiles(query string) ([]string, error) 
 		cmdRg.Stderr = &rgErr
 
 		if err := cmdRg.Run(); err != nil {
-			return nil, fmt.Errorf("rg command failed: %w\nStderr: %s", err, rgErr.String())
+			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+				return []string{}, nil
+			}
+			if rgOut.Len() > 0 {
+				logging.Debug("rg completed with non-zero exit code but produced output", "error", err)
+			} else {
+				logging.Warn("rg command failed, falling back to doublestar", "error", err)
+				allFiles, _, globErr := fileutil.GlobWithDoublestar("**/*", ".", 0)
+				if globErr != nil {
+					return nil, fmt.Errorf("rg failed (%w) and glob fallback failed: %w", err, globErr)
+				}
+				filteredFiles := make([]string, 0, len(allFiles))
+				for _, file := range allFiles {
+					if !fileutil.SkipHidden(file) {
+						filteredFiles = append(filteredFiles, file)
+					}
+				}
+				return fuzzy.Find(query, filteredFiles), nil
+			}
 		}
 
 		allFiles := processNullTerminatedOutput(rgOut.Bytes())

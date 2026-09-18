@@ -12,7 +12,7 @@
 ## Instalação com uma linha (One-Link Install)
 
 ### Linux e macOS
-O script detecta o sistema operacional e a arquitetura (`amd64`/`arm64`), baixa o binário e os checksums da release, valida a integridade SHA-256, instala em `~/.local/bin/prumo`, configura automaticamente o `PATH` nos arquivos de inicialização do seu shell (`~/.bashrc`, `~/.zshrc`, `~/.config/fish/config.fish` ou `~/.profile`) e executa `prumo setup`.
+O script detecta o sistema operacional e a arquitetura (`amd64`/`arm64`), baixa o binário e os checksums da release, valida a integridade SHA-256, instala em `~/.local/bin/prumo`, configura automaticamente o `PATH` nos arquivos de inicialização do seu shell (`~/.bashrc`, `~/.zshrc`, `~/.config/fish/config.fish` ou `~/.profile`) e executa `prumo-agent setup`.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/raillen/prumo/main/scripts/install.sh | sh
@@ -26,7 +26,7 @@ sh install.sh
 ```
 
 ### Windows (PowerShell)
-O script PowerShell detecta a arquitetura (`amd64`/`arm64`), baixa o binário `prumo-windows-*.exe`, valida a integridade SHA-256, instala em `%LOCALAPPDATA%\Programs\prumo\prumo.exe`, configura permanentemente o `PATH` do usuário no Registro do Windows e executa `prumo setup`.
+O script PowerShell detecta a arquitetura (`amd64`/`arm64`), baixa o binário `prumo-windows-*.exe`, valida a integridade SHA-256, instala em `%LOCALAPPDATA%\Programs\prumo\prumo.exe`, configura permanentemente o `PATH` do usuário no Registro do Windows e executa `prumo-agent setup`.
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/raillen/prumo/main/scripts/install.ps1 | iex"
@@ -45,7 +45,7 @@ PRUMO_HOME="$HOME/.prumo" sh install.sh
 git clone git@github.com:raillen/prumo.git
 cd prumo
 go version
-go run ./cmd/prumo version
+go run ./cmd/prumo-agent version
 ```
 
 Compilar um binário local:
@@ -75,7 +75,7 @@ Por padrão, o Prumo usa `~/.prumo` em sistemas Unix-like. Use `PRUMO_HOME` ou `
 
 ```bash
 PRUMO_HOME="$PWD/.prumo-home" ./prumo setup
-./prumo --home "$PWD/.prumo-home" setup
+./prumo-agent --home "$PWD/.prumo-home" setup
 ```
 
 O estado global contém:
@@ -94,7 +94,7 @@ Não confunda esse estado com `.prumo/` dentro de um projeto. O segundo pertence
 ## Setup
 
 ```bash
-prumo --home ~/.prumo setup
+prumo-agent --home ~/.prumo setup
 ```
 
 `setup` é idempotente e registra:
@@ -110,7 +110,7 @@ O comando não altera configurações globais de harnesses automaticamente.
 ## Instalar um conector
 
 ```bash
-prumo --home ~/.prumo install connector opencode
+prumo-agent --home ~/.prumo install connector opencode
 ```
 
 O estado do conector deve possuir um cleanup manifest antes de qualquer remoção automática.
@@ -118,17 +118,17 @@ O estado do conector deve possuir um cleanup manifest antes de qualquer remoçã
 ## Verificar instalação
 
 ```bash
-prumo version
-prumo --json version
-prumo framework-check
-prumo --json framework-check
+prumo-agent version
+prumo-agent --json version
+prumo-agent framework-check
+prumo-agent --json framework-check
 ```
 
 Verificação de projeto:
 
 ```bash
-prumo validate ./my-project
-prumo doctor ./my-project
+prumo-agent validate ./my-project
+prumo-agent doctor ./my-project
 ```
 
 ## Depreciação e Aposentadoria do Python (ADR 002)
@@ -148,7 +148,7 @@ export PATH="$PWD/bin:$PATH"
 ```
 
 ### `missing prumo.json`
-O comando foi executado fora de um projeto Prumo. Informe o caminho do projeto ou execute `prumo init` primeiro.
+O comando foi executado fora de um projeto Prumo. Informe o caminho do projeto ou execute `prumo-agent init` primeiro.
 
 ### Falha de checksum
 Não use o artefato. Baixe novamente e compare com `dist/checksums.txt` ou com o checksum publicado pela release.
@@ -157,5 +157,5 @@ Não use o artefato. Baixe novamente e compare com `dist/checksums.txt` ou com o
 Use um home portátil novo para isolar o diagnóstico:
 
 ```bash
-prumo --home "$PWD/prumo-recovery-home" setup
+prumo-agent --home "$PWD/prumo-recovery-home" setup
 ```

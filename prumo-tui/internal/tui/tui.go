@@ -2,30 +2,40 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/raillen/prumo-tui/internal/llm/models"
+	"os/exec"
+	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
+
 	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
+	"github.com/raillen/prumo-tui/internal/commands"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/llm/models"
 	"github.com/raillen/prumo-tui/internal/logging"
+	"github.com/raillen/prumo-tui/internal/onboard"
 	"github.com/raillen/prumo-tui/internal/permission"
 	"github.com/raillen/prumo-tui/internal/pubsub"
+	"github.com/raillen/prumo-tui/internal/runtime"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/core"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/page"
+	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/tui/util"
 )
 
 type keyMap struct {
+	Cancel        key.Binding
 	Logs          key.Binding
 	Quit          key.Binding
 	Help          key.Binding
@@ -34,9 +44,8 @@ type keyMap struct {
 	Filepicker    key.Binding
 	Models        key.Binding
 	SwitchTheme   key.Binding
+	ChangedFiles  key.Binding
 }
-
-type startCompactSessionMsg struct{}
 
 const (
 	quitKey = "q"
@@ -48,9 +57,17 @@ var keys = keyMap{
 		key.WithHelp("ctrl+l", "logs"),
 	),
 
-	Quit: key.NewBinding(
+	// The interaction contract reserves these two chords: ctrl+c cancels the
+	// active operation and never exits silently, ctrl+q quits. The client obeys
+	// the reservation rather than its own convenience, so a user coming from
+	// another terminal tool finds the chords where they are documented.
+	Cancel: key.NewBinding(
 		key.WithKeys("ctrl+c"),
-		key.WithHelp("ctrl+c", "quit"),
+		key.WithHelp("ctrl+c", "cancel"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("ctrl+q"),
+		key.WithHelp("ctrl+q", "quit"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("ctrl+_", "ctrl+h"),
@@ -78,6 +95,11 @@ var keys = keyMap{
 	SwitchTheme: key.NewBinding(
 		key.WithKeys("ctrl+t"),
 		key.WithHelp("ctrl+t", "switch theme"),
+	),
+
+	ChangedFiles: key.NewBinding(
+		key.WithKeys("ctrl+g"),
+		key.WithHelp("ctrl+g", "files this run changed"),
 	),
 }
 
@@ -112,8 +134,11 @@ type appModel struct {
 	showHelp bool
 	help     dialog.HelpCmp
 
-	showQuit bool
-	quit     dialog.QuitDialog
+	showQuit      bool
+	showOnboard   bool
+	startupNotice string
+	onboard       dialog.OnboardDialogCmp
+	quit          dialog.QuitDialog
 
 	showSessionDialog bool
 	sessionDialog     dialog.SessionDialog
@@ -137,8 +162,18 @@ type appModel struct {
 	showMultiArgumentsDialog bool
 	multiArgumentsDialog     dialog.MultiArgumentsDialogCmp
 
-	isCompacting      bool
-	compactingMessage string
+	showFiles bool
+	files     dialog.FilesDialog
+
+	showJobs bool
+	jobs     dialog.JobsDialog
+
+	// composerFocused is the focus the page was last told about, kept so the
+	// shell tells it when the answer changes rather than on every message.
+	composerFocused bool
+	// commandsError is the command directory failing to read, reported once in
+	// Init: the palette is built before there is a statusline to say it in.
+	commandsError error
 }
 
 func (a appModel) Init() tea.Cmd {
@@ -149,6 +184,14 @@ func (a appModel) Init() tea.Cmd {
 	cmd = a.status.Init()
 	cmds = append(cmds, cmd)
 	cmd = a.quit.Init()
+	if a.startupNotice != "" {
+		notice := a.startupNotice
+		a.startupNotice = ""
+		cmds = append(cmds, util.ReportInfo(notice))
+	}
+	if a.onboard != nil {
+		cmd = a.onboard.Init()
+	}
 	cmds = append(cmds, cmd)
 	cmd = a.help.Init()
 	cmds = append(cmds, cmd)
@@ -164,6 +207,10 @@ func (a appModel) Init() tea.Cmd {
 	cmds = append(cmds, cmd)
 	cmd = a.themeDialog.Init()
 	cmds = append(cmds, cmd)
+	cmd = a.files.Init()
+	cmds = append(cmds, cmd)
+	cmd = a.jobs.Init()
+	cmds = append(cmds, cmd)
 
 	// Check if we should show the init dialog
 	cmds = append(cmds, func() tea.Msg {
@@ -177,10 +224,43 @@ func (a appModel) Init() tea.Cmd {
 		return dialog.ShowInitDialogMsg{Show: shouldShow}
 	})
 
+	cmds = append(cmds, a.reconcile())
+
+	if a.commandsError != nil {
+		cmds = append(cmds, util.ReportFailure("Reading your commands", "the palette still has its own entries", a.commandsError))
+	}
+
 	return tea.Batch(cmds...)
 }
 
+// Update applies a message and, when the answer changes who holds the keyboard,
+// tells the composer.
+//
+// Focus is a decision of the shell rather than of the composer: a dialog takes
+// the keyboard away, and a surface has no way to know that one opened. Deciding
+// it here keeps that in one place instead of in every branch that opens or
+// closes a layer.
 func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	updated, cmd := a.update(msg)
+	next, ok := updated.(appModel)
+	if !ok {
+		return updated, cmd
+	}
+	if focused := !next.dialogOpen(); focused != next.composerFocused {
+		next.composerFocused = focused
+		return next, tea.Batch(cmd, util.CmdHandler(layout.FocusMsg{Focused: focused}))
+	}
+	return next, cmd
+}
+
+// dialogOpen reports whether a layer is drawn over the page.
+func (a appModel) dialogOpen() bool {
+	return a.showQuit || a.showOnboard || a.showPermissions || a.showHelp || a.showSessionDialog ||
+		a.showCommandDialog || a.showModelDialog || a.showInitDialog || a.showFilepicker ||
+		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs
+}
+
+func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -212,6 +292,34 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		filepicker, filepickerCmd := a.filepicker.Update(msg)
 		a.filepicker = filepicker.(dialog.FilepickerCmp)
 		cmds = append(cmds, filepickerCmd)
+
+		// Every layer that draws is told the new size, not only the ones that
+		// happened to be open: a dialog that resizes itself only after being
+		// opened a second time is a dialog that draws for the previous terminal.
+		model, modelCmd := a.modelDialog.Update(msg)
+		a.modelDialog = model.(dialog.ModelDialog)
+		cmds = append(cmds, modelCmd)
+
+		theme, themeCmd := a.themeDialog.Update(msg)
+		a.themeDialog = theme.(dialog.ThemeDialog)
+		cmds = append(cmds, themeCmd)
+
+		quit, quitCmd := a.quit.Update(msg)
+		a.quit = quit.(dialog.QuitDialog)
+		if a.onboard != nil {
+			ob, obCmd := a.onboard.Update(msg)
+			a.onboard = ob.(dialog.OnboardDialogCmp)
+			cmds = append(cmds, obCmd)
+		}
+		cmds = append(cmds, quitCmd)
+
+		files, filesCmd := a.files.Update(msg)
+		a.files = files.(dialog.FilesDialog)
+		cmds = append(cmds, filesCmd)
+
+		jobs, jobsCmd := a.jobs.Update(msg)
+		a.jobs = jobs.(dialog.JobsDialog)
+		cmds = append(cmds, jobsCmd)
 
 		a.initDialog.SetSize(msg.Width, msg.Height)
 
@@ -275,21 +383,39 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Permission
 	case pubsub.Event[permission.PermissionRequest]:
 		a.showPermissions = true
-		return a, a.permissions.SetPermissions(msg.Payload)
+		// The gate is announced in words as well as drawn: a request that exists
+		// only as a dialog cannot be read from a frame, and the contract asks for
+		// it to be legible without interacting with it.
+		return a, tea.Batch(
+			a.permissions.SetPermissions(msg.Payload),
+			util.ReportWarn(gateNotice(msg.Payload.ToolName)),
+		)
+	case openJobsMsg:
+		return a, a.openJobs()
+	case exportTimelineMsg:
+		if a.selectedSession.ID == "" {
+			return a, util.ReportWarn("Nothing to export: no session has been selected")
+		}
+		return a, a.exportTimeline(a.selectedSession.ID)
 	case dialog.PermissionResponseMsg:
 		var cmd tea.Cmd
 		switch msg.Action {
 		case dialog.PermissionAllow:
 			if err := a.app.Permissions.Grant(context.Background(), msg.Permission); err != nil {
-				cmd = util.ReportError(err)
+				cmd = util.ReportFailure("Allowing the tool", "answer the gate again, or deny it with d", err)
 			}
 		case dialog.PermissionAllowForSession:
 			if err := a.app.Permissions.GrantPersistant(context.Background(), msg.Permission); err != nil {
-				cmd = util.ReportError(err)
+				cmd = util.ReportFailure("Allowing the tool for the session", "answer the gate again, or deny it with d", err)
 			}
 		case dialog.PermissionDeny:
 			if err := a.app.Permissions.Deny(context.Background(), msg.Permission); err != nil {
-				cmd = util.ReportError(err)
+				cmd = util.ReportFailure("Denying the tool", "answer the gate again from the run's own state", err)
+			} else {
+				// The daemon reports the run as failed, and from the protocol
+				// alone a denial is indistinguishable from any other stop. The
+				// one place that difference exists is here, so it is said here.
+				cmd = util.ReportWarn(denialNotice(msg.Permission.ToolName))
 			}
 		}
 		a.showPermissions = false
@@ -297,6 +423,12 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case page.PageChangeMsg:
 		return a, a.moveToPage(msg.ID)
+
+	case dialog.OnboardChoiceMsg:
+		return a.answerOnboard(msg)
+
+	case dialog.OnboardInstallFinishedMsg:
+		return a.finishOnboardInstall(msg)
 
 	case dialog.CloseQuitMsg:
 		a.showQuit = false
@@ -310,59 +442,68 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showCommandDialog = false
 		return a, nil
 
-	case startCompactSessionMsg:
-		// Start compacting the current session
-		a.isCompacting = true
-		a.compactingMessage = "Starting summarization..."
-
-		if a.selectedSession.ID == "" {
-			a.isCompacting = false
-			return a, util.ReportWarn("No active session to summarize")
-		}
-
-		// Start the summarization process
-		return a, func() tea.Msg {
-			ctx := context.Background()
-			a.app.CoderAgent.Summarize(ctx, a.selectedSession.ID)
-			return nil
-		}
-
 	case pubsub.Event[agent.AgentEvent]:
 		payload := msg.Payload
 		if payload.Error != nil {
-			a.isCompacting = false
-			return a, util.ReportError(payload.Error)
+			return a, util.ReportFailure("The run stopped", "send the goal again, or read the log with ctrl+l", payload.Error)
 		}
-
-		a.compactingMessage = payload.Progress
-
-		if payload.Done && payload.Type == agent.AgentEventTypeSummarize {
-			a.isCompacting = false
-			return a, util.ReportInfo("Session summarization complete")
-		} else if payload.Done && payload.Type == agent.AgentEventTypeResponse && a.selectedSession.ID != "" {
-			model := a.app.CoderAgent.Model()
-			contextWindow := model.ContextWindow
-			tokens := a.selectedSession.CompletionTokens + a.selectedSession.PromptTokens
-			if (tokens >= int64(float64(contextWindow)*0.95)) && config.Get().AutoCompact {
-				return a, util.CmdHandler(startCompactSessionMsg{})
-			}
+		if payload.Type == agent.AgentEventTypeConnection {
+			// The link is the client's own condition, so it reaches the
+			// statusline rather than the transcript: a conversation that folded
+			// its transport into its answers would be describing the wrong thing.
+			s, cmd := a.status.Update(core.ConnectionMsg{
+				State:   string(payload.Connection.State),
+				Attempt: payload.Connection.Attempt,
+				Of:      payload.Connection.Of,
+				Reason:  payload.Connection.Reason,
+			})
+			a.status = s.(core.StatusCmp)
+			return a, cmd
 		}
-		// Continue listening for events
+		// A run event that is not an error needs nothing from this model: the
+		// message store publishes what the conversation gained, and the
+		// transcript and statusline redraw from that. Compaction is not
+		// triggered here either — the harness compacts a run as it approaches
+		// its budget, and the client has no operation to ask with.
 		return a, nil
 
 	case dialog.CloseThemeDialogMsg:
 		a.showThemeDialog = false
 		return a, nil
 
+	case dialog.CloseFilesDialogMsg:
+		a.showFiles = false
+		return a, nil
+
+	case dialog.ViewDiffMsg:
+		return a, a.loadDiff(msg.Path)
+
+	case dialog.DiffLoadedMsg:
+		a.files.SetDiff(msg)
+		return a, nil
+
+	case dialog.CloseJobsDialogMsg:
+		a.showJobs = false
+		return a, nil
+
+	case jobsLoadedMsg:
+		jobs := make([]dialog.ScheduledJob, 0, len(msg.jobs))
+		for _, job := range msg.jobs {
+			jobs = append(jobs, dialog.ScheduledJob{ID: job.ID, Goal: job.Goal, EverySecs: job.EverySecs, NextRun: job.NextRun})
+		}
+		a.jobs.SetJobs(jobs)
+		if msg.err != nil {
+			return a, util.ReportFailure("Reading the daemon's schedule", "the runs themselves still work", msg.err)
+		}
+		return a, nil
+
+	case dialog.UnscheduleJobMsg:
+		return a, a.unschedule(msg.JobID)
+
 	case dialog.ThemeChangedMsg:
 		a.pages[a.currentPage], cmd = a.pages[a.currentPage].Update(msg)
 		a.showThemeDialog = false
 		return a, tea.Batch(cmd, util.ReportInfo("Theme changed to: "+msg.ThemeName))
-
-	// The model picker is deferred: listing models is a protocol operation the
-	// harness does not expose, and a client with its own list would be
-	// asserting what it cannot verify. The model in use comes from the client's
-	// own flags.
 
 	case dialog.ShowInitDialogMsg:
 		a.showInitDialog = msg.Show
@@ -381,7 +522,7 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showModelDialog = false
 		model, err := a.app.CoderAgent.Update(models.ModelID(msg.Model))
 		if err != nil {
-			return a, util.ReportError(err)
+			return a, util.ReportFailure("Choosing the model", "pick another one with ctrl+o", err)
 		}
 		return a, util.ReportInfo(fmt.Sprintf("Model: %s", model.Name))
 
@@ -417,7 +558,10 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case dialog.SessionSelectedMsg:
 		a.showSessionDialog = false
 		if a.currentPage == page.ChatPage {
-			return a, util.CmdHandler(chat.SessionSelectedMsg(msg.Session))
+			return a, tea.Batch(
+				util.CmdHandler(chat.SessionSelectedMsg(msg.Session)),
+				a.attach(msg.Session.ID),
+			)
 		}
 		return a, nil
 
@@ -436,12 +580,17 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.multiArgumentsDialog.Init()
 
 	case dialog.CloseMultiArgumentsDialogMsg:
-		// Close multi-arguments dialog
 		a.showMultiArgumentsDialog = false
-
-		// Custom commands are deferred, so a submitted multi-arguments dialog
-		// has nothing to run. Closing it is the whole response.
-		return a, nil
+		if !msg.Submit {
+			return a, nil
+		}
+		// A submitted dialog is a command whose arguments are now known, so the
+		// prompt is filled in and sent the way any goal is.
+		command, ok := a.findCommand(msg.CommandID)
+		if !ok || command.Prompt == "" {
+			return a, util.ReportWarn("That command is no longer available")
+		}
+		return a, util.CmdHandler(chat.SendMsg{Text: commands.Expand(command.Prompt, msg.Args)})
 
 	case tea.KeyPressMsg:
 		// If multi-arguments dialog is open, let it handle the key press first
@@ -453,34 +602,23 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch {
 
+		case key.Matches(msg, keys.Cancel):
+			// Cancelling stops the run the daemon owns. It never exits, and with
+			// nothing in flight it opens the quit prompt rather than doing
+			// nothing: a chord that silently does nothing reads as a broken key.
+			if a.app.CoderAgent.IsBusy() {
+				a.app.CoderAgent.Cancel(a.selectedSession.ID)
+				return a, util.ReportInfo("Cancelling the run...")
+			}
+			return a, a.promptQuit()
 		case key.Matches(msg, keys.Quit):
-			a.showQuit = !a.showQuit
-			if a.showHelp {
-				a.showHelp = false
-			}
-			if a.showSessionDialog {
-				a.showSessionDialog = false
-			}
-			if a.showCommandDialog {
-				a.showCommandDialog = false
-			}
-			if a.showFilepicker {
-				a.showFilepicker = false
-				a.filepicker.ToggleFilepicker(a.showFilepicker)
-			}
-			if a.showModelDialog {
-				a.showModelDialog = false
-			}
-			if a.showMultiArgumentsDialog {
-				a.showMultiArgumentsDialog = false
-			}
-			return a, nil
+			return a, a.promptQuit()
 		case key.Matches(msg, keys.SwitchSession):
 			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showCommandDialog {
 				// Load sessions and show the dialog
 				sessions, err := a.app.Sessions.List(context.Background())
 				if err != nil {
-					return a, util.ReportError(err)
+					return a, util.ReportFailure("Listing the runs", "send a goal to start a new one", err)
 				}
 				if len(sessions) == 0 {
 					return a, util.ReportWarn("No sessions available")
@@ -501,8 +639,9 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return a, nil
 			}
 			return a, nil
-		// The model picker is deferred: the harness exposes no models
-		// operation, so the key has nothing to open.
+		// The picker asks the harness what the provider serves: the catalogue is
+		// the provider's, and a client that kept its own list would be asserting
+		// what it cannot verify.
 		case key.Matches(msg, keys.Models):
 			if a.showModelDialog {
 				a.showModelDialog = false
@@ -511,6 +650,17 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog {
 				a.showModelDialog = true
 				return a, a.loadModels()
+			}
+			return a, nil
+		case key.Matches(msg, keys.ChangedFiles):
+			if a.showFiles {
+				a.showFiles = false
+				return a, nil
+			}
+			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog {
+				a.recordChanges()
+				a.showFiles = true
+				return a, nil
 			}
 			return a, nil
 		case key.Matches(msg, keys.SwitchTheme):
@@ -639,6 +789,24 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if a.showJobs {
+		d, jobsCmd := a.jobs.Update(msg)
+		a.jobs = d.(dialog.JobsDialog)
+		cmds = append(cmds, jobsCmd)
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
+	if a.showFiles {
+		d, filesCmd := a.files.Update(msg)
+		a.files = d.(dialog.FilesDialog)
+		cmds = append(cmds, filesCmd)
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
 	if a.showInitDialog {
 		d, initCmd := a.initDialog.Update(msg)
 		a.initDialog = d.(dialog.InitDialogCmp)
@@ -702,6 +870,223 @@ func (a *appModel) moveToPage(pageID page.PageID) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+// exportTimelineMsg asks for the current run's record to be written out.
+type exportTimelineMsg struct{}
+
+// openJobsMsg asks for the daemon's schedule to be shown.
+type openJobsMsg struct{}
+
+// registerUserCommands adds what the user wrote to the palette.
+//
+// A directory that cannot be read is reported once, in the statusline, rather
+// than silently producing an empty palette: a command the author wrote and
+// cannot find is a mistake they would look for in the wrong place.
+func (a *appModel) registerUserCommands() {
+	loaded, err := commands.Load()
+	if err != nil && !errors.Is(err, commands.ErrNoDirectory) {
+		a.commandsError = err
+	}
+	for _, command := range loaded {
+		command := command
+		a.RegisterCommand(dialog.Command{
+			ID:          "user:" + command.ID,
+			Title:       command.Title,
+			Description: command.Description,
+			Prompt:      command.Body,
+			Handler: func(dialog.Command) tea.Cmd {
+				return runUserCommand(command)
+			},
+		})
+	}
+}
+
+// runUserCommand either asks for the arguments the prompt declares, or sends it
+// as it was written.
+func runUserCommand(command commands.Command) tea.Cmd {
+	if len(command.Args) == 0 {
+		return util.CmdHandler(chat.SendMsg{Text: command.Body})
+	}
+	return util.CmdHandler(dialog.ShowMultiArgumentsDialogMsg{
+		CommandID: "user:" + command.ID,
+		Content:   command.Body,
+		ArgNames:  command.Args,
+	})
+}
+
+// jobsLoadedMsg carries the daemon's schedule, or the failure to read it.
+type jobsLoadedMsg struct {
+	jobs []runtime.Job
+	err  error
+}
+
+// openJobs asks the daemon what it repeats and shows the answer.
+//
+// The list is read when the panel opens rather than kept in step: the schedule
+// belongs to the daemon, and a client that mirrored it would be describing a
+// queue it cannot keep current.
+func (a *appModel) openJobs() tea.Cmd {
+	runner := a.app.Runner
+	a.showJobs = true
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		jobs, err := runner.Scheduled(ctx)
+		return jobsLoadedMsg{jobs: jobs, err: err}
+	}
+}
+
+// unschedule stops a recurring run and re-reads the list, so what is drawn is
+// what the daemon now has.
+func (a *appModel) unschedule(jobID string) tea.Cmd {
+	runner := a.app.Runner
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := runner.Unschedule(ctx, jobID); err != nil {
+			return util.ReportFailure("Stopping the scheduled run", "check the daemon's schedule again", err)()
+		}
+		jobs, err := runner.Scheduled(ctx)
+		if err != nil {
+			return util.ReportFailure("Reading the daemon's schedule", "the stop took effect", err)()
+		}
+		return jobsLoadedMsg{jobs: jobs}
+	}
+}
+
+// recordChanges hands the panel what the harness reported for this session.
+//
+// The panel is filled when it opens rather than kept in step: the changes are
+// the run's own record, so reading them on demand is what keeps the panel from
+// becoming a second list that can disagree with the statusline.
+func (a *appModel) recordChanges() {
+	if a.app.Runner == nil || a.selectedSession.ID == "" {
+		a.files.SetFiles(nil)
+		return
+	}
+	changes := a.app.Runner.Changes(a.selectedSession.ID)
+	files := make([]dialog.ChangedFile, 0, len(changes))
+	for _, change := range changes {
+		files = append(files, dialog.ChangedFile{Path: change.Path, Operation: change.Operation})
+	}
+	a.files.SetFiles(files)
+}
+
+// loadDiff asks the harness for what a run changed in one file (ADR 014).
+func (a *appModel) loadDiff(path string) tea.Cmd {
+	sessionID := a.selectedSession.ID
+	return func() tea.Msg {
+		if a.app.Runner == nil || sessionID == "" {
+			return dialog.DiffLoadedMsg{Path: path, Err: errors.New("no session active")}
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := a.app.Runner.Diff(ctx, sessionID, path)
+		if err != nil {
+			return dialog.DiffLoadedMsg{Path: path, Err: err}
+		}
+		return dialog.DiffLoadedMsg{
+			Path:    resp.Path,
+			Kind:    resp.Kind,
+			Content: resp.Content,
+		}
+	}
+}
+
+// gateNotice is how a permission gate reads without a dialog open: what is
+// waiting, and every key that answers it.
+func gateNotice(tool string) string {
+	return fmt.Sprintf("Permission required: %s — a to allow, s for the session, d to deny", tool)
+}
+
+// exportTimeline writes what the harness recorded for a run, where a reader or a
+// script can pick it up without the terminal.
+func (a *appModel) exportTimeline(sessionID string) tea.Cmd {
+	runner := a.app.Runner
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		path, err := runner.ExportTimeline(ctx, sessionID)
+		if err != nil {
+			return util.ReportFailure("Exporting the run's record", "try again once the daemon answers", err)()
+		}
+		return util.ReportInfo("Exported to " + path)()
+	}
+}
+
+// denialNotice is what the client says when the user answers a gate with deny.
+//
+// It is a function rather than a literal because the golden frame of the denied
+// state has to show the same words the client produces, and two copies of a
+// sentence drift.
+func denialNotice(tool string) string {
+	return fmt.Sprintf("Denied %s. The run stops.", tool)
+}
+
+// promptQuit opens the confirmation, dismissing whatever layer is on top.
+//
+// Quitting is never silent: the dialog is the only route out of the client, so
+// a stray chord cannot end a session that is mid-run.
+func (a *appModel) promptQuit() tea.Cmd {
+	a.showQuit = !a.showQuit
+	if a.showHelp {
+		a.showHelp = false
+	}
+	if a.showSessionDialog {
+		a.showSessionDialog = false
+	}
+	if a.showCommandDialog {
+		a.showCommandDialog = false
+	}
+	if a.showFilepicker {
+		a.showFilepicker = false
+		a.filepicker.ToggleFilepicker(a.showFilepicker)
+	}
+	if a.showModelDialog {
+		a.showModelDialog = false
+	}
+	if a.showMultiArgumentsDialog {
+		a.showMultiArgumentsDialog = false
+	}
+	return nil
+}
+
+// reconcile folds the daemon's runs into the session index.
+//
+// It runs at start-up because the client keeps no history of its own: a client
+// that started after the runs did has to learn about them from the harness, or
+// the session picker offers an empty list as if nothing had ever run.
+func (a *appModel) reconcile() tea.Cmd {
+	runner := a.app.Runner
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := runner.ListRuns(ctx); err != nil {
+			cmd := util.ReportWarn("Reading the harness's runs: " + err.Error() + " — new goals still work")
+			return cmd()
+		}
+		return nil
+	}
+}
+
+// attach re-reads a run's timeline and keeps following it.
+//
+// Selecting a session is a reconnect, not a reset: the transcript and what the
+// run spent are rebuilt from the run's own log, and a run still in flight keeps
+// streaming. A failure is reported rather than swallowed, because a view that
+// looks current but is not is worse than an error.
+func (a *appModel) attach(sessionID string) tea.Cmd {
+	runner := a.app.Runner
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := runner.Attach(ctx, sessionID); err != nil {
+			cmd := util.ReportFailure("Re-attaching to the run", "pick another session, or send the goal again", err)
+			return cmd()
+		}
+		return nil
+	}
+}
+
 // loadModels asks the harness what the provider can serve.
 //
 // It is a command rather than a call because the answer crosses a socket: a
@@ -712,9 +1097,32 @@ func (a *appModel) loadModels() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
-		models, err := runner.AvailableModels(ctx, provider)
-		return dialog.ModelsLoadedMsg{Models: models, Err: err}
+		// The list and what each model can do come from the same operation: a
+		// picker that offered names without features would ask a user to know
+		// which models see by heart.
+		models, info, err := runner.ModelCatalogue(ctx, provider)
+		return dialog.ModelsLoadedMsg{Models: models, Info: info, Err: err}
 	}
+}
+
+// fitToTerminal trims every line to the terminal and marks each cut.
+//
+// Nothing drawn above this point can be trusted to fit: a width in lipgloss is
+// a minimum, so content wider than the terminal keeps its width and the frame
+// grows past the screen. No surface scrolls horizontally, which makes fitting
+// the frame the shell's job rather than a rule each component has to remember.
+func fitToTerminal(view string, width int) string {
+	if width <= 0 {
+		return view
+	}
+	lines := strings.Split(view, "\n")
+	for i, line := range lines {
+		if lipgloss.Width(line) <= width {
+			continue
+		}
+		lines[i] = ansi.Truncate(line, width, styles.TruncationMarker)
+	}
+	return strings.Join(lines, "\n")
 }
 
 // View renders the component for the terminal.
@@ -759,31 +1167,6 @@ func (a appModel) viewString() string {
 
 	}
 
-	// Show compacting status overlay
-	if a.isCompacting {
-		t := theme.CurrentTheme()
-		style := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(t.BorderFocused()).
-			BorderBackground(t.Background()).
-			Padding(1, 2).
-			Background(t.Background()).
-			Foreground(t.Text())
-
-		overlay := style.Render("Summarizing\n" + a.compactingMessage)
-		row := lipgloss.Height(appView) / 2
-		row -= lipgloss.Height(overlay) / 2
-		col := lipgloss.Width(appView) / 2
-		col -= lipgloss.Width(overlay) / 2
-		appView = layout.PlaceOverlay(
-			col,
-			row,
-			overlay,
-			appView,
-			true,
-		)
-	}
-
 	if a.showHelp {
 		bindings := layout.KeyMapToSlice(keys)
 		if p, ok := a.pages[a.currentPage].(layout.Bindings); ok {
@@ -801,6 +1184,21 @@ func (a appModel) viewString() string {
 		a.help.SetBindings(bindings)
 
 		overlay := a.help.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(
+			col,
+			row,
+			overlay,
+			appView,
+			true,
+		)
+	}
+
+	if a.showOnboard {
+		overlay := a.onboard.View().Content
 		row := lipgloss.Height(appView) / 2
 		row -= lipgloss.Height(overlay) / 2
 		col := lipgloss.Width(appView) / 2
@@ -874,6 +1272,24 @@ func (a appModel) viewString() string {
 		)
 	}
 
+	if a.showJobs {
+		overlay := a.jobs.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(col, row, overlay, appView, true)
+	}
+
+	if a.showFiles {
+		overlay := a.files.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(col, row, overlay, appView, true)
+	}
+
 	if a.showInitDialog {
 		overlay := a.initDialog.View().Content
 		appView = layout.PlaceOverlay(
@@ -915,30 +1331,117 @@ func (a appModel) viewString() string {
 		)
 	}
 
-	return appView
+	// The frame is fitted last so overlays are subject to it too: a dialog that
+	// runs past the terminal is exactly the surface a user cannot dismiss.
+	return fitToTerminal(appView, a.width)
+}
+
+// answerOnboard carries out the first-run choice.
+//
+// The answer is recorded either way: "not now" is an answer, and a client that
+// asks again on every start is a client that nags instead of helping.
+func (a appModel) answerOnboard(msg dialog.OnboardChoiceMsg) (tea.Model, tea.Cmd) {
+	a.showOnboard = false
+	if err := config.UpdateOnboarded(); err != nil {
+		logging.WarnPersist("could not record the first-run answer", "err", err)
+	}
+	switch msg.ID {
+	case "install-opencode":
+		return a, installOpenCode()
+	case "api-key":
+		return a, util.CmdHandler(chat.SendMsg{Text: config.APIKeyHelp()})
+	}
+	return a, nil
+}
+
+// installOpenCode runs the installer and reports what it said.
+func installOpenCode() tea.Cmd {
+	return func() tea.Msg {
+		out, err := onboard.Install(context.Background())
+		return dialog.OnboardInstallFinishedMsg{Err: err, Output: out}
+	}
+}
+
+// finishOnboardInstall tells the person what happened, and only claims opencode
+// was installed when it was.
+func (a appModel) finishOnboardInstall(msg dialog.OnboardInstallFinishedMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		text := "opencode was not installed: " + msg.Err.Error()
+		if tail := lastLines(msg.Output, 3); tail != "" {
+			text += "\n\n" + tail
+		}
+		return a, util.CmdHandler(chat.SendMsg{Text: text})
+	}
+	if path, err := exec.LookPath("opencode"); err == nil {
+		if err := config.UpdateProvider("opencode"); err != nil {
+			logging.WarnPersist("could not record the provider", "err", err)
+		}
+		text := "opencode is installed (" + path + "). Prumo will run with it from now on: " +
+			"its models need no api-key of ours, and the model picker lists what it serves."
+		return a, util.CmdHandler(chat.SendMsg{Text: text})
+	}
+	return a, util.CmdHandler(chat.SendMsg{Text: "the installer finished but opencode is not on PATH yet; " +
+		"it may need a new shell before this session can use it"})
+}
+
+func lastLines(text string, n int) string {
+	lines := strings.Split(strings.TrimSpace(text), "\n")
+	if len(lines) <= n {
+		return strings.TrimSpace(text)
+	}
+	return strings.Join(lines[len(lines)-n:], "\n")
 }
 
 func New(app *app.App) tea.Model {
+	// The palette is applied where the interface is built, not where the flags
+	// are parsed: it is the client's own setting, it survives a restart, and a
+	// theme that only a flag could set would be one the user re-chooses forever.
+	if name := config.Get().Theme; name != "" {
+		if err := theme.SetTheme(name); err != nil {
+			logging.WarnPersist("unknown theme, keeping the one in use", "theme", name, "err", err)
+		}
+	}
+
 	startPage := page.ChatPage
 	model := &appModel{
-		currentPage:   startPage,
-		loadedPages:   make(map[page.PageID]bool),
-		status:        core.NewStatusCmp(app),
-		modelDialog:   dialog.NewModelDialogCmp(),
-		help:          dialog.NewHelpCmp(),
-		quit:          dialog.NewQuitCmp(),
-		sessionDialog: dialog.NewSessionDialogCmp(),
-		commandDialog: dialog.NewCommandDialogCmp(),
-		permissions:   dialog.NewPermissionDialogCmp(),
-		initDialog:    dialog.NewInitDialogCmp(),
-		themeDialog:   dialog.NewThemeDialogCmp(),
-		app:           app,
-		commands:      []dialog.Command{},
+		currentPage:     startPage,
+		composerFocused: true,
+		loadedPages:     make(map[page.PageID]bool),
+		status:          core.NewStatusCmp(app),
+		modelDialog:     dialog.NewModelDialogCmp(),
+		help:            dialog.NewHelpCmp(),
+		quit:            dialog.NewQuitCmp(),
+		sessionDialog:   dialog.NewSessionDialogCmp(),
+		commandDialog:   dialog.NewCommandDialogCmp(),
+		permissions:     dialog.NewPermissionDialogCmp(),
+		initDialog:      dialog.NewInitDialogCmp(),
+		themeDialog:     dialog.NewThemeDialogCmp(),
+		files:           dialog.NewFilesDialogCmp(),
+		jobs:            dialog.NewJobsDialogCmp(),
+		app:             app,
+		commands:        []dialog.Command{},
 		pages: map[page.PageID]tea.Model{
 			page.ChatPage: page.NewChatPage(app),
 			page.LogsPage: page.NewLogsPage(),
 		},
 		filepicker: dialog.NewFilepickerCmp(app),
+	}
+
+	// The first-run offer: asked once, and only when there is nothing to run
+	// with. opencode serves models for free and authenticates itself, which is a
+	// path nobody discovers from an empty model list.
+	decision := onboard.Detect(config.Get().Provider, config.Get().Onboarded)
+	if decision.Ask {
+		model.onboard = dialog.NewOnboardDialogCmp(onboard.Options(decision))
+		model.showOnboard = true
+	} else if decision.Notice != "" {
+		// Someone who already has opencode is not asked anything, which would
+		// leave them with the one thing they need to know and no way to learn
+		// it: that a real provider is one flag away. Said once, then recorded.
+		model.startupNotice = decision.Notice
+		if err := config.UpdateOnboarded(); err != nil {
+			logging.WarnPersist("could not record the startup notice", "err", err)
+		}
 	}
 
 	model.RegisterCommand(dialog.Command{
@@ -962,17 +1465,41 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 	})
 
 	model.RegisterCommand(dialog.Command{
-		ID:          "compact",
-		Title:       "Compact Session",
-		Description: "Summarize the current session and create a new one with the summary",
+		ID:          "schedule",
+		Title:       "Scheduled runs",
+		Description: "See what the daemon repeats on a schedule, and stop one",
 		Handler: func(cmd dialog.Command) tea.Cmd {
-			return func() tea.Msg {
-				return startCompactSessionMsg{}
-			}
+			return func() tea.Msg { return openJobsMsg{} }
 		},
 	})
-	// Custom commands are not loaded: their source upstream was a client-side
-	// directory of markdown files, and Prumo has not decided what its command
-	// surface is. Inventing one here would be a second, unversioned catalogue.
+
+	model.RegisterCommand(dialog.Command{
+		ID:          "export",
+		Title:       "Export the session's timeline",
+		Description: "Write the run's own record to .prumo/runtime/exports/ as plain text",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			// The handler cannot see the selected session, so it asks the shell
+			// for the export and lets the shell resolve which run it means.
+			return util.CmdHandler(exportTimelineMsg{})
+		},
+	})
+
+	// Compaction is the harness's: it summarizes a run as the run's context
+	// budget requires, and the protocol exposes no operation that asks it for
+	// one. The command states that boundary rather than simulating a job the
+	// client cannot start.
+	model.RegisterCommand(dialog.Command{
+		ID:          "compact",
+		Title:       "Compact Session",
+		Description: "Who compacts this session's history",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			return util.ReportInfo("The harness compacts a run as it approaches its context budget; the client asks for nothing.")
+		},
+	})
+	// The command surface is the user's own directory of markdown prompts. It is
+	// theirs rather than the project's on purpose: a command is a prompt its
+	// author owns, and the client reads what the person running it wrote.
+	model.registerUserCommands()
+
 	return model
 }

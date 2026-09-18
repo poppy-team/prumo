@@ -18,14 +18,23 @@ import (
 
 // Session is one run as the client presents it.
 type Session struct {
-	ID               string
-	ParentSessionID  string
-	Title            string
-	MessageCount     int64
+	ID              string
+	ParentSessionID string
+	Title           string
+	MessageCount    int64
+	// The spend is kept by kind because the kinds are priced differently: an
+	// input token, a cached one and an output token are not the same money, and
+	// a session that summed them could report a total nobody could explain.
 	PromptTokens     int64
 	CompletionTokens int64
-	SummaryMessageID string
+	CacheReadTokens  int64
+	CacheWriteTokens int64
 	Cost             float64
+	// UsageReports is how many times the harness reported usage, which is how
+	// many model requests this session has made — the denominator of the average
+	// cost per request.
+	UsageReports     int64
+	SummaryMessageID string
 	CreatedAt        int64
 	UpdatedAt        int64
 }

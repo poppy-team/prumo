@@ -54,7 +54,7 @@ Atomic writes (tmp+rename), SHA-256 fingerprints, `Latest(run)` recovery.
 `RecordIntent` BEFORE effects with `idempotency_key`; `RecordOutcome` AFTER.
 Replay with a seen key after `applied` is skipped: duplicate observable side
 effect rate target = zero. `kill prumo → restart → resume` is covered by
-`prumo agent run|resume` + `checkpoint_test` + eval suite.
+`prumo-agent agent run|resume` + `checkpoint_test` + eval suite.
 
 ## Budget + Observability
 

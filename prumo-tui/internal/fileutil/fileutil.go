@@ -41,6 +41,7 @@ func GetRgCmd(globPattern string) *exec.Cmd {
 		"--files",
 		"-L",
 		"--null",
+		"--no-messages",
 	}
 	if globPattern != "" {
 		if !filepath.IsAbs(globPattern) && !strings.HasPrefix(globPattern, "/") {

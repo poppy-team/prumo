@@ -6,7 +6,7 @@ Prumo distributes a single static binary. Python is not required to run the Go C
 
 ```bash
 go build -o /tmp/prumo ./cmd/prumo
-/tmp/prumo --json version
+/tmp/prumo-agent --json version
 ```
 
 ## Release Build
@@ -20,8 +20,8 @@ cat dist/checksums.txt
 ## Setup and Portable Home
 
 ```bash
-prumo --home ~/.prumo setup
-prumo --home ./project-home setup
+prumo-agent --home ~/.prumo setup
+prumo-agent --home ./project-home setup
 PRUMO_HOME=./project-home prumo setup
 ```
 
@@ -30,7 +30,7 @@ Setup records the installation manifest and detects available harnesses. Running
 ## Install Connectors
 
 ```bash
-prumo --home ~/.prumo install connector opencode
+prumo-agent --home ~/.prumo install connector opencode
 ```
 
 Connector state lives under `PRUMO_HOME/connectors/<id>/cleanup.json`.
@@ -38,10 +38,10 @@ Connector state lives under `PRUMO_HOME/connectors/<id>/cleanup.json`.
 ## Uninstall Safely
 
 ```bash
-prumo --home ~/.prumo uninstall
-prumo --home ~/.prumo uninstall --connectors
-prumo --home ~/.prumo uninstall --purge-cache
-prumo --home ~/.prumo uninstall --purge-global-config
+prumo-agent --home ~/.prumo uninstall
+prumo-agent --home ~/.prumo uninstall --connectors
+prumo-agent --home ~/.prumo uninstall --purge-cache
+prumo-agent --home ~/.prumo uninstall --purge-global-config
 ```
 
 Uninstall never deletes repository data: `.ai/`, docs, goals, plans, evidence, and all project files remain untouched. Purge flags only remove cache, derived runtime state, or global configuration.

@@ -1,20 +1,16 @@
 package chat
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
-	"unicode"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
-	"github.com/raillen/prumo-tui/internal/logging"
-	"github.com/raillen/prumo-tui/internal/message"
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
@@ -24,13 +20,11 @@ import (
 )
 
 type editorCmp struct {
-	width       int
-	height      int
-	app         *app.App
-	session     session.Session
-	textarea    textarea.Model
-	attachments []message.Attachment
-	deleteMode  bool
+	width    int
+	height   int
+	app      *app.App
+	session  session.Session
+	textarea textarea.Model
 }
 
 type EditorKeyMaps struct {
@@ -43,11 +37,6 @@ type bluredEditorKeyMaps struct {
 	Focus      key.Binding
 	OpenEditor key.Binding
 }
-type DeleteAttachmentKeyMaps struct {
-	AttachmentDeleteMode key.Binding
-	Escape               key.Binding
-	DeleteAllAttachments key.Binding
-}
 
 var editorMaps = EditorKeyMaps{
 	Send: key.NewBinding(
@@ -59,25 +48,6 @@ var editorMaps = EditorKeyMaps{
 		key.WithHelp("ctrl+e", "open editor"),
 	),
 }
-
-var DeleteKeyMaps = DeleteAttachmentKeyMaps{
-	AttachmentDeleteMode: key.NewBinding(
-		key.WithKeys("ctrl+r"),
-		key.WithHelp("ctrl+r+{i}", "delete attachment at index i"),
-	),
-	Escape: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "cancel delete mode"),
-	),
-	DeleteAllAttachments: key.NewBinding(
-		key.WithKeys("r"),
-		key.WithHelp("ctrl+r+r", "delete all attchments"),
-	),
-}
-
-const (
-	maxAttachments = 5
-)
 
 func (m *editorCmp) openEditor() tea.Cmd {
 	editor := os.Getenv("EDITOR")
@@ -106,12 +76,7 @@ func (m *editorCmp) openEditor() tea.Cmd {
 			return util.ReportWarn("Message is empty")
 		}
 		os.Remove(tmpfile.Name())
-		attachments := m.attachments
-		m.attachments = nil
-		return SendMsg{
-			Text:        string(content),
-			Attachments: attachments,
-		}
+		return SendMsg{Text: string(content)}
 	})
 }
 
@@ -120,24 +85,14 @@ func (m *editorCmp) Init() tea.Cmd {
 }
 
 func (m *editorCmp) send() tea.Cmd {
-	if m.app.CoderAgent.IsSessionBusy(m.session.ID) {
-		return util.ReportWarn("Agent is working, please wait...")
-	}
-
+	// Sending while a run is in flight is not refused: it steers the run, which
+	// is the only way to add to a conversation the daemon is already having.
 	value := m.textarea.Value()
 	m.textarea.Reset()
-	attachments := m.attachments
-
-	m.attachments = nil
 	if value == "" {
 		return nil
 	}
-	return tea.Batch(
-		util.CmdHandler(SendMsg{
-			Text:        value,
-			Attachments: attachments,
-		}),
-	)
+	return tea.Batch(util.CmdHandler(SendMsg{Text: value}))
 }
 
 func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -156,34 +111,17 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.session = msg
 		}
 		return m, nil
-	case dialog.AttachmentAddedMsg:
-		if len(m.attachments) >= maxAttachments {
-			logging.ErrorPersist(fmt.Sprintf("cannot add more than %d images", maxAttachments))
-			return m, cmd
+	case dialog.ReferenceSelectedMsg:
+		// The picked path is written into the goal, the same way `@` writes one:
+		// what a model can see is the harness's decision, made from the model's
+		// own capabilities.
+		current := m.textarea.Value()
+		if current != "" && !strings.HasSuffix(current, " ") {
+			current += " "
 		}
-		m.attachments = append(m.attachments, msg.Attachment)
+		m.textarea.SetValue(current + msg.Path)
+		return m, nil
 	case tea.KeyPressMsg:
-		if key.Matches(msg, DeleteKeyMaps.AttachmentDeleteMode) {
-			m.deleteMode = true
-			return m, nil
-		}
-		if key.Matches(msg, DeleteKeyMaps.DeleteAllAttachments) && m.deleteMode {
-			m.deleteMode = false
-			m.attachments = nil
-			return m, nil
-		}
-		if m.deleteMode && len([]rune(msg.Text)) > 0 && unicode.IsDigit([]rune(msg.Text)[0]) {
-			num := int([]rune(msg.Text)[0] - '0')
-			m.deleteMode = false
-			if num < 10 && len(m.attachments) > num {
-				if num == 0 {
-					m.attachments = m.attachments[num+1:]
-				} else {
-					m.attachments = slices.Delete(m.attachments, num, num+1)
-				}
-				return m, nil
-			}
-		}
 		if key.Matches(msg, messageKeys.PageUp) || key.Matches(msg, messageKeys.PageDown) ||
 			key.Matches(msg, messageKeys.HalfPageUp) || key.Matches(msg, messageKeys.HalfPageDown) {
 			return m, nil
@@ -193,10 +131,6 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, util.ReportWarn("Agent is working, please wait...")
 			}
 			return m, m.openEditor()
-		}
-		if key.Matches(msg, DeleteKeyMaps.Escape) {
-			m.deleteMode = false
-			return m, nil
 		}
 		// Hanlde Enter key
 		if m.textarea.Focused() && key.Matches(msg, editorMaps.Send) {
@@ -227,15 +161,7 @@ func (m *editorCmp) viewString() string {
 		Bold(true).
 		Foreground(t.Primary())
 
-	if len(m.attachments) == 0 {
-		return lipgloss.JoinHorizontal(lipgloss.Top, style.Render(">"), m.textarea.View())
-	}
-	m.textarea.SetHeight(m.height - 1)
-	return lipgloss.JoinVertical(lipgloss.Top,
-		m.attachmentsContent(),
-		lipgloss.JoinHorizontal(lipgloss.Top, style.Render(">"),
-			m.textarea.View()),
-	)
+	return lipgloss.JoinHorizontal(lipgloss.Top, style.Render(">"), m.textarea.View())
 }
 
 func (m *editorCmp) SetSize(width, height int) tea.Cmd {
@@ -251,34 +177,8 @@ func (m *editorCmp) GetSize() (int, int) {
 	return m.textarea.Width(), m.textarea.Height()
 }
 
-func (m *editorCmp) attachmentsContent() string {
-	var styledAttachments []string
-	t := theme.CurrentTheme()
-	attachmentStyles := styles.BaseStyle().
-		MarginLeft(1).
-		Background(t.TextMuted()).
-		Foreground(t.Text())
-	for i, attachment := range m.attachments {
-		var filename string
-		if len(attachment.FileName) > 10 {
-			filename = fmt.Sprintf(" %s %s...", styles.DocumentIcon, attachment.FileName[0:7])
-		} else {
-			filename = fmt.Sprintf(" %s %s", styles.DocumentIcon, attachment.FileName)
-		}
-		if m.deleteMode {
-			filename = fmt.Sprintf("%d%s", i, filename)
-		}
-		styledAttachments = append(styledAttachments, attachmentStyles.Render(filename))
-	}
-	content := lipgloss.JoinHorizontal(lipgloss.Left, styledAttachments...)
-	return content
-}
-
 func (m *editorCmp) BindingKeys() []key.Binding {
-	bindings := []key.Binding{}
-	bindings = append(bindings, layout.KeyMapToSlice(editorMaps)...)
-	bindings = append(bindings, layout.KeyMapToSlice(DeleteKeyMaps)...)
-	return bindings
+	return layout.KeyMapToSlice(editorMaps)
 }
 
 func CreateTextArea(existing *textarea.Model) textarea.Model {
@@ -297,6 +197,9 @@ func CreateTextArea(existing *textarea.Model) textarea.Model {
 		state.Placeholder = styles.BaseStyle().Background(bgColor).Foreground(textMutedColor)
 		state.Text = styles.BaseStyle().Background(bgColor).Foreground(textColor)
 	}
+	// A blinking caret is motion too. Under reduced motion the cursor keeps its
+	// shape and colour and simply stops moving.
+	taStyles.Cursor.Blink = !config.Get().ReducedMotion
 	ta.SetStyles(taStyles)
 
 	ta.Prompt = " "

@@ -17,7 +17,7 @@ import (
 )
 
 // ProtocolVersion is the IDL this SDK speaks.
-const ProtocolVersion = "0.3.0"
+const ProtocolVersion = "0.4.0"
 
 // Client talks to a harness daemon over its Unix socket.
 type Client struct {
@@ -314,6 +314,73 @@ func (c Client) Unschedule(ctx context.Context, jobID string) error {
 	return err
 }
 
+// CapabilitySet is what a model can do, as the workspace declared it.
+//
+// Absent means undeclared, never denied: the daemon reports what somebody wrote
+// in `.prumo/models.json` and nothing more.
+type CapabilitySet struct {
+	Text          bool `json:"text,omitempty"`
+	Vision        bool `json:"vision,omitempty"`
+	Reasoning     bool `json:"reasoning,omitempty"`
+	Tools         bool `json:"tools,omitempty"`
+	Audio         bool `json:"audio,omitempty"`
+	ContextTokens int  `json:"context_tokens,omitempty"`
+}
+
+// ModelInfo is one model with what is known about it.
+type ModelInfo struct {
+	ID           string        `json:"id"`
+	Declared     bool          `json:"declared"`
+	Capabilities CapabilitySet `json:"capabilities"`
+}
+
+// ModelInfo asks what the provider serves *and* what each model can do.
+//
+// The models operation answers both: the ids come from the provider, the
+// capabilities from the workspace's own declaration, and a model nobody declared
+// arrives with Declared false rather than with an empty set of denials.
+func (c Client) ModelInfo(ctx context.Context, r ModelsRequest) ([]ModelInfo, error) {
+	out, err := c.call(ctx, map[string]any{"op": "models", "provider": r.Provider, "base_url": r.BaseURL})
+	if err != nil {
+		return nil, err
+	}
+	raw, _ := out["model_info"].([]any)
+	infos := make([]ModelInfo, 0, len(raw))
+	for _, item := range raw {
+		m, _ := item.(map[string]any)
+		info := ModelInfo{ID: strOf(m, "id")}
+		if declared, ok := m["declared"].(bool); ok {
+			info.Declared = declared
+		}
+		if caps, ok := m["capabilities"].(map[string]any); ok {
+			info.Capabilities = CapabilitySet{
+				Text:          boolOf(caps, "text"),
+				Vision:        boolOf(caps, "vision"),
+				Reasoning:     boolOf(caps, "reasoning"),
+				Tools:         boolOf(caps, "tools"),
+				Audio:         boolOf(caps, "audio"),
+				ContextTokens: intOf(caps, "context_tokens"),
+			}
+		}
+		if info.ID != "" {
+			infos = append(infos, info)
+		}
+	}
+	return infos, nil
+}
+
+func boolOf(m map[string]any, key string) bool {
+	v, _ := m[key].(bool)
+	return v
+}
+
+func intOf(m map[string]any, key string) int {
+	if v, ok := m[key].(float64); ok {
+		return int(v)
+	}
+	return 0
+}
+
 // Jobs lists scheduled jobs.
 func (c Client) Jobs(ctx context.Context) ([]Job, error) {
 	out, err := c.call(ctx, map[string]any{"op": "jobs"})
@@ -399,4 +466,100 @@ func toStrSlice(v any) []string {
 		}
 	}
 	return out
+}
+
+// DiffResponse is what a run changed in one file (ADR 014).
+type DiffResponse struct {
+	Path    string `json:"path"`
+	Kind    string `json:"kind"`
+	Content string `json:"content"`
+}
+
+// Diff asks the harness what a run changed in one file.
+func (c Client) Diff(ctx context.Context, runID, path string) (DiffResponse, error) {
+	out, err := c.call(ctx, map[string]any{"op": "diff", "run_id": runID, "path": path})
+	if err != nil {
+		return DiffResponse{}, err
+	}
+	return DiffResponse{
+		Path:    strOf(out, "path"),
+		Kind:    strOf(out, "kind"),
+		Content: strOf(out, "content"),
+	}, nil
+}
+
+// Subscribe opens a push stream for a run's events starting at from (ADR 014).
+func (c Client) Subscribe(ctx context.Context, runID string, from int) (<-chan Event, error) {
+	conn, err := c.dial(ctx)
+	if err != nil {
+		return nil, err
+	}
+	req, _ := json.Marshal(map[string]any{"op": "subscribe", "run_id": runID, "from": from})
+	if _, err := conn.Write(append(req, '\n')); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	sc := bufio.NewScanner(conn)
+	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
+	if !sc.Scan() {
+		conn.Close()
+		return nil, fmt.Errorf("no response from daemon for subscribe")
+	}
+	var ack map[string]any
+	if err := json.Unmarshal(sc.Bytes(), &ack); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("invalid subscribe ack: %w", err)
+	}
+	if ok, _ := ack["ok"].(bool); !ok && ack["op"] != "subscribed" {
+		conn.Close()
+		return nil, fmt.Errorf("subscribe failed: %v", ack["error"])
+	}
+
+	events := make(chan Event, 64)
+	go func() {
+		defer conn.Close()
+		defer close(events)
+
+		ctxDone := make(chan struct{})
+		defer close(ctxDone)
+		go func() {
+			select {
+			case <-ctx.Done():
+				conn.Close()
+			case <-ctxDone:
+			}
+		}()
+
+		for sc.Scan() {
+			var line map[string]any
+			if err := json.Unmarshal(sc.Bytes(), &line); err != nil {
+				continue
+			}
+			if strOf(line, "op") != "event" {
+				continue
+			}
+			evRaw, ok := line["event"].(map[string]any)
+			if !ok {
+				continue
+			}
+			evBytes, err := json.Marshal(evRaw)
+			if err != nil {
+				continue
+			}
+			var ev Event
+			if err := json.Unmarshal(evBytes, &ev); err != nil {
+				continue
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case events <- ev:
+			}
+			if ev.Kind == "run.finished" || ev.Kind == "run.completed" || ev.Kind == "run.failed" || ev.Kind == "run.cancelled" {
+				return
+			}
+		}
+	}()
+
+	return events, nil
 }

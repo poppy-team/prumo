@@ -44,35 +44,65 @@ func NewOneDarkTheme() *OneDarkTheme {
 	theme := &OneDarkTheme{}
 
 	// Base colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.PrimaryColor = AdaptiveColor{
 		Dark:  darkBlue,
-		Light: lightBlue,
+		Light: "#3e6dd4",
 	}
 	theme.SecondaryColor = AdaptiveColor{
 		Dark:  darkPurple,
 		Light: lightPurple,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.AccentColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#976645",
 	}
 
 	// Status colors
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.ErrorColor = AdaptiveColor{
-		Dark:  darkRed,
-		Light: lightRed,
+		Dark:  "#d57a83",
+		Light: "#bc4f47",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.WarningColor = AdaptiveColor{
 		Dark:  darkOrange,
-		Light: lightOrange,
+		Light: "#976645",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.SuccessColor = AdaptiveColor{
 		Dark:  darkGreen,
-		Light: lightGreen,
+		Light: "#477d4a",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.InfoColor = AdaptiveColor{
 		Dark:  darkBlue,
-		Light: lightBlue,
+		Light: "#3e6dd4",
 	}
 
 	// Text colors
@@ -80,13 +110,23 @@ func NewOneDarkTheme() *OneDarkTheme {
 		Dark:  darkForeground,
 		Light: lightForeground,
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextMutedColor = AdaptiveColor{
-		Dark:  darkComment,
-		Light: lightComment,
+		Dark:  "#8e95a2",
+		Light: "#707178",
 	}
+	// This token is carried toward the theme's own foreground until it
+	// reaches the contrast the accessibility contract asks of text (4.5:1
+	// against the surface it is drawn on): the upstream palette value was
+	// measured below that, and `TestEveryThemeMeasuresItsContrast` fails if
+	// this drifts back.
 	theme.TextEmphasizedColor = AdaptiveColor{
 		Dark:  darkYellow,
-		Light: lightYellow,
+		Light: "#936b16",
 	}
 
 	// Background colors

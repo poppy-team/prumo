@@ -17,7 +17,7 @@ the exact revision used, and what was derived from it.
 
 **What Prumo derived:** the terminal client's view layer — layout primitives,
 chat surface, dialogs, command palette, theme set and styling — adapted into the
-separate `prumo-tui` module, rebranded for Prumo and ported to the Charm v2
+separate `prumo-agent tui` module, rebranded for Prumo and ported to the Charm v2
 stack. Prumo did **not** take the upstream runtime: its provider integrations,
 SQLite persistence, LSP client and agent loop are not part of this repository,
 because the Prumo harness owns those concerns behind its own contracts.
@@ -28,7 +28,7 @@ studied as a behavioural and UX reference only. No Crush code is present here,
 and no part of Prumo is structured as a dependency on it.
 
 The upstream `LICENSE` text is preserved verbatim inside the derived module at
-`prumo-tui/LICENSE.opencode`.
+`prumo-agent tui/LICENSE.opencode`.
 
 ## Go module dependencies
 

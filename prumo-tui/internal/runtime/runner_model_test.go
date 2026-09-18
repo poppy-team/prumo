@@ -26,14 +26,26 @@ func (s *stubClient) Start(_ context.Context, r StartRequest) (string, error) {
 func (s *stubClient) Status(context.Context, string) (RunStatus, error) {
 	return RunStatus{Status: "complete"}, nil
 }
-func (s *stubClient) Events(context.Context, string) ([]Event, error)    { return nil, nil }
-func (s *stubClient) Cancel(context.Context, string) error               { return nil }
+func (s *stubClient) Events(context.Context, string) ([]Event, error) { return nil, nil }
+func (s *stubClient) Cancel(context.Context, string) error            { return nil }
+func (s *stubClient) Steer(context.Context, string, string) error     { return nil }
+func (s *stubClient) Jobs(context.Context) ([]prumo.Job, error)       { return nil, nil }
+func (s *stubClient) ModelInfo(context.Context, prumo.ModelsRequest) ([]prumo.ModelInfo, error) {
+	return nil, nil
+}
+func (s *stubClient) Unschedule(context.Context, string) error           { return nil }
 func (s *stubClient) Approve(context.Context, string, string) error      { return nil }
 func (s *stubClient) Deny(context.Context, string, string, string) error { return nil }
 func (s *stubClient) List(context.Context) ([]RunStatus, error)          { return nil, nil }
 func (s *stubClient) Models(_ context.Context, r prumo.ModelsRequest) ([]string, error) {
 	s.modelReqs = append(s.modelReqs, r)
 	return s.models, nil
+}
+func (s *stubClient) Diff(context.Context, string, string) (prumo.DiffResponse, error) {
+	return prumo.DiffResponse{}, nil
+}
+func (s *stubClient) Subscribe(context.Context, string, int) (<-chan prumo.Event, error) {
+	return nil, nil
 }
 
 func newTestRunner(client Client, model models.Model) *Runner {

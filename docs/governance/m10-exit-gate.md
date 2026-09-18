@@ -5,7 +5,7 @@ Status: **COMPLETE (M10 Exit Gate Passed)**
 ## Exit gate criteria
 
 Milestone M10 exit gate (per `docs/development/phases.md:365`):
-`prumo connector install opencode` produces a fully functional native integration.
+`prumo-agent connector install opencode` produces a fully functional native integration.
 
 ---
 
@@ -13,8 +13,8 @@ Milestone M10 exit gate (per `docs/development/phases.md:365`):
 
 - Implemented in `internal/connectors/opencode/opencode.go` and integrated into `internal/cliops/compile.go`.
 - Invoked via:
-  - `prumo compile opencode` or `prumo compile --target opencode`
-  - `prumo connector install opencode` (and backward-compatible `prumo install connector opencode`)
+  - `prumo-agent compile opencode` or `prumo-agent compile --target opencode`
+  - `prumo-agent connector install opencode` (and backward-compatible `prumo-agent install connector opencode`)
 - Compiles a complete `.opencode/` workspace:
   - `.opencode/opencode.json`: workspace configuration adhering to OpenCode schema.
   - `.opencode/plugins/prumo.ts`: native TypeScript plugin providing tool guards and session lifecycle hooks.
@@ -49,7 +49,7 @@ Milestone M10 exit gate (per `docs/development/phases.md:365`):
 - Conforms to `schemas/connector-contract.schema.json`.
 - Enforces strict enforcement and supports standard capabilities (`advise`, `restrict_tools`, `pre_tool_block`, `post_tool_verify`, `isolate_subagents`, `session_hooks`, `native_plugin`, `commands`, `subagents`).
 - Generates `CleanupManifest` in `PRUMO_HOME/connectors/opencode/cleanup.json`.
-- Supports atomic and safe cleanup via `prumo connector uninstall opencode`, leaving user files intact.
+- Supports atomic and safe cleanup via `prumo-agent connector uninstall opencode`, leaving user files intact.
 
 ---
 
@@ -60,5 +60,5 @@ Milestone M10 exit gate (per `docs/development/phases.md:365`):
   - `TestOpenCodeCompileAndValidate`: verifies directory structure, plugin code, and ownership marker.
   - `TestOpenCodeInstallAndUninstall`: verifies manifest registration, cleanup manifest creation, and safe uninstallation.
 - CLI tests in `cmd/prumo/connector_commands_test.go`:
-  - Validates `prumo connector list`, `prumo connector install`, `prumo connector validate`, `prumo connector uninstall`, and `prumo install connector`.
+  - Validates `prumo-agent connector list`, `prumo-agent connector install`, `prumo-agent connector validate`, `prumo-agent connector uninstall`, and `prumo-agent install connector`.
 - All tests pass with `-race` enabled.

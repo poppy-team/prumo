@@ -8,7 +8,6 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/completions"
-	"github.com/raillen/prumo-tui/internal/message"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
@@ -65,11 +64,13 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	case dialog.CompletionDialogCloseMsg:
 		p.showCompletionDialog = false
+	case layout.FocusMsg:
+		// The composer is the surface that carries a border, so it is the one
+		// that shows whether the keyboard is on the page or on a dialog.
+		p.editor.SetFocused(msg.Focused)
+		return p, nil
 	case chat.SendMsg:
-		cmd := p.sendMessage(msg.Text, msg.Attachments)
-		if cmd != nil {
-			return p, cmd
-		}
+		return p, p.sendMessage(msg.Text)
 	case chat.SessionSelectedMsg:
 		if p.session.ID == "" {
 			p.setSidebar()
@@ -126,27 +127,44 @@ func (p *chatPage) setSidebar() tea.Cmd { return nil }
 // clearSidebar detaches that panel. Nothing is attached, so nothing is detached.
 func (p *chatPage) clearSidebar() tea.Cmd { return nil }
 
-func (p *chatPage) sendMessage(text string, attachments []message.Attachment) tea.Cmd {
-	var cmds []tea.Cmd
-	if p.session.ID == "" {
-		session, err := p.app.Sessions.Create(context.Background(), "New Session")
-		if err != nil {
-			return util.ReportError(err)
+// sendMessage starts a run for what was typed.
+//
+// It returns a command rather than doing the work inline because starting a run
+// crosses a socket: a view that called it directly would freeze on every
+// message it sent. What the run produces does not come back through this
+// command either — the runner publishes it and the stream bridge carries it to
+// the program, which is the only path the conversation travels.
+func (p *chatPage) sendMessage(text string) tea.Cmd {
+	app := p.app
+	session := p.session
+	return func() tea.Msg {
+		ctx := context.Background()
+		if session.ID == "" {
+			created, err := app.Sessions.Create(ctx, "New Session")
+			if err != nil {
+				// Failures name the operation and the next action, so the reader
+				// is not left to work out what the client was trying to do.
+				return util.ReportFailure("Starting the session", "press enter to try again", err)()
+			}
+			session = created
 		}
 
-		p.session = session
-		cmd := p.setSidebar()
-		if cmd != nil {
-			cmds = append(cmds, cmd)
+		if app.CoderAgent.IsSessionBusy(session.ID) {
+			// A run is already going, so this is not a new goal: it is something
+			// said to the run that is running.
+			if err := app.CoderAgent.Steer(ctx, session.ID, text); err != nil {
+				return util.ReportFailure("Adding to the run in flight", "wait for it to finish, or press esc to cancel it", err)()
+			}
+			return chat.SessionSelectedMsg(session)
 		}
-		cmds = append(cmds, util.CmdHandler(chat.SessionSelectedMsg(session)))
-	}
 
-	_, err := p.app.CoderAgent.Run(context.Background(), p.session.ID, text, attachments...)
-	if err != nil {
-		return util.ReportError(err)
+		if _, err := app.CoderAgent.Run(ctx, session.ID, text); err != nil {
+			return util.ReportFailure("Starting the run", "press enter to try again, or read the log with ctrl+l", err)()
+		}
+		// Selecting the session is what tells the view which conversation it is
+		// now drawing, and it is what the editor keys off to know a run exists.
+		return chat.SessionSelectedMsg(session)
 	}
-	return tea.Batch(cmds...)
 }
 
 func (p *chatPage) SetSize(width, height int) tea.Cmd {
@@ -200,6 +218,9 @@ func NewChatPage(app *app.App) tea.Model {
 		chat.NewEditorCmp(app),
 		layout.WithBorder(true, false, false, false),
 	)
+	// The composer holds the keyboard when the page is first drawn; a dialog
+	// opening is what takes it away.
+	editorContainer.SetFocused(true)
 	return &chatPage{
 		app:              app,
 		editor:           editorContainer,

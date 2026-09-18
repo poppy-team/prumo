@@ -16,7 +16,10 @@ type Command struct {
 	ID          string
 	Title       string
 	Description string
-	Handler     func(cmd Command) tea.Cmd
+	// Prompt is what a command that takes arguments expands into. A command
+	// without one runs through Handler instead.
+	Prompt  string
+	Handler func(cmd Command) tea.Cmd
 }
 
 func (ci Command) Render(selected bool, width int) string {

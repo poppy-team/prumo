@@ -40,11 +40,11 @@ requirements, decisions, goals, code, tests, documentation, and evidence.
 
 ---
 
-### 4. CLI Surface (`prumo trace` and `prumo journal`)
+### 4. CLI Surface (`prumo-agent trace` and `prumo-agent journal`)
 
 - Implemented in `cmd/prumo/trace_commands.go`:
-  - `prumo trace <ref>`: Traces any goal, decision, code file, or requirement, returning structured upstream/downstream lineages in human terminal format or JSON envelope.
-  - `prumo journal [--goal <goal>] [--decision <decision>] [--file <file>]`: Queries implementation history.
+  - `prumo-agent trace <ref>`: Traces any goal, decision, code file, or requirement, returning structured upstream/downstream lineages in human terminal format or JSON envelope.
+  - `prumo-agent journal [--goal <goal>] [--decision <decision>] [--file <file>]`: Queries implementation history.
 - Verified by automated tests in `cmd/prumo/trace_commands_test.go`.
 
 ---

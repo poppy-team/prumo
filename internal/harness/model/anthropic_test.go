@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -129,3 +130,59 @@ func TestAnthropicCancel(t *testing.T) {
 		t.Fatal("expected terminal event")
 	}
 }
+
+func TestAnthropicMultipartImagePayload(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"))
+	}))
+	defer srv.Close()
+
+	p := NewAnthropic(srv.URL, "test-key", "claude-3-5")
+	req := agent.ModelRequest{
+		RequestID: "req-img",
+		TurnID:    "T1",
+		Messages: []agent.Message{
+			{
+				ID:   "m1",
+				Role: agent.RoleUser,
+				Parts: []agent.ContentPart{
+					{Type: "text", Text: "explain this:"},
+					{Type: "image", MimeType: "image/png", Data: "iVBORw0KGgoAAAANSUhEUg=="},
+				},
+			},
+		},
+	}
+	ch, err := p.Stream(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+
+	msgs, ok := receivedBody["messages"].([]any)
+	if !ok || len(msgs) != 1 {
+		t.Fatalf("expected 1 message in payload, got: %v", receivedBody)
+	}
+	msgMap := msgs[0].(map[string]any)
+	blocks, ok := msgMap["content"].([]any)
+	if !ok || len(blocks) != 2 {
+		t.Fatalf("expected 2 content blocks, got: %v", msgMap["content"])
+	}
+	b0 := blocks[0].(map[string]any)
+	if b0["type"] != "text" || b0["text"] != "explain this:" {
+		t.Errorf("block 0 mismatch: %v", b0)
+	}
+	b1 := blocks[1].(map[string]any)
+	if b1["type"] != "image" {
+		t.Errorf("block 1 not image: %v", b1)
+	}
+	src, ok := b1["source"].(map[string]any)
+	if !ok || src["type"] != "base64" || src["media_type"] != "image/png" || src["data"] != "iVBORw0KGgoAAAANSUhEUg==" {
+		t.Errorf("block 1 source mismatch: %v", src)
+	}
+}
+

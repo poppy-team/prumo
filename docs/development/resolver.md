@@ -16,7 +16,7 @@ The resolver applies filters in the following order:
 
 ## Explainability Traces
 
-Use `prumo explain` to view exactly why a specific skill was included or excluded during resolution.
+Use `prumo-agent explain` to view exactly why a specific skill was included or excluded during resolution.
 
 ## Determinism Guarantees
 

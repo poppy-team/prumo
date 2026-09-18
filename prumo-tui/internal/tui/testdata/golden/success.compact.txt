@@ -1,0 +1,31 @@
+# digest sha256:a38a7d1073f8b383
+                                                                               
+ ┃ how does the client fold a run?                                             
+                                                                               
+ ┃ The client folds the run's own log and draws what it says.                  
+ ┃  (0ms)                                                                      
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+ press enter to send the message, write \ and enter to add a new line          
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ >                                                                             
+                                                                               
+ ctrl+? help  in 18.4K · cache 11.3K · out 760 · $0.0412 · ~$0.0412/req   fake 

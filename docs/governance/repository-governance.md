@@ -14,17 +14,17 @@ Repository changes are governed by `.prumo/repository/policy.json`, validated by
 ## Local policy
 
 ```bash
-go run ./cmd/prumo repo policy check
-go run ./cmd/prumo repo policy check --json
-go run ./cmd/prumo repo policy explain
-go run ./cmd/prumo repo policy plan --json
+go run ./cmd/prumo-agent repo policy check
+go run ./cmd/prumo-agent repo policy check --json
+go run ./cmd/prumo-agent repo policy explain
+go run ./cmd/prumo-agent repo policy plan --json
 ```
 
 - `check` inspects the policy, local Git state, branch naming, working tree, and HEAD subject. It never mutates state.
 - `explain` shows the rule, expected state, actual state, and enforcement reason.
 - `plan` produces deterministic, ordered remediation. It never mutates state.
-- `prumo repo policy apply --dry-run` reports what would change.
-- `prumo repo policy apply` requires `GITHUB_TOKEN` or `GH_TOKEN`, re-reads remote state before mutation, changes only settings/rulesets supported by the adapter, and remains privileged.
+- `prumo-agent repo policy apply --dry-run` reports what would change.
+- `prumo-agent repo policy apply` requires `GITHUB_TOKEN` or `GH_TOKEN`, re-reads remote state before mutation, changes only settings/rulesets supported by the adapter, and remains privileged.
 - `check` and `plan` never mutate remote state.
 
 Checks currently cover:

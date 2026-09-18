@@ -23,7 +23,7 @@ the repository version has authority over the Notion version for implementation.
 | `historical` | Record (ADR, migration note, progress log); never rewritten | no |
 
 The machine-readable classification is `docs/AUTHORITY_MAP.json`, verified by
-`prumo docs authority` and the `docs-authority` CI gate.
+`prumo-agent docs authority` and the `docs-authority` CI gate.
 
 ## Projection policy (W0.11)
 
@@ -51,8 +51,8 @@ The machine-readable classification is `docs/AUTHORITY_MAP.json`, verified by
 ## Verification
 
 ```bash
-prumo docs authority            # human output
-prumo docs authority --json     # machine envelope
+prumo-agent docs authority            # human output
+prumo-agent docs authority --json     # machine envelope
 go test ./internal/documentation/ -run TestAuthority
 ```
 

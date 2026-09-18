@@ -5,16 +5,18 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/config"
-	"github.com/raillen/prumo-tui/internal/message"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/version"
 )
 
+// SendMsg is a goal the composer wants sent.
+//
+// It carries text and nothing else: a file is *named* in the goal rather than
+// attached to it, because what a model can see is the harness's decision.
 type SendMsg struct {
-	Text        string
-	Attachments []message.Attachment
+	Text string
 }
 
 type SessionSelectedMsg = session.Session

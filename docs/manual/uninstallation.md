@@ -36,8 +36,8 @@ Remoção de projeto continua sendo decisão explícita do usuário com as ferra
 ## Remoção básica
 
 ```bash
-prumo uninstall
-prumo --home ~/.prumo uninstall
+prumo-agent uninstall
+prumo-agent --home ~/.prumo uninstall
 ```
 
 Esse comando atualiza o manifest global e remove somente estado de instalação diretamente rastreado pelo Prumo.
@@ -45,7 +45,7 @@ Esse comando atualiza o manifest global e remove somente estado de instalação 
 ## Remover conectores
 
 ```bash
-prumo uninstall --connectors
+prumo-agent uninstall --connectors
 ```
 
 Um conector só é removido quando possui cleanup manifest com caminhos criados pelo próprio Prumo. Caminhos fora do manifest, arquivos modificados pelo usuário, ou ownership incerto são reportados como leftovers em vez de apagados.
@@ -53,7 +53,7 @@ Um conector só é removido quando possui cleanup manifest com caminhos criados 
 ## Limpar cache e estado derivado
 
 ```bash
-prumo uninstall --purge-cache
+prumo-agent uninstall --purge-cache
 ```
 
 Remove cache, logs locais, bases derivadas e arquivos temporários sob `PRUMO_HOME`. Esse comando não altera o manifest principal a menos que `--purge-global-config` também seja usado.
@@ -61,10 +61,10 @@ Remove cache, logs locais, bases derivadas e arquivos temporários sob `PRUMO_HO
 ## Remover configuração global
 
 ```bash
-prumo uninstall --purge-global-config
+prumo-agent uninstall --purge-global-config
 ```
 
-Remove `PRUMO_HOME/config`. A execução seguinte cria um estado limpo através de `prumo setup`. Dados de projetos continuam preservados.
+Remove `PRUMO_HOME/config`. A execução seguinte cria um estado limpo através de `prumo-agent setup`. Dados de projetos continuam preservados.
 
 ## Remoção completa do binário
 
@@ -96,7 +96,7 @@ O último comando deve mostrar que o projeto permanece funcional e versionado, m
 
 Se uma remoção for interrompida:
 
-1. Execute `prumo setup` em um home temporário e novo.
+1. Execute `prumo-agent setup` em um home temporário e novo.
 2. Compare os manifests gerados.
 3. Restaure apenas backups registrados no cleanup manifest.
 4. Nunca restaure um backup sobre um arquivo modificado pelo usuário sem confirmar conteúdo e checksum.

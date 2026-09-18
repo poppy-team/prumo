@@ -94,13 +94,13 @@
 - Python tests still 100% passing (no regression)
 
 **Acceptance Criteria**:
-- [ ] `go run ./cmd/prumo version` → `0.4.0-dev`
-- [ ] `go run ./cmd/prumo --json version` → valid envelope
+- [ ] `go run ./cmd/prumo-agent version` → `0.4.0-dev`
+- [ ] `go run ./cmd/prumo-agent --json version` → valid envelope
 - [ ] `go test -race ./...` all green
 - [ ] CI runs Python + Go quality gates
 - [ ] No circular dependencies in `internal/`
 
-**Exit Gate**: M1 complete when all Go quality gates pass in CI and `prumo version --json` produces valid envelope.
+**Exit Gate**: M1 complete when all Go quality gates pass in CI and `prumo-agent version --json` produces valid envelope.
 
 ---
 
@@ -136,12 +136,12 @@
 - Project validation against schemas
 
 ### CLI Commands (Parity)
-- `prumo init`, `resolve`, `validate`
-- `prumo goal new|state|amend|list`
-- `prumo context plan`
-- `prumo report add|summary`
-- `prumo migrate`
-- `prumo doctor`, `explain`, `framework-check`
+- `prumo-agent init`, `resolve`, `validate`
+- `prumo-agent goal new|state|amend|list`
+- `prumo-agent context plan`
+- `prumo-agent report add|summary`
+- `prumo-agent migrate`
+- `prumo-agent doctor`, `explain`, `framework-check`
 
 ### Compiler (`internal/compiler/`)
 - Target adapter interface
@@ -169,14 +169,14 @@
 - `go test -race ./...`, `go vet`, `gofmt`, `staticcheck` all pass
 
 **Acceptance Criteria**:
-- [ ] `prumo init --non-interactive --profile X` creates valid project
-- [ ] `prumo resolve` matches Python workforce/skills/recipes exactly
-- [ ] `prumo validate` catches same schema violations
-- [ ] `prumo goal` lifecycle identical (lock, amendment, transitions)
-- [ ] `prumo context plan` produces same budget/strategy
-- [ ] `prumo doctor` finds same issues
-- [ ] `prumo compile --target codex|claude-code|generic` generates byte-identical or semantically equivalent outputs
-- [ ] `prumo explain` outputs match for workforce, agent, skill, recipe, context, model, execution
+- [ ] `prumo-agent init --non-interactive --profile X` creates valid project
+- [ ] `prumo-agent resolve` matches Python workforce/skills/recipes exactly
+- [ ] `prumo-agent validate` catches same schema violations
+- [ ] `prumo-agent goal` lifecycle identical (lock, amendment, transitions)
+- [ ] `prumo-agent context plan` produces same budget/strategy
+- [ ] `prumo-agent doctor` finds same issues
+- [ ] `prumo-agent compile --target codex|claude-code|generic` generates byte-identical or semantically equivalent outputs
+- [ ] `prumo-agent explain` outputs match for workforce, agent, skill, recipe, context, model, execution
 - [ ] Conformance diff: zero failures on critical contracts
 
 **Exit Gate**: M2 complete when `go test -run Conformance` (or equivalent) shows 100% parity on all cataloged critical contracts.
@@ -219,23 +219,23 @@
 - Install script (`curl | sh`) with checksum verification
 - Homebrew tap
 - Windows packaging baseline (Scoop/WinGet)
-- `prumo setup` wizard (detect harnesses, select integrations, validate PATH, run doctor)
-- `prumo install connector <id>`, `prumo uninstall [--connectors|--purge-cache|--purge-global-config]`
+- `prumo-agent setup` wizard (detect harnesses, select integrations, validate PATH, run doctor)
+- `prumo-agent install connector <id>`, `prumo-agent uninstall [--connectors|--purge-cache|--purge-global-config]`
 - Installation manifest (versions, paths, connectors, managed config fragments)
 - Cleanup manifests per connector
-- Portable mode (`prumo --home ./path`)
+- Portable mode (`prumo-agent --home ./path`)
 - Idempotent install/uninstall
 
 **Non-Goals**: Auto-update from non-GitHub sources, complex multi-user server
 
-**Deliverables**: Release artifacts, install script, Homebrew formula, `prumo setup/install/uninstall`
+**Deliverables**: Release artifacts, install script, Homebrew formula, `prumo-agent setup/install/uninstall`
 
 **Test/Eval Requirements**: Install/uninstall on clean VMs for all platforms; idempotency verified
 
 **Acceptance Criteria**:
 - [ ] `curl -fsSL install.sh | sh` installs working `prumo`
-- [ ] `prumo uninstall` removes binary + connectors + cache (not project data)
-- [ ] `prumo setup` detects harnesses and configures project-local adapters
+- [ ] `prumo-agent uninstall` removes binary + connectors + cache (not project data)
+- [ ] `prumo-agent setup` detects harnesses and configures project-local adapters
 - [ ] Homebrew install works
 - [ ] Windows package installs
 
@@ -322,7 +322,7 @@ line of TUI code.
   supervised daemon (`TestLiveDaemonFlow`, criterion 2's shape, FakeProvider, no
   API key). Reconnect/replay reproduces the daemon's rows instead of merging two
   half-views (criterion 3's mechanism).
-- `prumo tui` supervises `prumo agent serve` as a subprocess, which is what keeps
+- `prumo-agent tui` supervises `prumo-agent agent serve` as a subprocess, which is what keeps
   the boundary real and makes the remote mode the same client with another
   address rather than a second code path.
 
@@ -331,11 +331,11 @@ line of TUI code.
 are all closed — the protocol gained the approval operations, and the remote flow
 and the 200-row baseline are recorded. The spike's **client** is superseded:
 **ADR 013** archives `tui/` to `archive/tui-poc/` and adopts the archived OpenCode
-Go view layer as the foundation of a separate `prumo-tui` module. What the spike
+Go view layer as the foundation of a separate `prumo-agent tui` module. What the spike
 produced outlives it — the approval operations, `awaiting_approval`, the redraw
 baseline, and a boundary that ADR 013 makes structural rather than merely tested.
 
-**Remaining (Fase A gate)**: none — `prumo docs verify --strict` is green, so the
+**Remaining (Fase A gate)**: none — `prumo-agent docs verify --strict` is green, so the
 gate is met rather than deferred.
 
 ---
@@ -373,7 +373,7 @@ Canonical specification: `docs/runtime/living-plan.md`.
 - Readiness gates (block implementation until critical decisions confirmed)
 - Incremental documentation updates from decisions (Documentation Delta)
 
-**Non-Goals**: brownfield discovery (Fase F Adoption), autonomous architecture invention, raw transcript as canonical memory, model-specific conversation format, code generation as part of `prumo plan`.
+**Non-Goals**: brownfield discovery (Fase F Adoption), autonomous architecture invention, raw transcript as canonical memory, model-specific conversation format, code generation as part of `prumo-agent plan`.
 
 **Goal Decomposition**:
 - E-G01: Question / OpenQuestion schemas + priority resolver.
@@ -429,7 +429,7 @@ Canonical specification: `docs/runtime/adoption-engine.md`.
 - Implementation Journal (synthesis, not chain-of-thought)
 - Experiment/Rejection/Debt registers
 - Typed traceability graph (req↔dec↔code↔test↔doc↔evidence)
-- `prumo trace <ref>` CLI
+- `prumo-agent trace <ref>` CLI
 
 **Exit Gate**: Any code change traceable to decision/goal; journal queryable.
 
@@ -463,7 +463,7 @@ Canonical specification: `docs/runtime/adoption-engine.md`.
 - Session hooks (start/end/tool events)
 - Connector Contract tests for OpenCode
 
-**Exit Gate**: `prumo connector install opencode` produces fully functional native integration.
+**Exit Gate**: `prumo-agent connector install opencode` produces fully functional native integration.
 
 ---
 

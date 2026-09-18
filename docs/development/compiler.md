@@ -34,7 +34,7 @@ Contains:
 **Use case:** Local CLI, custom automation, generic API clients.
 
 ```bash
-prumo compile --target generic
+prumo-agent compile --target generic
 ```
 
 ---
@@ -56,7 +56,7 @@ prumo compile --target generic
 **Use case:** GitHub Copilot Chat in VS Code/GitHub.com.
 
 ```bash
-prumo compile --target codex
+prumo-agent compile --target codex
 # Creates .codex/ with agent/skill tree
 ```
 
@@ -79,7 +79,7 @@ prumo compile --target codex
 **Use case:** Claude Code (via Anthropic API or IDE).
 
 ```bash
-prumo compile --target claude-code
+prumo-agent compile --target claude-code
 # Creates .claude/ with agent/skill tree
 ```
 
@@ -105,7 +105,7 @@ Contains:
 **Use case:** ChatGPT web/API, custom integrations.
 
 ```bash
-prumo compile --target chatgpt
+prumo-agent compile --target chatgpt
 ```
 
 ---
@@ -130,7 +130,7 @@ Contains:
 **Use case:** Moonshot Kimi API/Chat.
 
 ```bash
-prumo compile --target kimi
+prumo-agent compile --target kimi
 ```
 
 ---
@@ -156,7 +156,7 @@ Contains:
 **Use case:** Internal Anthropic execution, multi-turn reasoning traces.
 
 ```bash
-prumo compile --target traycer
+prumo-agent compile --target traycer
 ```
 
 ---
@@ -181,7 +181,7 @@ Contains:
 **Use case:** Anthropic Claude API direct calls.
 
 ```bash
-prumo compile --target claude
+prumo-agent compile --target claude
 ```
 
 ---

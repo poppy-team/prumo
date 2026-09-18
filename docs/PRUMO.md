@@ -71,11 +71,11 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 
 - [Documentation Contracts](contracts/builtin.json)
 - [Documentation Profiles](profiles/builtin.json)
-- `prumo docs contracts`
-- `prumo docs profiles`
-- `prumo docs audit`
-- `prumo docs readiness`
-- `prumo docs authority`
+- `prumo-agent docs contracts`
+- `prumo-agent docs profiles`
+- `prumo-agent docs audit`
+- `prumo-agent docs readiness`
+- `prumo-agent docs authority`
 
 M5 documentation analysis is deterministic and read-only. Missing knowledge is reported; Prumo does not create empty documents or silently promote model prose to canonical state.
 

@@ -1,0 +1,173 @@
+{
+  "id": "ui:prumo-code-shell",
+  "surface": "Prumo Code TUI — app shell and run panel (H10 spike)",
+  "note": "ARCHIVED. State vocabulary of the from-scratch H10 terminal client, kept beside the artifact it describes: the client was archived to `archive/tui/` and its strategy replaced by ADR 013. The canonical matrix for the shipping client is `docs/ui-ux/state-matrix.json`, which is what the ui.state-model conformance check reads. Every state in the closed vocabulary is declared here; applicability is explicit and a non-applicable state states why.",
+  "states": [
+    {
+      "state": "default",
+      "applicable": true,
+      "user_visible_text": "Palette prompt with the active goal's phase and no run in flight.",
+      "recovery": "Not a failure state; the palette is the entry point.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "hover",
+      "applicable": false,
+      "reason": "A terminal reports no pointer position. Highlight follows keyboard focus, so there is no hover state to define; mouse support is acceleration only and carries no hover-dependent behaviour.",
+      "recovery": "Not applicable."
+    },
+    {
+      "state": "focus",
+      "applicable": true,
+      "user_visible_text": "The focused pane's border is drawn with the `focus` token; the focused row is the palette or list selection.",
+      "recovery": "Focus is never hidden and never trapped; `Esc` returns focus one level toward the palette.",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "active",
+      "applicable": true,
+      "user_visible_text": "A command has been accepted and its first event is pending.",
+      "recovery": "A bounded spinner; if no event arrives within the request timeout the surface moves to `error`.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "selected",
+      "applicable": true,
+      "user_visible_text": "The selected palette row or list item is drawn with the `accent` token.",
+      "recovery": "Selection is always one row; `Esc` clears it without side effects.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "disabled",
+      "applicable": true,
+      "user_visible_text": "A palette action that cannot run yet is rendered with `text-muted` and a one-line reason.",
+      "recovery": "The reason names what must change; a disabled action without a reason is a defect.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "empty",
+      "applicable": true,
+      "user_visible_text": "No goal is selected, or a list has no entries: a single line naming the next action.",
+      "recovery": "The empty state is an instruction, not an apology: it names the key or command that fills it.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "loading",
+      "applicable": true,
+      "user_visible_text": "Spinner plus the elapsed budget, so a long wait is legible rather than ambiguous.",
+      "recovery": "Bounded by the run budget; on exhaustion the surface moves to `error` with the stop reason.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "partial",
+      "applicable": true,
+      "user_visible_text": "Streamed events are rendered as they arrive; the timeline is explicitly incomplete.",
+      "recovery": "Incompleteness is stated, never implied: the header shows the run is streaming.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "success",
+      "applicable": true,
+      "user_visible_text": "Terminal run outcome plus the evidence and gate result for the run.",
+      "recovery": "Not a failure state.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "warning",
+      "applicable": true,
+      "user_visible_text": "A non-blocking condition, drawn with the `warning` token, always naming its subject.",
+      "recovery": "Warnings never require action to continue; they are recorded in the timeline.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "error",
+      "applicable": true,
+      "user_visible_text": "The diagnostic code and message from the protocol envelope, never a bare rendering of an internal error.",
+      "recovery": "Names the failing operation and the next observable action (retry, correct, or inspect the log).",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "offline",
+      "applicable": true,
+      "user_visible_text": "The daemon endpoint is unreachable; the status line says so and the last known run state is shown as stale.",
+      "recovery": "The client retries on the declared interval and surfaces the attempt count; it never silently retries forever.",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "reconnecting",
+      "applicable": true,
+      "user_visible_text": "Reconnect attempt with a replay indicator so replayed events are distinguishable from live ones.",
+      "recovery": "Replay is idempotent by event ID: reconnect must not duplicate timeline rows or corrupt UI state.",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "permission-requested",
+      "applicable": true,
+      "user_visible_text": "The pending permission with its tool, scope and target, and the keys that approve or deny.",
+      "recovery": "Denying is always available and never requires typing; the default selection is deny.",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "permission-denied",
+      "applicable": true,
+      "user_visible_text": "The run reports the denied permission as the stop reason rather than as an error.",
+      "recovery": "The operator can re-issue the run after changing the permission policy; no state is lost.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "read-only",
+      "applicable": true,
+      "user_visible_text": "The file tree is read-only in the spike; it renders paths and never offers a write affordance.",
+      "recovery": "Editing is opened in the external editor, which owns the write.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "destructive-confirmation",
+      "applicable": true,
+      "user_visible_text": "Confirmation names the exact action and target, and states what will not be recoverable.",
+      "recovery": "Cancelling is the default key and leaves the run in its previous state.",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "narrow-viewport",
+      "applicable": true,
+      "user_visible_text": "Below the compact width class the file tree collapses and the run timeline stays primary.",
+      "recovery": "No horizontal scrolling; content reflows or truncates with an explicit truncation marker.",
+      "evidence": ["golden-frame"]
+    },
+    {
+      "state": "alternate-theme",
+      "applicable": false,
+      "reason": "Out of scope for H10: docs/product/tui-spike-h10.md excludes themes from the spike, so no theme-selection surface exists. The no-color and high-contrast token themes are still shipped and exercised.",
+      "recovery": "Not applicable until a theme-selection surface ships."
+    },
+    {
+      "state": "high-contrast",
+      "applicable": true,
+      "user_visible_text": "The high-contrast token theme, plus a no-color mode in which every semantic distinction is carried by text or shape rather than color.",
+      "recovery": "Selected by terminal capability, not by user preference, in the spike.",
+      "evidence": ["golden-frame", "manual"]
+    },
+    {
+      "state": "alternate-locale",
+      "applicable": false,
+      "reason": "Out of scope for H10: docs/product/tui-spike-h10.md excludes i18n packs, so the spike ships one source locale and has no locale-switching surface.",
+      "recovery": "Not applicable until a locale surface ships."
+    }
+  ],
+  "transitions": [
+    { "from": "default", "to": "active", "trigger": "palette action accepted" },
+    { "from": "active", "to": "loading", "trigger": "run start acknowledged" },
+    { "from": "loading", "to": "partial", "trigger": "first streamed event" },
+    { "from": "partial", "to": "permission-requested", "trigger": "tool requires approval" },
+    { "from": "permission-requested", "to": "partial", "trigger": "permission approved" },
+    { "from": "permission-requested", "to": "permission-denied", "trigger": "permission denied" },
+    { "from": "partial", "to": "success", "trigger": "run completed and evidence recorded" },
+    { "from": "partial", "to": "error", "trigger": "diagnostic returned or budget exhausted" },
+    { "from": "loading", "to": "error", "trigger": "request timeout without an event" },
+    { "from": "final", "to": "offline", "trigger": "daemon endpoint unreachable" },
+    { "from": "offline", "to": "reconnecting", "trigger": "retry interval elapsed" },
+    { "from": "reconnecting", "to": "partial", "trigger": "reconnected and replayed to the live tail" },
+    { "from": "reconnecting", "to": "offline", "trigger": "retry failed" }
+  ]
+}

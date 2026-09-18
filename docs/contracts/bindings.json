@@ -5,23 +5,215 @@
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
     "applicability": "not-applicable",
-    "not_applicable_reason": "Owed when the TUI exposes the approval surface. The spike approves one permission inline and has no authentication flow to contract."
+    "not_applicable_reason": "The approval surface the spike lacked now ships: the permission dialog names the tool and its target, answers on `a`/`d`, and is captured as a golden frame. The contract stays not applicable because it obliges an authentication flow, and the client has none — it reaches a local daemon over a socket, or a remote one with a token flag, and authenticates nobody."
   },
   {
     "contract_id": "accessibility.cognitive-clarity",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interaction.md"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the first error surface. The spike renders streamed events but defines no error-recovery copy, so error clarity and plain-language policy have nothing to describe."
+    "answered_questions": [
+      "Can a user recover from an error without prior knowledge?"
+    ],
+    "requirement_map": {
+      "error clarity": "REQ-A11Y-CLARITY-ERRORS",
+      "consistent navigation": "REQ-A11Y-CLARITY-NAVIGATION",
+      "plain language policy": "REQ-A11Y-CLARITY-LANGUAGE"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-A11YCLARITY-ERRORS",
+        "statement": "Every user-visible failure has one shape — what failed, the error itself, what to do next — enforced by `util.ReportFailure` at the failures the client raises, and stated in `docs/ui-ux/interaction.md` §Error copy. A failure that only says what broke leaves the reader to guess, which is the thing the shape exists to prevent.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-CLARITY-ERRORS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YCLARITY-ERRORS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YCLARITY-ERRORS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YCLARITY-ERRORS-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YCLARITY-ERRORS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/util/errorcopy_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YCLARITY-NAVIGATION",
+        "statement": "Navigation is the same everywhere: the keymap in `docs/ui-ux/interaction.md` is checked against the client's own bindings in both directions, `Esc` always dismisses the topmost layer, and every dialog returns to the surface that opened it — so a user who learned one surface has learned how to leave the others.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-CLARITY-NAVIGATION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YCLARITY-NAV-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YCLARITY-NAVIGATION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YCLARITY-NAV-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YCLARITY-NAVIGATION",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/spec_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YCLARITY-LANGUAGE",
+        "statement": "The error text the harness produced is carried unchanged and surrounded by the client's own words: the client names the operation a reader can recognise and the next action that is actually available. It never paraphrases the record of what happened.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-CLARITY-LANGUAGE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YCLARITY-LANG-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YCLARITY-LANGUAGE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YCLARITY-LANG-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YCLARITY-LANGUAGE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/util/errorcopy_test.go"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "accessibility.contrast",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/theming.md",
+      "docs/ui-ux/design-tokens.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the visual-validation specification, which is bound in this increment. Token-level contrast ratios exist (`docs/ui-ux/design-tokens.json`) but non-text and rendered contrast evidence do not."
+    "answered_questions": [
+      "Which token pairs have measured contrast evidence?"
+    ],
+    "requirement_map": {
+      "contrast ratios": "REQ-A11Y-CONTRAST-RATIOS",
+      "non-text contrast": "REQ-A11Y-CONTRAST-NON-TEXT",
+      "contrast evidence": "REQ-A11Y-CONTRAST-EVIDENCE"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-A11YCONTRAST-RATIOS",
+        "statement": "Every theme's text tokens are measured against the surface they are drawn on and must reach 4.5:1; `TestEveryThemeMeasuresItsContrast` fails below it. Where an upstream palette fell short, the token was carried toward that theme's own foreground until it reached the floor — the same colour, dimmer, rather than a new one.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-CONTRAST-RATIOS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YCONTRAST-RATIOS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YCONTRAST-RATIOS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          },
+          {
+            "id": "EV-A11YCONTRAST-RATIOS-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YCONTRAST-RATIOS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/theme/contrast_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YCONTRAST-NON-TEXT",
+        "statement": "The focus border is measured at 3:1 in every theme, because it carries state. The unfocused border is exempt with its reason declared: it separates rather than identifies, the distinction between focused and unfocused is the border glyph, and that glyph is asserted by a test.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-CONTRAST-NON-TEXT"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YCONTRAST-NON-TEXT-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YCONTRAST-NON-TEXT",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          },
+          {
+            "id": "EV-A11YCONTRAST-NON-TEXT-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YCONTRAST-NON-TEXT",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/theme/contrast_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YCONTRAST-EVIDENCE",
+        "statement": "`TestContrastEvidenceIsReported` prints the ratio of every pair for every theme, which is the evidence the contract asks for: a number nobody can read is not evidence, and the obligation was previously met by a ratio nobody computed.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-CONTRAST-EVIDENCE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YCONTRAST-EVIDENCE-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YCONTRAST-EVIDENCE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/theme/contrast_test.go"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "accessibility.drag-alternatives",
@@ -29,39 +221,394 @@
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
     "applicability": "not-applicable",
-    "not_applicable_reason": "Not applicable: the spike ships no drag interaction, so there is no pointer-only gesture needing a keyboard equivalent."
+    "not_applicable_reason": "Not applicable: the client maps no mouse events, so no drag interaction exists and none can lack a keyboard equivalent (`docs/ui-ux/interaction.md` §Mouse policy)."
   },
   {
     "contract_id": "accessibility.focus",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interaction.md",
+      "docs/ui-ux/state-matrix.json",
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the interaction specification, which is bound in this increment. The spike fixes a focus model (docs/product/tui-spike-h10.md, 'In scope') but visual focus evidence does not exist yet."
+    "answered_questions": [
+      "Where does focus go after an error or a modal closes?"
+    ],
+    "requirement_map": {
+      "focus visibility": "REQ-A11Y-FOCUS-VISIBILITY",
+      "focus order": "REQ-A11Y-FOCUS-ORDER",
+      "focus trapping rules": "REQ-A11Y-FOCUS-TRAPPING"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-A11YFOCUS-VISIBILITY",
+        "statement": "The focused surface is marked by a **glyph** as well as a colour: the composer's border is heavy (`━`) while it holds the keyboard and light (`─`) while a layer is over it, so the marker survives a terminal without colour. `TestTheComposerShowsWhetherItHoldsTheKeyboard` asserts both directions, and the `default` frame in `prumo-tui`'s golden set captures it.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-FOCUS-VISIBILITY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YFOCUS-VISIBILITY-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YFOCUS-VISIBILITY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YFOCUS-VISIBILITY-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YFOCUS-VISIBILITY",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/keymap_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YFOCUS-ORDER",
+        "statement": "There is one editable surface, so focus order has a single step: the composer holds the keyboard until a dialog opens, and the dialog holds it until it closes. The shell computes it once per message and tells the page only when the answer changes, which is why no surface has to infer it.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-FOCUS-ORDER"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YFOCUS-ORDER-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YFOCUS-ORDER",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YFOCUS-ORDER-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YFOCUS-ORDER",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/keymap_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YFOCUS-TRAPPING",
+        "statement": "Focus is never trapped: `Esc` yields the topmost layer and every dialog closes back to the page that opened it, so a dismissed prompt cannot strand the keyboard in a surface that is no longer drawn. The state vocabulary declares the same rule as the `focus` state's recovery.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-FOCUS-TRAPPING"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YFOCUS-TRAPPING-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YFOCUS-TRAPPING",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YFOCUS-TRAPPING-MATRIX",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YFOCUS-TRAPPING",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/state-matrix.json"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "accessibility.keyboard",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interaction.md",
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the interaction specification, which is bound in this increment. Until it lands, keyboard reachability and shortcut-conflict policy have no artifact to cite."
+    "answered_questions": [
+      "Can every action be completed without a pointer?"
+    ],
+    "requirement_map": {
+      "keyboard reachability": "REQ-A11Y-KB-REACHABILITY",
+      "shortcut conflict policy": "REQ-A11Y-KB-CONFLICTS",
+      "focus order": "REQ-A11Y-KB-ORDER"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-A11YKEYBOARD-REACHABILITY",
+        "statement": "`docs/ui-ux/interaction.md` gives every action a chord and declares the terminal keyboard the only input method that must be complete; `docs/ui-ux/interface-map.json` declares the inputs that operate each surface. `TestEverySurfaceHasAChord` fails if a surface loses its route, and `TestDocumentedKeymapMatchesTheBindings` fails if the client answers a chord the map does not list.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-KB-REACHABILITY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YKEYBOARD-REACHABILITY-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YKEYBOARD-REACHABILITY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YKEYBOARD-REACHABILITY-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YKEYBOARD-REACHABILITY",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/keymap_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YKEYBOARD-CONFLICTS",
+        "statement": "Two chords are reserved and may never be rebound — `Ctrl+C` cancels and never exits silently, `Ctrl+Q` asks before quitting — and the client is asserted against that reservation rather than trusted to follow it (`TestReservedChordsMatchTheInteractionContract`, `TestCtrlCAsksInsteadOfExiting`, `TestCtrlCCancelsTheRunInFlight`). The remaining chords are listed once, in the map, and the map and the bindings are checked against each other.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-KB-CONFLICTS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YKEYBOARD-CONFLICTS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YKEYBOARD-CONFLICTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YKEYBOARD-CONFLICTS-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YKEYBOARD-CONFLICTS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/keymap_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YKEYBOARD-ORDER",
+        "statement": "Exactly one surface holds the keyboard: the composer, or the dialog drawn over it. The shell decides it in one place (`appModel.Update`), and a dialog opening takes the keyboard away and gives it back when it closes, so the order is a property of the shell rather than of each surface's guess.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-KB-ORDER"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YKEYBOARD-ORDER-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YKEYBOARD-ORDER",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YKEYBOARD-ORDER-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YKEYBOARD-ORDER",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/keymap_test.go"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "accessibility.motion",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interaction.md"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed with the first animated surface. The token set already carries a reduced-motion theme, but no motion policy exists because the spike ships no animated component."
+    "answered_questions": [
+      "What is disabled under reduced motion?"
+    ],
+    "requirement_map": {
+      "motion policy": "REQ-A11Y-MOTION-POLICY",
+      "reduced-motion behavior": "REQ-A11Y-MOTION-REDUCED"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-A11YMOTION-POLICY",
+        "statement": "`docs/ui-ux/interaction.md` §Motion policy names the only two things that animate — the marker beside the run's verb, and the composer's caret — and states the rule they share: motion is never the only signal, so every animated state also says what it is in words.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-MOTION-POLICY"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YMOTION-POLICY-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YMOTION-POLICY",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YMOTION-REDUCED",
+        "statement": "Reduced motion is the user's setting, taken from `--reduced-motion` or `PRUMO_REDUCED_MOTION`, and it is not a terminal capability: a terminal reports what it can draw, not what its user wants to watch. With it on, the spinner's marker holds still and the caret stops blinking, and `TestReducedMotionStatesProgressWithoutAnimatingIt` requires the two frames to differ in that one line and in no other.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-MOTION-REDUCED"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YMOTION-REDUCED-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YMOTION-REDUCED",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YMOTION-REDUCED-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YMOTION-REDUCED",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/motion_test.go"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "accessibility.screen-reader",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/interaction.md",
+      "docs/ui-ux/interface-map.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the TUI accessibility specification, which is bound in this increment. Terminal screen-reader announcement strategy needs the surfaces it announces."
+    "answered_questions": [
+      "How is dynamic state announced?"
+    ],
+    "requirement_map": {
+      "name role value": "REQ-A11Y-SR-NAME-ROLE-VALUE",
+      "announcements": "REQ-A11Y-SR-ANNOUNCEMENTS",
+      "landmark structure": "REQ-A11Y-SR-LANDMARKS"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-A11YSR-NAME-ROLE-VALUE",
+        "statement": "A terminal has no accessibility tree, so the client declares the one it can: `docs/ui-ux/interface-map.json` gives every element a label, a kind and the states it can be in, and `prumo ui verify` refuses an element without them. The label is the name a reader hears, the kind is its role, and the declared states are its value.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-SR-NAME-ROLE-VALUE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YSR-NRV-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YSR-NAME-ROLE-VALUE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          },
+          {
+            "id": "EV-A11YSR-NRV-MAP",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YSR-NAME-ROLE-VALUE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YSR-ANNOUNCEMENTS",
+        "statement": "Announcements are deltas, not repaints: `--prompt` runs a goal and prints what happened instead of drawing it, the answer is printed once as it grows, every fact carries a kind, and a gate is refused out loud rather than left waiting. `TestTheAnswerIsPrintedOnceAsItGrows` and `TestAGateIsRefusedOutLoud` hold the two halves of that, and the interactive mode states the gate, the failure and the spend in words.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-SR-ANNOUNCEMENTS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YSR-ANN-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YSR-ANNOUNCEMENTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-A11YSR-ANN-TEST",
+            "type": "test",
+            "target": "CLAIM-A11YSR-ANNOUNCEMENTS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/headless/headless_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-A11YSR-LANDMARKS",
+        "statement": "The landmark structure is the map's regions — a header, a body, a footer, and the overlays that take the keyboard — and it is the same structure the shell draws, so a reader moving between regions and the interface moving between surfaces cannot disagree.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-A11Y-SR-LANDMARKS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-A11YSR-LM-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-A11YSR-LANDMARKS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interface-map.json"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "accessibility.target-size",
@@ -69,7 +616,7 @@
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
     "applicability": "not-applicable",
-    "not_applicable_reason": "Not applicable to a keyboard-first terminal client: there is no pointer target geometry to size. Mouse support is optional in docs/product/tui-spike-h10.md and carries no exclusive action."
+    "not_applicable_reason": "Not applicable to a keyboard-first terminal client: the client maps no mouse events at all, so there is no pointer target geometry to size (`docs/ui-ux/interaction.md` §Mouse policy)."
   },
   {
     "contract_id": "accessibility.zoom-reflow",
@@ -77,7 +624,7 @@
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
     "applicability": "not-applicable",
-    "not_applicable_reason": "Not applicable to a terminal client: terminal reflow is owned by the emulator and the application cannot scroll horizontally. Recorded here so the waiver is reviewable rather than inferred."
+    "not_applicable_reason": "Not applicable to a terminal client: reflow is owned by the terminal emulator, and the client never scrolls horizontally — it fits every frame to the width it was drawn for, truncating with a visible marker (`docs/ui-ux/interaction.md` §Terminal size classes)."
   },
   {
     "contract_id": "architecture.system",
@@ -222,7 +769,7 @@
     "claims": [
       {
         "id": "CLAIM-PRUMO-CLI-SURFACE",
-        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo/help.go`.",
+        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo-agent/help.go`.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -246,7 +793,7 @@
             "revision": "1",
             "producer": "prumo-maintained",
             "verified": true,
-            "artifact": "cmd/prumo/help.go"
+            "artifact": "cmd/prumo-agent/help.go"
           }
         ]
       },
@@ -1210,7 +1757,7 @@
       },
       {
         "id": "CLAIM-UICOMPONENTS-ANATOMY",
-        "statement": "An element's anatomy is its subtree in the same tree: the palette contains its ranked list, which contains a selectable row, the empty-state message and the query input. Anatomy and composition are one fact rather than two descriptions that can disagree, and every element that renders text carries the label a user actually reads.",
+        "statement": "An element's anatomy is its subtree in the same tree: the transcript contains the turns the run produced and the activity line naming what the run is doing, and the statusline contains the accounting it reports, the change count and the message. Anatomy and composition are one fact rather than two descriptions that can disagree, and every element that renders text carries the label a user actually reads.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1273,7 +1820,7 @@
       },
       {
         "id": "CLAIM-UICOMPONENTS-TRACE",
-        "statement": "Every element a user operates or sees names an implementation symbol, and `prumo ui verify` resolves each one against the sources the map declares (`tui/**/*.go`); an element that is described but not built must instead declare `not-implemented` with a reason. The map therefore cannot describe an interface that does not exist, which is the state this obligation spent its life in.",
+        "statement": "Every element a user operates or sees names an implementation symbol, and `prumo ui verify` resolves each one against the sources the map declares (`prumo-tui/**/*.go`); an element that is described but not built must instead declare `not-implemented` with a reason. The map therefore cannot describe an interface that does not exist, which is the state this obligation spent its life in.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1421,7 +1968,7 @@
     "claims": [
       {
         "id": "CLAIM-UIIA-NAVIGATION",
-        "statement": "`docs/ui-ux/interface-map.json` declares the navigation model as typed edges: the palette reaches every other stage, and each focus edge carries the condition under which it fires. `docs/ui-ux/interaction.md` holds the keyboard map, and the two are bound to the same surface.",
+        "statement": "`docs/ui-ux/interface-map.json` declares the navigation model as typed edges: a dialog reaches the surface it acts on — a selected session folds that run's own log into the transcript, a chosen model is what later runs ask the harness for, an answered gate releases the run — and each edge carries the condition under which it fires. `docs/ui-ux/interaction.md` holds the keyboard map, and the two are bound to the same surface.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1484,7 +2031,7 @@
       },
       {
         "id": "CLAIM-UIIA-FINDABILITY",
-        "statement": "Every action is reachable from the palette, and the map records how: each stage declares the inputs that operate it and the focus edges that reach it. An element that could only be reached by an unlisted route would be visible as a stage with no inbound focus edge.",
+        "statement": "Every action is reachable from the keyboard, and the map records how: each dialog declares the inputs that operate it and its edges record what it reaches. A surface reachable only by a route the map does not name would be visible as an overlay with no declared input.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1709,7 +2256,7 @@
       },
       {
         "id": "CLAIM-UILAYOUT-OVERFLOW",
-        "statement": "The timeline is the one unbounded surface, and it is bounded explicitly: a declared capacity, a deterministic drop of the oldest rows, continuous numbering so aged-out rows stay visible as absent rather than silently renumbered, and a statusline that reports how many rows left the window.",
+        "statement": "No surface overflows its terminal. The transcript and the log table are viewports rather than unbounded scrollback: a row that loses its tail ends with a truncation marker instead of stopping, and the statusline drops its optional segments — accounting first, then the change count — rather than running past the screen, so a narrow terminal keeps what a user needs first.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1736,15 +2283,181 @@
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
     "applicability": "not-applicable",
-    "not_applicable_reason": "Out of scope for the spike: docs/product/tui-spike-h10.md lists 'themes/i18n packs' as explicitly excluded, so no locale surface exists to contract."
+    "not_applicable_reason": "The client ships one source locale and has no locale-switching surface: its own strings are English and a run's text arrives from the harness verbatim. i18n packs are out of scope until a locale surface ships (`docs/ui-ux/flows.md`)."
   },
   {
     "contract_id": "ui.personalization",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/theming.md"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Out of scope for the spike: docs/product/tui-spike-h10.md excludes preference surfaces, so nothing is customizable, persisted or importable yet."
+    "answered_questions": [
+      "What may a user change, and what happens when the change is wrong?"
+    ],
+    "requirement_map": {
+      "customizable surface": "REQ-PERSO-SURFACE",
+      "defaults": "REQ-PERSO-DEFAULTS",
+      "persistence location": "REQ-PERSO-PERSISTENCE",
+      "import and export": "REQ-PERSO-TRANSFER",
+      "invalid value behavior": "REQ-PERSO-INVALID",
+      "platform limitations": "REQ-PERSO-PLATFORM"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-PERSO-SURFACE",
+        "statement": "One preference exists — the palette — plus reduced motion, and `docs/ui-ux/theming.md` says so in a table rather than leaving it to be discovered. Everything about a run, the workspace and the daemon is off that surface: it is a decision of the invocation or the harness's state.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-PERSO-SURFACE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PERSO-SURFACE-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PERSO-SURFACE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PERSO-DEFAULTS",
+        "statement": "The defaults are `prumo` and motion on, and a client that has never been configured behaves exactly as one configured to them — which is what the defaults mean.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-PERSO-DEFAULTS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PERSO-DEFAULTS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PERSO-DEFAULTS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          },
+          {
+            "id": "EV-PERSO-DEFAULTS-TEST",
+            "type": "test",
+            "target": "CLAIM-PERSO-DEFAULTS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/config/config_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PERSO-PERSISTENCE",
+        "statement": "The choice is written to the client's own file under the user's configuration directory and read before the flags, so an explicit flag still wins and a restart keeps what was chosen. `TestTheChosenThemeSurvivesARestart` performs the restart rather than trusting the promise.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-PERSO-PERSISTENCE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PERSO-PERSIST-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PERSO-PERSISTENCE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          },
+          {
+            "id": "EV-PERSO-PERSIST-TEST",
+            "type": "test",
+            "target": "CLAIM-PERSO-PERSISTENCE",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/config/config_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PERSO-TRANSFER",
+        "statement": "Import and export are not offered, and the refusal says why: the file holds one short value, its format is the client's own, and a client that imported another's preferences would be accepting settings it cannot verify. A refusal with a reason can be reviewed; a missing feature cannot.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-PERSO-TRANSFER"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PERSO-TRANSFER-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PERSO-TRANSFER",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PERSO-INVALID",
+        "statement": "An invalid value is reported and the theme in use is kept, so a typo cannot leave the terminal unstyled. A settings file that cannot be parsed is reported rather than silently ignored, because a preference the user set and never had applied is worse than an error.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-PERSO-INVALID"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PERSO-INVALID-TEST",
+            "type": "test",
+            "target": "CLAIM-PERSO-INVALID",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/config/config_test.go"
+          },
+          {
+            "id": "EV-PERSO-INVALID-THEME",
+            "type": "test",
+            "target": "CLAIM-PERSO-INVALID",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/theme_wiring_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-PERSO-PLATFORM",
+        "statement": "Nothing on the surface is platform-conditional: a terminal without colour support draws the same interface, a locale that cannot render the Unicode set gets the ASCII one, and the client adapts to the terminal rather than asking the user to configure for it.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-PERSO-PLATFORM"
+        ],
+        "evidence": [
+          {
+            "id": "EV-PERSO-PLATFORM-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-PERSO-PLATFORM",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.platform-conventions",
@@ -1756,11 +2469,103 @@
   },
   {
     "contract_id": "ui.product-ux",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/flows.md",
+      "docs/ui-ux/interaction.md"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Owed by the first flow beyond the palette. The spike is command-palette-first and ships no multi-step flow, so a flow inventory would describe screens that do not exist yet (docs/product/tui-spike-h10.md, 'In scope')."
+    "answered_questions": [
+      "Which user journeys must work end to end?"
+    ],
+    "requirement_map": {
+      "user goals": "REQ-UX-GOALS",
+      "user flow inventory": "REQ-UX-FLOWS",
+      "command and interaction map": "REQ-UX-COMMANDS"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-UX-GOALS",
+        "statement": "`docs/ui-ux/flows.md` names the six goals the client serves — have work done, follow it, answer it, re-attach, read what it cost, take the account elsewhere — so a screen that exists for a reason can be told from one that exists because the layout had room.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UX-GOALS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UX-GOALS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-UX-GOALS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/flows.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UX-FLOWS",
+        "statement": "Every flow names its goal, its route through the client, and **what happens when it fails**: a flow without a failure path is a flow that strands people. The failure paths are the ones the client implements — the statusline names the operation and the next action, a lost link is retried before it is called lost, and a re-attach to an unknown run is an error rather than an empty conversation.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UX-FLOWS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UX-FLOWS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-UX-FLOWS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/flows.md"
+          },
+          {
+            "id": "EV-UX-FLOWS-TEST",
+            "type": "test",
+            "target": "CLAIM-UX-FLOWS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/runtime/attach_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-UX-COMMANDS",
+        "statement": "The command and interaction map is three artifacts that agree: the keymap in `docs/ui-ux/interaction.md` (checked against the client's bindings in both directions), the palette, which lists only actions that can run and says what each one does, and the surfaces in `docs/ui-ux/interface-map.json`, each with the inputs that operate it.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-UX-COMMANDS"
+        ],
+        "evidence": [
+          {
+            "id": "EV-UX-COMMANDS-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-UX-COMMANDS",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/flows.md"
+          },
+          {
+            "id": "EV-UX-COMMANDS-TEST",
+            "type": "test",
+            "target": "CLAIM-UX-COMMANDS",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/spec_test.go"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.screen-inventory",
@@ -1777,7 +2582,7 @@
     "claims": [
       {
         "id": "CLAIM-UISCREEN-INVENTORY",
-        "statement": "`docs/ui-ux/interface-map.json` inventories the surfaces: the four stages (command palette, goal prompt, run panel, evidence panel) under one shell, plus the persistent statusline and the approval prompt recorded as described-but-not-built. Mutually exclusive stages declare a presence condition, so the map states that they are alternatives rather than four panes stacked.",
+        "statement": "`docs/ui-ux/interface-map.json` inventories the surfaces: one shell with an identity header, a body holding the chat page (transcript and composer) and the logs page (table and detail), a statusline in the footer, and ten overlays — the command menu, the session, model, theme and file lists, the completion menu, the approval prompt, the quit confirmation, the keymap and the first-run offer. Surfaces that never coexist declare a presence condition, so the map states that they are alternatives rather than panes stacked.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1819,7 +2624,7 @@
       },
       {
         "id": "CLAIM-UISCREEN-ENTRY",
-        "statement": "Entry points are declared as focus edges with conditions: the palette is the entry point, the run-goal command opens the goal prompt, an accepted goal starts the run, a terminal status moves to the evidence panel, and `esc` returns to the palette from anywhere.",
+        "statement": "Entry points are declared as focus edges with conditions: the composer starts a run, the command menu is one chord away, the session list re-attaches to runs the daemon already has, and each dialog returns focus to the surface that opened it. Selecting a session reads that run's own log rather than starting a new one.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1880,7 +2685,7 @@
       },
       {
         "id": "CLAIM-UISTATEMODEL-APPLICABILITY",
-        "statement": "`docs/ui-ux/state-matrix.json` states applicability explicitly for all states: hover, alternate-theme and alternate-locale are declared not applicable with a reason, so an unimplemented state cannot be mistaken for an unconsidered one.",
+        "statement": "`docs/ui-ux/state-matrix.json` states applicability explicitly for all states: hover and alternate-locale are declared not applicable with a reason, and the states the client applies but does not yet draw distinctly — a reconnecting indicator, a retry loop while offline, a denial told apart from any other stop — say in their recovery text what happens instead, so an unimplemented state cannot be mistaken for an unconsidered one.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1901,7 +2706,7 @@
       },
       {
         "id": "CLAIM-UISTATEMODEL-RECOVERY",
-        "statement": "`docs/ui-ux/state-matrix.json` gives every applicable state a recovery path and declares the transitions between states, including offline to reconnecting to replayed streaming.",
+        "statement": "`docs/ui-ux/state-matrix.json` gives every applicable state a recovery path and declares the transitions between states, including a run that fails or loses its daemon to an error, and a session selected again to a transcript replayed from the run's own log.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1922,7 +2727,7 @@
       },
       {
         "id": "CLAIM-UISTATEMODEL-ERRORS",
-        "statement": "`docs/ui-ux/state-matrix.json` requires the error state to render the diagnostic code and message from the protocol envelope and to name the failing operation and the next observable action.",
+        "statement": "`docs/ui-ux/state-matrix.json` requires the error state to carry the failure's own message and to name the failing operation and the next observable action.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -1945,11 +2750,134 @@
   },
   {
     "contract_id": "ui.theming",
-    "sources": [],
+    "sources": [
+      "docs/ui-ux/theming.md",
+      "docs/ui-ux/design-tokens.json"
+    ],
     "ownership": "prumo-maintained",
     "authority": "canonical-documentation",
-    "applicability": "not-applicable",
-    "not_applicable_reason": "Out of scope for the spike: themes ship as tokens only (`docs/ui-ux/design-tokens.json`), and docs/product/tui-spike-h10.md lists themes as explicitly excluded, so no theme-selection surface exists."
+    "answered_questions": [
+      "Which themes must be supported and how do they inherit tokens?"
+    ],
+    "requirement_map": {
+      "theme compatibility matrix": "REQ-THEMING-MATRIX",
+      "token inheritance": "REQ-THEMING-INHERITANCE",
+      "high contrast mode": "REQ-THEMING-HIGH-CONTRAST",
+      "reduced motion": "REQ-THEMING-REDUCED-MOTION"
+    },
+    "claims": [
+      {
+        "id": "CLAIM-THEMING-MATRIX",
+        "statement": "`docs/ui-ux/theming.md` declares what a theme must define — base, status, text, background, border, diff, markdown and syntax groups — and names the nine palettes that ship. A theme may choose colours; it may not choose which things have colours, which is what makes a switch reviewable.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-THEMING-MATRIX"
+        ],
+        "evidence": [
+          {
+            "id": "EV-THEMING-MATRIX-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-THEMING-MATRIX",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-THEMING-INHERITANCE",
+        "statement": "Light and dark are one token resolved once: every colour is an adaptive pair, a theme that supplies one mode is a theme drawn for the wrong terminal, and components ask for semantic names rather than primitives. The client keeps no colour of its own, so no-color and high contrast are settings of the same system rather than special cases in the renderer.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-THEMING-INHERITANCE"
+        ],
+        "evidence": [
+          {
+            "id": "EV-THEMING-INHERIT-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-THEMING-INHERITANCE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          },
+          {
+            "id": "EV-THEMING-INHERIT-TOKENS",
+            "type": "canonical-document",
+            "target": "CLAIM-THEMING-INHERITANCE",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/design-tokens.json"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-THEMING-HIGH-CONTRAST",
+        "statement": "High contrast is the `focus` token's border plus the measured floors applied in every theme, not a separate palette: a palette that needs a second palette to be readable is not readable. Without colour at all the same interface draws, with the ASCII glyph set replacing the Unicode one when the locale cannot render it.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-THEMING-HIGH-CONTRAST"
+        ],
+        "evidence": [
+          {
+            "id": "EV-THEMING-HC-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-THEMING-HIGH-CONTRAST",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/theming.md"
+          },
+          {
+            "id": "EV-THEMING-HC-TEST",
+            "type": "test",
+            "target": "CLAIM-THEMING-HIGH-CONTRAST",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/theme/contrast_test.go"
+          }
+        ]
+      },
+      {
+        "id": "CLAIM-THEMING-REDUCED-MOTION",
+        "statement": "Reduced motion is a separate setting from the palette, documented in `docs/ui-ux/interaction.md` §Motion policy: it removes the movement and never the information, and it is the user's choice rather than a terminal capability.",
+        "status": "accepted",
+        "authority": "canonical-documentation",
+        "revision": 1,
+        "requires": [
+          "REQ-THEMING-REDUCED-MOTION"
+        ],
+        "evidence": [
+          {
+            "id": "EV-THEMING-RM-DOC",
+            "type": "canonical-document",
+            "target": "CLAIM-THEMING-REDUCED-MOTION",
+            "revision": "1",
+            "producer": "human-maintained",
+            "verified": true,
+            "artifact": "docs/ui-ux/interaction.md"
+          },
+          {
+            "id": "EV-THEMING-RM-TEST",
+            "type": "test",
+            "target": "CLAIM-THEMING-REDUCED-MOTION",
+            "revision": "1",
+            "producer": "prumo-maintained",
+            "verified": true,
+            "artifact": "prumo-tui/internal/tui/motion_test.go"
+          }
+        ]
+      }
+    ]
   },
   {
     "contract_id": "ui.visual-validation",

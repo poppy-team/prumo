@@ -41,12 +41,22 @@ const (
 	RoleApprover Role = "approver"
 )
 
+// ContentPart is one block of a multi-part message (text or image).
+type ContentPart struct {
+	Type     string `json:"type"`                // "text" or "image"
+	Text     string `json:"text,omitempty"`      // text content for type "text"
+	MimeType string `json:"mime_type,omitempty"` // e.g. "image/png", "image/jpeg"
+	Data     string `json:"data,omitempty"`      // base64-encoded bytes
+	Path     string `json:"path,omitempty"`      // workspace-relative path or URI
+}
+
 // Message is a normalized conversation unit.
 type Message struct {
 	ID        string         `json:"id"`
 	TurnID    string         `json:"turn_id,omitempty"`
 	Role      Role           `json:"role"`
 	Content   string         `json:"content"`
+	Parts     []ContentPart  `json:"parts,omitempty"`
 	Metadata  map[string]any `json:"metadata,omitempty"`
 	CreatedAt string         `json:"created_at"`
 }
@@ -183,9 +193,15 @@ type ModelEvent struct {
 
 // Usage normalizes token/cost telemetry.
 type Usage struct {
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
-	CostUSD      float64 `json:"cost_usd,omitempty"`
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+	// Cache tokens are reported separately by providers that cache a prompt
+	// prefix, and they are not part of the two counts above: a metered input
+	// token and a token read from cache cost differently, so a client that
+	// summed them could not say what a run actually spent.
+	CacheReadTokens  int     `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens int     `json:"cache_write_tokens,omitempty"`
+	CostUSD          float64 `json:"cost_usd,omitempty"`
 }
 
 // NativeAgentState is the canonical resumable state. Provider-private

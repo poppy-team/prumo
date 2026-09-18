@@ -53,11 +53,29 @@ func (r CLIRunner) Available() bool {
 	}
 	// Ping the daemon; a present-but-unreachable runtime is unavailable.
 	ctx := context.Background()
-	if out, err := exec.CommandContext(ctx, r.Runtime, "info", "--format", "{{.ServerVersion}}").CombinedOutput(); err != nil {
+	args := probeArgs(r.Runtime)
+	if out, err := exec.CommandContext(ctx, r.Runtime, args...).CombinedOutput(); err != nil {
 		_ = out
 		return false
 	}
 	return true
+}
+
+// probeArgs asks a runtime whether it can run a container, in its own language.
+//
+// The template is not shared because the field is not: `podman info` has no
+// ServerVersion — that is a Docker word — so asking podman the Docker question
+// fails on a podman that works, and the sandbox silently disappears from a
+// machine that can still run containers. Measured on 2026-09-17: installing
+// podman (6.1.2) on Arch turned `TestContainerLive` from PASS into SKIP until
+// this probe stopped being a Docker-only question.
+func probeArgs(runtime string) []string {
+	switch runtime {
+	case "podman":
+		return []string{"info", "--format", "{{.Version.Version}}"}
+	default:
+		return []string{"info", "--format", "{{.ServerVersion}}"}
+	}
 }
 
 func (r CLIRunner) Describe() string { return "container runtime=" + r.Runtime }

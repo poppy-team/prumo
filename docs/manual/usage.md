@@ -11,7 +11,7 @@ O Prumo organiza estado canônico no repositório. O harness executa ações; o 
 ## 1. Criar um projeto
 
 ```bash
-prumo init ./my-project \
+prumo-agent init ./my-project \
   --profile examples/brasa/project-profile.json \
   --non-interactive
 ```
@@ -21,10 +21,10 @@ O profile deve declarar `ai.preferred_models`. O resultado contém `prumo.json`,
 ## 2. Validar e diagnosticar
 
 ```bash
-prumo validate ./my-project
-prumo doctor ./my-project
-prumo --json doctor ./my-project
-prumo framework-check
+prumo-agent validate ./my-project
+prumo-agent doctor ./my-project
+prumo-agent --json doctor ./my-project
+prumo-agent framework-check
 ```
 
 `validate` verifica estrutura e schemas. `doctor` verifica também versionamento, locks, dependencies, DAGs, workforce, policies, gates e evidence.
@@ -32,14 +32,14 @@ prumo framework-check
 ## 3. Criar e bloquear Goals
 
 ```bash
-prumo goal new P00-G01 "Foundation" \
+prumo-agent goal new P00-G01 "Foundation" \
   --phase P00 \
   --objective "Establish a tested project foundation." \
   --path ./my-project
 
-prumo goal list --path ./my-project
-prumo goal state P00-G01 PLANNED --path ./my-project
-prumo goal state P00-G01 LOCKED --path ./my-project
+prumo-agent goal list --path ./my-project
+prumo-agent goal state P00-G01 PLANNED --path ./my-project
+prumo-agent goal state P00-G01 LOCKED --path ./my-project
 ```
 
 Estados válidos:
@@ -51,7 +51,7 @@ DRAFT → PLANNED → LOCKED → EXECUTING → VERIFYING → REVIEWING → DONE
 Estados podem ir para `BLOCKED` conforme as transições do protocolo. `DONE` exige evidence. Goal bloqueado deve ser alterado com amendment:
 
 ```bash
-prumo goal amend P00-G01 \
+prumo-agent goal amend P00-G01 \
   --file amendment.json \
   --path ./my-project
 ```
@@ -59,7 +59,7 @@ prumo goal amend P00-G01 \
 ## 4. Planejar contexto
 
 ```bash
-prumo context plan "debug authentication regression" \
+prumo-agent context plan "debug authentication regression" \
   --path ./my-project \
   --json
 ```
@@ -69,11 +69,11 @@ O planner escolhe uma estratégia e budget conforme o risco sem carregar o repos
 ## 5. Resolver workforce
 
 ```bash
-prumo resolve examples/brasa/project-profile.json --json
-prumo explain workforce examples/brasa/project-profile.json --json
-prumo explain agent architect --json
-prumo explain skill clean-code --json
-prumo explain recipe web-feature --json
+prumo-agent resolve examples/brasa/project-profile.json --json
+prumo-agent explain workforce examples/brasa/project-profile.json --json
+prumo-agent explain agent architect --json
+prumo-agent explain skill clean-code --json
+prumo-agent explain recipe web-feature --json
 ```
 
 A resolução é determinística para os mesmos profile, catálogo e recursos.
@@ -81,10 +81,10 @@ A resolução é determinística para os mesmos profile, catálogo e recursos.
 ## 6. Compilar adapters
 
 ```bash
-prumo compile --target generic --path ./my-project
-prumo compile --target codex --path ./my-project
-prumo compile --target claude-code --path ./my-project
-prumo compile --target traycer --path ./my-project
+prumo-agent compile --target generic --path ./my-project
+prumo-agent compile --target codex --path ./my-project
+prumo-agent compile --target claude-code --path ./my-project
+prumo-agent compile --target traycer --path ./my-project
 ```
 
 Targets disponíveis:
@@ -98,8 +98,8 @@ Saídas são derivadas. Edite o catálogo/workforce canônico, não o adapter ge
 ## 7. Reports e inteligência
 
 ```bash
-prumo report add conformance/fixtures/task-report.json --path ./my-project
-prumo report summary --path ./my-project --json
+prumo-agent report add conformance/fixtures/task-report.json --path ./my-project
+prumo-agent report summary --path ./my-project --json
 ```
 
 Reports alimentam `.prumo/history/project-intelligence.json`, que é estado derivado e reconstruível.
@@ -107,9 +107,9 @@ Reports alimentam `.prumo/history/project-intelligence.json`, que é estado deri
 ## 8. Snapshot e migração
 
 ```bash
-prumo snapshot ./my-project --output ./my-project-backup.zip
-prumo migrate ./my-project --dry-run --json
-prumo migrate ./my-project
+prumo-agent snapshot ./my-project --output ./my-project-backup.zip
+prumo-agent migrate ./my-project --dry-run --json
+prumo-agent migrate ./my-project
 ```
 
 Sempre execute `--dry-run` antes de migrações. A migração cria snapshot prévio quando altera o projeto.
@@ -117,10 +117,10 @@ Sempre execute `--dry-run` antes de migrações. A migração cria snapshot pré
 ## 9. Saída JSON para automações
 
 ```bash
-prumo --json version
-prumo --json validate ./my-project
-prumo --json framework-check
-prumo --json compile --target generic --path ./my-project
+prumo-agent --json version
+prumo-agent --json validate ./my-project
+prumo-agent --json framework-check
+prumo-agent --json compile --target generic --path ./my-project
 ```
 
 Contrato comum:
@@ -150,9 +150,9 @@ Códigos principais:
 ## 10. Instalação e estado global
 
 ```bash
-prumo --home ./prumo-home setup
-prumo --home ./prumo-home install connector opencode
-prumo --home ./prumo-home uninstall --connectors --purge-cache
+prumo-agent --home ./prumo-home setup
+prumo-agent --home ./prumo-home install connector opencode
+prumo-agent --home ./prumo-home uninstall --connectors --purge-cache
 ```
 
 Use `--home` em CI, testes, devboxes e cenários que não devem tocar `~/.prumo`.
@@ -166,45 +166,45 @@ O runtime e a suíte de testes em Python v0.3 (legacy) foram aposentados e remov
 ### Core
 
 ```text
-prumo version
-prumo status --path <path>
-prumo setup
-prumo install connector <id>
-prumo uninstall [--connectors] [--purge-cache] [--purge-global-config]
-prumo init <path> --profile <profile> --non-interactive
-prumo validate [path]
-prumo doctor [path] [--json]
-prumo framework-check
+prumo-agent version
+prumo-agent status --path <path>
+prumo-agent setup
+prumo-agent install connector <id>
+prumo-agent uninstall [--connectors] [--purge-cache] [--purge-global-config]
+prumo-agent init <path> --profile <profile> --non-interactive
+prumo-agent validate [path]
+prumo-agent doctor [path] [--json]
+prumo-agent framework-check
 ```
 
 ### Protocol
 
 ```text
-prumo goal new <id> <title> --phase <phase> [--objective <text>] [--path <path>]
-prumo goal state <id> <state> [--reason <text>] [--path <path>]
-prumo goal amend <id> [--file <path>] [--reason <text>] [--approved-by <actor>] [--path <path>]
-prumo goal list [--path <path>]
-prumo context plan <task> [--path <path>] [--json]
-prumo report add <file> [--path <path>]
-prumo report summary [--path <path>]
-prumo migrate [path] [--dry-run] [--json]
-prumo snapshot [path] [--output <path>]
-prumo docs delta propose --goal <goal> [--path <project>] [changed ...] [--json]
-prumo docs delta list [--path <project>] [--json]
-prumo docs delta show --id <delta> [--path <project>] [--json]
-prumo docs delta transition --id <delta> --state <state> [--evidence <id>]... [--path <project>] [--json]
+prumo-agent goal new <id> <title> --phase <phase> [--objective <text>] [--path <path>]
+prumo-agent goal state <id> <state> [--reason <text>] [--path <path>]
+prumo-agent goal amend <id> [--file <path>] [--reason <text>] [--approved-by <actor>] [--path <path>]
+prumo-agent goal list [--path <path>]
+prumo-agent context plan <task> [--path <path>] [--json]
+prumo-agent report add <file> [--path <path>]
+prumo-agent report summary [--path <path>]
+prumo-agent migrate [path] [--dry-run] [--json]
+prumo-agent snapshot [path] [--output <path>]
+prumo-agent docs delta propose --goal <goal> [--path <project>] [changed ...] [--json]
+prumo-agent docs delta list [--path <project>] [--json]
+prumo-agent docs delta show --id <delta> [--path <project>] [--json]
+prumo-agent docs delta transition --id <delta> --state <state> [--evidence <id>]... [--path <project>] [--json]
 ```
 
 ### Resolution, explanation, and compiler
 
 ```text
-prumo resolve <profile> [--json]
-prumo explain workforce <profile> [--json]
-prumo explain agent <id> [--json]
-prumo explain skill <id> [--json]
-prumo explain recipe <id> [--json]
-prumo explain context <task-id> [--path <path>] [--json]
-prumo explain model <role> [--path <path>] [--json]
-prumo explain execution <profile> [--path <path>] [--json]
-prumo compile --target <target> [--path <path>] [--json]
+prumo-agent resolve <profile> [--json]
+prumo-agent explain workforce <profile> [--json]
+prumo-agent explain agent <id> [--json]
+prumo-agent explain skill <id> [--json]
+prumo-agent explain recipe <id> [--json]
+prumo-agent explain context <task-id> [--path <path>] [--json]
+prumo-agent explain model <role> [--path <path>] [--json]
+prumo-agent explain execution <profile> [--path <path>] [--json]
+prumo-agent compile --target <target> [--path <path>] [--json]
 ```

@@ -12,7 +12,7 @@ Use a locally built binary or installation path:
 go build -trimpath -o ./prumo ./cmd/prumo
 ./prumo version
 export PATH="$PWD:$PATH"
-prumo version
+prumo-agent version
 ```
 
 Do not infer a broken global installation from a missing `PATH` entry.
@@ -22,9 +22,9 @@ Do not infer a broken global installation from a missing `PATH` entry.
 The command was executed outside an Prumo project:
 
 ```bash
-prumo validate ./my-project
-prumo status --path ./my-project
-prumo init ./my-project --profile examples/brasa/project-profile.json --non-interactive
+prumo-agent validate ./my-project
+prumo-agent status --path ./my-project
+prumo-agent init ./my-project --profile examples/brasa/project-profile.json --non-interactive
 ```
 
 ### Goal lock digest mismatch
@@ -32,7 +32,7 @@ prumo init ./my-project --profile examples/brasa/project-profile.json --non-inte
 The locked Goal was changed outside `goal amend`. Inspect the Goal file and create an approved amendment:
 
 ```bash
-prumo goal state P00-G01 LOCKED --path ./my-project
+prumo-agent goal state P00-G01 LOCKED --path ./my-project
 ```
 
 Never bypass a lock by copying or rewriting files manually.
@@ -52,8 +52,8 @@ DRAFT → PLANNED → LOCKED → EXECUTING → VERIFYING → REVIEWING → DONE
 Regenerate from canonical resources:
 
 ```bash
-prumo compile --target codex --path ./my-project
-prumo compile --target claude-code --path ./my-project
+prumo-agent compile --target codex --path ./my-project
+prumo-agent compile --target claude-code --path ./my-project
 ```
 
 Do not edit generated files such as `AGENTS.md`, `.codex/`, `.claude/`, or runtime ENTRYPOINT files.

@@ -11,7 +11,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          # The toolchain is whatever go.mod requires. Pinning it here instead
+          # meant CI ran on a version the module does not support and quietly
+          # downloaded another one.
+          go-version-file: go.mod
       - name: Go format check
         run: |
           diff -u <(echo -n) <(gofmt -d .)
@@ -25,35 +28,65 @@ jobs:
       - name: Go test
         run: go test -v -race ./...
       - name: Build Prumo CLI
-        run: go build -o /tmp/prumo ./cmd/prumo
+        run: go build -o /tmp/prumo-agent ./cmd/prumo-agent
       - name: Documentation authority gate
-        run: /tmp/prumo docs authority --path . --json
+        run: /tmp/prumo-agent docs authority --path . --json
       - name: Agent surface context-rot gate
-        run: /tmp/prumo docs agents verify --path . --json
+        run: /tmp/prumo-agent docs agents verify --path . --json
       - name: Documentation verification gate
-        run: /tmp/prumo docs verify --path . --json
+        run: /tmp/prumo-agent docs verify --path . --json
       - name: Documentation strict readiness gate
-        run: /tmp/prumo docs verify --path . --strict --json
+        run: /tmp/prumo-agent docs verify --path . --strict --json
       - name: Terminology gate
-        run: /tmp/prumo docs glossary --path . --json
+        run: /tmp/prumo-agent docs glossary --path . --json
+      # The projections are derived artifacts, so they live under the runtime
+      # directory and are never committed. A gate that only verified them would
+      # fail on every clean checkout; building them first is what makes the step
+      # about the map rather than about a directory nobody ships.
       - name: Interface map gate
-        run: /tmp/prumo ui verify --path . --json
+        run: |
+          /tmp/prumo-agent ui map --path . --write --json
+          /tmp/prumo-agent ui verify --path . --json
       - name: Documentation version policy gate
-        run: /tmp/prumo docs version --path . --json
+        run: /tmp/prumo-agent docs version --path . --json
       - name: Documentation gauntlet (deterministic rounds)
-        run: /tmp/prumo docs gauntlet --path . --json
+        run: /tmp/prumo-agent docs gauntlet --path . --json
       - name: CLI smoke test
         run: |
           rm -rf /tmp/prumo-smoke
-          /tmp/prumo init /tmp/prumo-smoke --profile examples/brasa/project-profile.json --non-interactive
-          /tmp/prumo validate /tmp/prumo-smoke
-          /tmp/prumo context plan "add a transition template" --path /tmp/prumo-smoke --json
-          /tmp/prumo goal new P00-G01 "Foundation" --phase P00 --path /tmp/prumo-smoke
-          /tmp/prumo goal list --path /tmp/prumo-smoke
-          /tmp/prumo compile --target codex --path /tmp/prumo-smoke
-          /tmp/prumo compile --target traycer --path /tmp/prumo-smoke
-          /tmp/prumo compile --target opencode --path /tmp/prumo-smoke
-          /tmp/prumo connector list
-          /tmp/prumo framework-check
+          /tmp/prumo-agent init /tmp/prumo-smoke --profile examples/brasa/project-profile.json --non-interactive
+          /tmp/prumo-agent validate /tmp/prumo-smoke
+          /tmp/prumo-agent context plan "add a transition template" --path /tmp/prumo-smoke --json
+          /tmp/prumo-agent goal new P00-G01 "Foundation" --phase P00 --path /tmp/prumo-smoke
+          /tmp/prumo-agent goal list --path /tmp/prumo-smoke
+          /tmp/prumo-agent compile --target codex --path /tmp/prumo-smoke
+          /tmp/prumo-agent compile --target traycer --path /tmp/prumo-smoke
+          /tmp/prumo-agent compile --target opencode --path /tmp/prumo-smoke
+          /tmp/prumo-agent connector list
+          /tmp/prumo-agent framework-check
           test ! -e /tmp/prumo-smoke/PROJECT_MANIFEST.yaml
           test ! -e /tmp/prumo-smoke/.prumo/project-profile.yaml
+
+  # The client is its own module, so `go test ./...` from the root never reaches
+  # it: a nested module is skipped, not walked. It gets its own job, which is
+  # also what keeps a broken client from being discovered after a release.
+  tui-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prumo-tui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: prumo-tui/go.mod
+      - name: Go vet
+        run: go vet ./...
+      - name: Module checksum verification
+        run: go mod verify
+      - name: Go test
+        run: go test -race ./...
+      - name: Client boundary
+        run: go test -run TestBoundaryNoCoreInternals -v .
+      - name: Build the client
+        run: go build -o /tmp/prumo-tui ./cmd/prumo-tui

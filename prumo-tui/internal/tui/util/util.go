@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -16,6 +17,21 @@ func ReportError(err error) tea.Cmd {
 	return CmdHandler(InfoMsg{
 		Type: InfoTypeError,
 		Msg:  err.Error(),
+	})
+}
+
+// ReportFailure reports something the client could not do, in the shape the
+// interaction specification asks of every user-visible failure: what failed, and
+// what the person reading it can do next.
+//
+// The error itself is carried unchanged — it is the record of what happened —
+// and the two halves around it are the client's: an operation a reader can name,
+// and an action that is actually available. A failure that only says what broke
+// leaves the reader to guess, which is the thing this shape exists to prevent.
+func ReportFailure(operation, next string, err error) tea.Cmd {
+	return CmdHandler(InfoMsg{
+		Type: InfoTypeError,
+		Msg:  fmt.Sprintf("%s: %s — %s", operation, err, next),
 	})
 }
 

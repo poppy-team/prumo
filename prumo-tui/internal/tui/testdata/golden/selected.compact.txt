@@ -1,0 +1,31 @@
+# digest sha256:e426b649b4f32f52
+                                                                               
+ ┃ row 0 of the conversation                                                   
+                                                                               
+ ┃ row 1 of the conversation                                                   
+                                                                               
+ ┃ row 2 of the conversation                                                   
+                                                                               
+ ┃ row 3 of the conversation                                                   
+  ╭─────────────────────────────────────────────────────────────────────────╮  
+  │                                                                         │░ 
+  │   Commands                                                              │░ 
+  │                                                                         │░ 
+  │   Initialize Project                                                    │░ 
+  │   Create or update AGENTS.md, the agent memory file                     │░ 
+  │   Scheduled runs                                                        │░ 
+  │   See what the daemon repeats on a schedule, and stop one               │░ 
+  │   Export the session's timeline                                         │░ 
+  │   Write the run's own record to .prumo/runtime/exports/ as plain text   │░ 
+  │   Compact Session                                                       │░ 
+  │   Who compacts this session's history                                   │░ 
+  │                                                                         │░ 
+  │                                                                         │░ 
+  ╰─────────────────────────────────────────────────────────────────────────╯░ 
+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 
+                                                                               
+ press enter to send the message, write \ and enter to add a new line          
+───────────────────────────────────────────────────────────────────────────────
+ >                                                                             
+                                                                               
+ ctrl+? help  in 0 · out 0 · $0.0000                                     fake  

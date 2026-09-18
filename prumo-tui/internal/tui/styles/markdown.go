@@ -1,6 +1,9 @@
 package styles
 
 import (
+	"fmt"
+	"sync"
+
 	"charm.land/glamour/v2"
 	"charm.land/glamour/v2/ansi"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
@@ -13,12 +16,41 @@ func boolPtr(b bool) *bool       { return &b }
 func stringPtr(s string) *string { return &s }
 func uintPtr(u uint) *uint       { return &u }
 
-// returns a glamour TermRenderer configured with the current theme
+// renderers are the markdown renderers already built, keyed by theme and width.
+var (
+	renderersMu sync.Mutex
+	renderers   = map[string]*glamour.TermRenderer{}
+)
+
+// rendererCacheLimit bounds the map. A resize storm walks through widths, and
+// an unbounded cache would hold every one of them for the life of the process.
+const rendererCacheLimit = 64
+
+// GetMarkdownRenderer returns a renderer for a width, reusing the one already
+// built for it.
+//
+// Building one is not free: it constructs a markdown parser and an HTML
+// sanitiser, and the transcript asked for one **per message per render** — which
+// is where a first paint of a long conversation spent most of its allocations.
+// The key carries the theme as well as the width because the styles are baked
+// into the renderer when it is built.
 func GetMarkdownRenderer(width int) *glamour.TermRenderer {
+	key := fmt.Sprintf("%s/%d", theme.CurrentThemeName(), width)
+
+	renderersMu.Lock()
+	defer renderersMu.Unlock()
+	if cached, ok := renderers[key]; ok {
+		return cached
+	}
+
 	r, _ := glamour.NewTermRenderer(
 		glamour.WithStyles(generateMarkdownStyleConfig()),
 		glamour.WithWordWrap(width),
 	)
+	if len(renderers) >= rendererCacheLimit {
+		renderers = map[string]*glamour.TermRenderer{}
+	}
+	renderers[key] = r
 	return r
 }
 

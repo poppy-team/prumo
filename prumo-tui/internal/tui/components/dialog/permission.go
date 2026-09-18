@@ -215,36 +215,30 @@ func (p *permissionDialogCmp) renderHeader() string {
 			toolKey,
 			toolValue,
 		),
-		baseStyle.Render(strings.Repeat(" ", p.width)),
-		lipgloss.JoinHorizontal(
-			lipgloss.Left,
-			pathKey,
-			pathValue,
-		),
-		baseStyle.Render(strings.Repeat(" ", p.width)),
+	}
+
+	// A header line with nothing in it is a row the preview does not get: the
+	// gate's evidence is what a person needs to read, and chrome that pushes it
+	// off the dialog makes the decision unanswerable.
+	if path := paramString(p.permission.Params, "path", "file_path", "file"); path != "" {
+		pathValue = baseStyle.
+			Foreground(t.Text()).
+			Width(p.width - lipgloss.Width(pathKey)).
+			Render(fmt.Sprintf(": %s", path))
+		headerParts = append(headerParts,
+			baseStyle.Render(strings.Repeat(" ", p.width)),
+			lipgloss.JoinHorizontal(lipgloss.Left, pathKey, pathValue),
+		)
 	}
 
 	// Header information depends on what the call does, not on which binary
 	// asked for it.
 	switch classifyAction(p.permission.Action) {
 	case previewCommand:
-		headerParts = append(headerParts, baseStyle.Foreground(t.TextMuted()).Width(p.width).Bold(true).Render("Command"))
+		// The block below *is* the command, so a label naming it would be a row
+		// of chrome in the place where the command should be.
 	case previewDiff, previewFile:
-		if file := paramString(p.permission.Params, "path", "file_path", "file"); file != "" {
-			fileKey := baseStyle.Foreground(t.TextMuted()).Bold(true).Render("File")
-			filePath := baseStyle.
-				Foreground(t.Text()).
-				Width(p.width - lipgloss.Width(fileKey)).
-				Render(fmt.Sprintf(": %s", file))
-			headerParts = append(headerParts,
-				lipgloss.JoinHorizontal(
-					lipgloss.Left,
-					fileKey,
-					filePath,
-				),
-				baseStyle.Render(strings.Repeat(" ", p.width)),
-			)
-		}
+		// The File line was already added above when the arguments named one.
 	case previewURL:
 		headerParts = append(headerParts, baseStyle.Foreground(t.TextMuted()).Width(p.width).Bold(true).Render("URL"))
 	}
@@ -405,15 +399,23 @@ func (p *permissionDialogCmp) BindingKeys() []key.Binding {
 	return layout.KeyMapToSlice(permissionsKeys)
 }
 
+// SetSizeForTest lets a test put the dialog at a terminal size without a
+// window message; production code reaches this through SetSize.
+func (p *permissionDialogCmp) SetSizeForTest(width, height int) {
+	p.windowSize.Width, p.windowSize.Height = width, height
+	p.SetSize()
+}
+
 func (p *permissionDialogCmp) SetSize() tea.Cmd {
 	if p.permission.ID == "" {
 		return nil
 	}
 	switch classifyAction(p.permission.Action) {
 	case previewCommand:
-		// A command needs room to be read, but not the whole screen.
-		p.width = int(float64(p.windowSize.Width) * 0.4)
-		p.height = int(float64(p.windowSize.Height) * 0.3)
+		// A command needs room to be read, and the dialog's chrome is fixed:
+		// a third of the screen left the preview with no rows at all.
+		p.width = int(float64(p.windowSize.Width) * 0.5)
+		p.height = int(float64(p.windowSize.Height) * 0.5)
 	case previewDiff:
 		// A diff is the case where seeing the change *is* the decision.
 		p.width = int(float64(p.windowSize.Width) * 0.8)

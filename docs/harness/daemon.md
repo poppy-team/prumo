@@ -15,9 +15,9 @@ as JSON lines over a Unix socket, or over TCP+TLS+token when `--listen` is set
   `pending_permissions`. The two are deliberately distinct: conflating them
   would make a client either wait forever on a parked run or leave the panel on
   one that needs an answer.
-- CLI: `prumo agent serve --path . [--socket ...] [--permission allow|ask|deny]
-  [--ask-kind <kinds>]` blocks until SIGINT/SIGTERM; `prumo agent ps` lists runs
-  (and the request ids a run is waiting on); `prumo agent logs --run <id>`
+- CLI: `prumo-agent agent serve --path . [--socket ...] [--permission allow|ask|deny]
+  [--ask-kind <kinds>]` blocks until SIGINT/SIGTERM; `prumo-agent agent ps` lists runs
+  (and the request ids a run is waiting on); `prumo-agent agent logs --run <id>`
   replays the timeline. `serve` uses the Coding ACI workspace; providers
   resolve via `model.ForName` (fake/fake-tools default, real adapters need
   keys/URLs).
@@ -37,12 +37,12 @@ as JSON lines over a Unix socket, or over TCP+TLS+token when `--listen` is set
   run a client cannot answer — and is dropped once it reaches a terminal state.
 - Scheduling: `schedule/unschedule/jobs` ops (CLI + SDK) persist cron-like
   jobs; the serve loop fires due jobs once each (no catch-up storms).
-  `prumo agent schedule --goal ... --every 3600`. Start failures back off
+  `prumo-agent agent schedule --goal ... --every 3600`. Start failures back off
   linearly and dead-letter after MaxRetries (default 3), keeping last status.
 - Tests: lifecycle (start→complete→events→list→protocol), cancel of a
   blocking run, and reconnect (new server, same store).
 - IDL: `schemas/protocol-manifest.json` (version, ops, args, schemas,
-  errors) is served by the `protocol` op and `prumo agent protocol
+  errors) is served by the `protocol` op and `prumo-agent agent protocol
   --manifest`. `protocol.Manifest()` is the code truth; the checked-in file
   must match it (manifest_test.go) and every listed op must have a dispatch
   branch (daemon dispatch test).

@@ -70,7 +70,7 @@ func (a *Anthropic) setAuth(req *http.Request) {
 
 type anthropicOutboundMessage struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
 }
 
 func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
@@ -84,7 +84,34 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		if role != "user" && role != "assistant" {
 			role = "user"
 		}
-		msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: m.Content})
+		if len(m.Parts) == 0 {
+			msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: m.Content})
+			continue
+		}
+		blocks := make([]map[string]any, 0, len(m.Parts))
+		for _, p := range m.Parts {
+			switch p.Type {
+			case "image":
+				mediaType := p.MimeType
+				if mediaType == "" {
+					mediaType = "image/png"
+				}
+				blocks = append(blocks, map[string]any{
+					"type": "image",
+					"source": map[string]any{
+						"type":       "base64",
+						"media_type": mediaType,
+						"data":       p.Data,
+					},
+				})
+			default:
+				blocks = append(blocks, map[string]any{
+					"type": "text",
+					"text": p.Text,
+				})
+			}
+		}
+		msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: blocks})
 	}
 	body, _ := json.Marshal(map[string]any{
 		"model": modelName, "max_tokens": 1024, "stream": true, "messages": msgs,
@@ -194,13 +221,17 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 				Name string `json:"name"`
 			} `json:"content_block"`
 			Usage *struct {
-				InputTokens  int `json:"input_tokens"`
-				OutputTokens int `json:"output_tokens"`
+				InputTokens              int `json:"input_tokens"`
+				OutputTokens             int `json:"output_tokens"`
+				CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+				CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 			} `json:"usage"`
 			Message *struct {
 				Usage *struct {
-					InputTokens  int `json:"input_tokens"`
-					OutputTokens int `json:"output_tokens"`
+					InputTokens              int `json:"input_tokens"`
+					OutputTokens             int `json:"output_tokens"`
+					CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+					CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 				} `json:"usage"`
 			} `json:"message"`
 			Error *struct {
@@ -231,13 +262,23 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 		}
 		if payload.Usage != nil {
 			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-				Usage: &agent.Usage{InputTokens: payload.Usage.InputTokens, OutputTokens: payload.Usage.OutputTokens}}) {
+				Usage: &agent.Usage{
+					InputTokens:      payload.Usage.InputTokens,
+					OutputTokens:     payload.Usage.OutputTokens,
+					CacheReadTokens:  payload.Usage.CacheReadInputTokens,
+					CacheWriteTokens: payload.Usage.CacheCreationInputTokens,
+				}}) {
 				return
 			}
 		}
 		if payload.Message != nil && payload.Message.Usage != nil {
 			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-				Usage: &agent.Usage{InputTokens: payload.Message.Usage.InputTokens, OutputTokens: payload.Message.Usage.OutputTokens}}) {
+				Usage: &agent.Usage{
+					InputTokens:      payload.Message.Usage.InputTokens,
+					OutputTokens:     payload.Message.Usage.OutputTokens,
+					CacheReadTokens:  payload.Message.Usage.CacheReadInputTokens,
+					CacheWriteTokens: payload.Message.Usage.CacheCreationInputTokens,
+				}}) {
 				return
 			}
 		}

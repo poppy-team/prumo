@@ -28,6 +28,12 @@ type Services struct {
 	// ToolSpecs advertises callable tools to the model (MCP servers, ACI
 	// catalogs). Nil sends no specs; execution still policy-gated.
 	ToolSpecs func() []agent.ToolSpec
+	// RecordDiff records what a tool changed on disk, for on-demand diff reads (ADR 014).
+	RecordDiff func(runID, path, kind, content string)
+	// Workspace is the workspace root used to resolve relative file references.
+	Workspace string
+	// HasVision reports whether the selected model declares vision capability.
+	HasVision bool
 }
 
 // ToolExecutor executes one normalized ToolCall.
@@ -257,6 +263,14 @@ func (r *Runner) Step(ctx context.Context) error {
 		r.State.Phase = agent.PhaseRequestModel
 	case agent.PhaseRequestModel:
 		r.maybeCompactLocked()
+		resolvedMsgs, err := ResolveReferences(r.Messages, r.Svc.Workspace, r.Svc.HasVision)
+		if err != nil {
+			r.State.Phase = agent.PhaseFailed
+			r.State.StopReason = err.Error()
+			return err
+		}
+		r.Messages = resolvedMsgs
+
 		specs := []agent.ToolSpec{}
 		if r.Svc.ToolSpecs != nil {
 			specs = r.Svc.ToolSpecs()
@@ -297,11 +311,27 @@ func (r *Runner) Step(ctx context.Context) error {
 					r.emitLocked("tool_call_ready", map[string]any{"id": ev.ToolCall.ID, "name": ev.ToolCall.Name})
 				}
 			}
-			if ev.Kind == agent.EventUsageUpdated && ev.Usage != nil && r.Svc.ConsumeBudget != nil {
-				if err := r.Svc.ConsumeBudget(*ev.Usage); err != nil {
-					r.State.Phase = agent.PhaseFailed
-					r.State.StopReason = "budget exhausted: " + err.Error()
-					return err
+			if ev.Kind == agent.EventUsageUpdated && ev.Usage != nil {
+				// What a run spent belongs on its record, not only in the
+				// budget: a client that cannot read usage can only render a
+				// statusline that is wrong, and the timeline is replayed whole
+				// so the total survives a reconnect.
+				// A metered input token, a cached one and an output token cost
+				// differently, so they travel separately: a client that only
+				// received a total could report what a run spent but never why.
+				r.emitLocked("usage", map[string]any{
+					"prompt_tokens":      ev.Usage.InputTokens,
+					"completion_tokens":  ev.Usage.OutputTokens,
+					"cache_read_tokens":  ev.Usage.CacheReadTokens,
+					"cache_write_tokens": ev.Usage.CacheWriteTokens,
+					"cost_usd":           ev.Usage.CostUSD,
+				})
+				if r.Svc.ConsumeBudget != nil {
+					if err := r.Svc.ConsumeBudget(*ev.Usage); err != nil {
+						r.State.Phase = agent.PhaseFailed
+						r.State.StopReason = "budget exhausted: " + err.Error()
+						return err
+					}
 				}
 			}
 			if ev.Kind == agent.EventError && !ev.Retryable {
@@ -353,7 +383,15 @@ func (r *Runner) Step(ctx context.Context) error {
 				// daemon answering the request) needs the tool it stopped on,
 				// and the request id is what a client answers with.
 				r.State.PendingTools = append([]agent.ToolCall{}, r.ToolQ...)
-				r.emit("permission_wait", map[string]any{"tool": tc.Name, "request_id": res.RequestID})
+				// The arguments travel with the request, which is the one place
+				// this timeline is not minimal: a gate asks a person to approve
+				// what a tool is about to do, and a request that carries no
+				// evidence cannot be answered — only obeyed or refused on faith.
+				// The cost is bounded by the calls a policy gates, and the
+				// timeline already carries them in the checkpoint.
+				r.emit("permission_wait", map[string]any{
+					"tool": tc.Name, "request_id": res.RequestID, "arguments": tc.Arguments,
+				})
 				if err := r.persist(); err != nil {
 					// Refusing to wait is honest: a pending approval nobody can
 					// find on disk is worse than a failed run.
@@ -378,8 +416,16 @@ func (r *Runner) Step(ctx context.Context) error {
 			if res.ExitCode == 0 {
 				r.AfterSideEffects = true
 				if op := r.Svc.Tools.OperationOf(tc.Name); op != "" {
-					if path, _ := tc.Arguments["path"].(string); path != "" {
+					path, _ := tc.Arguments["path"].(string)
+					if path == "" && tc.Name == "edit.move" {
+						path, _ = tc.Arguments["to"].(string)
+					}
+					if path != "" {
 						r.emitLocked("file.changed", map[string]any{"path": path, "operation": op, "tool": tc.Name})
+						if r.Svc.RecordDiff != nil {
+							kind, content := diffOf(tc)
+							r.Svc.RecordDiff(r.State.RunID, path, kind, content)
+						}
 					}
 				}
 			}
@@ -464,4 +510,23 @@ func (r *Runner) RunUntilDone(ctx context.Context) error {
 		}
 	}
 	return fmt.Errorf("runaway loop guard")
+}
+
+func diffOf(tc agent.ToolCall) (kind, content string) {
+	switch tc.Name {
+	case "edit.patch":
+		patch, _ := tc.Arguments["patch"].(string)
+		return "patch", patch
+	case "edit.create":
+		cnt, _ := tc.Arguments["content"].(string)
+		return "created", cnt
+	case "edit.delete":
+		return "deleted", ""
+	case "edit.move":
+		from, _ := tc.Arguments["from"].(string)
+		to, _ := tc.Arguments["to"].(string)
+		return "moved", fmt.Sprintf("moved from %s to %s", from, to)
+	default:
+		return "modified", ""
+	}
 }

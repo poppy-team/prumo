@@ -15,10 +15,10 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/logging"
-	"github.com/raillen/prumo-tui/internal/message"
 	"github.com/raillen/prumo-tui/internal/tui/image"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
+	"github.com/raillen/prumo-tui/internal/tui/util"
 )
 
 const (
@@ -105,8 +105,14 @@ func (s stack) Pop() (stack, int) {
 	return s[:l-1], s[l-1]
 }
 
-type AttachmentAddedMsg struct {
-	Attachment message.Attachment
+// ReferenceSelectedMsg carries a path the user picked, to be written into the
+// goal the way the `@` completion writes one.
+//
+// It is a reference and not an attachment on purpose: what a model can see is
+// the harness's decision, made from the model's own capabilities, and a client
+// that shipped the bytes itself would be asserting something it cannot check.
+type ReferenceSelectedMsg struct {
+	Path string
 }
 
 func (f *filepickerCmp) Init() tea.Cmd {
@@ -175,7 +181,7 @@ func (f *filepickerCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				f.getCurrentFileBelowCursor()
 			} else {
 				f.selectedFile = path
-				return f.addAttachmentToMessage()
+				return f.referenceSelectedFile()
 			}
 		case key.Matches(msg, filePickerKeyMap.Esc):
 			if !f.cwd.Focused() {
@@ -218,13 +224,17 @@ func (f *filepickerCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return f, cmd
 }
 
-func (f *filepickerCmp) addAttachmentToMessage() (tea.Model, tea.Cmd) {
-	// Attachments are not part of the harness protocol yet: a run is started
-	// with a goal, not with files. Refusing is better than attaching something
-	// the run would never receive — and the harness, not the client, is what
-	// knows which model could accept it.
-	logging.ErrorPersist("attachments are not supported by the harness protocol yet")
-	return f, nil
+// referenceSelectedFile writes the chosen path into the goal.
+//
+// A file is named, not attached: the goal is what the harness receives, and a
+// model that can see images resolves the reference on its side. Naming it also
+// means the transcript keeps saying which file was meant, long after a run that
+// carried bytes would have been compacted away.
+func (f *filepickerCmp) referenceSelectedFile() (tea.Model, tea.Cmd) {
+	if f.selectedFile == "" {
+		return f, nil
+	}
+	return f, util.CmdHandler(ReferenceSelectedMsg{Path: f.selectedFile})
 }
 
 // View renders the component for the terminal.

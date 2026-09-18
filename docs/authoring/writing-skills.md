@@ -79,7 +79,7 @@ Store boilerplate code or text formats the agent should use. Reference them in `
 Ensure every skill has an author and a mechanism to verify integrity (e.g., cryptographic signatures) in the `manifest.json`.
 
 ## Testing a New Skill
-Run `prumo test skill <skill_id>` to validate the schema and run any associated unit tests or conformance checks in FakeRuntime.
+Run `prumo-agent test skill <skill_id>` to validate the schema and run any associated unit tests or conformance checks in FakeRuntime.
 
 ## Resolver Selection
 The resolver uses the `select` block in the manifest to match skills to the current project context (stack, features, etc.).
