@@ -42,7 +42,7 @@ func main() {
 		tokenFile     = flag.String("token-file", "", "file holding the remote token")
 		tlsCert       = flag.String("remote-tls-cert", "", "CA certificate pinning the remote server")
 		theme         = flag.String("theme", "", "theme id")
-		provider      = flag.String("provider", "fake", "provider: fake|fake-tools|openai-compat|anthropic")
+		provider      = flag.String("provider", "", "provider: fake|fake-tools|openai-compat|anthropic|opencode")
 		model         = flag.String("model", "", "model id asked of the harness")
 		maxTurns      = flag.Int("max-turns", 5, "maximum turns per run")
 		reducedMotion = flag.Bool("reduced-motion", false, "state progress in words instead of animating it (also PRUMO_REDUCED_MOTION)")
@@ -78,7 +78,13 @@ func main() {
 		cfg.Theme = *theme
 	}
 	cfg.WorkingDir = abs
-	cfg.Provider = *provider
+	// Provider resolution: explicit flag > saved config > auto-detect > fake.
+	// The flag default is empty so we can tell "not given" from "given as fake".
+	if *provider != "" {
+		cfg.Provider = *provider
+	} else if cfg.Provider == "" || cfg.Provider == "fake" {
+		cfg.Provider = detectProvider()
+	}
 	cfg.Model = *model
 	cfg.MaxTurns = *maxTurns
 	// Reduced motion is a preference a user sets once, so the environment is
@@ -290,4 +296,20 @@ func envEnabled(name string) bool {
 func fail(err error) {
 	fmt.Fprintln(os.Stderr, "prumo-agent:", err)
 	os.Exit(1)
+}
+
+// detectProvider picks the best available provider when none was explicitly
+// configured. The order is: opencode (free, no key), anthropic (if key set),
+// openai-compat (if key+url set), then fake (offline deterministic).
+func detectProvider() string {
+	if _, err := exec.LookPath("opencode"); err == nil {
+		return "opencode"
+	}
+	if os.Getenv("PRUMO_MODEL_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "" {
+		if os.Getenv("PRUMO_MODEL_BASE_URL") != "" {
+			return "openai-compat"
+		}
+		return "anthropic"
+	}
+	return "fake"
 }

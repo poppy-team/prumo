@@ -11,7 +11,6 @@ import (
 
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
-	"github.com/raillen/prumo-tui/internal/llm/models"
 	"github.com/raillen/prumo-tui/internal/pubsub"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
@@ -310,15 +309,37 @@ func (m statusCmp) model() string {
 
 	cfg := config.Get()
 
-	if cfg.Model == "" {
-		return cfg.Provider
+	// Always show the provider, and the model beside it when one is active.
+	// This is the only place the user can see what backend they are talking to.
+	providerLabel := cfg.Provider
+	if providerLabel == "" {
+		providerLabel = "none"
 	}
-	model := models.Model{ID: models.ModelID(cfg.Model), Name: cfg.Model}
+
+	// Read the live model from the runner if available, since the user may
+	// have changed it via ctrl+o without updating the config.
+	modelName := ""
+	if m.app != nil && m.app.Runner != nil {
+		if mdl := m.app.Runner.Model(); string(mdl.ID) != "" {
+			modelName = mdl.Name
+			if modelName == "" {
+				modelName = string(mdl.ID)
+			}
+		}
+	}
+	if modelName == "" && cfg.Model != "" {
+		modelName = cfg.Model
+	}
+
+	label := providerLabel
+	if modelName != "" {
+		label = providerLabel + " · " + modelName
+	}
 
 	return styles.Padded().
 		Background(t.Secondary()).
 		Foreground(t.Background()).
-		Render(model.Name)
+		Render(label)
 }
 
 func NewStatusCmp(app *app.App) StatusCmp {

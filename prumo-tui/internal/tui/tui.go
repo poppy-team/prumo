@@ -615,7 +615,13 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.app != nil {
 			a.app.SetProvider(msg.Provider)
 		}
-		return a, util.ReportInfo(fmt.Sprintf("Provider switched to: %s. Use ctrl+o to pick from its models.", msg.Provider))
+		// After switching, automatically show the model picker so the user can
+		// choose which model to run with under the new provider.
+		a.showModelDialog = true
+		return a, tea.Batch(
+			util.ReportInfo(fmt.Sprintf("Provider switched to: %s. Loading its models…", msg.Provider)),
+			a.loadModels(),
+		)
 
 	case dialog.CloseProviderDialogMsg:
 		a.showProviderDialog = false
