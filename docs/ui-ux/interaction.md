@@ -42,6 +42,7 @@ binding is listed here; a surface that adds a binding adds a row.
 | `Ctrl+F` | Browse the workspace's files; picking one writes its path into the goal | App shell |
 | `Ctrl+L` | Show the client's own log | App shell |
 | `Ctrl+G` | Show the files this run changed | App shell |
+| `Ctrl+B` | Toggle the sidebar panel | App shell |
 | `Ctrl+N` | Start a new session | Composer |
 | `Ctrl+C` | Cancel the run in flight; with nothing running, ask before quitting | Any (reserved) |
 | `Ctrl+Q` | Ask before quitting | Any (reserved) |
@@ -51,6 +52,7 @@ binding is listed here; a surface that adds a binding adds a row.
 | `Up` / `Down` or `j` / `k` | Move the selection within the focused list | Lists |
 | `Left` / `Right` / `Tab` / `Shift+Tab` | Move the selection between the actions of a dialog | Approval, quit prompt, first-run offer |
 | `@` | Complete a file or folder path into the goal | Composer |
+| `/` | Complete a slash command or run a shortcut | Composer |
 | `Ctrl+E` | Open the goal in the external editor | Composer |
 | `PgUp` / `b` | Scroll the transcript up a page | Transcript |
 | `PgDn` / `f` | Scroll the transcript down a page | Transcript |

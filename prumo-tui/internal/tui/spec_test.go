@@ -54,6 +54,7 @@ func shellChords() map[string]string {
 	add("shell: theme", keys.SwitchTheme.Keys()...)
 	add("shell: logs", keys.Logs.Keys()...)
 	add("shell: changed files", keys.ChangedFiles.Keys()...)
+	add("shell: sidebar", keys.Sidebar.Keys()...)
 	add("shell: dismiss", returnKey.Keys()...)
 	add("shell: leave the log page", logsKeyReturnKey.Keys()...)
 	add("shell: toggle the keymap", helpEsc.Keys()...)
@@ -70,6 +71,7 @@ func shellChords() map[string]string {
 var componentChords = map[string]string{
 	"ctrl+n":    "page/chat.go: start a new session",
 	"@":         "page/chat.go: complete a path",
+	"/":         "page/chat.go: slash command completion",
 	"ctrl+s":    "components/chat/editor.go: send the message",
 	"enter":     "components/chat/editor.go: send the message",
 	"ctrl+e":    "components/chat/editor.go: open the goal in $EDITOR",

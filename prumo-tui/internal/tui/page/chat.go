@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -20,23 +21,39 @@ var ChatPage PageID = "chat"
 type chatPage struct {
 	app                  *app.App
 	editor               layout.Container
+	editorCmp            chat.EditorCmp
 	messages             layout.Container
+	sidebar              layout.Container
+	sidebarCmp           chat.SidebarCmp
+	showSidebar          bool
 	layout               layout.SplitPaneLayout
 	session              session.Session
 	completionDialog     dialog.CompletionDialog
+	filesProvider        dialog.CompletionProvider
+	slashProvider        dialog.CompletionProvider
 	showCompletionDialog bool
 }
 
 type ChatKeyMap struct {
-	ShowCompletionDialog key.Binding
-	NewSession           key.Binding
-	Cancel               key.Binding
+	ShowCompletionDialog   key.Binding
+	ShowCommandsCompletion key.Binding
+	ToggleSidebar          key.Binding
+	NewSession             key.Binding
+	Cancel                 key.Binding
 }
 
 var keyMap = ChatKeyMap{
 	ShowCompletionDialog: key.NewBinding(
 		key.WithKeys("@"),
-		key.WithHelp("@", "Complete"),
+		key.WithHelp("@", "complete files"),
+	),
+	ShowCommandsCompletion: key.NewBinding(
+		key.WithKeys("/"),
+		key.WithHelp("/", "slash commands"),
+	),
+	ToggleSidebar: key.NewBinding(
+		key.WithKeys("ctrl+b"),
+		key.WithHelp("ctrl+b", "toggle sidebar"),
 	),
 	NewSession: key.NewBinding(
 		key.WithKeys("ctrl+n"),
@@ -52,6 +69,7 @@ func (p *chatPage) Init() tea.Cmd {
 	cmds := []tea.Cmd{
 		p.layout.Init(),
 		p.completionDialog.Init(),
+		p.sidebar.Init(),
 	}
 	return tea.Batch(cmds...)
 }
@@ -69,22 +87,31 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// that shows whether the keyboard is on the page or on a dialog.
 		p.editor.SetFocused(msg.Focused)
 		return p, nil
+	case chat.ToggleSidebarMsg:
+		return p, p.toggleSidebar()
 	case chat.SendMsg:
 		return p, p.sendMessage(msg.Text)
 	case chat.SessionSelectedMsg:
-		if p.session.ID == "" {
-			p.setSidebar()
-		}
 		p.session = msg
+		p.sidebarCmp.UpdateSession(p.session)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.ShowCompletionDialog):
+			p.completionDialog.SetProvider(p.filesProvider)
 			p.showCompletionDialog = true
 			// Continue sending keys to layout->chat
+		case key.Matches(msg, keyMap.ShowCommandsCompletion):
+			val := strings.TrimSpace(p.editorCmp.Value())
+			if val == "" || val == "/" || strings.HasSuffix(val, "\n") {
+				p.completionDialog.SetProvider(p.slashProvider)
+				p.showCompletionDialog = true
+			}
+		case key.Matches(msg, keyMap.ToggleSidebar):
+			return p, p.toggleSidebar()
 		case key.Matches(msg, keyMap.NewSession):
 			p.session = session.Session{}
+			p.sidebarCmp.UpdateSession(p.session)
 			return p, tea.Batch(
-				p.clearSidebar(),
 				util.CmdHandler(chat.SessionClearedMsg{}),
 			)
 		case key.Matches(msg, keyMap.Cancel):
@@ -116,16 +143,22 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, tea.Batch(cmds...)
 }
 
-// setSidebar used to attach the file-change panel to the layout.
-//
-// Prumo's run timeline carries no file-change or diff events yet, so there is
-// nothing to attach and the layout keeps its single pane. This is a recorded gap
-// in the event vocabulary, not a styling choice: when the harness reports
-// changes, a panel belongs here again.
-func (p *chatPage) setSidebar() tea.Cmd { return nil }
+func (p *chatPage) toggleSidebar() tea.Cmd {
+	p.showSidebar = !p.showSidebar
+	if p.showSidebar {
+		return p.setSidebar()
+	}
+	return p.clearSidebar()
+}
 
-// clearSidebar detaches that panel. Nothing is attached, so nothing is detached.
-func (p *chatPage) clearSidebar() tea.Cmd { return nil }
+func (p *chatPage) setSidebar() tea.Cmd {
+	p.sidebarCmp.UpdateSession(p.session)
+	return p.layout.SetRightPanel(p.sidebar)
+}
+
+func (p *chatPage) clearSidebar() tea.Cmd {
+	return p.layout.ClearRightPanel()
+}
 
 // sendMessage starts a run for what was typed.
 //
@@ -207,25 +240,42 @@ func (p *chatPage) BindingKeys() []key.Binding {
 }
 
 func NewChatPage(app *app.App) tea.Model {
-	cg := completions.NewFileAndFolderContextGroup()
-	completionDialog := dialog.NewCompletionDialogCmp(cg)
+	filesProvider := completions.NewFileAndFolderContextGroup()
+	slashProvider := completions.NewSlashCommandContextGroup()
+	completionDialog := dialog.NewCompletionDialogCmp(filesProvider)
 
 	messagesContainer := layout.NewContainer(
 		chat.NewMessagesCmp(app),
 		layout.WithPadding(1, 1, 0, 1),
 	)
+
+	editorCmp := chat.NewEditorCmp(app).(chat.EditorCmp)
 	editorContainer := layout.NewContainer(
-		chat.NewEditorCmp(app),
+		editorCmp,
 		layout.WithBorder(true, false, false, false),
 	)
 	// The composer holds the keyboard when the page is first drawn; a dialog
 	// opening is what takes it away.
 	editorContainer.SetFocused(true)
+
+	sidebarCmp := chat.NewSidebarCmp(app)
+	sidebarContainer := layout.NewContainer(
+		sidebarCmp,
+		layout.WithBorder(false, false, false, true),
+		layout.WithPadding(0, 1, 0, 1),
+	)
+
 	return &chatPage{
-		app:              app,
-		editor:           editorContainer,
-		messages:         messagesContainer,
-		completionDialog: completionDialog,
+		app:                  app,
+		editor:               editorContainer,
+		editorCmp:            editorCmp,
+		messages:             messagesContainer,
+		sidebar:              sidebarContainer,
+		sidebarCmp:           sidebarCmp,
+		showSidebar:          false,
+		completionDialog:     completionDialog,
+		filesProvider:        filesProvider,
+		slashProvider:        slashProvider,
 		layout: layout.NewSplitPane(
 			layout.WithLeftPanel(messagesContainer),
 			layout.WithBottomPanel(editorContainer),

@@ -19,12 +19,23 @@ import (
 	"github.com/raillen/prumo-tui/internal/tui/util"
 )
 
+type EditorCmp interface {
+	tea.Model
+	layout.Sizeable
+	layout.Bindings
+	Value() string
+}
+
 type editorCmp struct {
 	width    int
 	height   int
 	app      *app.App
 	session  session.Session
 	textarea textarea.Model
+}
+
+func (m *editorCmp) Value() string {
+	return m.textarea.Value()
 }
 
 type EditorKeyMaps struct {

@@ -236,6 +236,20 @@ func (r *Runner) Update(modelID models.ModelID) (models.Model, error) {
 	return r.model, nil
 }
 
+// Provider reports which provider the runner was configured with.
+func (r *Runner) Provider() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.provider
+}
+
+// SetProvider changes which provider subsequent runs will request from the harness.
+func (r *Runner) SetProvider(provider string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.provider = provider
+}
+
 // IsBusy reports whether any run is in flight.
 func (r *Runner) IsBusy() bool {
 	r.mu.Lock()

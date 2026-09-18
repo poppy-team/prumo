@@ -21,6 +21,7 @@ type App struct {
 	Messages    message.Service
 	Permissions *permission.Service
 	CoderAgent  agent.Service
+	Provider    string
 	Workspace   string
 
 	// Runner is the harness-backed runner, kept for callers that need the
@@ -59,7 +60,24 @@ func New(opts Options) *App {
 		Messages:    messages,
 		Permissions: permissions,
 		CoderAgent:  runner,
+		Provider:    opts.Provider,
 		Workspace:   opts.Workspace,
 		Runner:      runner,
 	}
+}
+
+// SetProvider changes the active provider across app and runner.
+func (a *App) SetProvider(provider string) {
+	a.Provider = provider
+	if a.Runner != nil {
+		a.Runner.SetProvider(provider)
+	}
+}
+
+// CurrentProvider returns the currently active provider.
+func (a *App) CurrentProvider() string {
+	if a.Runner != nil {
+		return a.Runner.Provider()
+	}
+	return a.Provider
 }

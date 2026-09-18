@@ -45,6 +45,7 @@ type keyMap struct {
 	Models        key.Binding
 	SwitchTheme   key.Binding
 	ChangedFiles  key.Binding
+	Sidebar       key.Binding
 }
 
 const (
@@ -100,6 +101,11 @@ var keys = keyMap{
 	ChangedFiles: key.NewBinding(
 		key.WithKeys("ctrl+g"),
 		key.WithHelp("ctrl+g", "files this run changed"),
+	),
+
+	Sidebar: key.NewBinding(
+		key.WithKeys("ctrl+b"),
+		key.WithHelp("ctrl+b", "toggle sidebar"),
 	),
 }
 
@@ -168,6 +174,9 @@ type appModel struct {
 	showJobs bool
 	jobs     dialog.JobsDialog
 
+	showProviderDialog bool
+	providerDialog     dialog.ProviderDialog
+
 	// composerFocused is the focus the page was last told about, kept so the
 	// shell tells it when the answer changes rather than on every message.
 	composerFocused bool
@@ -175,6 +184,9 @@ type appModel struct {
 	// Init: the palette is built before there is a statusline to say it in.
 	commandsError error
 }
+
+// openProviderDialogMsg asks for the provider configuration dialog to be shown.
+type openProviderDialogMsg struct{}
 
 func (a appModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
@@ -210,6 +222,8 @@ func (a appModel) Init() tea.Cmd {
 	cmd = a.files.Init()
 	cmds = append(cmds, cmd)
 	cmd = a.jobs.Init()
+	cmds = append(cmds, cmd)
+	cmd = a.providerDialog.Init()
 	cmds = append(cmds, cmd)
 
 	// Check if we should show the init dialog
@@ -257,7 +271,7 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a appModel) dialogOpen() bool {
 	return a.showQuit || a.showOnboard || a.showPermissions || a.showHelp || a.showSessionDialog ||
 		a.showCommandDialog || a.showModelDialog || a.showInitDialog || a.showFilepicker ||
-		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs
+		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs || a.showProviderDialog
 }
 
 func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -320,6 +334,10 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		jobs, jobsCmd := a.jobs.Update(msg)
 		a.jobs = jobs.(dialog.JobsDialog)
 		cmds = append(cmds, jobsCmd)
+
+		prov, provCmd := a.providerDialog.Update(msg)
+		a.providerDialog = prov.(dialog.ProviderDialog)
+		cmds = append(cmds, provCmd)
 
 		a.initDialog.SetSize(msg.Width, msg.Height)
 
@@ -592,7 +610,38 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return a, util.CmdHandler(chat.SendMsg{Text: commands.Expand(command.Prompt, msg.Args)})
 
+	case dialog.ProviderSelectedMsg:
+		a.showProviderDialog = false
+		if a.app != nil {
+			a.app.SetProvider(msg.Provider)
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Provider switched to: %s. Use ctrl+o to pick from its models.", msg.Provider))
+
+	case dialog.CloseProviderDialogMsg:
+		a.showProviderDialog = false
+		return a, nil
+
+	case openProviderDialogMsg:
+		if a.app != nil {
+			a.providerDialog.SetCurrentProvider(a.app.CurrentProvider())
+		}
+		a.showProviderDialog = true
+		return a, nil
+
+	case chat.SendMsg:
+		trimmed := strings.TrimSpace(msg.Text)
+		if strings.HasPrefix(trimmed, "/") {
+			return a.handleSlashCommand(trimmed)
+		}
+
 	case tea.KeyPressMsg:
+		// If provider dialog is open, let it handle the key press first
+		if a.showProviderDialog {
+			d, provCmd := a.providerDialog.Update(msg)
+			a.providerDialog = d.(dialog.ProviderDialog)
+			return a, provCmd
+		}
+
 		// If multi-arguments dialog is open, let it handle the key press first
 		if a.showMultiArgumentsDialog {
 			args, cmd := a.multiArgumentsDialog.Update(msg)
@@ -669,6 +718,11 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.showThemeDialog = true
 				// Theme list is dynamically loaded by the dialog component
 				return a, a.themeDialog.Init()
+			}
+			return a, nil
+		case key.Matches(msg, keys.Sidebar):
+			if a.currentPage == page.ChatPage && !a.dialogOpen() {
+				return a, util.CmdHandler(chat.ToggleSidebarMsg{})
 			}
 			return a, nil
 		case key.Matches(msg, returnKey) || key.Matches(msg):
@@ -822,6 +876,15 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.themeDialog = d.(dialog.ThemeDialog)
 		cmds = append(cmds, themeCmd)
 		// Only block key messages send all other messages down
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
+	if a.showProviderDialog {
+		d, provCmd := a.providerDialog.Update(msg)
+		a.providerDialog = d.(dialog.ProviderDialog)
+		cmds = append(cmds, provCmd)
 		if _, ok := msg.(tea.KeyPressMsg); ok {
 			return a, tea.Batch(cmds...)
 		}
@@ -1320,6 +1383,21 @@ func (a appModel) viewString() string {
 		)
 	}
 
+	if a.showProviderDialog {
+		overlay := a.providerDialog.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(
+			col,
+			row,
+			overlay,
+			appView,
+			true,
+		)
+	}
+
 	if a.showMultiArgumentsDialog {
 		overlay := a.multiArgumentsDialog.View().Content
 		row := lipgloss.Height(appView) / 2
@@ -1422,6 +1500,7 @@ func New(app *app.App) tea.Model {
 		themeDialog:     dialog.NewThemeDialogCmp(),
 		files:           dialog.NewFilesDialogCmp(),
 		jobs:            dialog.NewJobsDialogCmp(),
+		providerDialog:  dialog.NewProviderDialogCmp(app.CurrentProvider()),
 		app:             app,
 		commands:        []dialog.Command{},
 		pages: map[page.PageID]tea.Model{
@@ -1500,10 +1579,137 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 			return util.ReportInfo("The harness compacts a run as it approaches its context budget; the client asks for nothing.")
 		},
 	})
+
+	model.RegisterCommand(dialog.Command{
+		ID:          "provider",
+		Title:       "Configure Provider",
+		Description: "Switch or view active LLM provider (opencode, anthropic, openai-compat, fake)",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			return func() tea.Msg { return openProviderDialogMsg{} }
+		},
+	})
+
 	// The command surface is the user's own directory of markdown prompts. It is
 	// theirs rather than the project's on purpose: a command is a prompt its
 	// author owns, and the client reads what the person running it wrote.
 	model.registerUserCommands()
 
 	return model
+}
+
+func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
+	parts := strings.Fields(raw)
+	if len(parts) == 0 {
+		return a, nil
+	}
+	name := strings.ToLower(parts[0])
+	args := parts[1:]
+
+	switch name {
+	case "/help", "/h", "/?":
+		a.showHelp = !a.showHelp
+		return a, nil
+
+	case "/model", "/models", "/m":
+		if len(args) > 0 {
+			targetModel := args[0]
+			model, err := a.app.CoderAgent.Update(models.ModelID(targetModel))
+			if err != nil {
+				return a, util.ReportFailure("Choosing the model", "pick another one with /models or ctrl+o", err)
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Model switched to: %s", model.Name))
+		}
+		a.showModelDialog = true
+		return a, a.loadModels()
+
+	case "/provider", "/providers", "/p":
+		if len(args) > 0 {
+			targetProvider := strings.ToLower(args[0])
+			if err := config.UpdateProvider(targetProvider); err != nil {
+				return a, util.ReportFailure("Updating provider", "", err)
+			}
+			if a.app != nil {
+				a.app.SetProvider(targetProvider)
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Provider switched to: %s", targetProvider))
+		}
+		if a.app != nil {
+			a.providerDialog.SetCurrentProvider(a.app.CurrentProvider())
+		}
+		a.showProviderDialog = true
+		return a, nil
+
+	case "/session", "/sessions", "/s":
+		sessions, err := a.app.Sessions.List(context.Background())
+		if err != nil {
+			return a, util.ReportFailure("Listing the runs", "send a goal to start a new one", err)
+		}
+		if len(sessions) == 0 {
+			return a, util.ReportWarn("No sessions available")
+		}
+		a.sessionDialog.SetSessions(sessions)
+		a.showSessionDialog = true
+		return a, nil
+
+	case "/theme", "/themes", "/t":
+		a.showThemeDialog = true
+		return a, a.themeDialog.Init()
+
+	case "/file", "/files", "/f":
+		a.showFilepicker = true
+		return a, nil
+
+	case "/diff", "/changes", "/c":
+		a.recordChanges()
+		a.showFiles = true
+		return a, nil
+
+	case "/job", "/jobs", "/schedule":
+		return a, func() tea.Msg { return openJobsMsg{} }
+
+	case "/sidebar", "/b":
+		return a, util.CmdHandler(chat.ToggleSidebarMsg{})
+
+	case "/init":
+		for _, cmd := range a.commands {
+			if cmd.ID == "init" {
+				return a, cmd.Handler(cmd)
+			}
+		}
+		return a, util.ReportWarn("Init command not available")
+
+	case "/export":
+		return a, util.CmdHandler(exportTimelineMsg{})
+
+	case "/compact":
+		return a, util.ReportInfo("The harness compacts a run as it approaches its context budget; the client asks for nothing.")
+
+	case "/new", "/clear":
+		a.selectedSession = session.Session{}
+		return a, tea.Batch(
+			util.CmdHandler(chat.SessionClearedMsg{}),
+			util.ReportInfo("Started new session"),
+		)
+
+	case "/log", "/logs", "/l":
+		return a, a.moveToPage(page.LogsPage)
+
+	case "/quit", "/exit", "/q":
+		a.showQuit = true
+		return a, nil
+
+	default:
+		trimmedName := strings.TrimPrefix(name, "/")
+		for _, cmd := range a.commands {
+			if cmd.ID == trimmedName || cmd.ID == "user:"+trimmedName {
+				if cmd.Handler != nil {
+					return a, cmd.Handler(cmd)
+				}
+				if cmd.Prompt != "" {
+					return a, util.CmdHandler(chat.SendMsg{Text: cmd.Prompt})
+				}
+			}
+		}
+		return a, util.ReportWarn(fmt.Sprintf("Unknown command: %s. Type /help for available commands.", name))
+	}
 }

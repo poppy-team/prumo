@@ -1,4 +1,4 @@
-# digest sha256:51693cf1f5ac6f8a
+# digest sha256:91195511f857bc69
                                                                                                                                             
  ┃ row 0 of the conversation                                                                                                                
                                                                                                                                             
@@ -6,24 +6,24 @@
                                                                                                                                             
  ┃ row 2 of the conversation                                                                                                                
                                                                                                                                             
- ┃ row 3 of the conversation                                                                                                                
-                                 ╭─────────────────────────────────────────────────────────────────────────╮                                
-                                 │                                                                         │░                               
-                                 │   Commands                                                              │░                               
-                                 │                                                                         │░                               
-                                 │   Initialize Project                                                    │░                               
-                                 │   Create or update AGENTS.md, the agent memory file                     │░                               
-                                 │   Scheduled runs                                                        │░                               
-                                 │   See what the daemon repeats on a schedule, and stop one               │░                               
-                                 │   Export the session's timeline                                         │░                               
-                                 │   Write the run's own record to .prumo/runtime/exports/ as plain text   │░                               
-                                 │   Compact Session                                                       │░                               
-                                 │   Who compacts this session's history                                   │░                               
-                                 │                                                                         │░                               
-                                 │                                                                         │░                               
-                                 ╰─────────────────────────────────────────────────────────────────────────╯░                               
-                                  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                               
-                                                                                                                                            
+ ┃ row 3 of the conversation╭───────────────────────────────────────────────────────────────────────────────────╮                           
+                            │                                                                                   │░                          
+                            │   Commands                                                                        │░                          
+                            │                                                                                   │░                          
+                            │   Initialize Project                                                              │░                          
+                            │   Create or update AGENTS.md, the agent memory file                               │░                          
+                            │   Scheduled runs                                                                  │░                          
+                            │   See what the daemon repeats on a schedule, and stop one                         │░                          
+                            │   Export the session's timeline                                                   │░                          
+                            │   Write the run's own record to .prumo/runtime/exports/ as plain text             │░                          
+                            │   Compact Session                                                                 │░                          
+                            │   Who compacts this session's history                                             │░                          
+                            │   Configure Provider                                                              │░                          
+                            │   Switch or view active LLM provider (opencode, anthropic, openai-compat, fake)   │░                          
+                            │                                                                                   │░                          
+                            │                                                                                   │░                          
+                            ╰───────────────────────────────────────────────────────────────────────────────────╯░                          
+                             ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                          
  press enter to send the message, write \ and enter to add a new line                                                                       
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  >                                                                                                                                          

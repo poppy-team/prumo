@@ -40,8 +40,13 @@ func (ci *CompletionItem) Render(selected bool, width int) string {
 			Bold(true)
 	}
 
+	display := ci.DisplayValue()
+	if display == "" {
+		display = ci.GetValue()
+	}
+
 	title := itemStyle.Render(
-		ci.GetValue(),
+		display,
 	)
 
 	return title
@@ -80,6 +85,7 @@ type CompletionDialog interface {
 	tea.Model
 	layout.Bindings
 	SetWidth(width int)
+	SetProvider(provider CompletionProvider)
 }
 
 type completionDialogCmp struct {
@@ -236,6 +242,17 @@ func (c *completionDialogCmp) viewString() string {
 
 func (c *completionDialogCmp) SetWidth(width int) {
 	c.width = width
+}
+
+func (c *completionDialogCmp) SetProvider(provider CompletionProvider) {
+	c.completionProvider = provider
+	c.query = ""
+	c.pseudoSearchTextArea.Reset()
+	items, err := provider.GetChildEntries("")
+	if err != nil {
+		logging.Error("Failed to get child entries", "error", err)
+	}
+	c.listView.SetItems(items)
 }
 
 func (c *completionDialogCmp) BindingKeys() []key.Binding {
