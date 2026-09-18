@@ -348,13 +348,20 @@ func (f *filepickerCmp) IsCWDFocused() bool {
 }
 
 func NewFilepickerCmp(app *app.App) FilepickerCmp {
-	homepath, err := os.UserHomeDir()
-	if err != nil {
-		logging.Error("error loading user files")
-		return nil
+	initialDir := ""
+	if app != nil && app.Workspace != "" {
+		initialDir = app.Workspace
 	}
-	baseDir := DirNode{parent: nil, directory: homepath}
-	dirs := readDir(homepath, false)
+	if initialDir == "" {
+		var err error
+		initialDir, err = os.UserHomeDir()
+		if err != nil {
+			logging.Error("error loading user files")
+			return nil
+		}
+	}
+	baseDir := DirNode{parent: nil, directory: initialDir}
+	dirs := readDir(initialDir, false)
 	viewport := viewport.New()
 	currentDirectory := textinput.New()
 	currentDirectory.CharLimit = 200
@@ -392,8 +399,6 @@ func (f *filepickerCmp) getCurrentFileBelowCursor() {
 }
 
 func readDir(path string, showHidden bool) []os.DirEntry {
-	logging.Info(fmt.Sprintf("Reading directory: %s", path))
-
 	entriesChan := make(chan []os.DirEntry, 1)
 	errChan := make(chan error, 1)
 

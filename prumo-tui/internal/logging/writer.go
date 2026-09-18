@@ -54,11 +54,13 @@ func (w *writer) Write(p []byte) (int, error) {
 		for d.ScanKeyval() {
 			switch string(d.Key()) {
 			case "time":
-				parsed, err := time.Parse(time.RFC3339, string(d.Value()))
+				parsed, err := time.Parse(time.RFC3339Nano, string(d.Value()))
 				if err != nil {
-					return 0, fmt.Errorf("parsing time: %w", err)
+					parsed, err = time.Parse(time.RFC3339, string(d.Value()))
 				}
-				msg.Time = parsed
+				if err == nil {
+					msg.Time = parsed
+				}
 			case "level":
 				msg.Level = strings.ToLower(string(d.Value()))
 			case "msg":

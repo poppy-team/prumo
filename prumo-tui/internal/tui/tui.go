@@ -1126,7 +1126,11 @@ func fitToTerminal(view string, width int) string {
 }
 
 // View renders the component for the terminal.
-func (a appModel) View() tea.View { return tea.NewView(a.viewString()) }
+func (a appModel) View() tea.View {
+	v := tea.NewView(a.viewString())
+	v.AltScreen = true
+	return v
+}
 func (a appModel) viewString() string {
 	components := []string{
 		a.pages[a.currentPage].View().Content,

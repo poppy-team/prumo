@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+func init() {
+	handler := slog.NewTextHandler(NewWriter(), &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(handler))
+}
+
 func getCaller() string {
 	var caller string
 	if _, file, line, ok := runtime.Caller(2); ok {
