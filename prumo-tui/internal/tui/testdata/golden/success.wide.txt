@@ -1,4 +1,4 @@
-# digest sha256:398478ffb9cf35bf
+# digest sha256:20ebb9cde905995b
                                                                                                                                             
  ┃ how does the client fold a run?                                                                                                          
                                                                                                                                             
@@ -28,4 +28,4 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  >                                                                                                                                          
                                                                                                                                             
- ctrl+? help  in 18.4K · cache 11.3K · out 760 · $0.0412 · ~$0.0412/req  2 changed                                                    fake  
+ ctrl+? help  in 18.4K · cache 11.3K · out 760 · $0.0412 · ~$0.0412/req  2 changed                                                   fake   

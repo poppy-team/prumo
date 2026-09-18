@@ -1,4 +1,4 @@
-# digest sha256:2a306ac5b6273090
+# digest sha256:03528d66ec9e8db3
                                                                                
  ┃ row 0 of the conversation                                                   
                                                                                
@@ -29,4 +29,4 @@
  >                                                                             
                                                                                
  ctrl+? help  in 0 · out 0 · $0.0000  the harness reported no budget           
- left…                              fake                                       
+ le…                               fake                                        

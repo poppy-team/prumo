@@ -44,6 +44,7 @@ type Config struct {
 	// (the first-run offer). A provider that arrived in an invocation is that
 	// invocation's decision and is not this file's to remember.
 	chosenProvider bool
+	chosenModel    bool
 	// MaxTurns bounds a run; zero means the harness default.
 	MaxTurns int
 	// SocketPath / RemoteAddr select how the client reaches the daemon.
@@ -118,6 +119,7 @@ type persisted struct {
 	// person; --provider still wins, because a flag is said now and this file
 	// was read earlier.
 	Provider string `json:"provider,omitempty"`
+	Model    string `json:"model,omitempty"`
 
 	Onboarded bool `json:"onboarded,omitempty"`
 }
@@ -166,6 +168,10 @@ func Load() error {
 		current.Provider = saved.Provider
 		current.chosenProvider = true
 	}
+	if saved.Model != "" && current.Model == "" {
+		current.Model = saved.Model
+		current.chosenModel = true
+	}
 	current.Onboarded = saved.Onboarded
 	return nil
 }
@@ -179,9 +185,15 @@ func save() error {
 		return err
 	}
 	mu.RLock()
-	saved := persisted{Theme: current.Theme, Onboarded: current.Onboarded}
+	saved := persisted{
+		Theme:     current.Theme,
+		Onboarded: current.Onboarded,
+	}
 	if current.chosenProvider {
 		saved.Provider = current.Provider
+	}
+	if current.chosenModel {
+		saved.Model = current.Model
 	}
 	data, err := json.Marshal(saved)
 	mu.RUnlock()
@@ -208,6 +220,18 @@ func UpdateProvider(name string) error {
 	mu.Lock()
 	current.Provider = name
 	current.chosenProvider = true
+	mu.Unlock()
+	return save()
+}
+
+// UpdateModel records the model chosen, so subsequent runs keep it.
+func UpdateModel(name string) error {
+	if name == "" {
+		return errors.New("a model name is required")
+	}
+	mu.Lock()
+	current.Model = name
+	current.chosenModel = true
 	mu.Unlock()
 	return save()
 }

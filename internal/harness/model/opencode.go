@@ -79,16 +79,32 @@ func (o *OpenCode) Capabilities() Capabilities {
 // user may not have: it is what the tool would offer, and a filtered list would
 // hide the reason a choice fails later.
 func (o *OpenCode) Models(ctx context.Context) ([]string, error) {
-	out, err := exec.CommandContext(ctx, o.binary(), "models").Output()
-	if err != nil {
-		return nil, fmt.Errorf("opencode models: %w", err)
+	out, err := exec.CommandContext(ctx, o.binary(), "models", "opencode").Output()
+	if err != nil || len(out) == 0 {
+		out, err = exec.CommandContext(ctx, o.binary(), "models").Output()
+		if err != nil {
+			return nil, fmt.Errorf("opencode models: %w", err)
+		}
 	}
 	var models []string
+	var hasOpencodePrefix bool
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.Contains(line, " ") {
+			if strings.HasPrefix(line, "opencode/") {
+				hasOpencodePrefix = true
+			}
 			models = append(models, line)
 		}
+	}
+	if hasOpencodePrefix {
+		filtered := make([]string, 0, len(models))
+		for _, m := range models {
+			if strings.HasPrefix(m, "opencode/") {
+				filtered = append(filtered, m)
+			}
+		}
+		models = filtered
 	}
 	sort.Strings(models)
 	return models, nil

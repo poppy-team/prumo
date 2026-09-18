@@ -1,4 +1,4 @@
-# digest sha256:757356a074047954
+# digest sha256:cdb52afbc603962f
                                                                                
  ◆ Prumo unknown                                                               
  https://github.com/raillen/prumo                                              
@@ -29,4 +29,4 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  >                                                                             
                                                                                
- ctrl+? help                                                             fake  
+ ctrl+? help                                                            fake   

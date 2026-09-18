@@ -1,4 +1,4 @@
-# digest sha256:aeb5e87cb9727992
+# digest sha256:b49212fb92a3f04d
                                                                                                                                             
  ┃ row 0 of the conversation                                                                                                                
                                                                                                                                             
@@ -28,4 +28,4 @@
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  >                                                                                                                                          
                                                                                                                                             
- ctrl+? help  in 0 · out 0 · $0.0000  Permission required: process.exec — a to allow, s for the session, d to deny                    fake  
+ ctrl+? help  in 0 · out 0 · $0.0000  Permission required: process.exec — a to allow, s for the session, d to deny                   fake   

@@ -542,7 +542,10 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			return a, util.ReportFailure("Choosing the model", "pick another one with ctrl+o", err)
 		}
-		return a, util.ReportInfo(fmt.Sprintf("Model: %s", model.Name))
+		if err := config.UpdateModel(msg.Model); err != nil {
+			logging.WarnPersist("could not save chosen model", "err", err)
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Model selected: %s", model.Name))
 
 	case dialog.CloseInitDialogMsg:
 		a.showInitDialog = false
@@ -620,6 +623,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showModelDialog = true
 		return a, tea.Batch(
 			util.ReportInfo(fmt.Sprintf("Provider switched to: %s. Loading its models…", msg.Provider)),
+			a.modelDialog.Init(),
 			a.loadModels(),
 		)
 
@@ -641,6 +645,13 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
+		// If model dialog is open, let it handle the key press first
+		if a.showModelDialog {
+			d, modelCmd := a.modelDialog.Update(msg)
+			a.modelDialog = d.(dialog.ModelDialog)
+			return a, modelCmd
+		}
+
 		// If provider dialog is open, let it handle the key press first
 		if a.showProviderDialog {
 			d, provCmd := a.providerDialog.Update(msg)
@@ -704,7 +715,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if a.currentPage == page.ChatPage && !a.showQuit && !a.showPermissions && !a.showSessionDialog && !a.showCommandDialog {
 				a.showModelDialog = true
-				return a, a.loadModels()
+				return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
 			}
 			return a, nil
 		case key.Matches(msg, keys.ChangedFiles):
@@ -1628,10 +1639,11 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return a, util.ReportFailure("Choosing the model", "pick another one with /models or ctrl+o", err)
 			}
+			_ = config.UpdateModel(targetModel)
 			return a, util.ReportInfo(fmt.Sprintf("Model switched to: %s", model.Name))
 		}
 		a.showModelDialog = true
-		return a, a.loadModels()
+		return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
 
 	case "/provider", "/providers", "/p":
 		if len(args) > 0 {
