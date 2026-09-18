@@ -18,6 +18,9 @@ type ModelSelectedMsg struct{ Model string }
 // CloseModelDialogMsg asks the shell to stop showing the dialog.
 type CloseModelDialogMsg struct{}
 
+// LoadingModelsMsg indicates that models are currently being fetched.
+type LoadingModelsMsg struct{}
+
 // ModelsLoadedMsg carries what the harness said a provider can serve.
 type ModelsLoadedMsg struct {
 	Info   map[string]runtime.ModelCapabilities
@@ -40,9 +43,10 @@ type modelDialogCmp struct {
 	models        []string
 	// info is what each model declares it can do, by id. A model with no entry
 	// is one nobody declared — not one that was measured and found wanting.
-	info   map[string]runtime.ModelCapabilities
-	cursor int
-	err    error
+	info    map[string]runtime.ModelCapabilities
+	cursor  int
+	err     error
+	loading bool
 }
 
 // NewModelDialogCmp returns an empty picker; the list arrives as a message.
@@ -58,7 +62,12 @@ func (m *modelDialogCmp) SetSize(width, height int) tea.Cmd {
 
 func (m *modelDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case LoadingModelsMsg:
+		m.loading = true
+		m.err = nil
+		return m, nil
 	case ModelsLoadedMsg:
+		m.loading = false
 		m.err = msg.Err
 		m.models = msg.Models
 		m.cursor = 0
@@ -116,6 +125,9 @@ func (m *modelDialogCmp) viewString() string {
 
 	rows := make([]string, 0, len(m.models)+1)
 	switch {
+	case m.loading:
+		rows = append(rows, baseStyle.Foreground(t.TextMuted()).Width(width).
+			Render("Loading models from provider (may take 10-20 seconds)..."))
 	case m.err != nil:
 		rows = append(rows, baseStyle.Foreground(t.Error()).Width(width).
 			Render("Could not read the model list: "+m.err.Error()))

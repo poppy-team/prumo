@@ -527,7 +527,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showInitDialog = msg.Show
 		return a, nil
 
-	case dialog.ModelsLoadedMsg:
+	case dialog.LoadingModelsMsg, dialog.ModelsLoadedMsg:
 		d, cmd := a.modelDialog.Update(msg)
 		a.modelDialog = d.(dialog.ModelDialog)
 		return a, cmd
@@ -1163,15 +1163,20 @@ func (a *appModel) attach(sessionID string) tea.Cmd {
 func (a *appModel) loadModels() tea.Cmd {
 	runner := a.app.Runner
 	provider := config.Get().Provider
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		// The list and what each model can do come from the same operation: a
-		// picker that offered names without features would ask a user to know
-		// which models see by heart.
-		models, info, err := runner.ModelCatalogue(ctx, provider)
-		return dialog.ModelsLoadedMsg{Models: models, Info: info, Err: err}
-	}
+	return tea.Sequence(
+		func() tea.Msg {
+			return dialog.LoadingModelsMsg{}
+		},
+		func() tea.Msg {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			// The list and what each model can do come from the same operation: a
+			// picker that offered names without features would ask a user to know
+			// which models see by heart.
+			models, info, err := runner.ModelCatalogue(ctx, provider)
+			return dialog.ModelsLoadedMsg{Models: models, Info: info, Err: err}
+		},
+	)
 }
 
 // fitToTerminal trims every line to the terminal and marks each cut.
