@@ -40,28 +40,32 @@ func runTui(asJSON bool, args []string) int {
 	cmd.Stderr = os.Stderr
 	cmd.Env = os.Environ()
 	if err := cmd.Run(); err != nil {
-		return serviceError(asJSON, fmt.Errorf("prumo-agent-tui: %w", err))
+		return serviceError(asJSON, fmt.Errorf("prumo agent: %w", err))
 	}
 	return exitOK
 }
 
 // tuiBinary resolves the client executable.
 //
-// PRUMO_TUI_BIN wins so a second build can be named explicitly; otherwise the
-// sibling of this binary is used, which is what a normal install produces; a
-// PATH lookup is the last resort for a client installed on its own.
+// PRUMO_AGENT_BIN / PRUMO_TUI_BIN wins so a second build can be named explicitly;
+// otherwise sibling `pa` (or `prumo-agent`) is used; PATH lookup is the last resort.
 func tuiBinary() (string, error) {
+	if fromEnv := strings.TrimSpace(os.Getenv("PRUMO_AGENT_BIN")); fromEnv != "" {
+		return fromEnv, nil
+	}
 	if fromEnv := strings.TrimSpace(os.Getenv("PRUMO_TUI_BIN")); fromEnv != "" {
 		return fromEnv, nil
 	}
-	if exe, err := os.Executable(); err == nil {
-		sibling := filepath.Join(filepath.Dir(exe), "prumo-agent-tui")
-		if _, err := os.Stat(sibling); err == nil {
-			return sibling, nil
+	for _, name := range []string{"pa", "prumo-agent", "prumo-agent-tui"} {
+		if exe, err := os.Executable(); err == nil {
+			sibling := filepath.Join(filepath.Dir(exe), name)
+			if _, err := os.Stat(sibling); err == nil {
+				return sibling, nil
+			}
+		}
+		if path, err := exec.LookPath(name); err == nil {
+			return path, nil
 		}
 	}
-	if path, err := exec.LookPath("prumo-agent-tui"); err == nil {
-		return path, nil
-	}
-	return "", fmt.Errorf("the terminal client is a separate binary: install `prumo-agent-tui`, or set PRUMO_TUI_BIN (protocol %s)", protocol.CLIVersion)
+	return "", fmt.Errorf("the terminal client is a separate binary: install `pa` (or `prumo-agent`), or set PRUMO_AGENT_BIN (protocol %s)", protocol.CLIVersion)
 }

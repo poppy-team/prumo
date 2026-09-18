@@ -14,7 +14,7 @@ func TestD2ToolCLI(t *testing.T) {
 	}
 
 	// Tool list
-	cmdList := exec.Command("go", "run", "./cmd/prumo-agent", "tool", "list")
+	cmdList := exec.Command("go", "run", "./cmd/prumo", "tool", "list")
 	cmdList.Dir = projectRoot
 	outList, err := cmdList.CombinedOutput()
 	if err != nil {
@@ -25,7 +25,7 @@ func TestD2ToolCLI(t *testing.T) {
 	}
 
 	// Tool inspect
-	cmdInspect := exec.Command("go", "run", "./cmd/prumo-agent", "--json", "tool", "inspect", "read_file")
+	cmdInspect := exec.Command("go", "run", "./cmd/prumo", "--json", "tool", "inspect", "read_file")
 	cmdInspect.Dir = projectRoot
 	outInspect, err := cmdInspect.CombinedOutput()
 	if err != nil {
@@ -36,7 +36,7 @@ func TestD2ToolCLI(t *testing.T) {
 	}
 
 	// Tool evaluate allowed
-	cmdEvalOK := exec.Command("go", "run", "./cmd/prumo-agent", "tool", "evaluate", "read_file", projectRoot)
+	cmdEvalOK := exec.Command("go", "run", "./cmd/prumo", "tool", "evaluate", "read_file", projectRoot)
 	cmdEvalOK.Dir = projectRoot
 	outEvalOK, err := cmdEvalOK.CombinedOutput()
 	if err != nil {
@@ -54,7 +54,7 @@ func TestD2ModelCLI(t *testing.T) {
 	}
 
 	// Model list
-	cmdList := exec.Command("go", "run", "./cmd/prumo-agent", "model", "list")
+	cmdList := exec.Command("go", "run", "./cmd/prumo", "model", "list")
 	cmdList.Dir = projectRoot
 	outList, err := cmdList.CombinedOutput()
 	if err != nil {
@@ -65,7 +65,7 @@ func TestD2ModelCLI(t *testing.T) {
 	}
 
 	// Model route with restricted data class
-	cmdRoute := exec.Command("go", "run", "./cmd/prumo-agent", "--json", "model", "route", "--data-class", "restricted", "--tools")
+	cmdRoute := exec.Command("go", "run", "./cmd/prumo", "--json", "model", "route", "--data-class", "restricted", "--tools")
 	cmdRoute.Dir = projectRoot
 	outRoute, err := cmdRoute.CombinedOutput()
 	if err != nil {
@@ -82,7 +82,7 @@ func TestD2EnvCLI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmdEnv := exec.Command("go", "run", "./cmd/prumo-agent", "env", "list")
+	cmdEnv := exec.Command("go", "run", "./cmd/prumo", "env", "list")
 	cmdEnv.Dir = projectRoot
 	outEnv, err := cmdEnv.CombinedOutput()
 	if err != nil {
@@ -100,7 +100,7 @@ func TestBuiltinToolCLI(t *testing.T) {
 	}
 
 	// Tool list includes scan-secrets and analyze-complexity
-	cmdList := exec.Command("go", "run", "./cmd/prumo-agent", "tool", "list")
+	cmdList := exec.Command("go", "run", "./cmd/prumo", "tool", "list")
 	cmdList.Dir = projectRoot
 	outList, err := cmdList.CombinedOutput()
 	if err != nil {
@@ -113,7 +113,7 @@ func TestBuiltinToolCLI(t *testing.T) {
 	}
 
 	// Tool stride
-	cmdStride := exec.Command("go", "run", "./cmd/prumo-agent", "--json", "tool", "stride", "OrderService")
+	cmdStride := exec.Command("go", "run", "./cmd/prumo", "--json", "tool", "stride", "OrderService")
 	cmdStride.Dir = projectRoot
 	outStride, err := cmdStride.CombinedOutput()
 	if err != nil {
@@ -124,7 +124,7 @@ func TestBuiltinToolCLI(t *testing.T) {
 	}
 
 	// Tool security-checklist
-	cmdChecklist := exec.Command("go", "run", "./cmd/prumo-agent", "tool", "security-checklist", "42")
+	cmdChecklist := exec.Command("go", "run", "./cmd/prumo", "tool", "security-checklist", "42")
 	cmdChecklist.Dir = projectRoot
 	outChecklist, err := cmdChecklist.CombinedOutput()
 	if err != nil {
@@ -136,7 +136,7 @@ func TestBuiltinToolCLI(t *testing.T) {
 
 	// Tool check-permissions (on temporary clean dir)
 	tempDir := t.TempDir()
-	cmdPerm := exec.Command("go", "run", "./cmd/prumo-agent", "tool", "check-permissions", tempDir)
+	cmdPerm := exec.Command("go", "run", "./cmd/prumo", "tool", "check-permissions", tempDir)
 	cmdPerm.Dir = projectRoot
 	outPerm, err := cmdPerm.CombinedOutput()
 	if err != nil {
@@ -147,7 +147,7 @@ func TestBuiltinToolCLI(t *testing.T) {
 	}
 
 	// Tool check-escape-hatches (on temporary clean dir)
-	cmdHatch := exec.Command("go", "run", "./cmd/prumo-agent", "tool", "check-escape-hatches", tempDir)
+	cmdHatch := exec.Command("go", "run", "./cmd/prumo", "tool", "check-escape-hatches", tempDir)
 	cmdHatch.Dir = projectRoot
 	outHatch, err := cmdHatch.CombinedOutput()
 	if err != nil {

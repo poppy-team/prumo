@@ -769,7 +769,7 @@
     "claims": [
       {
         "id": "CLAIM-PRUMO-CLI-SURFACE",
-        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo-agent/help.go`.",
+        "statement": "`docs/reference/cli.md` documents the command surface exposed by `cmd/prumo/help.go`.",
         "status": "accepted",
         "authority": "canonical-documentation",
         "revision": 1,
@@ -793,7 +793,7 @@
             "revision": "1",
             "producer": "prumo-maintained",
             "verified": true,
-            "artifact": "cmd/prumo-agent/help.go"
+            "artifact": "cmd/prumo/help.go"
           }
         ]
       },

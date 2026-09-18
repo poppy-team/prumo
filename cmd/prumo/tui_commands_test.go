@@ -23,7 +23,7 @@ func TestTuiBinaryResolution(t *testing.T) {
 	if err == nil {
 		t.Fatal("a missing client binary must be reported, not silently ignored")
 	}
-	if !strings.Contains(err.Error(), "PRUMO_TUI_BIN") || !strings.Contains(err.Error(), "prumo-agent-tui") {
+	if !strings.Contains(err.Error(), "PRUMO_AGENT_BIN") || !strings.Contains(err.Error(), "prumo-agent") {
 		t.Fatalf("the error does not say how to fix it: %v", err)
 	}
 }

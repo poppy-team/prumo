@@ -47,9 +47,11 @@ func defaultSocket(root string) string {
 
 func runAgent(asJSON bool, args []string) int {
 	if len(args) == 0 {
-		return exitUsage
+		return runTui(asJSON, nil)
 	}
 	switch args[0] {
+	case "tui":
+		return runTui(asJSON, args[1:])
 	case "run":
 		return runAgentRun(asJSON, args[1:])
 	case "resume":
@@ -93,6 +95,9 @@ func runAgent(asJSON bool, args []string) int {
 	case "diff":
 		return runAgentDiff(asJSON, args[1:])
 	default:
+		if strings.HasPrefix(args[0], "-") {
+			return runTui(asJSON, args)
+		}
 		return exitUsage
 	}
 }

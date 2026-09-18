@@ -14,7 +14,7 @@ import (
 // run is lost beyond its last atomic record by design.
 func TestDaemonKillRecovery(t *testing.T) {
 	bin := filepath.Join(t.TempDir(), "prumo-test")
-	build := exec.Command("go", "build", "-o", bin, "./cmd/prumo-agent")
+	build := exec.Command("go", "build", "-o", bin, "./cmd/prumo")
 	build.Dir = "../.."
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %s %v", out, err)

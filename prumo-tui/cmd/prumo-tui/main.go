@@ -1,7 +1,7 @@
-// Command prumo-tui is the Prumo terminal client.
+// Command prumo-agent is the Prumo interactive coding agent terminal interface.
 //
 // It is a client of the harness: it supervises (or attaches to) a
-// `prumo agent serve` daemon and drives it over the agent protocol. It imports
+// `prumo-harness agent serve` daemon and drives it over the agent protocol. It imports
 // the public SDK and nothing from the core's internal tree — the module
 // boundary is what makes that true rather than merely intended.
 package main
@@ -54,7 +54,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Println("prumo-agent-tui", Version)
+		fmt.Println("prumo-agent", Version)
 		return
 	}
 
@@ -70,7 +70,7 @@ func main() {
 	// What the client wrote down for itself — its palette, so far — is read
 	// before the flags, so an explicit flag still wins over the last session.
 	if err := config.Load(); err != nil {
-		fmt.Fprintln(os.Stderr, "prumo-tui: ignoring the client's own settings:", err)
+		fmt.Fprintln(os.Stderr, "prumo-agent: ignoring the client's own settings:", err)
 	}
 
 	cfg := *config.Get()
@@ -220,22 +220,29 @@ func startDaemon(workspace, socket string) (func(), error) {
 	}, nil
 }
 
-// prumoBinary resolves the daemon binary. PRUMO_BIN wins so a second build can
-// be named explicitly; otherwise the sibling of this executable is used.
+// prumoBinary resolves the harness daemon binary. PRUMO_HARNESS_BIN and PRUMO_BIN win so a build can
+// be named explicitly; otherwise prumo-harness (or legacy prumo-agent) as sibling or in PATH is used.
 func prumoBinary() (string, error) {
-	if fromEnv := os.Getenv("PRUMO_BIN"); fromEnv != "" {
-		return fromEnv, nil
-	}
-	if exe, err := os.Executable(); err == nil {
-		sibling := filepath.Join(filepath.Dir(exe), "prumo-agent")
-		if _, err := os.Stat(sibling); err == nil {
-			return sibling, nil
+	for _, env := range []string{"PRUMO_BIN", "PRUMO_HARNESS_BIN"} {
+		if fromEnv := os.Getenv(env); fromEnv != "" {
+			return fromEnv, nil
 		}
 	}
-	if path, err := exec.LookPath("prumo-agent"); err == nil {
-		return path, nil
+	candidates := []string{"prumo", "prumo-harness", "prumo-agent"}
+	if exe, err := os.Executable(); err == nil {
+		for _, name := range candidates {
+			sibling := filepath.Join(filepath.Dir(exe), name)
+			if _, err := os.Stat(sibling); err == nil {
+				return sibling, nil
+			}
+		}
 	}
-	return "", fmt.Errorf("no prumo-agent binary found: set PRUMO_BIN or put `prumo-agent` on PATH")
+	for _, name := range candidates {
+		if path, err := exec.LookPath(name); err == nil {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("no prumo binary found: set PRUMO_BIN or put `prumo` on PATH")
 }
 
 // waitForDaemon calls the daemon rather than sleeping: readiness is the thing
@@ -281,6 +288,6 @@ func envEnabled(name string) bool {
 }
 
 func fail(err error) {
-	fmt.Fprintln(os.Stderr, "prumo-tui:", err)
+	fmt.Fprintln(os.Stderr, "prumo-agent:", err)
 	os.Exit(1)
 }

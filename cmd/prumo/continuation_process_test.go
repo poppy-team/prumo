@@ -14,12 +14,12 @@ func TestPortableContinuationAcrossProcesses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	create := exec.Command("go", "run", "./cmd/prumo-agent", "run", "--run", "R-PROCESS", "--path", root)
+	create := exec.Command("go", "run", "./cmd/prumo", "run", "--run", "R-PROCESS", "--path", root)
 	create.Dir = projectRoot
 	if output, err := create.CombinedOutput(); err != nil {
 		t.Fatalf("create: %v %s", err, output)
 	}
-	continueCmd := exec.Command("go", "run", "./cmd/prumo-agent", "continue", "--run", "R-PROCESS", "--path", root, "--prompt")
+	continueCmd := exec.Command("go", "run", "./cmd/prumo", "continue", "--run", "R-PROCESS", "--path", root, "--prompt")
 	continueCmd.Dir = projectRoot
 	continueCmd.Env = append(os.Environ(), "PRUMO_REPO_ROOT="+projectRoot)
 	output, err := continueCmd.CombinedOutput()

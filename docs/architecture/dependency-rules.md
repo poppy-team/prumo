@@ -62,7 +62,7 @@ internal/app          → MAY import: internal/protocol, internal/project, inter
 
 ### 3. CLI Layer
 ```
-cmd/prumo-agent       → MAY import: internal/app, internal/protocol
+cmd/prumo             → MAY import: internal/app, internal/protocol
                        → MUST NOT import: any internal/* besides app + protocol
 ```
 

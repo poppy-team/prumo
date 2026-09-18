@@ -674,9 +674,13 @@ var commandRegistry = map[string]CommandInfo{
 	"agent": {
 		Name:        "agent",
 		Category:    "Harness",
-		Summary:     "Headless Prumo-native agent harness (run/serve/ps/logs/events/...)",
-		Usage:       "prumo agent <run|resume|handoff|events|protocol|serve|ps|logs|steer|approve|deny|stop|schedule|unschedule|jobs|promote|acp|gc|providers|models> [flags]",
-		Description: "Runs the NativeAgent state machine headlessly: context, model, tools, permissions, checkpoints. Provider-neutral (fake|fake-tools|openai-compat|anthropic|opencode); external agents via AgentProvider adapters. `opencode` delegates the whole turn to the opencode CLI, which runs it with its own tools and its own authentication — including the models it serves for free. A run that needs approval stops with status awaiting_approval and is answered with approve/deny.",
+		Summary:     "Interactive coding agent TUI or headless harness (run/serve/ps/logs/...)",
+		Usage:       "prumo agent [subcommand|flags]",
+		Description: "Without subcommands, launches the interactive terminal coding agent (TUI). " +
+			"With subcommands, runs the NativeAgent state machine headlessly: context, model, tools, permissions, checkpoints. " +
+			"Provider-neutral (fake|fake-tools|openai-compat|anthropic|opencode); external agents via AgentProvider adapters. " +
+			"`opencode` delegates the whole turn to the opencode CLI, which runs it with its own tools and its own authentication — including the models it serves for free. " +
+			"A run that needs approval stops with status awaiting_approval and is answered with approve/deny.",
 		Flags: []string{
 			"--goal <text>        Goal for agent run (default: headless run)",
 			"--path <dir>         Workspace root (default: .)",
@@ -845,9 +849,9 @@ func PrintGeneralHelp(asJSON bool) int {
 		}))
 	}
 
-	fmt.Printf("Prumo Agent CLI v%s\n\n", protocol.CLIVersion)
+	fmt.Printf("Prumo CLI v%s\n\n", protocol.CLIVersion)
 	fmt.Println("Usage:")
-	fmt.Println("  prumo-agent [--json] [--home <path>] <command> [subcommand] [flags]")
+	fmt.Println("  prumo [--json] [--home <path>] <command> [subcommand] [flags]")
 	fmt.Println()
 
 	catMap := map[string][]CommandInfo{}
@@ -879,8 +883,9 @@ func PrintGeneralHelp(asJSON bool) int {
 	fmt.Println("  prumo tool check-escape-hatches .")
 	fmt.Println("  prumo compile --target antigravity --path ./my-project")
 	fmt.Println("  prumo doctor ./my-project")
+	fmt.Println("  prumo agent                     # launch interactive agent TUI")
 	fmt.Println()
-	fmt.Println("Run 'prumo-agent <command> --help' or 'prumo-agent help <command>' for detailed help on any command.")
+	fmt.Println("Run 'prumo <command> --help' or 'prumo help <command>' for detailed help on any command.")
 	return exitOK
 }
 
