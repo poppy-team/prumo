@@ -7128,6 +7128,92 @@
       "instructions": "---\nname: process-execution-security\ndescription: Command injection elimination, strict binary allowlisting, sanitized environment variables, execution timeouts, and process group reaping\n---\n# Subprocess & Execution Security\n\n## 1. Command Injection Elimination\nNever pass raw formatted strings to a shell interpreter (/bin/sh -c, cmd.exe). Always execute commands using direct argument vectors (exec.Command(binary, arg1, arg2)) where arguments are passed as isolated strings without shell parsing.\n\n## 2. Strict Binary Allowlisting\nExecute only binaries present on an explicit, pre-approved project allowlist (e.g. git, go, npm, cargo, prumo). Reject execution of arbitrary or user-specified binaries not registered in the project capability policy.\n\n## 3. Environment Variable Sanitization\nNever inherit the full environment of the parent process. Construct an isolated environment slice containing only necessary, sanitized variables (e.g. PATH, HOME, LANG). Strip API keys, tokens, and credentials.\n\n## 4. Working Directory Confinement\nConfine subprocess execution strictly within the current project repository root directory. Validate that the working directory exists and is owned by the current user before launching.\n\n## 5. Mandatory Execution Timeouts\nAlways bind subprocess lifecycles to an explicit context with timeout (context.WithTimeout). Default to a 60-second limit for developer commands and 10 seconds for diagnostics, preventing runaway deadlocks.\n\n## 6. Output Buffer Limiting\nWrap stdout and stderr capture buffers with bounded readers (io.LimitReader) to prevent unbounded subprocess output from consuming all system RAM.\n\n## 7. Privilege Demotion\nExecute all subprocesses under the current unprivileged user. Explicitly forbid execution under root/superuser accounts. Block commands attempting sudo, su, or setuid elevation.\n\n## 8. Process Group Cleanup & Orphan Reaping\nConfigure child processes with a dedicated process group (Setpgid: true). On cancellation or timeout, send SIGKILL to the entire process group (-pgid) to guarantee zero orphaned background processes.\n\n## 9. Banned Construct Scanners\nRun automated static checks across the project codebase to detect and ban dangerous dynamic execution functions (eval(), exec(), system(), popen(), Function()).\n\n## 10. Process Audit Journal\nLog every command invocation to .prumo/history/journal.json: capture binary name, sanitized argument list, working directory, start time, duration, exit code, and captured error output.\n"
     },
     {
+      "id": "project-documentation-architect",
+      "name": "Project Documentation Architect",
+      "version": 1,
+      "schema_version": 2,
+      "purpose": "Build and maintain implementation-ready bilingual living project documentation with least-workforce orchestration across GENESIS, ADOPTION, and DELTA modes.",
+      "risk_level": "low",
+      "modes": [
+        "documentation",
+        "research",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "User intent or project briefing",
+        "Repository snapshot (ADOPTION/DELTA)",
+        "Existing docs/project-docs.json manifest when present"
+      ],
+      "outputs": [
+        "docs/project-docs.json manifest",
+        "Canonical en-US documents plus synchronized pt-BR versions",
+        "Documentation delta record",
+        "Handoff microcontexts"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/modes.md",
+        "references/profiles.md",
+        "references/bilingual.md",
+        "references/orchestration.md"
+      ],
+      "templates": [
+        "templates/project-docs.json",
+        "templates/adr.md",
+        "templates/microcontext.md"
+      ],
+      "checks": [
+        "checks/pre-flight.md",
+        "checks/post-flight.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/tiny-cli.md"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "stop_conditions": [
+        "Required contracts at implementation-ready with acceptance criteria",
+        "No unresolved CONTRADICTION records",
+        "Required pt-BR pairs at CURRENT or IN_REVIEW",
+        "Token budget exhausted",
+        "Blocked on missing source or human decision"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "Apache-2.0",
+        "source": "prumo",
+        "version": "0.6.0",
+        "checksum": "",
+        "modified": "2026-09-19"
+      },
+      "select": {
+        "features_any": [
+          "documentation",
+          "architecture",
+          "onboarding",
+          "greenfield",
+          "adoption",
+          "handoff",
+          "localization"
+        ]
+      },
+      "requires_any": [],
+      "tools": [],
+      "instructions": "# Project Documentation Architect\n\nBuild and maintain implementation-ready, living project documentation \u2014\nproduct, architecture, contracts, evidence, quality gates \u2014 in canonical\n`en-US` plus synchronized `pt-BR`, with the least workforce sufficient.\nPortable core: `~/project-documentation-architect/` (agentskills.io format);\nthis package is the Prumo-native adapter of that core.\n\n## Purpose\nTurn `idea -> context -> requirements -> research -> decisions ->\ncontracts -> documentation -> readiness -> execution -> evidence ->\ndelta -> continuous maintenance`, producing a versioned, evidence-backed\ndocumentation system (not a pile of Markdown) that lets future agents work\nwithout rediscovering everything.\n\n## Use when\nCreating, initializing, bootstrapping, adopting, or formally planning a\nsoftware project before substantial implementation begins; adopting an\nexisting repo that lacks adequate docs; maintaining docs of an already\ndocumented project (delta); or when asked for an implementation bible,\nliving book, full architecture, or agent handoff documentation.\n\n## Do not use when\nSingle-function bug fixes, trivial edits inside an already documented\nproject, explicitly disposable one-off scripts, or pure code review with\nno documentation mandate. For small changes inside documented projects,\nrun Mode DELTA only.\n\n## Required context\n- User intent or briefing (GENESIS) or repo snapshot (ADOPTION/DELTA).\n- Detected documentation profiles (see `references/profiles.md`).\n- `docs/project-docs.json` manifest when it already exists; create it first\n  when it does not (template: `templates/project-docs.json`).\n\n## Procedure\n1. Select mode: GENESIS (no trusted docs yet), ADOPTION (repo exists, docs\n   missing/partial/untrusted \u2014 inspect code, tests, CI, config, runtime\n   first, then write a Gap Matrix and fix only the delta), DELTA (docs exist\n   \u2014 update only impacted capabilities, contracts, tests, docs, risks,\n   migrations, translations). Detail: `references/modes.md`.\n2. Detect profiles and resolve the mandatory contract pack per profile\n   (`references/profiles.md`). Write/update `docs/project-docs.json` first:\n   identity, profiles, contracts, semantic roles, statuses, owners.\n3. Select the least workforce sufficient (`references/orchestration.md`):\n   tiny CLI = orchestrator + architect + one documenter + translator;\n   add product, research, UI/UX, a11y, security, performance, dependency,\n   ADR, traceability, parity-review, audit roles only as profiles demand.\n   Never assign two writers to the same canonical artifact concurrently.\n4. Draft canonical `en-US` docs, then translate impacted pairs to `pt-BR`,\n   then parity-review (`references/bilingual.md`). Technical errors found\n   during translation are fixed in `en-US` first and re-propagated \u2014 never\n   patch `pt-BR` alone.\n5. Run `scripts/verify.sh`, complete `checks/post-flight.md`, and record a\n   documentation delta (changed capabilities/contracts, impacted\n   docs/tests/translations, severity, requires_review).\n\n## Decision rules\n- Never invent features, requirements, commands, APIs, benchmarks, files,\n  or decisions. Unknowns become OPEN, ASSUMPTION, RESEARCH REQUIRED, or\n  BLOCKING QUESTION.\n- Material claims need `claim -> source -> evidence -> verification ->\n  decision`. `verified`, `safe`, `complete`, and `done` are forbidden\n  without verifiable semantics.\n- Depth follows `complexity + risk + impact + irreversibility`. No empty\n  checklist files; group content for simple projects.\n- Human-approved decisions outrank inference; real behavior + valid tests\n  + approved contracts outrank unverified assertions.\n- Contradictions are preserved as CONTRADICTION records (both claims plus\n  evidence) and resolved via the authority model or the human \u2014 never\n  merged silently.\n\n## Evidence required\n- Automated test runs, build outputs, or verification logs where the skill\n  touches behavior; `scripts/verify.sh` output for documentation runs.\n- Every normative MUST links to an acceptance criterion plus a test pointer.\n- Required evidence for sign-off: `review` (and `test` when implementation\n  or executable checks are involved).\n\n## Output contract\n- Updated `docs/project-docs.json` manifest.\n- Canonical `en-US` documents plus synchronized `pt-BR` versions for every\n  required pair (states CURRENT or IN_REVIEW, never silent STALE).\n- Documentation delta record plus handoff microcontexts (one loadable\n  context per work stream \u2014 never a full dump).\n- Completed `checks/post-flight.md`; residual risks and open questions\n  recorded explicitly.\n"
+    },
+    {
       "id": "project-intelligence",
       "name": "Project Intelligence",
       "version": 1,
