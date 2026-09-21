@@ -200,6 +200,8 @@ func run(args []string) int {
 		return runAgent(asJSON, rest[1:])
 	case "tui":
 		return runTui(asJSON, rest[1:])
+	case "native", "viewer":
+		return runNative(asJSON, rest[1:])
 	case "ui":
 		return runUI(asJSON, rest[1:])
 	case "package", "automation":

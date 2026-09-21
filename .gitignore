@@ -43,3 +43,4 @@ PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md
 # root, which is how a nested module's store slipped into a commit.
 **/.prumo/runtime/
 **/.prumo/cache/
+**/.prumo/native-*.json
