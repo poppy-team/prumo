@@ -272,4 +272,59 @@ fn test_cached_workspace_tree() {
     assert!(src_node.is_dir);
     assert_eq!(src_node.children.len(), 1);
     assert_eq!(src_node.children[0].name, "main.rs");
+
+    let all = tree.all_files();
+    assert_eq!(all, vec!["src/main.rs"]);
 }
+
+#[test]
+fn test_quick_open_fuzzy_matching() {
+    use prumo_viewer::search::QuickOpenMatcher;
+
+    let mut matcher = QuickOpenMatcher::new();
+    let files = vec![
+        "src/client.rs".to_string(),
+        "src/main.rs".to_string(),
+        "src/config.rs".to_string(),
+        "docs/architecture.md".to_string(),
+    ];
+
+    // 1. Query "cli" matches "src/client.rs" as top candidate
+    let matches = matcher.match_files("cli", &files);
+    assert!(!matches.is_empty());
+    assert_eq!(matches[0].0, "src/client.rs");
+
+    // 2. Query "arch" matches "docs/architecture.md"
+    let matches_arch = matcher.match_files("arch", &files);
+    assert!(!matches_arch.is_empty());
+    assert_eq!(matches_arch[0].0, "docs/architecture.md");
+
+    // 3. Empty query returns initial files
+    let matches_empty = matcher.match_files("", &files);
+    assert_eq!(matches_empty.len(), 4);
+}
+
+#[test]
+fn test_workspace_searcher() {
+    use prumo_viewer::search::WorkspaceSearcher;
+
+    let dir = tempdir().unwrap();
+    let root = dir.path();
+    fs::create_dir_all(root.join("src")).unwrap();
+    fs::write(
+        root.join("src/lib.rs"),
+        "pub fn calculate_magic() -> i32 {\n    42 // the magic answer\n}\n",
+    )
+    .unwrap();
+    fs::write(root.join("src/other.rs"), "pub fn irrelevant() {}\n").unwrap();
+
+    let results = WorkspaceSearcher::search(root, "magic answer", 10);
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].line_number, 2);
+    assert!(results[0].line_text.contains("the magic answer"));
+    assert_eq!(
+        results[0].path.file_name().unwrap().to_str().unwrap(),
+        "lib.rs"
+    );
+}
+

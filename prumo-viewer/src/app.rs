@@ -8,6 +8,7 @@ use crate::diff::{DiffLineTag, DiffService, FileDiff, MergeResult};
 use crate::document::DocumentStore;
 use crate::follow::AgentFollowController;
 use crate::projection::RunFileProjection;
+use crate::search::{QuickOpenMatcher, SearchMatch, WorkspaceSearcher};
 use crate::terminal::LazyTerminal;
 use crate::watcher::{WorkspaceEvent, WorkspaceWatcher};
 use crate::workspace::{CachedWorkspaceTree, FileNode};
@@ -37,6 +38,22 @@ pub struct WorkspaceViewerApp {
     // Event streaming
     pub event_rx: Option<mpsc::UnboundedReceiver<Event>>,
     pub timeline_events: Vec<Event>,
+
+    // Navigation, Search, Shortcuts (Wave 4)
+    pub quick_open_open: bool,
+    pub quick_open_query: String,
+    pub quick_open_selected: usize,
+    pub matcher: QuickOpenMatcher,
+
+    pub goto_line_open: bool,
+    pub goto_line_query: String,
+
+    pub find_in_file_open: bool,
+    pub find_in_file_query: String,
+
+    pub sidebar_tab_search: bool,
+    pub workspace_search_query: String,
+    pub workspace_search_results: Vec<SearchMatch>,
 
     // UI state
     pub view_mode: CenterViewMode,
@@ -76,6 +93,20 @@ impl WorkspaceViewerApp {
             terminal: LazyTerminal::new(),
             event_rx: None,
             timeline_events: Vec::new(),
+
+            // Wave 4 state
+            quick_open_open: false,
+            quick_open_query: String::new(),
+            quick_open_selected: 0,
+            matcher: QuickOpenMatcher::new(),
+            goto_line_open: false,
+            goto_line_query: String::new(),
+            find_in_file_open: false,
+            find_in_file_query: String::new(),
+            sidebar_tab_search: false,
+            workspace_search_query: String::new(),
+            workspace_search_results: Vec::new(),
+
             view_mode: CenterViewMode::Code,
             show_terminal: false,
             show_sidebar: true,
@@ -88,7 +119,6 @@ impl WorkspaceViewerApp {
             last_status_poll: Instant::now(),
         };
 
-        // If connected, fetch initial runs
         if app.is_connected {
             app.refresh_runs();
         }
@@ -114,7 +144,6 @@ impl WorkspaceViewerApp {
         self.projection.reset(run_id);
         self.timeline_events.clear();
 
-        // Replay existing events
         if let Ok(evs) = self.client.events(run_id) {
             for ev in &evs {
                 self.projection.process_event(ev, &self.workspace_root);
@@ -122,7 +151,6 @@ impl WorkspaceViewerApp {
             self.timeline_events = evs;
         }
 
-        // Open push subscription stream from daemon
         let from = self.timeline_events.len();
         if let Ok(rx) = self.client.subscribe(run_id.to_string(), from) {
             self.event_rx = Some(rx);
@@ -164,6 +192,17 @@ impl WorkspaceViewerApp {
         }
     }
 
+    pub fn execute_workspace_search(&mut self) {
+        let q = self.workspace_search_query.trim();
+        if !q.is_empty() {
+            self.workspace_search_results =
+                WorkspaceSearcher::search(&self.workspace_root, q, 100);
+            self.status_message = format!("Found {} matches for '{}'", self.workspace_search_results.len(), q);
+        } else {
+            self.workspace_search_results.clear();
+        }
+    }
+
     pub fn poll_background_events(&mut self, ctx: &egui::Context) {
         let mut had_activity = false;
 
@@ -174,12 +213,10 @@ impl WorkspaceViewerApp {
                 had_activity = true;
                 self.tree.apply_event(&ev);
 
-                // External change check for open documents
                 match ev {
                     WorkspaceEvent::Modified(path) => {
                         if let Some(doc) = self.doc_store.get_document(&path) {
                             if doc.is_dirty {
-                                // Conflict! Human has unsaved edits and disk changed!
                                 if let Ok(disk_content) = std::fs::read_to_string(&path) {
                                     let merge = DiffService::three_way_merge(
                                         &doc.saved_content,
@@ -231,7 +268,6 @@ impl WorkspaceViewerApp {
             }
         }
 
-        // Event-driven idle: ONLY request repaint if there was real background activity
         if had_activity {
             ctx.request_repaint();
         }
@@ -240,24 +276,63 @@ impl WorkspaceViewerApp {
 
 impl eframe::App for WorkspaceViewerApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Poll background events without continuous painting
         self.poll_background_events(ctx);
+
+        // Global Keyboard Shortcuts
+        ctx.input(|i| {
+            // Ctrl+S / Cmd+S: Save active file
+            if i.modifiers.command && i.key_pressed(egui::Key::S) {
+                let _ = self.doc_store.save_active();
+                self.status_message = "Saved active file".to_string();
+            }
+
+            // Ctrl+P / Cmd+P: Toggle Quick Open
+            if i.modifiers.command && i.key_pressed(egui::Key::P) {
+                self.quick_open_open = !self.quick_open_open;
+                self.quick_open_query.clear();
+                self.quick_open_selected = 0;
+            }
+
+            // Ctrl+G / Cmd+G: Toggle Go to Line
+            if i.modifiers.command && i.key_pressed(egui::Key::G) {
+                self.goto_line_open = !self.goto_line_open;
+                self.goto_line_query.clear();
+            }
+
+            // Ctrl+F / Cmd+F: Toggle Find in File
+            if i.modifiers.command && !i.modifiers.shift && i.key_pressed(egui::Key::F) {
+                self.find_in_file_open = !self.find_in_file_open;
+            }
+
+            // Ctrl+Shift+F: Toggle Workspace Search
+            if i.modifiers.command && i.modifiers.shift && i.key_pressed(egui::Key::F) {
+                self.sidebar_tab_search = !self.sidebar_tab_search;
+                self.show_sidebar = true;
+            }
+
+            // Ctrl+W / Cmd+W: Close active tab
+            if i.modifiers.command && i.key_pressed(egui::Key::W) {
+                if let Some(active) = self.doc_store.active_tab().cloned() {
+                    self.doc_store.close_file(&active);
+                }
+            }
+        });
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx().clone();
+
         // Top Navigation Bar
         egui::Panel::top("header_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.heading(RichText::new("PRUMO NATIVE").strong().color(Color32::from_rgb(100, 180, 255)));
                 ui.separator();
 
-                // Workspace path
                 let dir_name = self.workspace_root.file_name().and_then(|s| s.to_str()).unwrap_or(".");
                 ui.label(RichText::new(format!("📁 {}", dir_name)).monospace().strong());
 
                 ui.separator();
 
-                // Connection status pill
                 if self.is_connected {
                     ui.label(RichText::new("● Daemon Connected").color(Color32::from_rgb(80, 220, 100)));
                 } else {
@@ -266,11 +341,21 @@ impl eframe::App for WorkspaceViewerApp {
 
                 ui.separator();
 
-                // Renderer badge
+                // Quick Open shortcut button
+                if ui.button("🔍 Quick Open (Ctrl+P)").clicked() {
+                    self.quick_open_open = true;
+                    self.quick_open_query.clear();
+                }
+
+                if ui.button("Go to Line (Ctrl+G)").clicked() {
+                    self.goto_line_open = true;
+                    self.goto_line_query.clear();
+                }
+
+                ui.separator();
                 ui.label(RichText::new(format!("⚡ {}", self.renderer_name)).weak());
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    // Follow Agent Toggle
                     let follow_color = if self.follow.enabled {
                         Color32::from_rgb(80, 220, 150)
                     } else {
@@ -282,7 +367,6 @@ impl eframe::App for WorkspaceViewerApp {
 
                     ui.separator();
 
-                    // View mode buttons
                     if ui.selectable_label(self.view_mode == CenterViewMode::Code, "Code").clicked() {
                         self.view_mode = CenterViewMode::Code;
                     }
@@ -297,7 +381,6 @@ impl eframe::App for WorkspaceViewerApp {
 
                     ui.separator();
 
-                    // Active Run selector
                     if let Some(run_id) = &self.active_run_id {
                         ui.label(RichText::new(format!("Run: {}", &run_id[..run_id.len().min(12)])).strong().color(Color32::GOLD));
                         if ui.button("Cancel").clicked() {
@@ -334,11 +417,16 @@ impl eframe::App for WorkspaceViewerApp {
             }
         });
 
-        // Left Panel: Explorer & Recent Changes
+        // Left Panel: Explorer OR Workspace Search
         if self.show_sidebar {
             egui::Panel::left("explorer_panel").resizable(true).show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.strong("WORKSPACE EXPLORER");
+                    if ui.selectable_label(!self.sidebar_tab_search, "📁 EXPLORER").clicked() {
+                        self.sidebar_tab_search = false;
+                    }
+                    if ui.selectable_label(self.sidebar_tab_search, "🔍 SEARCH").clicked() {
+                        self.sidebar_tab_search = true;
+                    }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("⟳").clicked() {
                             self.tree.refresh();
@@ -347,26 +435,60 @@ impl eframe::App for WorkspaceViewerApp {
                 });
                 ui.separator();
 
-                ScrollArea::vertical().show(ui, |ui| {
-                    render_file_tree_node(ui, &mut self.tree.root_node, &mut self.doc_store, &self.projection);
+                if !self.sidebar_tab_search {
+                    ScrollArea::vertical().show(ui, |ui| {
+                        render_file_tree_node(ui, &mut self.tree.root_node, &mut self.doc_store, &self.projection);
 
-                    if !self.projection.recent_files.is_empty() {
-                        ui.add_space(10.0);
-                        ui.separator();
-                        ui.strong("AGENT RECENT FILES");
-                        for p in &self.projection.recent_files {
-                            let fname = p.file_name().and_then(|s| s.to_str()).unwrap_or("?");
-                            ui.horizontal(|ui| {
-                                if let Some(badge) = self.projection.get_badge(p) {
-                                    ui.label(RichText::new(badge.label()).color(badge.color()).strong());
-                                }
-                                if ui.link(fname).clicked() {
-                                    let _ = self.doc_store.open_file(p);
-                                }
-                            });
+                        if !self.projection.recent_files.is_empty() {
+                            ui.add_space(10.0);
+                            ui.separator();
+                            ui.strong("AGENT RECENT FILES");
+                            for p in &self.projection.recent_files {
+                                let fname = p.file_name().and_then(|s| s.to_str()).unwrap_or("?");
+                                ui.horizontal(|ui| {
+                                    if let Some(badge) = self.projection.get_badge(p) {
+                                        ui.label(RichText::new(badge.label()).color(badge.color()).strong());
+                                    }
+                                    if ui.link(fname).clicked() {
+                                        let _ = self.doc_store.open_file(p);
+                                    }
+                                });
+                            }
                         }
-                    }
-                });
+                    });
+                } else {
+                    // Workspace Text Search Tab
+                    ui.horizontal(|ui| {
+                        let resp = ui.text_edit_singleline(&mut self.workspace_search_query);
+                        if resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                            self.execute_workspace_search();
+                        }
+                        if ui.button("Find").clicked() {
+                            self.execute_workspace_search();
+                        }
+                    });
+                    ui.separator();
+
+                    ScrollArea::vertical().show(ui, |ui| {
+                        if self.workspace_search_results.is_empty() {
+                            ui.label("No matches found. Enter query and press Find.");
+                        } else {
+                            for m in &self.workspace_search_results {
+                                let fname = m.path.file_name().and_then(|s| s.to_str()).unwrap_or("?");
+                                ui.group(|ui| {
+                                    ui.horizontal(|ui| {
+                                        if ui.link(RichText::new(format!("{}:{}", fname, m.line_number)).strong()).clicked() {
+                                            if let Ok(doc) = self.doc_store.open_file(&m.path) {
+                                                doc.go_to_line(m.line_number);
+                                            }
+                                        }
+                                    });
+                                    ui.label(RichText::new(&m.line_text).monospace().small());
+                                });
+                            }
+                        }
+                    });
+                }
             });
         }
 
@@ -382,7 +504,6 @@ impl eframe::App for WorkspaceViewerApp {
                 });
                 ui.separator();
 
-                // Permission Approval Banner if waiting
                 if let Some(req_id) = self.pending_permission_req.clone() {
                     ui.group(|ui| {
                         ui.label(RichText::new("⚠️ Permission Requested").strong().color(Color32::GOLD));
@@ -401,7 +522,6 @@ impl eframe::App for WorkspaceViewerApp {
                     ui.separator();
                 }
 
-                // Timeline event stream
                 ScrollArea::vertical().stick_to_bottom(true).show(ui, |ui| {
                     for ev in &self.timeline_events {
                         render_timeline_event(ui, ev, &mut self.doc_store, &self.workspace_root);
@@ -412,7 +532,6 @@ impl eframe::App for WorkspaceViewerApp {
 
         // Center Panel: Editor Tabs & Body
         egui::CentralPanel::default().show(ui, |ui| {
-            // Tab bar
             ui.horizontal(|ui| {
                 let open_tabs = self.doc_store.open_tabs().to_vec();
                 for tab_path in open_tabs {
@@ -457,7 +576,14 @@ impl eframe::App for WorkspaceViewerApp {
 
             match self.view_mode {
                 CenterViewMode::Code => {
-                    render_editor_body(ui, &mut self.doc_store, &mut self.follow);
+                    render_editor_body(
+                        ui,
+                        &mut self.doc_store,
+                        &mut self.follow,
+                        &self.workspace_root,
+                        self.find_in_file_open,
+                        &mut self.find_in_file_query,
+                    );
                 }
                 CenterViewMode::Diff => {
                     render_diff_body(ui, &self.active_diff);
@@ -467,6 +593,99 @@ impl eframe::App for WorkspaceViewerApp {
                 }
             }
         });
+
+        // Floating Modal: Quick Open (Ctrl+P)
+        if self.quick_open_open {
+            let mut close_modal = false;
+            let all_files = self.tree.all_files();
+            let matches = self.matcher.match_files(&self.quick_open_query, &all_files);
+
+            egui::Window::new("Quick Open (Ctrl+P)")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_TOP, [0.0, 50.0])
+                .fixed_size([560.0, 320.0])
+                .show(&ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        let resp = ui.add(
+                            egui::TextEdit::singleline(&mut self.quick_open_query)
+                                .hint_text("Type file name to jump...")
+                                .desired_width(480.0),
+                        );
+                        resp.request_focus();
+
+                        if ui.button("✕").clicked() {
+                            close_modal = true;
+                        }
+                    });
+
+                    ui.separator();
+
+                    ScrollArea::vertical().max_height(240.0).show(ui, |ui| {
+                        for (idx, (file_rel, _score)) in matches.iter().enumerate() {
+                            let is_sel = idx == self.quick_open_selected;
+                            let text = if is_sel {
+                                RichText::new(file_rel).strong().color(Color32::WHITE)
+                            } else {
+                                RichText::new(file_rel)
+                            };
+
+                            if ui.selectable_label(is_sel, text).clicked() {
+                                let full_path = self.workspace_root.join(file_rel);
+                                let _ = self.doc_store.open_file(&full_path);
+                                close_modal = true;
+                            }
+                        }
+                    });
+
+                    if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        if let Some((top_file, _)) = matches.first() {
+                            let full_path = self.workspace_root.join(top_file);
+                            let _ = self.doc_store.open_file(&full_path);
+                            close_modal = true;
+                        }
+                    }
+                    if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                        close_modal = true;
+                    }
+                });
+
+            if close_modal {
+                self.quick_open_open = false;
+            }
+        }
+
+        // Floating Modal: Go to Line (Ctrl+G)
+        if self.goto_line_open {
+            let mut close_modal = false;
+            egui::Window::new("Go to Line (Ctrl+G)")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_TOP, [0.0, 80.0])
+                .fixed_size([280.0, 90.0])
+                .show(&ctx, |ui| {
+                    ui.label("Enter line number:");
+                    let resp = ui.text_edit_singleline(&mut self.goto_line_query);
+                    resp.request_focus();
+
+                    let submit = ui.input(|i| i.key_pressed(egui::Key::Enter)) || ui.button("Go").clicked();
+                    if submit {
+                        if let Ok(line_num) = self.goto_line_query.trim().parse::<usize>() {
+                            if let Some(doc) = self.doc_store.active_document_mut() {
+                                doc.go_to_line(line_num);
+                            }
+                        }
+                        close_modal = true;
+                    }
+                    if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                        close_modal = true;
+                    }
+                });
+
+            if close_modal {
+                self.goto_line_open = false;
+            }
+        }
     }
 }
 
@@ -496,7 +715,6 @@ fn render_file_tree_node(
         }
     } else {
         ui.horizontal(|ui| {
-            // Live agent badge if present
             if let Some(badge) = projection.get_badge(&node.path) {
                 ui.label(RichText::new(badge.label()).color(badge.color()).strong())
                     .on_hover_text(badge.tooltip());
@@ -516,11 +734,39 @@ fn render_file_tree_node(
     }
 }
 
-fn render_editor_body(ui: &mut Ui, store: &mut DocumentStore, follow: &mut AgentFollowController) {
+fn render_editor_body(
+    ui: &mut Ui,
+    store: &mut DocumentStore,
+    follow: &mut AgentFollowController,
+    root: &Path,
+    find_open: bool,
+    find_query: &mut String,
+) {
     if let Some(doc) = store.active_document_mut() {
+        // 1. Breadcrumbs bar
+        let rel_path = doc.path.strip_prefix(root).unwrap_or(&doc.path);
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(format!("📁 {}", rel_path.display())).small().strong().color(Color32::from_rgb(130, 190, 240)));
+            ui.label(RichText::new(format!(": Line {}, Col {}", doc.cursor_line, doc.cursor_col)).small().weak());
+        });
+        ui.separator();
+
+        // 2. Find in File bar (Ctrl+F)
+        if find_open {
+            ui.horizontal(|ui| {
+                ui.label("Find in file:");
+                ui.text_edit_singleline(find_query);
+                if !find_query.is_empty() {
+                    let occurrences = doc.content.matches(find_query.as_str()).count();
+                    ui.label(RichText::new(format!("{} matches", occurrences)).small().weak());
+                }
+            });
+            ui.separator();
+        }
+
+        // 3. Editor text area with line numbers gutter
         ScrollArea::both().show(ui, |ui| {
             ui.horizontal(|ui| {
-                // Line numbers gutter
                 let total_lines = doc.lines_count();
                 let gutter_text: String = (1..=total_lines)
                     .map(|n| format!("{:>4}\n", n))
@@ -529,7 +775,6 @@ fn render_editor_body(ui: &mut Ui, store: &mut DocumentStore, follow: &mut Agent
 
                 ui.separator();
 
-                // Editable text area
                 let mut text = doc.content.clone();
                 let editor_res = ui.add(
                     egui::TextEdit::multiline(&mut text)
@@ -545,7 +790,6 @@ fn render_editor_body(ui: &mut Ui, store: &mut DocumentStore, follow: &mut Agent
                     follow.notify_user_edit_idle();
                 }
 
-                // If range is highlighted by agent follow
                 if let Some((start, end)) = doc.highlight_range {
                     ui.painter().rect_stroke(
                         editor_res.rect,
@@ -559,7 +803,7 @@ fn render_editor_body(ui: &mut Ui, store: &mut DocumentStore, follow: &mut Agent
         });
     } else {
         ui.centered_and_justified(|ui| {
-            ui.label(RichText::new("Select a file from the workspace explorer to view and edit.").weak());
+            ui.label(RichText::new("Select a file from the explorer or press Ctrl+P for Quick Open.").weak());
         });
     }
 }
@@ -629,7 +873,6 @@ fn render_timeline_event(ui: &mut Ui, ev: &Event, store: &mut DocumentStore, roo
             ui.label(RichText::new(&ev.kind).small().weak());
         });
 
-        // Display tool path if available
         if let Some(target) = ev.payload.get("path").or_else(|| ev.payload.get("TargetFile")).and_then(|v| v.as_str()) {
             let p = Path::new(target);
             let full_p = if p.is_absolute() { p.to_path_buf() } else { root.join(p) };

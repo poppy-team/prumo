@@ -5,6 +5,7 @@ pub mod diff;
 pub mod document;
 pub mod follow;
 pub mod projection;
+pub mod search;
 pub mod terminal;
 pub mod watcher;
 pub mod workspace;

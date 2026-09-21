@@ -110,4 +110,24 @@ impl CachedWorkspaceTree {
         // Mark dirty to re-index on next idle tick or refresh directly
         self.refresh();
     }
+
+    pub fn all_files(&self) -> Vec<String> {
+        let mut out = Vec::new();
+        self.root_node.collect_files(&self.root_dir, &mut out);
+        out
+    }
+}
+
+impl FileNode {
+    pub fn collect_files(&self, root: &Path, out: &mut Vec<String>) {
+        if self.is_dir {
+            for child in &self.children {
+                child.collect_files(root, out);
+            }
+        } else if let Ok(rel) = self.path.strip_prefix(root) {
+            out.push(rel.to_string_lossy().to_string());
+        } else {
+            out.push(self.path.to_string_lossy().to_string());
+        }
+    }
 }
