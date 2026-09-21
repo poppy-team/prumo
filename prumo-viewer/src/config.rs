@@ -42,6 +42,34 @@ impl Default for GraphicsConfig {
     }
 }
 
+impl GraphicsConfig {
+    pub fn config_path(workspace_root: &std::path::Path) -> PathBuf {
+        workspace_root.join(".prumo").join("native-graphics.json")
+    }
+
+    pub fn load_or_default(workspace_root: &std::path::Path) -> Self {
+        let path = Self::config_path(workspace_root);
+        if path.exists() {
+            if let Ok(data) = std::fs::read_to_string(&path) {
+                if let Ok(cfg) = serde_json::from_str::<Self>(&data) {
+                    return cfg;
+                }
+            }
+        }
+        Self::default()
+    }
+
+    pub fn save(&self, workspace_root: &std::path::Path) {
+        let path = Self::config_path(workspace_root);
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Ok(data) = serde_json::to_string_pretty(self) {
+            let _ = std::fs::write(&path, data);
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CliArgs {
     pub renderer_override: Option<GraphicsRenderer>,
@@ -146,6 +174,11 @@ pub fn default_socket_path() -> PathBuf {
 pub fn resolve_renderer(config: &GraphicsConfig, cli: &CliArgs) -> eframe::Renderer {
     if cli.safe_graphics {
         eprintln!("[prumo-native] --safe-graphics active: enforcing Glow/OpenGL renderer");
+        return eframe::Renderer::Glow;
+    }
+
+    if !config.last_boot_ok && cli.renderer_override.is_none() {
+        eprintln!("[prumo-native] Warning: Previous boot encountered renderer failure! Recovering with safe Glow (OpenGL)");
         return eframe::Renderer::Glow;
     }
 

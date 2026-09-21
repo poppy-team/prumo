@@ -55,6 +55,8 @@ pub struct WorkspaceViewerApp {
     pub workspace_search_query: String,
     pub workspace_search_results: Vec<SearchMatch>,
 
+    pub git_status: Option<crate::git::GitStatusSnapshot>,
+
     // UI state
     pub view_mode: CenterViewMode,
     pub show_terminal: bool,
@@ -78,6 +80,10 @@ impl WorkspaceViewerApp {
         let is_connected = client.is_alive();
         let tree = CachedWorkspaceTree::new(&workspace_root);
         let watcher = WorkspaceWatcher::new(&workspace_root).ok();
+        let git_status = crate::git::GitService::discover_status(&workspace_root);
+        let mut doc_store = DocumentStore::new().with_workspace_root(workspace_root.clone());
+        let session_file = workspace_root.join(".prumo").join("native-session.json");
+        let _ = doc_store.load_session(&session_file);
 
         let mut app = Self {
             workspace_root: workspace_root.clone(),
@@ -87,7 +93,7 @@ impl WorkspaceViewerApp {
             known_runs: Vec::new(),
             tree,
             watcher,
-            doc_store: DocumentStore::new(),
+            doc_store,
             projection: RunFileProjection::new(""),
             follow: AgentFollowController::new(),
             terminal: LazyTerminal::new(),
@@ -106,6 +112,7 @@ impl WorkspaceViewerApp {
             sidebar_tab_search: false,
             workspace_search_query: String::new(),
             workspace_search_results: Vec::new(),
+            git_status,
 
             view_mode: CenterViewMode::Code,
             show_terminal: false,
@@ -233,7 +240,12 @@ impl WorkspaceViewerApp {
                             }
                         }
                     }
-                    _ => {}
+                    WorkspaceEvent::Deleted(path) => {
+                        self.doc_store.mark_deleted(&path);
+                    }
+                    WorkspaceEvent::Created(path) => {
+                        let _ = self.doc_store.reload_if_clean(&path);
+                    }
                 }
             }
         }
@@ -255,7 +267,7 @@ impl WorkspaceViewerApp {
             }
         }
 
-        // 3. Periodic connection check (every 3 seconds)
+        // 3. Periodic connection & Git check (every 3 seconds)
         if self.last_status_poll.elapsed() > std::time::Duration::from_secs(3) {
             self.last_status_poll = Instant::now();
             let alive = self.client.is_alive();
@@ -266,11 +278,31 @@ impl WorkspaceViewerApp {
                     self.refresh_runs();
                 }
             }
+
+            // Git reconciliation upon branch switch (Invariant 8)
+            let fresh_git = crate::git::GitService::discover_status(&self.workspace_root);
+            if let Some(fresh) = &fresh_git {
+                let branch_changed = self.git_status.as_ref().map(|g| &g.branch) != Some(&fresh.branch);
+                if branch_changed {
+                    let tabs = self.doc_store.open_tabs().to_vec();
+                    for tab in tabs {
+                        let _ = self.doc_store.reload_if_clean(&tab);
+                    }
+                    self.tree.refresh();
+                    had_activity = true;
+                }
+            }
+            self.git_status = fresh_git;
         }
 
         if had_activity {
             ctx.request_repaint();
         }
+    }
+
+    pub fn persist_session(&self) {
+        let session_file = self.workspace_root.join(".prumo").join("native-session.json");
+        let _ = self.doc_store.save_session(&session_file);
     }
 }
 
@@ -332,6 +364,18 @@ impl eframe::App for WorkspaceViewerApp {
                 ui.label(RichText::new(format!("📁 {}", dir_name)).monospace().strong());
 
                 ui.separator();
+
+                // Git branch & status pill
+                if let Some(git) = &self.git_status {
+                    let git_color = if git.is_dirty { Color32::GOLD } else { Color32::from_rgb(100, 200, 255) };
+                    let git_label = if git.is_dirty {
+                        format!("🌿 {} (+{} ~{})", git.branch, git.staged_count, git.unstaged_count)
+                    } else {
+                        format!("🌿 {}", git.branch)
+                    };
+                    ui.label(RichText::new(git_label).color(git_color).monospace().small());
+                    ui.separator();
+                }
 
                 if self.is_connected {
                     ui.label(RichText::new("● Daemon Connected").color(Color32::from_rgb(80, 220, 100)));
@@ -751,6 +795,26 @@ fn render_editor_body(
         });
         ui.separator();
 
+        // 1b. Deleted on disk warning banner
+        if doc.is_deleted_on_disk {
+            let mut recreate = false;
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("⚠️ This file was deleted on disk!").color(Color32::RED).strong());
+                if ui.button("Re-create / Save to Disk").clicked() {
+                    recreate = true;
+                }
+            });
+            ui.separator();
+
+            if recreate {
+                if std::fs::write(&doc.path, &doc.content).is_ok() {
+                    doc.saved_content = doc.content.clone();
+                    doc.is_dirty = false;
+                    doc.is_deleted_on_disk = false;
+                }
+            }
+        }
+
         // 2. Find in File bar (Ctrl+F)
         if find_open {
             ui.horizontal(|ui| {
@@ -814,6 +878,10 @@ fn render_diff_body(ui: &mut Ui, diff_opt: &Option<FileDiff>) {
             ui.horizontal(|ui| {
                 ui.label(RichText::new(format!("+{} additions", diff.additions)).color(Color32::from_rgb(80, 220, 100)));
                 ui.label(RichText::new(format!("-{} deletions", diff.deletions)).color(Color32::from_rgb(220, 80, 80)));
+                if diff.is_truncated {
+                    ui.separator();
+                    ui.label(RichText::new("⚠️ Large diff truncated (exceeded 8,000 lines or 1.5MB budget)").color(Color32::GOLD).small());
+                }
             });
             ui.separator();
 
@@ -842,7 +910,14 @@ fn render_conflict_body(ui: &mut Ui, conflict_opt: &Option<String>, store: &mut 
             ui.label("Both you and the agent edited this file. Please resolve conflict:");
             ui.horizontal(|ui| {
                 if ui.button("Accept Agent Version").clicked() {
-                    // Accept agent version
+                    if let Some(active_path) = store.active_tab().cloned() {
+                        if let Ok(disk) = std::fs::read_to_string(&active_path) {
+                            if let Some(doc) = store.active_document_mut() {
+                                doc.set_content(disk);
+                                let _ = store.save_active();
+                            }
+                        }
+                    }
                 }
                 if ui.button("Keep My Edits").clicked() {
                     let _ = store.save_active();

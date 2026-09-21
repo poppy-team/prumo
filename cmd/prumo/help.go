@@ -76,18 +76,20 @@ var commandRegistry = map[string]CommandInfo{
 		Name:     "doctor",
 		Category: "Project Lifecycle",
 		Summary:  "Run comprehensive diagnostic health checks",
-		Usage:    "prumo doctor [path]",
+		Usage:    "prumo doctor [path | gui]",
 		Description: "Performs deep health checks across all framework subsystems:\n" +
 			"- Versioning and lockfile consistency\n" +
 			"- Dependencies and DAG cycles\n" +
 			"- Workforce resolution and catalog integrity\n" +
 			"- Repository governance policies and gates\n" +
-			"- Evidence models and test coverage",
+			"- Evidence models and test coverage\n" +
+			"- Graphical session and accessibility bus when invoked with 'gui' (Chapter 26)",
 		Flags: []string{
 			"--json                 Output diagnostics as structured JSON envelope",
 		},
 		Examples: []string{
 			"prumo doctor",
+			"prumo doctor gui",
 			"prumo --json doctor ./my-project",
 		},
 	},

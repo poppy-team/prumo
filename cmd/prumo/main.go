@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/raillen/prumo/internal/cliops"
+	"github.com/raillen/prumo/internal/harness/guitest"
 	"github.com/raillen/prumo/internal/project"
 	"github.com/raillen/prumo/internal/protocol"
 )
@@ -432,9 +434,23 @@ func run(args []string) int {
 		if len(rest) > 1 && rest[1] != "--json" {
 			path = rest[1]
 		}
-		findings, err := svc.Doctor(path)
-		if err != nil {
-			return serviceError(asJSON, err)
+		var findings []map[string]any
+		if path == "gui" {
+			guiFindings := guitest.DoctorCheck(context.Background())
+			for _, f := range guiFindings {
+				findings = append(findings, map[string]any{
+					"category": f.Category,
+					"severity": f.Severity,
+					"message":  f.Message,
+					"target":   f.Target,
+				})
+			}
+		} else {
+			f, err := svc.Doctor(path)
+			if err != nil {
+				return serviceError(asJSON, err)
+			}
+			findings = f
 		}
 		hasErrors := false
 		for _, finding := range findings {

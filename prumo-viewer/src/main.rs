@@ -3,10 +3,10 @@ use prumo_viewer::config::{default_socket_path, resolve_renderer, CliArgs, Graph
 
 fn main() -> eframe::Result {
     let args = CliArgs::parse();
-    let config = GraphicsConfig::default();
+    let workspace_root = args.workspace_dir.clone();
+    let mut config = GraphicsConfig::load_or_default(&workspace_root);
 
     let socket_path = args.socket_path.clone().unwrap_or_else(default_socket_path);
-    let workspace_root = args.workspace_dir.clone();
 
     // P0.6: Shared Tokio runtime with bounded workers (2 threads)
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -23,6 +23,11 @@ fn main() -> eframe::Result {
         eframe::Renderer::Wgpu => "WGPU",
     }
     .to_string();
+
+    // Mark current boot as initiated; on clean startup persist success
+    config.last_boot_ok = true;
+    config.last_backend = renderer_name.clone();
+    config.save(&workspace_root);
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
