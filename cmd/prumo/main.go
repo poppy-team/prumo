@@ -192,6 +192,8 @@ func run(args []string) int {
 		return runRuntime(asJSON, rest)
 	case "ask":
 		return runAsk(asJSON, rest[1:])
+	case "serve":
+		return runAgentServe(asJSON, rest[1:])
 	case "agent":
 		return runAgent(asJSON, rest[1:])
 	case "tui":

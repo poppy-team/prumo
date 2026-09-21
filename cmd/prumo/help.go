@@ -671,6 +671,49 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo workforce list",
 		},
 	},
+	"ask": {
+		Name:     "ask",
+		Category: "Harness",
+		Summary:  "One-shot headless query interface for questions, analysis, and shell pipes",
+		Usage:    "prumo ask [flags] [prompt]",
+		Description: "One-shot, read-only by default interface for quick analysis, code explanation, and shell scripting without launching the interactive TUI. " +
+			"Accepts prompt, stdin pipe, explicit context files, and returns clean response on stdout and diagnostics on stderr.",
+		Flags: []string{
+			"--file <path>        Add file content as context (repeatable)",
+			"--context <type>     Context mode (e.g. repo)",
+			"--model <id>         Model id to use",
+			"--provider <name>    fake|openai-compat|anthropic|opencode (default: fake)",
+			"--system <text>      Custom system instruction",
+			"--raw                Raw output without newline decoration",
+			"--json               Output envelope with model metadata as JSON",
+		},
+		Examples: []string{
+			"prumo ask \"explain this function\"",
+			"cat test.log | prumo ask \"analyze why tests failed\"",
+			"prumo ask --file internal/model.go \"summarize this file\"",
+			"prumo ask --json \"quick status check\"",
+		},
+	},
+	"serve": {
+		Name:     "serve",
+		Category: "Harness",
+		Summary:  "Start the Prumo Harness daemon over local Unix socket or remote TCP+TLS",
+		Usage:    "prumo serve [--path <dir>] [--socket <path>]",
+		Description: "Starts the persistent Harness daemon providing the versioned JSONL Agent Protocol (v0.4.0) " +
+			"for IDE clients (Oxi / Workspace Viewer), TUI, and external tools.",
+		Flags: []string{
+			"--path <dir>         Workspace root (default: .)",
+			"--socket <path>      Daemon Unix socket path",
+			"--listen <addr>      Expose serve over TCP+TLS",
+			"--tls-cert <path>    TLS certificate path",
+			"--tls-key <path>     TLS key path",
+		},
+		Examples: []string{
+			"prumo serve",
+			"prumo serve --path /path/to/project",
+			"prumo serve --socket /tmp/prumo.sock",
+		},
+	},
 	"agent": {
 		Name:        "agent",
 		Category:    "Harness",
