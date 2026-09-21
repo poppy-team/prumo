@@ -1,0 +1,1782 @@
+[
+  {
+    "logical_id": "PART1-CH-00",
+    "title": "00 — Princípios, Governança e Regras de Engenharia",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81eea9abe4c5221cecd0",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch00.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 00)."
+  },
+  {
+    "logical_id": "PART2-CH-00",
+    "title": "00 — Visão, Escopo e Relação com o Prumo Framework",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f818f8507f9dac3fb8cbb",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch00.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 00)."
+  },
+  {
+    "logical_id": "PART2-CH-01",
+    "title": "01 — Baseline Herdado O que o Prumo Já Possui",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f810d9b35e1c9a8bbfd96",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch01.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 01)."
+  },
+  {
+    "logical_id": "PART1-CH-01",
+    "title": "01 — Stack Go, Clean Code e Migração do Core Pytho",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81c5a804f589d8daf696",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch01.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 01)."
+  },
+  {
+    "logical_id": "PART1-CH-02",
+    "title": "02 — Arquitetura Atlas v0 4 e Boundaries do Core",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81dca786d0338eb4ec16",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch02.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 02)."
+  },
+  {
+    "logical_id": "PART2-CH-02",
+    "title": "02 — Referências de Harnesses, Agent Frameworks e",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f8153abb1e3705857d9f4",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch02.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 02)."
+  },
+  {
+    "logical_id": "PART2-CH-03",
+    "title": "03 — Arquitetura Alvo do Agent Harness",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81598dd0d1d2b2105d75",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch03.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 03)."
+  },
+  {
+    "logical_id": "PART1-CH-03",
+    "title": "03 — Documentation Contracts, Profiles e Qualidade",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81a6b307fb72e510ff9c",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch03.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 03)."
+  },
+  {
+    "logical_id": "PART2-CH-04",
+    "title": "04 — Model Runtime, Providers, Streaming, Routing",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f811ea779d4dde25b17ed",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch04.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 04)."
+  },
+  {
+    "logical_id": "PART1-CH-04",
+    "title": "04 — UI UX Documentation Pack Completo",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81a49cfdefbee7c1b202",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch04.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 04)."
+  },
+  {
+    "logical_id": "PART2-CH-05",
+    "title": "05 — Agent Loop, Conversation, Turns, Checkpoints",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f814aa91fdff68fef108f",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch05.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 05)."
+  },
+  {
+    "logical_id": "PART1-CH-05",
+    "title": "05 — Living Plan Mode e Interview Engine",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f818ea927d1f7ea75dfb3",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch05.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 05)."
+  },
+  {
+    "logical_id": "PART1-CH-06",
+    "title": "06 — Adoption Engine para Projetos Existentes",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81d08858d501ae093847",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch06.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 06)."
+  },
+  {
+    "logical_id": "PART2-CH-06",
+    "title": "06 — Coding ACI, Native Tools, MCP, ACP e A2A",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f810b85b2d97c6b30b181",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch06.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 06)."
+  },
+  {
+    "logical_id": "PART1-CH-07",
+    "title": "07 — Engineering Narrative, Journal, Experimentos",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81ad81a3ffdfc455ed5f",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch07.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 07)."
+  },
+  {
+    "logical_id": "PART2-CH-07",
+    "title": "07 — Permissions, Sandbox, Egress e Security Runti",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81178340f2a5932f8ac6",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch07.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 07)."
+  },
+  {
+    "logical_id": "PART2-CH-08",
+    "title": "08 — Context Compiler v2, Repo Map, LSP e Code Int",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81ff86c1e42169acfaef",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch08.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 08)."
+  },
+  {
+    "logical_id": "PART1-CH-08",
+    "title": "08 — Experience Layer, Memória e Handoff inspirado",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f817dbc41d342e686bf6b",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch08.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 08)."
+  },
+  {
+    "logical_id": "PART1-CH-09",
+    "title": "09 — OpenCode Native Harness",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f810582f7e1de430e2170",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch09.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 09)."
+  },
+  {
+    "logical_id": "PART2-CH-09",
+    "title": "09 — Prumo Code Desktop Produto inspirado em Panes",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81348e2ae6d7149ea491",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch09.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 09)."
+  },
+  {
+    "logical_id": "PART1-CH-10",
+    "title": "10 — Connector SDK, Capability Contract e Roadmap",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81ca9db7f37ce628cd48",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch10.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 10)."
+  },
+  {
+    "logical_id": "PART2-CH-10",
+    "title": "10 — Native Desktop UI GPUI, Floem, Iced, libcosmi",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f814f906bffaea6d8a421",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch10.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 10)."
+  },
+  {
+    "logical_id": "PART1-CH-11",
+    "title": "11 — Instalação, Atualização, Desinstalação e Dist",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8158bf24d72b2cef258a",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch11.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 11)."
+  },
+  {
+    "logical_id": "PART2-CH-11",
+    "title": "11 — Terminal Engine Nativo libghostty, WezTerm Co",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f814fb136d96719ee694f",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch11.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 11)."
+  },
+  {
+    "logical_id": "PART2-CH-12",
+    "title": "12 — Editor Engine Rope, Transactions, Syntax, LSP",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81a39375c298cc06a032",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch12.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 12)."
+  },
+  {
+    "logical_id": "PART1-CH-12",
+    "title": "12 — Segurança, Trust, Permissions e Supply Chain",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f819892a4e3caf2df9141",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch12.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 12)."
+  },
+  {
+    "logical_id": "PART2-CH-13",
+    "title": "13 — Prumo Code TUI um VS Code no Terminal",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81dca60be07a6c801307",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch13.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 13)."
+  },
+  {
+    "logical_id": "PART1-CH-13",
+    "title": "13 — Testes, Conformance, Evals e Quality Gates",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f814bb4a1f65f29941287",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch13.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 13)."
+  },
+  {
+    "logical_id": "PART1-CH-14",
+    "title": "14 — Roadmap de Implementação v0 4",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81519df5f4cb15d4d7fa",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch14.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 14)."
+  },
+  {
+    "logical_id": "PART2-CH-14",
+    "title": "14 — TUI Technology Matrix R3BL, Revue, Ratatui Ki",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f814fb532e63bb5ec22f6",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch14.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 14)."
+  },
+  {
+    "logical_id": "PART2-CH-15",
+    "title": "15 — Daemon, IPC, Remote, Cross-device e Escalabil",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f812eabebe0341fe056d6",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch15.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 15)."
+  },
+  {
+    "logical_id": "PART1-CH-15",
+    "title": "15 — Novas Recomendações e Incrementações Futuras",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f811d8b65c15ae01ec27d",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch15.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 15)."
+  },
+  {
+    "logical_id": "PART1-CH-16",
+    "title": "16 — Gap Analysis v0 3 → v0 4 e Correções Necessár",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8132b4b4c1d433e36267",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch16.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 16)."
+  },
+  {
+    "logical_id": "PART2-CH-16",
+    "title": "16 — Performance Budgets e Hardware Modesto",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81d6a978fb14f4bad5f3",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch16.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 16)."
+  },
+  {
+    "logical_id": "PART1-CH-17",
+    "title": "17 — Estrutura Canônica de Repositório Alvo",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81f3ba47d7356888015b",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch17.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 17)."
+  },
+  {
+    "logical_id": "PART2-CH-17",
+    "title": "17 — Plugin, Extension Architecture e Public SDK",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81908e91cc4dbf3fd42f",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch17.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 17)."
+  },
+  {
+    "logical_id": "PART2-CH-18",
+    "title": "18 — Roadmap de Exploração e Evolução H0–H18",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f811c8a9ad8096d6b0cca",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch18.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 18)."
+  },
+  {
+    "logical_id": "PART1-CH-18",
+    "title": "18 — Superfície CLI v0 4 e Machine Interface",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81b396abefd87690d5cc",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch18.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 18)."
+  },
+  {
+    "logical_id": "PART1-CH-19",
+    "title": "19 — Registro Consolidado de Decisões v0 4",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81cdac7dddde5cc74b74",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch19.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 19)."
+  },
+  {
+    "logical_id": "PART2-CH-19",
+    "title": "19 — Registro de Decisões, Benchmarks, Experimento",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81f7a428eb616f3ed5fb",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch19.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 19)."
+  },
+  {
+    "logical_id": "PART2-CH-20",
+    "title": "20 — Estudo Comparativo de Produto e Arquitetura P",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f814688e4d00a8a25559d",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch20.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 20)."
+  },
+  {
+    "logical_id": "PART1-CH-20",
+    "title": "20 — Pesquisa de Harnesses e Evidências para o Roa",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81358f92c433b7715a81",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch20.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 20)."
+  },
+  {
+    "logical_id": "PART2-CH-21",
+    "title": "21 — HISTÓRICO SUPERSEDED Stack H Floem + Bubble T",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f8151842bf5c40e49c0b0",
+    "action": "PROMOTED_HISTORICAL",
+    "canonical_target": "docs/harness/specs/superseded-floem-stack.md",
+    "superseded": true,
+    "rationale": "Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi."
+  },
+  {
+    "logical_id": "PART1-CH-21",
+    "title": "21 — Skill Package v3, Resolver, Configuração e Ev",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8137a49eccdb5ab5a67e",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch21.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 21)."
+  },
+  {
+    "logical_id": "PART2-CH-22",
+    "title": "22 — Agent Connectivity Runtime Providers, OAuth,",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f817aa2e8c45d56cfb35b",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch22.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 22)."
+  },
+  {
+    "logical_id": "PART1-CH-22",
+    "title": "22 — Cognitive Accessibility, Clean Code e Ambient",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f810abea2daeea75a1cfd",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch22.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 22)."
+  },
+  {
+    "logical_id": "PART1-CH-23",
+    "title": "23 — Segurança Web, SaaS, Vibe Coding Skills e Wor",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81d98eb7f209fc05d317",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch23.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 23)."
+  },
+  {
+    "logical_id": "PART2-CH-23",
+    "title": "23 — Shared Product Contract Entities, State Owner",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81cb97eaef814aca2f17",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch23.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 23)."
+  },
+  {
+    "logical_id": "PART1-CH-24",
+    "title": "24 — Protocolo DevSecOps e Rotinas de Teste Web Sa",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f810e8a29e811b0c8fe9d",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch24.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 24)."
+  },
+  {
+    "logical_id": "PART2-CH-24",
+    "title": "24 — Workforce Runtime, Model Gateway, Routing, Fa",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81ffa25be2396876182c",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch24.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 24)."
+  },
+  {
+    "logical_id": "PART2-CH-25",
+    "title": "25 — Planning & Knowledge Runtime Plan Mode, Decis",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81398521c9de2aa4acf2",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch25.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 25)."
+  },
+  {
+    "logical_id": "PART1-CH-25",
+    "title": "25 — Playwright como Native Web Test Provider",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f812fb9e3d44adf279f7d",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch25.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 25)."
+  },
+  {
+    "logical_id": "PART2-CH-26",
+    "title": "26 — Deterministic Documentation Compiler IR, DAG,",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81b5a70bcd0ccdc78d05",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch26.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 26)."
+  },
+  {
+    "logical_id": "PART1-CH-26",
+    "title": "26 — Native Desktop GUI Test Bridge",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f812b9ea4f4d7c8a134e8",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch26.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 26)."
+  },
+  {
+    "logical_id": "PART2-CH-27",
+    "title": "27 — Gap Analysis LLM Knowledge & Documentation Ar",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f816f8466d212c1a6a481",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch27.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 27)."
+  },
+  {
+    "logical_id": "PART1-CH-27",
+    "title": "27 — Protocolo de Testes para Linguagens, Compilad",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81f0bce4e9258ba5ceba",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch27.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 27)."
+  },
+  {
+    "logical_id": "PART1-CH-28",
+    "title": "28 — Kernel, Drivers, Embedded, Fault Injection e",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f812ea444f0142685e87b",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch28.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 28)."
+  },
+  {
+    "logical_id": "PART2-CH-28",
+    "title": "28 — Local Knowledge Pack Small Models, Offline RA",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f818089dce53649bce94f",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch28.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 28)."
+  },
+  {
+    "logical_id": "PART1-CH-29",
+    "title": "29 — Engineering Blog e Publishing System",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8155b788d9f4a3895a16",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch29.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 29)."
+  },
+  {
+    "logical_id": "PART2-CH-29",
+    "title": "29 — Local Intelligence Profiles, Resource Manager",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f819aa669cafda46c1f2b",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch29.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 29)."
+  },
+  {
+    "logical_id": "PART2-CH-30",
+    "title": "30 — Local Inference Runtime Architecture Workers,",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81bb8341fd1e52b4ec52",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch30.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 30)."
+  },
+  {
+    "logical_id": "PART1-CH-30",
+    "title": "30 — Skill Catalog Target Segurança, Testing, Tool",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81728e62c20b15ac009e",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch30.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 30)."
+  },
+  {
+    "logical_id": "PART2-CH-31",
+    "title": "31 — Context Compiler v2 Hybrid Retrieval, Authori",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81908e1cdf3677ff68b7",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch31.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 31)."
+  },
+  {
+    "logical_id": "PART1-CH-31",
+    "title": "31 — Research Evidence Security, Web Testing, Comp",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8145be7fcbee5eb901c4",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch31.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 31)."
+  },
+  {
+    "logical_id": "PART2-CH-32",
+    "title": "32 — Handoff v2 e Knowledge API Typed Continuation",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81cd9afbc31f43d6682d",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch32.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 32)."
+  },
+  {
+    "logical_id": "PART1-CH-32",
+    "title": "32 — Test Provider Contract, Quality Orchestrator",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81b6aa94f5e4ff8712d8",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch32.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 32)."
+  },
+  {
+    "logical_id": "PART1-CH-33",
+    "title": "33 — Game Development Suite Profiles, Quality Mode",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8108892af864a8c42a07",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch33.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 33)."
+  },
+  {
+    "logical_id": "PART2-CH-33",
+    "title": "33 — Knowledge Runtime Semantic Model Records, Cla",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f8121b1dbda9852cb01ba",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch33.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 33)."
+  },
+  {
+    "logical_id": "PART2-CH-34",
+    "title": "34 — Contradiction, Coverage & Readiness Engine Se",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81d2a05bf794c5845565",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch34.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 34)."
+  },
+  {
+    "logical_id": "PART1-CH-34",
+    "title": "34 — Deterministic Simulation, Replay e Automated",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8100b765cbab1e510fc7",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch34.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 34)."
+  },
+  {
+    "logical_id": "PART1-CH-35",
+    "title": "35 — Game AI Modelos, Implementação, Observabilida",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f817fa043c9e48df4244c",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch35.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 35)."
+  },
+  {
+    "logical_id": "PART2-CH-35",
+    "title": "35 — Harness Build Strategy Prumo-Native Core, Ext",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f815b8bebcec36288113b",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch35.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 35)."
+  },
+  {
+    "logical_id": "PART2-CH-36",
+    "title": "36 — Human Documentation Runtime Audiences, Profil",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81c79cade95f4c7c7fc6",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch36.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 36)."
+  },
+  {
+    "logical_id": "PART1-CH-36",
+    "title": "36 — Physics, Collision, Character Controllers e M",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8149bfa4fed9e221423e",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch36.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 36)."
+  },
+  {
+    "logical_id": "PART2-CH-37",
+    "title": "37 — Documentation Planner Discovery, Information",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81039ef5d01617a3d3ac",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch37.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 37)."
+  },
+  {
+    "logical_id": "PART1-CH-37",
+    "title": "37 — Game Feel, Controls, Camera, Feedback e Playe",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81718205d2573654c85a",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch37.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 37)."
+  },
+  {
+    "logical_id": "PART1-CH-38",
+    "title": "38 — GDD, Game Design, Balance, Economy, Progressi",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f814f9392ed855c6a3583",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch38.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 38)."
+  },
+  {
+    "logical_id": "PART2-CH-38",
+    "title": "38 — Human Docs Quality, Publishing, Website Runti",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f817d8255e65b120eea7e",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch38.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 38)."
+  },
+  {
+    "logical_id": "PART2-CH-39",
+    "title": "39 — Development Chronicle, Changelog, Release Not",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f811b8a20ee1fde927ae5",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch39.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 39)."
+  },
+  {
+    "logical_id": "PART1-CH-39",
+    "title": "39 — Level Design, Map Design, PCG, Reachability e",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8164a5c0da5b09eb6812",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch39.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 39)."
+  },
+  {
+    "logical_id": "PART1-CH-40",
+    "title": "40 — Game Performance, Frame Budgets, Memory, Stre",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81a8adc9ebdb4391fef6",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch40.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 40)."
+  },
+  {
+    "logical_id": "PART2-CH-40",
+    "title": "40 — Repository Boundary & Product Split Prumo Pla",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81b1ad81ecdd5ac99017",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch40.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 40)."
+  },
+  {
+    "logical_id": "PART1-CH-41",
+    "title": "41 — Multiplayer, Netcode, Scalability e Network A",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8167b498edfdf85fd554",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch41.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 41)."
+  },
+  {
+    "logical_id": "PART2-CH-41",
+    "title": "41 — Notebook-to-Repository Promotion Export, Reco",
+    "category": "PART2_HARNESS_CHAPTER",
+    "uuid": "3d89bb7d023f81559c14e3a7eac6b018",
+    "action": "PROMOTED_HARNESS_SPEC",
+    "canonical_target": "docs/harness/specs/ch41.md",
+    "superseded": false,
+    "rationale": "Especificação especializada do Harness / Code Agent (Capítulo 41)."
+  },
+  {
+    "logical_id": "PART1-CH-42",
+    "title": "42 — Game Tooling, Editors, Asset Pipelines e Cont",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8143a29cf7881c692328",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch42.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 42)."
+  },
+  {
+    "logical_id": "PART1-CH-43",
+    "title": "43 — Engine Adapters Unreal, Unity, Godot e Engine",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81a58e30c666e0c6ef5f",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch43.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 43)."
+  },
+  {
+    "logical_id": "PART1-CH-44",
+    "title": "44 — Game Skill Catalog Target e Bundles Automátic",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81d6a45cce71e31d05f2",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch44.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 44)."
+  },
+  {
+    "logical_id": "PART1-CH-45",
+    "title": "45 — Visual, Rendering, Animation, Audio e Interac",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f810bb028d24cbd546211",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch45.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 45)."
+  },
+  {
+    "logical_id": "PART1-CH-46",
+    "title": "46 — Game Quality Orchestrator Rotina de Testes e",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8141bb8ff7216ac4bf36",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch46.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 46)."
+  },
+  {
+    "logical_id": "PART1-CH-47",
+    "title": "47 — Research Evidence Game AI, Playtesting, Desig",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81ec88d2d9b376723026",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch47.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 47)."
+  },
+  {
+    "logical_id": "PART1-CH-48",
+    "title": "48 — Agent Runtime Control Plane Arquitetura e Pri",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81e8826acb0302c78a95",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch48.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 48)."
+  },
+  {
+    "logical_id": "PART1-CH-49",
+    "title": "49 — Budget Manager, Cost Governance e Rate Limits",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81fc9022f57109b864f8",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch49.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 49)."
+  },
+  {
+    "logical_id": "PART1-CH-50",
+    "title": "50 — Context Compiler, Token Budget, Cache e Compa",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8133a9cffaa3c4e21d93",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch50.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 50)."
+  },
+  {
+    "logical_id": "PART1-CH-51",
+    "title": "51 — Run Engine, Checkpoints, Retry, Resume e Canc",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81278531f323e52a9c0f",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch51.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 51)."
+  },
+  {
+    "logical_id": "PART1-CH-52",
+    "title": "52 — Tool Gateway, MCP Governance e Lazy Tool Disc",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81c5808fcf22f54aee97",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch52.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 52)."
+  },
+  {
+    "logical_id": "PART1-CH-53",
+    "title": "53 — Model Registry, Router, Drift, Fallback e Pro",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f815c8683eff78eab2774",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch53.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 53)."
+  },
+  {
+    "logical_id": "PART1-CH-54",
+    "title": "54 — Execution Environments, Sandbox e Blast-Radiu",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f815b9474ccb20ce9d035",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch54.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 54)."
+  },
+  {
+    "logical_id": "PART1-CH-55",
+    "title": "55 — Observability Plane, Run Explainability e Inc",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81748fe3c10c243b9e97",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch55.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 55)."
+  },
+  {
+    "logical_id": "PART1-CH-56",
+    "title": "56 — Automation Engine, Event Rules, DLQ e Safety",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81db8f48f207302309b2",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch56.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 56)."
+  },
+  {
+    "logical_id": "PART1-CH-57",
+    "title": "57 — Atlas Package & Runtime Manager, atlas lock e",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81ed9fcff5bdde889cf5",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch57.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 57)."
+  },
+  {
+    "logical_id": "PART1-CH-58",
+    "title": "58 — Migration Engine, Unified Review Queue e Stat",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81d6a739e9065472e162",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch58.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 58)."
+  },
+  {
+    "logical_id": "PART1-CH-59",
+    "title": "59 — Repository Scale, Incremental Indexing, Branc",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81b381b3ff7de982c75b",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch59.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 59)."
+  },
+  {
+    "logical_id": "PART1-CH-60",
+    "title": "60 — Secrets, Data Classification e Egress Governa",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f81c79303e006858bcbd5",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch60.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 60)."
+  },
+  {
+    "logical_id": "PART1-CH-61",
+    "title": "61 — Atlas Harness Eval Suite, Canary e Runtime Qu",
+    "category": "PART1_FRAMEWORK_CHAPTER",
+    "uuid": "3d59bb7d023f8183a541dfa19216d468",
+    "action": "PROMOTED_FRAMEWORK_SPEC",
+    "canonical_target": "docs/framework/specs/ch61.md",
+    "superseded": false,
+    "rationale": "Especificação de engenharia do Framework (Capítulo 61)."
+  },
+  {
+    "logical_id": "PHASE-62",
+    "title": "62 — Repository Change Governance, GitHub Policy e",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f8170be73f4caeb575771",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-62.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (62 — Repository Change Governance, GitHub Policy e)."
+  },
+  {
+    "logical_id": "PHASE-63",
+    "title": "63 — Programa de Implementação v0 4 do Go Core ao",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81e2aa5bf37409eb3533",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-63.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (63 — Programa de Implementação v0 4 do Go Core ao)."
+  },
+  {
+    "logical_id": "PHASE-64",
+    "title": "64 — Fase A Go Core Parity & Distribution Closure",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81689e22f267fe00b0d3",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-64.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (64 — Fase A Go Core Parity & Distribution Closure)."
+  },
+  {
+    "logical_id": "PHASE-65",
+    "title": "65 — Fase B Repository Governance Foundation (M4 7",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81ffb72adf2e5d39a5e8",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-65.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (65 — Fase B Repository Governance Foundation (M4 7)."
+  },
+  {
+    "logical_id": "PHASE-66",
+    "title": "66 — Fase C Documentation System v2 (M5)",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f8106a544fd0fd1dbb7cb",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-66.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (66 — Fase C Documentation System v2 (M5))."
+  },
+  {
+    "logical_id": "PHASE-67",
+    "title": "67 — Fase D1 Runtime Foundation I — Run, Budget, C",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f8140a9c9fc2298958de6",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-67.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (67 — Fase D1 Runtime Foundation I — Run, Budget, C)."
+  },
+  {
+    "logical_id": "PHASE-68",
+    "title": "68 — Fase D2 Runtime Foundation II — Tools, Models",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81cb8456f72fec41e144",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-68.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (68 — Fase D2 Runtime Foundation II — Tools, Models)."
+  },
+  {
+    "logical_id": "PHASE-69",
+    "title": "69 — Fase D3 Runtime Infrastructure — Packages, Mi",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f811cad83ea0cb6658856",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-69.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (69 — Fase D3 Runtime Infrastructure — Packages, Mi)."
+  },
+  {
+    "logical_id": "PHASE-70",
+    "title": "70 — Fase E Living Plan & Interview Engine (M6)",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f813f8eceeddd3d38b079",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-70.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (70 — Fase E Living Plan & Interview Engine (M6))."
+  },
+  {
+    "logical_id": "PHASE-71",
+    "title": "71 — Fase F Adoption Engine para Projetos Existent",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81669a9de83e05558dcf",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-71.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (71 — Fase F Adoption Engine para Projetos Existent)."
+  },
+  {
+    "logical_id": "PHASE-72",
+    "title": "72 — Fase G Skill System v3 + Quality Platform",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81a3a3f2c4f75b9efbbf",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-72.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (72 — Fase G Skill System v3 + Quality Platform)."
+  },
+  {
+    "logical_id": "PHASE-73",
+    "title": "73 — Fase H Engineering Traceability, Experience &",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f816da304d08263438d01",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-73.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (73 — Fase H Engineering Traceability, Experience &)."
+  },
+  {
+    "logical_id": "PHASE-74",
+    "title": "74 — Fase I OpenCode Native Harness (M10)",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f812b8514d801c1ead108",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-74.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (74 — Fase I OpenCode Native Harness (M10))."
+  },
+  {
+    "logical_id": "PHASE-75",
+    "title": "75 — Fase J Connector SDK, Capability Contract e M",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f81b3b21ef0170aeec0fd",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-75.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (75 — Fase J Connector SDK, Capability Contract e M)."
+  },
+  {
+    "logical_id": "PHASE-76",
+    "title": "76 — Gates Transversais CI CD, Schemas, Release, S",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f813e9070e83368dbbf15",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-76.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (76 — Gates Transversais CI CD, Schemas, Release, S)."
+  },
+  {
+    "logical_id": "PHASE-77",
+    "title": "77 — Portable Continuation Protocol Continuidade A",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f813b8255de44b67379df",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-77.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (77 — Portable Continuation Protocol Continuidade A)."
+  },
+  {
+    "logical_id": "PHASE-78",
+    "title": "78 — Continuous Execution Mode Program Runner, Wor",
+    "category": "PART1_PHASE_GOVERNANCE",
+    "uuid": "3d69bb7d023f8123beaae66f6250512e",
+    "action": "PROMOTED_PHASE_SPEC",
+    "canonical_target": "docs/development/phases/phase-78.md",
+    "superseded": false,
+    "rationale": "Fase/Gate de implementação (78 — Continuous Execution Mode Program Runner, Wor)."
+  },
+  {
+    "logical_id": "79 A",
+    "title": "79 A — Baseline da Auditoria, Taxonomia de Lacunas",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81c69edde8f22dfd66e8",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/baseline-da-auditoria-taxonomia-de-lacunas.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 A — Baseline da Auditoria, Taxonomia de Lacunas."
+  },
+  {
+    "logical_id": "79 AA",
+    "title": "79 AA — Grounding, Spec Compliance, Surface Confor",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3e29bb7d023f811a9490f5c1ae91f9f2",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/grounding-spec-compliance.md",
+    "superseded": false,
+    "rationale": "Skill Package P0: Grounding, Spec Compliance e Surface Conformance."
+  },
+  {
+    "logical_id": "79 B",
+    "title": "79 B — Contratos Transversais, Schemas, Permission",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f818b9291f90a0600d096",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/contratos-transversais-schemas-permission.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 B — Contratos Transversais, Schemas, Permission."
+  },
+  {
+    "logical_id": "79 C",
+    "title": "79 C — Hardening dos 26 Agents Planejamento Indivi",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f810482f1db59bd5ab75a",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/hardening-dos-26-agents-planejamento-indivi.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 C — Hardening dos 26 Agents Planejamento Indivi."
+  },
+  {
+    "logical_id": "79 D",
+    "title": "79 D — Hardening das 14 Recipes DAGs, Gates Condic",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81a3be24cf3141c30cf2",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/hardening-das-14-recipes-dags-gates-condic.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 D — Hardening das 14 Recipes DAGs, Gates Condic."
+  },
+  {
+    "logical_id": "79 E",
+    "title": "79 E — Accessibility, UX e Cognitive Quality Skill",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81408b76eaac40d47b34",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/accessibility-ux-e-cognitive-quality-skill.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 E — Accessibility, UX e Cognitive Quality Skill."
+  },
+  {
+    "logical_id": "79 F",
+    "title": "79 F — Security, Trust, Permissions e Supply Chain",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f811eb481dedc79ff4353",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/security-trust-permissions-e-supply-chain.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 F — Security, Trust, Permissions e Supply Chain."
+  },
+  {
+    "logical_id": "79 G",
+    "title": "79 G — Context, Agentic Workflow, Orchestration, M",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81d9b143cd2d4b14ffa2",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/context-agentic-workflow-orchestration-m.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 G — Context, Agentic Workflow, Orchestration, M."
+  },
+  {
+    "logical_id": "79 H",
+    "title": "79 H — Testing, Code Quality, Review, Benchmarking",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f816cb230dc8ef54cbe94",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/testing-code-quality-review-benchmarking.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 H — Testing, Code Quality, Review, Benchmarking."
+  },
+  {
+    "logical_id": "79 I",
+    "title": "79 I — Language Skills Contract e Hardening de Tod",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81faa922ff4c08b7a7d0",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/language-skills-contract-e-hardening-de-tod.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 I — Language Skills Contract e Hardening de Tod."
+  },
+  {
+    "logical_id": "79 J",
+    "title": "79 J — Compiler, Native, Memory, Concurrency, Runt",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f8185876bc2a9c64e6af7",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/compiler-native-memory-concurrency-runt.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 J — Compiler, Native, Memory, Concurrency, Runt."
+  },
+  {
+    "logical_id": "79 K",
+    "title": "79 K — Backend, API, Database, Caching, Serializat",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81358874c144d514c488",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/backend-api-database-caching-serializat.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 K — Backend, API, Database, Caching, Serializat."
+  },
+  {
+    "logical_id": "79 L",
+    "title": "79 L — Frontend, Design System, UI Implementation,",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f818683bdeddd03d7852a",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/frontend-design-system-ui-implementation.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 L — Frontend, Design System, UI Implementation,."
+  },
+  {
+    "logical_id": "79 M",
+    "title": "79 M — DevOps, CI CD, Containers, Release Engineer",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f8123ab90f6202042d65b",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/devops-ci-cd-containers-release-engineer.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 M — DevOps, CI CD, Containers, Release Engineer."
+  },
+  {
+    "logical_id": "79 N",
+    "title": "79 N — Git, GitHub, Documentation, Editor Tooling",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f816cab28c0b666bc02e7",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/git-github-documentation-editor-tooling.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 N — Git, GitHub, Documentation, Editor Tooling."
+  },
+  {
+    "logical_id": "79 O",
+    "title": "79 O — Game, Rendering, Physics, Networking, Asset",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81bb9fdee94b104e9dd1",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/game-rendering-physics-networking-asset.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 O — Game, Rendering, Physics, Networking, Asset."
+  },
+  {
+    "logical_id": "79 P",
+    "title": "79 P — Novas Capacidades Candidatas Skills, Agents",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81f4aa6fc1eae57a1d0f",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/novas-capacidades-candidatas-skills-agents.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 P — Novas Capacidades Candidatas Skills, Agents."
+  },
+  {
+    "logical_id": "79 Q",
+    "title": "79 Q — Matriz Completa de Prioridade, Work Package",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f810192b1db43142af6f5",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/matriz-completa-de-prioridade-work-package.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 Q — Matriz Completa de Prioridade, Work Package."
+  },
+  {
+    "logical_id": "79 R",
+    "title": "79 R — Evals, Métricas, Canary, Definition of Done",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f811abb89c3a8262d2d86",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/evals-métricas-canary-definition-of-done.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 R — Evals, Métricas, Canary, Definition of Done."
+  },
+  {
+    "logical_id": "79 S",
+    "title": "79 S — Architecture Quality, Goal Management, Stat",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f81de9cdfff52196d2354",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/architecture-quality-goal-management-stat.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 S — Architecture Quality, Goal Management, Stat."
+  },
+  {
+    "logical_id": "79 T",
+    "title": "79 T — Technology Skill Packs egui, Bubble Tea v2",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f81868bbde5eda5cce20f",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/technology-skill-packs-egui-bubble-tea-v2.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 T — Technology Skill Packs egui, Bubble Tea v2."
+  },
+  {
+    "logical_id": "79 U",
+    "title": "79 U — Skill Research, Knowledge Freshness, Vision",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f815984c2debfd46acea1",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/skill-research-knowledge-freshness-vision.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 U — Skill Research, Knowledge Freshness, Vision."
+  },
+  {
+    "logical_id": "79 V",
+    "title": "79 V — Language Ecosystem Packs C, C3, Odin, D, Lu",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f81cbbf63d68a19e9bd87",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/language-ecosystem-packs-c-c3-odin-d-lu.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 V — Language Ecosystem Packs C, C3, Odin, D, Lu."
+  },
+  {
+    "logical_id": "79 W",
+    "title": "79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f81e0905bc500fc0354cc",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/modern-c++-wasm-wat-webgpu-three-js-e-lo.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo."
+  },
+  {
+    "logical_id": "79 W",
+    "title": "79 W — Modern C++, WebAssembly WAT, WebGPU e Three",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3de9bb7d023f812eb484d49cf076f909",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/modern-c++-webassembly-wat-webgpu-e-three.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
+  },
+  {
+    "logical_id": "79 X",
+    "title": "79 X — Assembly, ISA, ABI, Reverse Engineering e L",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3de9bb7d023f8116ae44dde0a1901cc6",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/assembly-isa-abi-reverse-engineering-e-l.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 X — Assembly, ISA, ABI, Reverse Engineering e L."
+  },
+  {
+    "logical_id": "79 X",
+    "title": "79 X — Programming Language Engineering, Paradigms",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f81dca878cb14e2324a41",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/programming-language-engineering-paradigms.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 X — Programming Language Engineering, Paradigms."
+  },
+  {
+    "logical_id": "79 Y",
+    "title": "79 Y — Computer Science, Software Engineering, Dat",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f81fda05ccde2975d66cb",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/computer-science-software-engineering-dat.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 Y — Computer Science, Software Engineering, Dat."
+  },
+  {
+    "logical_id": "79 Y",
+    "title": "79 Y — Programming Languages, Computer Science, So",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3de9bb7d023f81d38bf8ecf60419e56a",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/programming-languages-computer-science-so.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 Y — Programming Languages, Computer Science, So."
+  },
+  {
+    "logical_id": "79 Z",
+    "title": "79 Z — Teaching Module Professor Mode, Neurodiverg",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3de9bb7d023f8112b8ecdbc088c81714",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/teaching-module-professor-mode-neurodiverg.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 Z — Teaching Module Professor Mode, Neurodiverg."
+  },
+  {
+    "logical_id": "79 Z",
+    "title": "79 Z — Teaching Module, Professor Agents e Neurodi",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3dd9bb7d023f8156ace1f5075fc16d3a",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/teaching-module-professor-agents-e-neurodi.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 Z — Teaching Module, Professor Agents e Neurodi."
+  },
+  {
+    "logical_id": "79",
+    "title": "79 — Programa de Aprimoramento do Workforce Agents",
+    "category": "PART2_79_SKILL_PACKS",
+    "uuid": "3d89bb7d023f8197a3bec0dba3a2ad29",
+    "action": "PROMOTED_SKILL_SPEC",
+    "canonical_target": "docs/skills/specs/programa-de-aprimoramento-do-workforce-agents.md",
+    "superseded": false,
+    "rationale": "Skill Package de referência para 79 — Programa de Aprimoramento do Workforce Agents."
+  },
+  {
+    "logical_id": "CONST-80",
+    "title": "80 — Prumo Ask Headless One-Shot Interface e Machi",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3de9bb7d023f81f1a5c2e6d44111461b",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/reference/prumo-ask-headless.md",
+    "superseded": false,
+    "rationale": "Especificação do Prumo Ask Headless One-Shot Interface."
+  },
+  {
+    "logical_id": "CONST-81",
+    "title": "81 — Global Learning Layer Padrões Cross-Project,",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3de9bb7d023f81deb239f020182d4972",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/runtime/global-learning-layer.md",
+    "superseded": false,
+    "rationale": "Especificação da Global Learning Layer e Padrões Cross-Project."
+  },
+  {
+    "logical_id": "CONST-82",
+    "title": "82 — Prumo Native sobre Oxi Workspace Viewer Agent",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3de9bb7d023f81c791d4e4145393fa10",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/architecture/prumo-native-workspace-viewer.md",
+    "superseded": false,
+    "rationale": "Especificação do Prumo Native Workspace Viewer sobre Oxi."
+  },
+  {
+    "logical_id": "CONST-83",
+    "title": "83 — Adendo Decision Intelligence Runtime, System",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e09bb7d023f81f8ac4afb4e85cc5d01",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/runtime/decision-intelligence-runtime.md",
+    "superseded": false,
+    "rationale": "Especificação do Decision Intelligence Runtime."
+  },
+  {
+    "logical_id": "84 A",
+    "title": "84 A — Universal Surface Coverage, Evidence Graph",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f81a0a812c169ae1e5151",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_a.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 A — Universal Surface Coverage, Evidence Graph)."
+  },
+  {
+    "logical_id": "84 B",
+    "title": "84 B — Blind-Spot Hunting, Oracle Quality, Negativ",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f810e9bdfc5ff8506ea9c",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_b.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 B — Blind-Spot Hunting, Oracle Quality, Negativ)."
+  },
+  {
+    "logical_id": "84 C",
+    "title": "84 C — Performance, Resource Budgets, Scalability,",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f81f89fbbddc9ab722bc4",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_c.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 C — Performance, Resource Budgets, Scalability,)."
+  },
+  {
+    "logical_id": "84 D",
+    "title": "84 D — Security, Resilience, Data Integrity, Recov",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f811b9968e49ab5de7d7e",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_d.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 D — Security, Resilience, Data Integrity, Recov)."
+  },
+  {
+    "logical_id": "84 E",
+    "title": "84 E — UI UX, Interaction Fidelity, Accessibility",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f8173848cc4fa2995af62",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_e.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 E — UI UX, Interaction Fidelity, Accessibility)."
+  },
+  {
+    "logical_id": "84 F",
+    "title": "84 F — Documentation Refactoring, Drift, NFR Cover",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f8139a32ee1744fe2802d",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_f.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 F — Documentation Refactoring, Drift, NFR Cover)."
+  },
+  {
+    "logical_id": "84 G",
+    "title": "84 G — Release Candidate Exit Gates, 10 10 Sem Méd",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f81e58e99e8e58035fd93",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_g.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 G — Release Candidate Exit Gates, 10 10 Sem Méd)."
+  },
+  {
+    "logical_id": "84 H",
+    "title": "84 H — Native Graphics DCC Assurance Profile GPU,",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f812d8825ffe1738c4da2",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84_h.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 H — Native Graphics DCC Assurance Profile GPU,)."
+  },
+  {
+    "logical_id": "84",
+    "title": "84 — Total Assurance Constitution Gauntlet Loop, E",
+    "category": "PART2_84_QUALITY_GAUNTLET",
+    "uuid": "3e29bb7d023f817ca077d37f62038fd1",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/quality/gauntlet-84.md",
+    "superseded": false,
+    "rationale": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 — Total Assurance Constitution Gauntlet Loop, E)."
+  },
+  {
+    "logical_id": "85 A",
+    "title": "85 A — LLM & Agent Execution Contract Grounding, S",
+    "category": "PART2_85_EXECUTION_CONTRACTS",
+    "uuid": "3e29bb7d023f81b69571d23c290cfc47",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/contracts/llm-agent-execution-contract.md",
+    "superseded": false,
+    "rationale": "Constituição 85.A: Execution Contract Grounding, Tools, Evidence e Handoff."
+  },
+  {
+    "logical_id": "85",
+    "title": "85 — Canonical Truth, Authority Graph e Constituiç",
+    "category": "PART2_85_EXECUTION_CONTRACTS",
+    "uuid": "3e29bb7d023f8190bd95ce21475ae2e3",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/contracts/llm-agent-execution-contract.md",
+    "superseded": false,
+    "rationale": "Constituição 85.A: Execution Contract Grounding, Tools, Evidence e Handoff."
+  },
+  {
+    "logical_id": "CONST-86",
+    "title": "86 — Arquitetura Unificada Framework, Harness, Cod",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f81d0b8adef7ab3ea69d3",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/architecture/unified-architecture.md",
+    "superseded": false,
+    "rationale": "Constituição 86: Arquitetura Unificada de Framework, Harness, Code Agent e Surfaces."
+  },
+  {
+    "logical_id": "CONST-87",
+    "title": "87 — Model Portfolio, Roteamento por Custo Quota e",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f8123bfbef4369c8b8da1",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/runtime/model-portfolio-and-routing.md",
+    "superseded": false,
+    "rationale": "Constituição 87: Roteamento por Custo/Quota, Budget e Fallback."
+  },
+  {
+    "logical_id": "CONST-88",
+    "title": "88 — Arquitetura Documental v2 Canonical Graph, IR",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f816c9f3fc45bdb57db7c",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/architecture/documentation-architecture-v2.md",
+    "superseded": false,
+    "rationale": "Constituição 88: Arquitetura Documental v2, Canonical Graph, IR e Rebuild Determinístico."
+  },
+  {
+    "logical_id": "CONST-89",
+    "title": "89 — Programa de Consolidação e Implementação do P",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f81fcba57c8b97604e8a4",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/development/consolidation-program.md",
+    "superseded": false,
+    "rationale": "Constituição 89: Programa de Consolidação e Implementação do Prumo Unificado."
+  },
+  {
+    "logical_id": "CONST-90",
+    "title": "90 — Crosswalk de Consolidação Prumo Framework ↔ C",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f81458af2f245c5a3b23d",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/governance/consolidation-crosswalk.md",
+    "superseded": false,
+    "rationale": "Constituição 90: Crosswalk de Consolidação, Ownership e Supersession."
+  },
+  {
+    "logical_id": "CONST-91",
+    "title": "91 — Glossário Canônico, Ontologia Operacional e T",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f81feb977ec88bac4193a",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/reference/canonical-glossary.md",
+    "superseded": false,
+    "rationale": "Constituição 91: Glossário Canônico e Ontologia Operacional."
+  },
+  {
+    "logical_id": "CONST-92",
+    "title": "92 — Directive Compiler Regras Executáveis para LL",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f816ba3acc5247e301af5",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/contracts/directive-compiler.md",
+    "superseded": false,
+    "rationale": "Constituição 92: Directive Compiler e Regras Executáveis."
+  },
+  {
+    "logical_id": "CONST-93",
+    "title": "93 — Capability & Skill Gap Register Lacunas Obrig",
+    "category": "CONSTITUTIONAL_PROGRAM",
+    "uuid": "3e29bb7d023f81dd9258f046a178894b",
+    "action": "PROMOTED_CONSTITUTIONAL",
+    "canonical_target": "docs/harness/capability-skill-gap-register.md",
+    "superseded": false,
+    "rationale": "Constituição 93: Capability & Skill Gap Register do Harness."
+  },
+  {
+    "logical_id": "HUB-PART-II",
+    "title": "Parte II — Prumo Code Agent Agent Runtime, Clients",
+    "category": "HUB_PART2",
+    "uuid": "3d89bb7d023f81249996fd44fc396e32",
+    "action": "PROMOTED_HUB",
+    "canonical_target": "docs/LIVRO_VIVO_HUB.md",
+    "superseded": false,
+    "rationale": "Hub / Sumário estrutural do Livro Vivo."
+  },
+  {
+    "logical_id": "HUB-PART-I",
+    "title": "Prumo — Livro Vivo Unificado Framework, Harness &",
+    "category": "HUB_PART1",
+    "uuid": "3d59bb7d023f8168a69ac57326eddc85",
+    "action": "PROMOTED_HUB",
+    "canonical_target": "docs/LIVRO_VIVO_HUB.md",
+    "superseded": false,
+    "rationale": "Hub / Sumário estrutural do Livro Vivo."
+  }
+]

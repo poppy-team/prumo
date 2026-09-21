@@ -10,6 +10,7 @@ import (
 
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/checkpoint"
+	"github.com/raillen/prumo/internal/harness/directive"
 	"github.com/raillen/prumo/internal/harness/model"
 	"github.com/raillen/prumo/internal/harness/perm"
 )
@@ -72,6 +73,8 @@ type Runner struct {
 	// CompactBudget auto-triggers compaction when estimated conversation
 	// tokens exceed it (0 = off). Estimate uses the versioned table.
 	CompactBudget int
+	// Directive holds the compiled DirectiveIR governing this execution.
+	Directive *directive.DirectiveIR
 	// mu guards Messages and State for cross-goroutine Inject/StateCopy.
 	// Step holds it for the whole phase advance, so no State/Messages write
 	// happens without the lock.
@@ -86,6 +89,22 @@ func NewRunner(svc Services, runID, sessionID string) *Runner {
 		Turn:     agent.Turn{ID: "turn-1", RunID: runID, SessionID: sessionID, Index: 1, Status: "open", StartedAt: agent.Now()},
 		MaxTurns: 10,
 	}
+}
+
+// NewRunnerWithDirective initializes a Run session governed by a compiled DirectiveIR.
+func NewRunnerWithDirective(svc Services, dir *directive.DirectiveIR, sessionID string) *Runner {
+	r := NewRunner(svc, dir.TaskID, sessionID)
+	r.Directive = dir
+	// Seed prompt projection as initial system directive
+	r.Messages = []agent.Message{
+		{
+			ID:        "directive-init",
+			Role:      agent.RoleSystem,
+			Content:   dir.FormatAgentPrompt(),
+			CreatedAt: agent.Now(),
+		},
+	}
+	return r
 }
 func (r *Runner) emit(kind string, payload map[string]any) {
 	if r.Svc.Events == nil {
@@ -408,6 +427,26 @@ func (r *Runner) Step(ctx context.Context) error {
 			return fmt.Errorf("no tool executor")
 		}
 		for _, tc := range r.ToolQ {
+			if r.Directive != nil {
+				targetPath := fmt.Sprint(tc.Arguments["path"])
+				if targetPath == "" && tc.Name == "edit.move" {
+					targetPath = fmt.Sprint(tc.Arguments["to"])
+				}
+				if targetPath != "" && targetPath != "<nil>" {
+					kind := ""
+					if r.Svc.Tools != nil {
+						kind = r.Svc.Tools.KindOf(tc.Name)
+					}
+					if kind == "side-effecting" || kind == "destructive" {
+						if !r.Directive.CanMutatePath(targetPath) {
+							r.State.Phase = agent.PhaseFailed
+							r.State.StopReason = fmt.Sprintf("scope firewall violation: path '%s' is not allowed for mutation", targetPath)
+							r.emitLocked("scope_violation", map[string]any{"path": targetPath, "tool": tc.Name})
+							return fmt.Errorf("directive scope violation: path '%s' forbidden", targetPath)
+						}
+					}
+				}
+			}
 			res, err := r.Svc.Tools.Execute(ctx, tc)
 			if err != nil {
 				return err

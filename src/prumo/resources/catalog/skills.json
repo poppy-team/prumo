@@ -370,7 +370,7 @@
       "core": true,
       "requires_any": [],
       "tools": [],
-      "instructions": "---\nname: architecture-quality\ndescription: Dependency direction, cycle detection, boundary leakage, transport/domain coupling, god modules, shared mutable state, hidden globals, unstable interfaces\n---\n# Architecture Quality\n\n## 1. Dependency Direction\nDependencies must point inwards toward higher-level policies. The domain layer should not depend on infrastructure or UI layers. This Dependency Inversion Principle ensures that core business logic remains isolated from volatile implementation details.\n\n## 2. Cycle Detection\nCyclic dependencies create a single tightly coupled super-module. Detect and break dependency cycles using Dependency Inversion, extracting common abstractions, or merging modules if they fundamentally represent the same concept. Use static analysis tools to prevent cycles.\n\n## 3. Boundary Leakage\nEnsure that domain models do not leak into transport or persistence layers, and vice versa. Use DTOs (Data Transfer Objects) and mappers at system boundaries. A change in the database schema should not necessitate a change in the core domain logic.\n\n## 4. Transport/Domain Coupling\nDecouple HTTP/gRPC handlers from domain services. The transport layer is responsible for decoding requests and encoding responses, nothing else. The domain layer should be completely unaware of the transport mechanism used to invoke it.\n\n## 5. God Modules Mitigation\nIdentify and decompose God Modules\u2014classes or packages that know too much or do too much. Break them apart along business capability lines. Establish clear, narrow interfaces for the resulting smaller modules to interact with each other.\n\n## 6. Shared Mutable State\nAvoid shared mutable state across architectural boundaries. When components must share data, prefer message passing, event sourcing, or immutable shared memory. If shared mutable state is unavoidable, encapsulate it strictly behind a synchronizing boundary.\n\n## 7. Hidden Globals Management\nIdentify and eliminate Hidden Globals (e.g., Singletons that maintain state, implicit context objects). They make unit testing difficult and introduce hidden coupling. Replace them with explicit dependency injection and scoped contexts.\n\n## 8. Unstable Interfaces\nIdentify interfaces that change frequently and stabilize them. Apply the Stable Dependencies Principle: depend in the direction of stability. Isolate unstable, experimental modules behind stable adapter layers to protect the rest of the system.\n\n## 9. Architectural Fitness Functions\nImplement automated architectural fitness functions using tools like ArchUnit. Assert that specific packages do not depend on forbidden packages. Fail the build if architectural constraints (e.g., layer isolation) are violated.\n\n## 10. System Observability Hooks\nDesign the architecture to be inherently observable. Embed correlation IDs at the system edges and propagate them through all internal boundaries. Define clear, consistent logging contexts and tracing spans at every architectural transition point.\n\n"
+      "instructions": "---\nname: architecture-quality\ndescription: Dependency direction, cycle detection, boundary leakage, transport/domain coupling, god modules, shared mutable state, hidden globals, unstable interfaces\n---\n# Architecture Quality\n\n## 1. Dependency Direction\nDependencies must point inwards toward higher-level policies. The domain layer should not depend on infrastructure or UI layers. This Dependency Inversion Principle ensures that core business logic remains isolated from volatile implementation details.\n\n## 2. Cycle Detection\nCyclic dependencies create a single tightly coupled super-module. Detect and break dependency cycles using Dependency Inversion, extracting common abstractions, or merging modules if they fundamentally represent the same concept. Use static analysis tools to prevent cycles.\n\n## 3. Boundary Leakage\nEnsure that domain models do not leak into transport or persistence layers, and vice versa. Use DTOs (Data Transfer Objects) and mappers at system boundaries. A change in the database schema should not necessitate a change in the core domain logic.\n\n## 4. Transport/Domain Coupling\nDecouple HTTP/gRPC handlers from domain services. The transport layer is responsible for decoding requests and encoding responses, nothing else. The domain layer should be completely unaware of the transport mechanism used to invoke it.\n\n## 5. God Modules Mitigation\nIdentify and decompose God Modules—classes or packages that know too much or do too much. Break them apart along business capability lines. Establish clear, narrow interfaces for the resulting smaller modules to interact with each other.\n\n## 6. Shared Mutable State\nAvoid shared mutable state across architectural boundaries. When components must share data, prefer message passing, event sourcing, or immutable shared memory. If shared mutable state is unavoidable, encapsulate it strictly behind a synchronizing boundary.\n\n## 7. Hidden Globals Management\nIdentify and eliminate Hidden Globals (e.g., Singletons that maintain state, implicit context objects). They make unit testing difficult and introduce hidden coupling. Replace them with explicit dependency injection and scoped contexts.\n\n## 8. Unstable Interfaces\nIdentify interfaces that change frequently and stabilize them. Apply the Stable Dependencies Principle: depend in the direction of stability. Isolate unstable, experimental modules behind stable adapter layers to protect the rest of the system.\n\n## 9. Architectural Fitness Functions\nImplement automated architectural fitness functions using tools like ArchUnit. Assert that specific packages do not depend on forbidden packages. Fail the build if architectural constraints (e.g., layer isolation) are violated.\n\n## 10. System Observability Hooks\nDesign the architecture to be inherently observable. Embed correlation IDs at the system edges and propagate them through all internal boundaries. Define clear, consistent logging contexts and tracing spans at every architectural transition point.\n\n"
     },
     {
       "id": "asset-pipeline",
@@ -7211,7 +7211,7 @@
       },
       "requires_any": [],
       "tools": [],
-      "instructions": "# Project Documentation Architect\n\nBuild and maintain implementation-ready, living project documentation \u2014\nproduct, architecture, contracts, evidence, quality gates \u2014 in canonical\n`en-US` plus synchronized `pt-BR`, with the least workforce sufficient.\nPortable core: `~/project-documentation-architect/` (agentskills.io format);\nthis package is the Prumo-native adapter of that core.\n\n## Purpose\nTurn `idea -> context -> requirements -> research -> decisions ->\ncontracts -> documentation -> readiness -> execution -> evidence ->\ndelta -> continuous maintenance`, producing a versioned, evidence-backed\ndocumentation system (not a pile of Markdown) that lets future agents work\nwithout rediscovering everything.\n\n## Use when\nCreating, initializing, bootstrapping, adopting, or formally planning a\nsoftware project before substantial implementation begins; adopting an\nexisting repo that lacks adequate docs; maintaining docs of an already\ndocumented project (delta); or when asked for an implementation bible,\nliving book, full architecture, or agent handoff documentation.\n\n## Do not use when\nSingle-function bug fixes, trivial edits inside an already documented\nproject, explicitly disposable one-off scripts, or pure code review with\nno documentation mandate. For small changes inside documented projects,\nrun Mode DELTA only.\n\n## Required context\n- User intent or briefing (GENESIS) or repo snapshot (ADOPTION/DELTA).\n- Detected documentation profiles (see `references/profiles.md`).\n- `docs/project-docs.json` manifest when it already exists; create it first\n  when it does not (template: `templates/project-docs.json`).\n\n## Procedure\n1. Select mode: GENESIS (no trusted docs yet), ADOPTION (repo exists, docs\n   missing/partial/untrusted \u2014 inspect code, tests, CI, config, runtime\n   first, then write a Gap Matrix and fix only the delta), DELTA (docs exist\n   \u2014 update only impacted capabilities, contracts, tests, docs, risks,\n   migrations, translations). Detail: `references/modes.md`.\n2. Detect profiles and resolve the mandatory contract pack per profile\n   (`references/profiles.md`). Write/update `docs/project-docs.json` first:\n   identity, profiles, contracts, semantic roles, statuses, owners.\n3. Select the least workforce sufficient (`references/orchestration.md`):\n   tiny CLI = orchestrator + architect + one documenter + translator;\n   add product, research, UI/UX, a11y, security, performance, dependency,\n   ADR, traceability, parity-review, audit roles only as profiles demand.\n   Never assign two writers to the same canonical artifact concurrently.\n4. Draft canonical `en-US` docs, then translate impacted pairs to `pt-BR`,\n   then parity-review (`references/bilingual.md`). Technical errors found\n   during translation are fixed in `en-US` first and re-propagated \u2014 never\n   patch `pt-BR` alone.\n5. Run `scripts/verify.sh`, complete `checks/post-flight.md`, and record a\n   documentation delta (changed capabilities/contracts, impacted\n   docs/tests/translations, severity, requires_review).\n\n## Decision rules\n- Never invent features, requirements, commands, APIs, benchmarks, files,\n  or decisions. Unknowns become OPEN, ASSUMPTION, RESEARCH REQUIRED, or\n  BLOCKING QUESTION.\n- Material claims need `claim -> source -> evidence -> verification ->\n  decision`. `verified`, `safe`, `complete`, and `done` are forbidden\n  without verifiable semantics.\n- Depth follows `complexity + risk + impact + irreversibility`. No empty\n  checklist files; group content for simple projects.\n- Human-approved decisions outrank inference; real behavior + valid tests\n  + approved contracts outrank unverified assertions.\n- Contradictions are preserved as CONTRADICTION records (both claims plus\n  evidence) and resolved via the authority model or the human \u2014 never\n  merged silently.\n\n## Evidence required\n- Automated test runs, build outputs, or verification logs where the skill\n  touches behavior; `scripts/verify.sh` output for documentation runs.\n- Every normative MUST links to an acceptance criterion plus a test pointer.\n- Required evidence for sign-off: `review` (and `test` when implementation\n  or executable checks are involved).\n\n## Output contract\n- Updated `docs/project-docs.json` manifest.\n- Canonical `en-US` documents plus synchronized `pt-BR` versions for every\n  required pair (states CURRENT or IN_REVIEW, never silent STALE).\n- Documentation delta record plus handoff microcontexts (one loadable\n  context per work stream \u2014 never a full dump).\n- Completed `checks/post-flight.md`; residual risks and open questions\n  recorded explicitly.\n"
+      "instructions": "# Project Documentation Architect\n\nBuild and maintain implementation-ready, living project documentation —\nproduct, architecture, contracts, evidence, quality gates — in canonical\n`en-US` plus synchronized `pt-BR`, with the least workforce sufficient.\nPortable core: `~/project-documentation-architect/` (agentskills.io format);\nthis package is the Prumo-native adapter of that core.\n\n## Purpose\nTurn `idea -> context -> requirements -> research -> decisions ->\ncontracts -> documentation -> readiness -> execution -> evidence ->\ndelta -> continuous maintenance`, producing a versioned, evidence-backed\ndocumentation system (not a pile of Markdown) that lets future agents work\nwithout rediscovering everything.\n\n## Use when\nCreating, initializing, bootstrapping, adopting, or formally planning a\nsoftware project before substantial implementation begins; adopting an\nexisting repo that lacks adequate docs; maintaining docs of an already\ndocumented project (delta); or when asked for an implementation bible,\nliving book, full architecture, or agent handoff documentation.\n\n## Do not use when\nSingle-function bug fixes, trivial edits inside an already documented\nproject, explicitly disposable one-off scripts, or pure code review with\nno documentation mandate. For small changes inside documented projects,\nrun Mode DELTA only.\n\n## Required context\n- User intent or briefing (GENESIS) or repo snapshot (ADOPTION/DELTA).\n- Detected documentation profiles (see `references/profiles.md`).\n- `docs/project-docs.json` manifest when it already exists; create it first\n  when it does not (template: `templates/project-docs.json`).\n\n## Procedure\n1. Select mode: GENESIS (no trusted docs yet), ADOPTION (repo exists, docs\n   missing/partial/untrusted — inspect code, tests, CI, config, runtime\n   first, then write a Gap Matrix and fix only the delta), DELTA (docs exist\n   — update only impacted capabilities, contracts, tests, docs, risks,\n   migrations, translations). Detail: `references/modes.md`.\n2. Detect profiles and resolve the mandatory contract pack per profile\n   (`references/profiles.md`). Write/update `docs/project-docs.json` first:\n   identity, profiles, contracts, semantic roles, statuses, owners.\n3. Select the least workforce sufficient (`references/orchestration.md`):\n   tiny CLI = orchestrator + architect + one documenter + translator;\n   add product, research, UI/UX, a11y, security, performance, dependency,\n   ADR, traceability, parity-review, audit roles only as profiles demand.\n   Never assign two writers to the same canonical artifact concurrently.\n4. Draft canonical `en-US` docs, then translate impacted pairs to `pt-BR`,\n   then parity-review (`references/bilingual.md`). Technical errors found\n   during translation are fixed in `en-US` first and re-propagated — never\n   patch `pt-BR` alone.\n5. Run `scripts/verify.sh`, complete `checks/post-flight.md`, and record a\n   documentation delta (changed capabilities/contracts, impacted\n   docs/tests/translations, severity, requires_review).\n\n## Decision rules\n- Never invent features, requirements, commands, APIs, benchmarks, files,\n  or decisions. Unknowns become OPEN, ASSUMPTION, RESEARCH REQUIRED, or\n  BLOCKING QUESTION.\n- Material claims need `claim -> source -> evidence -> verification ->\n  decision`. `verified`, `safe`, `complete`, and `done` are forbidden\n  without verifiable semantics.\n- Depth follows `complexity + risk + impact + irreversibility`. No empty\n  checklist files; group content for simple projects.\n- Human-approved decisions outrank inference; real behavior + valid tests\n  + approved contracts outrank unverified assertions.\n- Contradictions are preserved as CONTRADICTION records (both claims plus\n  evidence) and resolved via the authority model or the human — never\n  merged silently.\n\n## Evidence required\n- Automated test runs, build outputs, or verification logs where the skill\n  touches behavior; `scripts/verify.sh` output for documentation runs.\n- Every normative MUST links to an acceptance criterion plus a test pointer.\n- Required evidence for sign-off: `review` (and `test` when implementation\n  or executable checks are involved).\n\n## Output contract\n- Updated `docs/project-docs.json` manifest.\n- Canonical `en-US` documents plus synchronized `pt-BR` versions for every\n  required pair (states CURRENT or IN_REVIEW, never silent STALE).\n- Documentation delta record plus handoff microcontexts (one loadable\n  context per work stream — never a full dump).\n- Completed `checks/post-flight.md`; residual risks and open questions\n  recorded explicitly.\n"
     },
     {
       "id": "project-intelligence",
@@ -9434,6 +9434,202 @@
       "requires_any": [],
       "tools": [],
       "instructions": "# Zoom & Reflow Testing\n\n## Purpose\nVerify layouts reflow without horizontal scroll at 400% zoom.\n\n## Use when\n- Active Goal or Task explicitly requires zoom & reflow testing operations.\n- Operating in mode(s): `testing`.\n\n## Do not use when\n- Task is out of scope or unrelated to zoom & reflow testing.\n- Bounded token budget or capability policy denies required operations.\n\n## Required context\n- Product requirements\n- Design tokens\n- Wireframe / UI view\n\n## Procedure\n1. Analyze UX requirements and design constraints for zoom & reflow testing.\n2. Check compliance with design tokens and accessibility guidelines.\n3. Specify structured layout, interaction states, and responsive breakpoints.\n4. Verify with automated visual or keyboard navigation checks.\n5. Emit validated specification or review findings.\n\n## Decision rules\n- Always prefer smallest sufficient changeset over broad refactoring.\n- Preserve existing public contracts and architecture invariants.\n- Never weaken locked Goal acceptance criteria.\n\n## Evidence required\n- test\n- review\n\n## Output contract\n- Design specification / findings\n- Accessibility audit scorecard\n- UI tests\n\n## Stop conditions\n- Task acceptance criteria satisfied with evidence\n- Token budget exhausted\n- Blocked on external dependency\n\n## Escalation rules\n- Escalate to lead architect or human if locked Goal criteria cannot be met.\n- Escalate immediately upon discovering unexpected security vulnerabilities or data loss risks.\n"
+    },
+    {
+      "id": "grounded-implementation",
+      "name": "Grounded Implementation & Anti-Invention",
+      "version": 1,
+      "schema_version": 2,
+      "purpose": "Enforce grounded implementation discipline: inspect reality before claiming existence, never invent APIs/symbols, and fail closed when authority is missing.",
+      "risk_level": "high",
+      "modes": [
+        "development",
+        "review"
+      ],
+      "inputs": [
+        "DirectiveIR",
+        "Dossier",
+        "Active decisions",
+        "Repository source"
+      ],
+      "outputs": [
+        "Grounded implementation diff",
+        "Reality inspection findings"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [],
+      "templates": [],
+      "checks": [
+        "checks/grounded-implementation-checklist.md"
+      ],
+      "scripts": [],
+      "examples": [
+        "examples/example.md"
+      ],
+      "required_evidence": [
+        "inspection",
+        "test"
+      ],
+      "stop_conditions": [
+        "Mutations grounded and verified",
+        "Blocked on missing authority"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.6.0",
+        "checksum": "",
+        "modified": "2026-09-21"
+      },
+      "select": {
+        "features_any": [
+          "grounded-implementation",
+          "harness"
+        ],
+        "risk_any": [
+          "high"
+        ]
+      },
+      "requires_any": [],
+      "tools": [],
+      "instructions": "---\nname: grounded-implementation\ndescription: Enforces grounded implementation: inspect before claim, anti-invention, and fail-closed missing authority handling.\n---\n# Grounded Implementation & Anti-Invention\n\n## 1. Inspect Before Claim\nNever claim that a file, directory, symbol, function, interface, command, flag, or test exists without first inspecting the repository with tools.\n\n## 2. Never Invent Requirements or APIs\nAbsence of information is not authorization to invent APIs, generic \"best practices\", or conventions. When required information is missing, transition: UNKNOWN -> search authoritative source -> resolve -> explicit assumption OR block dependent slice.\n\n## 3. Strict Scope Adherence\nDo not perform opportunistic refactoring outside the Task scope. Materialize IN, OUT, and INCIDENTAL boundaries. Never mutate files listed under OUT.\n\n## 4. Fail Closed on Missing Authority\nIf an action is destructive, security-sensitive, or mutates public contracts and canonical authority is missing, fail closed immediately.\n"
+    },
+    {
+      "id": "implementation-reality-verification",
+      "name": "Implementation Reality Verification (Anti-False-Green)",
+      "version": 1,
+      "schema_version": 2,
+      "purpose": "Differentiate presence vs reachability vs exercise vs verification; eliminate false-green illusions where dead code passes superficial tests.",
+      "risk_level": "high",
+      "modes": [
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Source code",
+        "Test suites",
+        "Runtime wiring",
+        "Call sites"
+      ],
+      "outputs": [
+        "Reachability proof",
+        "Call site inventory",
+        "Verification report"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "process.spawn"
+      ],
+      "references": [],
+      "templates": [],
+      "checks": [
+        "checks/implementation-reality-verification-checklist.md"
+      ],
+      "scripts": [],
+      "examples": [
+        "examples/example.md"
+      ],
+      "required_evidence": [
+        "test",
+        "conformance"
+      ],
+      "stop_conditions": [
+        "Real reachability verified with evidence",
+        "Dead code / false-green detected"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.6.0",
+        "checksum": "",
+        "modified": "2026-09-21"
+      },
+      "select": {
+        "features_any": [
+          "implementation-reality-verification",
+          "harness"
+        ],
+        "risk_any": [
+          "high"
+        ]
+      },
+      "requires_any": [],
+      "tools": [],
+      "instructions": "---\nname: implementation-reality-verification\ndescription: Eliminates false-greens: verifies code is reachable, exercised, evidenced, and verified beyond shallow unit tests.\n---\n# Implementation Reality Verification\n\n## 1. Do Not Confuse File Presence with Feature Implementation\nFinding a file does not mean the feature works. Verify interfaces, call sites, runtime wiring, lifecycle, error paths, and CLI exposure.\n\n## 2. Eliminate False-Green Oracles\nDetect tests that pass because assertions are weak, mocks are used instead of real capabilities, or errors are silently swallowed.\n\n## 3. Terminal State Hierarchy\nDerive completion strictly through:\nimplemented -> reachable -> exercised -> evidenced -> verified -> accepted -> released.\nAgents are strictly prohibited from declaring DONE by text output.\n"
+    },
+    {
+      "id": "surface-protocol-conformance",
+      "name": "Surface & Protocol Conformance",
+      "version": 1,
+      "schema_version": 2,
+      "purpose": "Validate that CLI, TUI, GUI, and daemon share identical domain semantics without bypassing permissions, budgets, or error taxonomy.",
+      "risk_level": "high",
+      "modes": [
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Protocol schemas",
+        "Client implementations",
+        "Daemon endpoints",
+        "Commands"
+      ],
+      "outputs": [
+        "Surface conformance report",
+        "Protocol drift matrix"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "process.spawn",
+        "network.client"
+      ],
+      "references": [],
+      "templates": [],
+      "checks": [
+        "checks/surface-protocol-conformance-checklist.md"
+      ],
+      "scripts": [],
+      "examples": [
+        "examples/example.md"
+      ],
+      "required_evidence": [
+        "conformance",
+        "integration"
+      ],
+      "stop_conditions": [
+        "All surfaces conform to protocol",
+        "Semantic drift detected"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.6.0",
+        "checksum": "",
+        "modified": "2026-09-21"
+      },
+      "select": {
+        "features_any": [
+          "surface-protocol-conformance",
+          "harness"
+        ],
+        "risk_any": [
+          "high"
+        ]
+      },
+      "requires_any": [],
+      "tools": [],
+      "instructions": "---\nname: surface-protocol-conformance\ndescription: Guarantees semantic uniformity across CLI, TUI, GUI, and daemon over the public Prumo Protocol.\n---\n# Surface & Protocol Conformance\n\n## 1. Single Domain Source\nA domain rule must exist once in application/domain services. Clients and surfaces must never duplicate domain rules locally or invent private behavior.\n\n## 2. Non-Bypassable Governance\nEnsure no surface bypasses the Permission Engine, Budget Manager, or Gauntlet Quality Gates.\n\n## 3. Protocol Version Negotiation & Replay\nVerify that clients negotiate protocol versions and can reconnect/replay events without state corruption.\n"
     }
   ]
 }

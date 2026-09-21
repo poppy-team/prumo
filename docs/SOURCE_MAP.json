@@ -1,687 +1,3137 @@
 {
- "generated_at": "2026-09-15",
- "source": "Prumo — Livro Vivo v0.4",
- "source_url": "https://app.notion.com/p/raillen/Project-Prumo-Framework-Livro-Vivo-v0-4-3d59bb7d023f8168a69ac57326eddc85",
- "documents": [
-  {
-   "local_path": "docs/AUTHORITY_MAP.json",
-   "notion_pages": [],
-   "semantic_role": "machine-readable canonical/projection/historical classification"
-  },
-  {
-   "local_path": "docs/adr/001-go-core.md",
-   "notion_pages": [
+  "generated_at": "2026-09-21",
+  "source": "Prumo — Livro Vivo Unificado Framework, Harness & Code Agent (Snapshot 2026-09-21)",
+  "source_url": "https://app.notion.com/p/raillen/Project-Prumo-Framework-Livro-Vivo-v0-4-3d59bb7d023f8168a69ac57326eddc85",
+  "documents": [
     {
-     "title": "01 — Stack Go, Clean Code e Migração do Core Python",
-     "role": "ADR 001 Go Core architecture decision"
-    }
-   ],
-   "semantic_role": "architectural decision record: pure Go core and CLI architecture"
-  },
-  {
-   "local_path": "docs/adr/002-retire-python-runtime.md",
-   "notion_pages": [
-    {
-     "title": "01 — Stack Go, Clean Code e Migração do Core Python",
-     "role": "ADR 002 Python runtime retirement decision"
-    }
-   ],
-   "semantic_role": "architectural decision record: retirement of Python v0.3 runtime, test suite, and packaging"
-  },
-  {
-   "local_path": "docs/adr/003-language-engineering-safety-subsystem.md",
-   "notion_pages": [
-    {
-     "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
-     "role": "ADR 003 Language Engineering & Safety Skills Subsystem"
-    }
-   ],
-   "semantic_role": "architectural decision record: executable contracts, escape hatch registry, and systems language skills"
-  },
-  {
-   "local_path": "docs/adr/005-cli-layer-import-policy.md",
-   "notion_pages": [],
-   "semantic_role": "architectural decision record: CLI as composition root, layer import policy"
-  },
-  {
-   "local_path": "docs/adr/006-container-runtime-default.md",
-   "notion_pages": [],
-   "semantic_role": "architectural decision record: container runtime default, podman-preferred with docker reference"
-  },
-  {
-   "local_path": "docs/adr/007-sqlite-driver.md",
-   "notion_pages": [],
-   "semantic_role": "architectural decision record: pure-Go SQLite driver behind the DerivedIndex port"
-  },
-  {
-   "local_path": "docs/adr/008-plugin-isolation.md",
-   "notion_pages": [],
-   "semantic_role": "architectural decision record: out-of-process extensions, no in-process plugin loader"
-  },
-  {
-   "local_path": "docs/adr/009-performance-budgets.md",
-   "notion_pages": [],
-   "semantic_role": "architectural decision record: measured baselines, thresholds only with evidence, derived-state TTL"
-  },
-  {
-   "local_path": "docs/adr/010-documentation-control-plane.md",
-   "notion_pages": [],
-   "semantic_role": "architectural decision record: documentation control plane, semantic readiness v2, compiled agent surfaces"
-  },
-  {
-   "local_path": "docs/adr/011-documentation-telemetry-refusal.md",
-   "notion_pages": [],
-   "semantic_role": "ADR refusing retrieval/query telemetry (W21.2/W21.3); documentation intelligence is derived from repository state only"
-  },
-  {
-   "local_path": "docs/agents/instruction-ir.json",
-   "notion_pages": [],
-   "semantic_role": "canonical provider-neutral agent instruction knowledge compiled into per-tool surfaces (W16)"
-  },
-  {
-   "local_path": "docs/architecture/accessibility.md",
-   "notion_pages": [],
-   "semantic_role": "Accessibility contracts, WCAG 2.2 / WCAG2ICT mapping and evidence classes for TUI, web and desktop surfaces (W11)"
-  },
-  {
-   "local_path": "docs/architecture/dependency-rules.md",
-   "notion_pages": [
-    {
-     "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
-     "role": "internal boundaries, rules of dependency, interface placement"
+      "local_path": "docs/AUTHORITY_MAP.json",
+      "notion_pages": [],
+      "semantic_role": "machine-readable canonical/projection/historical classification"
     },
     {
-     "title": "17 — Estrutura Canônica de Repositório Alvo",
-     "role": "package layout, internal vs integration, embedding strategy"
-    }
-   ],
-   "semantic_role": "package dependency graph, hard rules, interface placement, import hygiene"
-  },
-  {
-   "local_path": "docs/architecture/documentation-compiler.md",
-   "notion_pages": [],
-   "semantic_role": "documentation compiler contracts, delta chain and invariants (W10)"
-  },
-  {
-   "local_path": "docs/architecture/documentation-control-plane.md",
-   "notion_pages": [],
-   "semantic_role": "documentation control plane layers, semantic readiness model, package boundaries and migration status (W15)"
-  },
-  {
-   "local_path": "docs/architecture/overview.md",
-   "notion_pages": [
-    {
-     "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
-     "role": "planes, boundaries, internal interfaces, dependency direction, design rules"
-    }
-   ],
-   "semantic_role": "high-level topology, plane boundaries, dependency rules, design principles"
-  },
-  {
-   "local_path": "docs/architecture/shared-product-contract.md",
-   "notion_pages": [
-    {
-     "title": "23 — Shared Product Contract: Entidades, State Owners",
-     "role": "entities, state ownership, capabilities"
-    }
-   ],
-   "semantic_role": "shared product contract promoted from Living Book page 23 (W8)"
-  },
-  {
-   "local_path": "docs/architecture/visual-constitution.md",
-   "notion_pages": [],
-   "semantic_role": "Prumo Code TUI visual constitution and token discipline (W9)"
-  },
-  {
-   "local_path": "docs/development/coding-standards.md",
-   "notion_pages": [
-    {
-     "title": "00 — Princípios, Governança e Regras de Engenharia",
-     "role": "Clean Code rules, Definition of Done, anti-overengineering guardrail, portability rule"
-    }
-   ],
-   "semantic_role": "naming, functions, packages, errors, interfaces, dependencies, I/O, testing, DoD, guardrails"
-  },
-  {
-   "local_path": "docs/development/implementation-blueprint.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "milestones, dependency DAG, gates, dogfooding, releases, required docs"
+      "local_path": "docs/LIVRO_VIVO_HUB.md",
+      "notion_pages": [
+        {
+          "title": "Parte II — Prumo Code Agent Agent Runtime, Clients",
+          "uuid": "3d89bb7d023f81249996fd44fc396e32",
+          "logical_id": "HUB-PART-II",
+          "role": "Hub / Sumário estrutural do Livro Vivo."
+        },
+        {
+          "title": "Prumo — Livro Vivo Unificado Framework, Harness &",
+          "uuid": "3d59bb7d023f8168a69ac57326eddc85",
+          "logical_id": "HUB-PART-I",
+          "role": "Hub / Sumário estrutural do Livro Vivo."
+        }
+      ],
+      "semantic_role": "Hub / Sumário estrutural do Livro Vivo."
     },
     {
-     "title": "01 — Stack Go, Clean Code e Migração do Core Python",
-     "role": "Go rules, migration phases, criteria"
+      "local_path": "docs/adr/001-go-core.md",
+      "notion_pages": [
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "ADR 001 Go Core architecture decision"
+        }
+      ],
+      "semantic_role": "architectural decision record: pure Go core and CLI architecture"
     },
     {
-     "title": "16 — Gap Analysis v0.3 → v0.4",
-     "role": "migration boundary"
-    }
-   ],
-   "semantic_role": "objective, non-goals, architecture summary, migration strategy, macro-phases, DAG, gates, dogfooding, releases"
-  },
-  {
-   "local_path": "docs/development/localization.md",
-   "notion_pages": [],
-   "semantic_role": "canonical source locale, translation lifecycle and locale-key identity (W6)"
-  },
-  {
-   "local_path": "docs/development/phases.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M0–M12 detail, dependencies, scope, non-goals, deliverables, acceptance criteria, exit gates"
-    }
-   ],
-   "semantic_role": "fully detailed M0+M1; M2–M4 sufficient for planning; M5+ architectural"
-  },
-  {
-   "local_path": "docs/development/repository-layout.md",
-   "notion_pages": [
-    {
-     "title": "17 — Estrutura Canônica de Repositório Alvo",
-     "role": "target tree, package rules, embedding strategy, canonical vs derived"
-    }
-   ],
-   "semantic_role": "canonical tree, directory responsibilities, go:embed strategy, package rules"
-  },
-  {
-   "local_path": "docs/development/testing-strategy.md",
-   "notion_pages": [
-    {
-     "title": "13 — Testes, Conformance, Evals e Quality Gates",
-     "role": "pyramid, quality gates, conformance fixtures, provider contract, failure taxonomy, evals, budgets"
+      "local_path": "docs/adr/002-retire-python-runtime.md",
+      "notion_pages": [
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "ADR 002 Python runtime retirement decision"
+        }
+      ],
+      "semantic_role": "architectural decision record: retirement of Python v0.3 runtime, test suite, and packaging"
     },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "test provider foundation, security foundation, dogfooding"
-    }
-   ],
-   "semantic_role": "unit/integration/conformance/connector/E2E/LLM evals, quality gates, fixtures, provider contract, failure taxonomy, eval corpus, dogfooding"
-  },
-  {
-   "local_path": "docs/development/waves.md",
-   "notion_pages": [
-    {
-     "title": "14-09_00h33-deep-research-report.md",
-     "role": "local deep research"
+      "local_path": "docs/adr/003-language-engineering-safety-subsystem.md",
+      "notion_pages": [
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "ADR 003 Language Engineering & Safety Skills Subsystem"
+        }
+      ],
+      "semantic_role": "architectural decision record: executable contracts, escape hatch registry, and systems language skills"
     },
     {
-     "title": "PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md",
-     "role": "documentation control plane deep audit"
-    }
-   ],
-   "semantic_role": "implementation waves (W0-W21) & gap register mapping"
-  },
-  {
-   "local_path": "docs/glossary.json",
-   "notion_pages": [],
-   "semantic_role": "canonical terminology registry (preferred/deprecated/forbidden) enforced by `prumo docs glossary` and `docs verify` (W20.2)"
-  },
-  {
-   "local_path": "docs/governance/authority.md",
-   "notion_pages": [],
-   "semantic_role": "authority order, document roles and drift policy (W0)"
-  },
-  {
-   "local_path": "docs/governance/m10-exit-gate.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M10 Exit Gate — OpenCode Native Harness validation and criteria"
-    }
-   ],
-   "semantic_role": "M10 exit gate formal validation: native compiler, TS plugin, tool guards, session hooks, and cleanup"
-  },
-  {
-   "local_path": "docs/governance/m11-exit-gate.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M11 Exit Gate — Connector SDK validation and criteria"
-    }
-   ],
-   "semantic_role": "M11 exit gate formal validation: capability negotiation, test kit, Gemini connector, Claude Code/Codex elevation"
-  },
-  {
-   "local_path": "docs/governance/m12-exit-gate.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M12 Governance Assessment — Team/Advanced Runtime deferred status"
-    }
-   ],
-   "semantic_role": "M12 governance assessment: architectural justification for deferred runtime and team daemon status"
-  },
-  {
-   "local_path": "docs/governance/m7-exit-gate.md",
-   "notion_pages": [
-    {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "M7 Exit Gate — ADOPTION READY validation, evidence, brownfield corpus results"
-    }
-   ],
-   "semantic_role": "M7 exit gate formal validation: zero forced layout, facts vs inferences, confidence ledger, M5 bindings, Living Plan uncertainty, review governed migration proposals, incremental scanner, security"
-  },
-  {
-   "local_path": "docs/governance/m8-exit-gate.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M8 Exit Gate — History and Traceability validation and criteria"
-    }
-   ],
-   "semantic_role": "M8 exit gate formal validation: implementation journal, experiment/rejection/debt registers, typed graph, trace CLI"
-  },
-  {
-   "local_path": "docs/governance/m9-exit-gate.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M9 Exit Gate — Experience Layer validation and criteria"
-    }
-   ],
-   "semantic_role": "M9 exit gate formal validation: session events, summaries, handoff protocol, experience proposals, retention"
-  },
-  {
-   "local_path": "docs/harness/overview.md",
-   "notion_pages": [
-    {
-     "title": "03 — Arquitetura Alvo do Agent Harness",
-     "role": "target architecture"
+      "local_path": "docs/adr/005-cli-layer-import-policy.md",
+      "notion_pages": [],
+      "semantic_role": "architectural decision record: CLI as composition root, layer import policy"
     },
     {
-     "title": "35 — Harness Build Strategy",
-     "role": "build strategy"
+      "local_path": "docs/adr/006-container-runtime-default.md",
+      "notion_pages": [],
+      "semantic_role": "architectural decision record: container runtime default, podman-preferred with docker reference"
     },
     {
-     "title": "40 — Repository Boundary",
-     "role": "split gate"
+      "local_path": "docs/adr/007-sqlite-driver.md",
+      "notion_pages": [],
+      "semantic_role": "architectural decision record: pure-Go SQLite driver behind the DerivedIndex port"
     },
     {
-     "title": "41 — Notebook-to-Repository Promotion",
-     "role": "promotion workflow"
-    }
-   ],
-   "semantic_role": "harness canonical entry",
-   "snapshot": "2026-09-11-d41f18bb65f5"
-  },
-  {
-   "local_path": "docs/harness/reconnect-replay.md",
-   "notion_pages": [],
-   "semantic_role": "Daemon reconnect/replay client contract, failure matrix and TUI state recovery (W12)"
-  },
-  {
-   "local_path": "docs/harness/roadmap-status.md",
-   "notion_pages": [
-    {
-     "title": "18 — Roadmap H0-H18",
-     "role": "roadmap"
+      "local_path": "docs/adr/008-plugin-isolation.md",
+      "notion_pages": [],
+      "semantic_role": "architectural decision record: out-of-process extensions, no in-process plugin loader"
     },
     {
-     "title": "19 — Registro de Decisões",
-     "role": "accepted decisions"
-    }
-   ],
-   "semantic_role": "implementation truth table",
-   "snapshot": "2026-09-11-d41f18bb65f5"
-  },
-  {
-   "local_path": "docs/i18n/translations.json",
-   "notion_pages": [],
-   "semantic_role": "canonical translation records; currency is derived from source digests, never stored (W6, W20)"
-  },
-  {
-   "local_path": "docs/integration/connector-contract.md",
-   "notion_pages": [
-    {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "Connector Contract Specification"
-    }
-   ],
-   "semantic_role": "Connector contract specification: capabilities, enforcement primitives, lifecycle operations"
-  },
-  {
-   "local_path": "docs/lifecycle.json",
-   "notion_pages": [],
-   "semantic_role": "Documentation lifecycle registry: release gates and deprecation records (W20)"
-  },
-  {
-   "local_path": "docs/media/records.json",
-   "notion_pages": [],
-   "semantic_role": "canonical media records linked to the UI state/theme/locale/platform they illustrate; staleness derived from digests (W20.4)"
-  },
-  {
-   "local_path": "docs/migration/conformance-strategy.md",
-   "notion_pages": [
-    {
-     "title": "13 — Testes, Conformance, Evals e Quality Gates",
-     "role": "conformance approach, migration gate"
+      "local_path": "docs/adr/009-performance-budgets.md",
+      "notion_pages": [],
+      "semantic_role": "architectural decision record: measured baselines, thresholds only with evidence, derived-state TTL"
     },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "conformance 100% gate"
-    }
-   ],
-   "semantic_role": "comparison contract, fixture layout, golden generation, determinism, gate progression, differential runner"
-  },
-  {
-   "local_path": "docs/migration/protocol-inventory.md",
-   "notion_pages": [
-    {
-     "title": "16 — Gap Analysis v0.3 → v0.4",
-     "role": "component classification, canonical schemas, root scripts, doc updates"
+      "local_path": "docs/adr/010-documentation-control-plane.md",
+      "notion_pages": [],
+      "semantic_role": "architectural decision record: documentation control plane, semantic readiness v2, compiled agent surfaces"
     },
     {
-     "title": "01 — Stack Go, Clean Code e Migração do Core Python",
-     "role": "migration phases, criteria"
-    }
-   ],
-   "semantic_role": "Python module map, CLI surface, schemas, resources, scripts, baseline, critical contracts, open questions"
-  },
-  {
-   "local_path": "docs/product/scope-v0.4.md",
-   "notion_pages": [
-    {
-     "title": "Prumo — Livro Vivo v0.4 (hub)",
-     "role": "macro-architecture, objective"
+      "local_path": "docs/adr/011-documentation-telemetry-refusal.md",
+      "notion_pages": [],
+      "semantic_role": "ADR refusing retrieval/query telemetry (W21.2/W21.3); documentation intelligence is derived from repository state only"
     },
     {
-     "title": "01 — Stack Go, Clean Code e Migração do Core Python",
-     "role": "target stack, migration phases, deprecation criteria"
+      "local_path": "docs/adr/012-interface-map-artifact-and-projections.md",
+      "notion_pages": [],
+      "semantic_role": "ADR defining the interface map as a canonical artifact with declared+derived fill, semantic slots with optional per-platform geometry, a composition tree plus labelled interconnection edges, and per-audience projections driven by prumo.json `ui` configuration"
     },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "milestones, dependency ordering, release strategy, amendments"
+      "local_path": "docs/agents/instruction-ir.json",
+      "notion_pages": [],
+      "semantic_role": "canonical provider-neutral agent instruction knowledge compiled into per-tool surfaces (W16)"
     },
     {
-     "title": "16 — Gap Analysis v0.3 → v0.4",
-     "role": "component classification, corrections, doc updates"
-    }
-   ],
-   "semantic_role": "detailed in-scope/out-of-scope, migration boundary"
-  },
-  {
-   "local_path": "docs/product/tui-spike-h10.md",
-   "notion_pages": [
-    {
-     "title": "Living Book pages 13, 14, 18, 21, 23",
-     "role": "source"
-    }
-   ],
-   "semantic_role": "tui spike"
-  },
-  {
-   "local_path": "docs/product/vision.md",
-   "notion_pages": [
-    {
-     "title": "Prumo — Livro Vivo v0.4 (hub)",
-     "role": "vision summary, fundamental decisions, macro-architecture"
-    }
-   ],
-   "semantic_role": "product vision, scope, non-goals, operational target"
-  },
-  {
-   "local_path": "docs/runtime/adoption-engine.md",
-   "notion_pages": [
-    {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "pipeline, discovery sources/output, classification, semantic mapping, confidence ledger, profile proposal, adoption report, modes, migration proposals, security, goal decomposition, exit gate"
+      "local_path": "docs/architecture/accessibility.md",
+      "notion_pages": [],
+      "semantic_role": "Accessibility contracts, WCAG 2.2 / WCAG2ICT mapping and evidence classes for TUI, web and desktop surfaces (W11)"
     },
     {
-     "title": "06 — Adoption Engine para Projetos Existentes",
-     "role": "inference confidence + evidence pointers, adoption report, candidate bindings"
-    }
-   ],
-   "semantic_role": "M7 Adoption Engine: discovery pipeline, observed facts vs inference, classification, semantic mapping, confidence ledger, adoption report, migration proposals, brownfield boundary, exit gate"
-  },
-  {
-   "local_path": "docs/runtime/control-plane.md",
-   "notion_pages": [
-    {
-     "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
-     "role": "control plane boundary, dependency direction, new application boundaries"
+      "local_path": "docs/architecture/dependency-rules.md",
+      "notion_pages": [
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "internal boundaries, rules of dependency, interface placement"
+        },
+        {
+          "title": "17 — Estrutura Canônica de Repositório Alvo",
+          "role": "package layout, internal vs integration, embedding strategy"
+        }
+      ],
+      "semantic_role": "package dependency graph, hard rules, interface placement, import hygiene"
     },
     {
-     "title": "48 — Agent Runtime Control Plane: Arquitetura e Princípios",
-     "role": "planes, governance rule, success criteria"
+      "local_path": "docs/architecture/documentation-architecture-v2.md",
+      "notion_pages": [
+        {
+          "title": "88 — Arquitetura Documental v2 Canonical Graph, IR",
+          "uuid": "3e29bb7d023f816c9f3fc45bdb57db7c",
+          "logical_id": "CONST-88",
+          "role": "Constituição 88: Arquitetura Documental v2, Canonical Graph, IR e Rebuild Determinístico."
+        }
+      ],
+      "semantic_role": "Constituição 88: Arquitetura Documental v2, Canonical Graph, IR e Rebuild Determinístico."
     },
     {
-     "title": "49 — Budget Manager, Cost Governance e Rate Limits",
-     "role": "budget envelope, scopes, limits, cost manager, rate limits, evidence"
+      "local_path": "docs/architecture/documentation-compiler.md",
+      "notion_pages": [],
+      "semantic_role": "documentation compiler contracts, delta chain and invariants (W10)"
     },
     {
-     "title": "50 — Context Compiler, Token Budget, Cache e Compaction",
-     "role": "compiler pipeline, manifest, window distinction, tool-output budgets, pressure, retrieval, evals"
+      "local_path": "docs/architecture/documentation-control-plane.md",
+      "notion_pages": [],
+      "semantic_role": "documentation control plane layers, semantic readiness model, package boundaries and migration status (W15)"
     },
     {
-     "title": "51 — Run Engine, Checkpoints, Retry, Resume e Cancellation",
-     "role": "run state machine, checkpoint, retry taxonomy, idempotency, resume, cancellation, livelock"
+      "local_path": "docs/architecture/overview.md",
+      "notion_pages": [
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "planes, boundaries, internal interfaces, dependency direction, design rules"
+        }
+      ],
+      "semantic_role": "high-level topology, plane boundaries, dependency rules, design principles"
     },
     {
-     "title": "52 — Tool Gateway, MCP Governance e Lazy Tool Discovery",
-     "role": "gateway pipeline, descriptor, lazy discovery, side-effect journal, MCP governance, policy, evals"
+      "local_path": "docs/architecture/prumo-native-workspace-viewer.md",
+      "notion_pages": [
+        {
+          "title": "82 — Prumo Native sobre Oxi Workspace Viewer Agent",
+          "uuid": "3de9bb7d023f81c791d4e4145393fa10",
+          "logical_id": "CONST-82",
+          "role": "Especificação do Prumo Native Workspace Viewer sobre Oxi."
+        }
+      ],
+      "semantic_role": "Especificação do Prumo Native Workspace Viewer sobre Oxi."
     },
     {
-     "title": "53 — Model Registry, Router, Drift, Fallback e Provider Health",
-     "role": "registry metadata, router inputs/outputs, eval-driven, drift, fallback, health, verification"
+      "local_path": "docs/architecture/shared-product-contract.md",
+      "notion_pages": [
+        {
+          "title": "23 — Shared Product Contract: Entidades, State Owners",
+          "role": "entities, state ownership, capabilities"
+        }
+      ],
+      "semantic_role": "shared product contract promoted from Living Book page 23 (W8)"
     },
     {
-     "title": "55 — Observability Plane, Run Explainability e Incident Bundles",
-     "role": "telemetry, explainability commands, storage, OTLP, incident bundles, privacy"
+      "local_path": "docs/architecture/unified-architecture.md",
+      "notion_pages": [
+        {
+          "title": "86 — Arquitetura Unificada Framework, Harness, Cod",
+          "uuid": "3e29bb7d023f81d0b8adef7ab3ea69d3",
+          "logical_id": "CONST-86",
+          "role": "Constituição 86: Arquitetura Unificada de Framework, Harness, Code Agent e Surfaces."
+        }
+      ],
+      "semantic_role": "Constituição 86: Arquitetura Unificada de Framework, Harness, Code Agent e Surfaces."
     },
     {
-     "title": "56 — Automation Engine, Event Rules, DLQ e Safety",
-     "role": "automation model, contract, idempotency, retry, DLQ, scheduler deferral"
+      "local_path": "docs/architecture/visual-constitution.md",
+      "notion_pages": [],
+      "semantic_role": "Prumo Code TUI visual constitution and token discipline (W9)"
     },
     {
-     "title": "57 — Prumo Package & Runtime Manager, prumo.lock e Provider Isolation",
-     "role": "package types, manifest, lockfile, runtime manager, installation ownership, offline bundles"
+      "local_path": "docs/contracts/directive-compiler.md",
+      "notion_pages": [
+        {
+          "title": "92 — Directive Compiler Regras Executáveis para LL",
+          "uuid": "3e29bb7d023f816ba3acc5247e301af5",
+          "logical_id": "CONST-92",
+          "role": "Constituição 92: Directive Compiler e Regras Executáveis."
+        }
+      ],
+      "semantic_role": "Constituição 92: Directive Compiler e Regras Executáveis."
     },
     {
-     "title": "58 — Migration Engine, Unified Review Queue e State Evolution",
-     "role": "migration contract, safety, journal, review queue, rule"
+      "local_path": "docs/contracts/llm-agent-execution-contract.md",
+      "notion_pages": [
+        {
+          "title": "85 A — LLM & Agent Execution Contract Grounding, S",
+          "uuid": "3e29bb7d023f81b69571d23c290cfc47",
+          "logical_id": "85 A",
+          "role": "Constituição 85.A: Execution Contract Grounding, Tools, Evidence e Handoff."
+        },
+        {
+          "title": "85 — Canonical Truth, Authority Graph e Constituiç",
+          "uuid": "3e29bb7d023f8190bd95ce21475ae2e3",
+          "logical_id": "85",
+          "role": "Constituição 85.A: Execution Contract Grounding, Tools, Evidence e Handoff."
+        }
+      ],
+      "semantic_role": "Constituição 85.A: Execution Contract Grounding, Tools, Evidence e Handoff."
     },
     {
-     "title": "60 — Secrets, Data Classification e Egress Governance",
-     "role": "data classes, egress policy, secret provider, scopes, redaction, injection boundary, audit"
-    }
-   ],
-   "semantic_role": "Run, Budget, Context, Model, Tool, Environment, Automation, Observability, Package/Runtime, Migration, Review, Secrets/Egress"
-  },
-  {
-   "local_path": "docs/runtime/living-plan.md",
-   "notion_pages": [
-    {
-     "title": "05 — Living Plan Mode e Interview Engine",
-     "role": "incremental interview, answer types, open questions registry, coverage model, modes"
+      "local_path": "docs/development/coding-standards.md",
+      "notion_pages": [
+        {
+          "title": "00 — Princípios, Governança e Regras de Engenharia",
+          "role": "Clean Code rules, Definition of Done, anti-overengineering guardrail, portability rule"
+        }
+      ],
+      "semantic_role": "naming, functions, packages, errors, interfaces, dependencies, I/O, testing, DoD, guardrails"
     },
     {
-     "title": "70 — Fase E: Living Plan & Interview Engine (M6)",
-     "role": "pipeline, planning scopes, question priority, decision model, authority, confidence, goal decomposition, exit gate"
-    }
-   ],
-   "semantic_role": "M6 Living Plan: interview pipeline, question priority, answer classification, decision/authority/confidence model, open questions registry, decision preview, readiness feedback, exit gate"
-  },
-  {
-   "local_path": "docs/security/trust-model.md",
-   "notion_pages": [
+      "local_path": "docs/development/consolidation-program.md",
+      "notion_pages": [
+        {
+          "title": "89 — Programa de Consolidação e Implementação do P",
+          "uuid": "3e29bb7d023f81fcba57c8b97604e8a4",
+          "logical_id": "CONST-89",
+          "role": "Constituição 89: Programa de Consolidação e Implementação do Prumo Unificado."
+        }
+      ],
+      "semantic_role": "Constituição 89: Programa de Consolidação e Implementação do Prumo Unificado."
+    },
     {
-     "title": "12 — Segurança, Trust, Permissions e Supply Chain",
-     "role": "trust layers, rules, connector trust, config merge, artifact markers, supply chain, docs contract, safe mode, classification, egress, secrets, redaction, injection boundary, audit"
-    }
-   ],
-   "semantic_role": "trust layers, connector primitives, config safety, artifact markers, supply chain, security contracts, safe mode, classification, egress, secrets, redaction, audit"
-  },
-  {
-   "local_path": "docs/ui-ux/interaction.md",
-   "notion_pages": [],
-   "semantic_role": "canonical interaction specification: input methods, keyboard map, focus and selection semantics, terminal size classes and mouse policy; `ui.interaction` and `tui.interaction` bind to it"
-  },
-  {
-   "local_path": "docs/ui-ux/state-matrix.json",
-   "notion_pages": [],
-   "semantic_role": "canonical UI state matrix: every state in the closed vocabulary with explicit applicability, user-visible text and recovery behaviour; the `ui.state-model` contract binds to it"
-  },
-  {
-   "local_path": "schemas/adoption-migration-proposal.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/implementation-blueprint.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "milestones, dependency DAG, gates, dogfooding, releases, required docs"
+        },
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "Go rules, migration phases, criteria"
+        },
+        {
+          "title": "16 — Gap Analysis v0.3 → v0.4",
+          "role": "migration boundary"
+        }
+      ],
+      "semantic_role": "objective, non-goals, architecture summary, migration strategy, macro-phases, DAG, gates, dogfooding, releases"
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "AdoptionMigrationProposal schema — F-G08 adoption migration proposal contract"
-    }
-   ],
-   "semantic_role": "schema contract for formal adoption migration proposals"
-  },
-  {
-   "local_path": "schemas/adoption-report.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/localization.md",
+      "notion_pages": [],
+      "semantic_role": "canonical source locale, translation lifecycle and locale-key identity (W6)"
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "AdoptionReport schema — F-G06 canonical adoption report contract"
-    }
-   ],
-   "semantic_role": "schema contract for canonical adoption report"
-  },
-  {
-   "local_path": "schemas/adoption-resolution.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M0–M12 detail, dependencies, scope, non-goals, deliverables, acceptance criteria, exit gates"
+        }
+      ],
+      "semantic_role": "fully detailed M0+M1; M2–M4 sufficient for planning; M5+ architectural"
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "AdoptionResolution schema — F-G07 uncertainty resolution contract"
-    }
-   ],
-   "semantic_role": "schema contract for adoption uncertainty questions and resolution choices"
-  },
-  {
-   "local_path": "schemas/capability-proposal.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-62.md",
+      "notion_pages": [
+        {
+          "title": "62 — Repository Change Governance, GitHub Policy e",
+          "uuid": "3d69bb7d023f8170be73f4caeb575771",
+          "logical_id": "PHASE-62",
+          "role": "Fase/Gate de implementação (62 — Repository Change Governance, GitHub Policy e)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (62 — Repository Change Governance, GitHub Policy e)."
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "CapabilityProposal schema — F-G03 capability and profile proposals contract"
-    }
-   ],
-   "semantic_role": "schema contract for candidate capability and profile proposals"
-  },
-  {
-   "local_path": "schemas/confidence-ledger.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-63.md",
+      "notion_pages": [
+        {
+          "title": "63 — Programa de Implementação v0 4 do Go Core ao",
+          "uuid": "3d69bb7d023f81e2aa5bf37409eb3533",
+          "logical_id": "PHASE-63",
+          "role": "Fase/Gate de implementação (63 — Programa de Implementação v0 4 do Go Core ao)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (63 — Programa de Implementação v0 4 do Go Core ao)."
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "ConfidenceLedger schema — F-G05 confidence ledger contract"
-    }
-   ],
-   "semantic_role": "schema contract for adoption engine confidence ledger"
-  },
-  {
-   "local_path": "schemas/connector-contract.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-64.md",
+      "notion_pages": [
+        {
+          "title": "64 — Fase A Go Core Parity & Distribution Closure",
+          "uuid": "3d69bb7d023f81689e22f267fe00b0d3",
+          "logical_id": "PHASE-64",
+          "role": "Fase/Gate de implementação (64 — Fase A Go Core Parity & Distribution Closure)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (64 — Fase A Go Core Parity & Distribution Closure)."
+    },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M10 OpenCode Native Harness — connector contract schema"
-    }
-   ],
-   "semantic_role": "schema contract for connector capabilities and lifecycle"
-  },
-  {
-   "local_path": "schemas/connector-negotiation.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-65.md",
+      "notion_pages": [
+        {
+          "title": "65 — Fase B Repository Governance Foundation (M4 7",
+          "uuid": "3d69bb7d023f81ffb72adf2e5d39a5e8",
+          "logical_id": "PHASE-65",
+          "role": "Fase/Gate de implementação (65 — Fase B Repository Governance Foundation (M4 7)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (65 — Fase B Repository Governance Foundation (M4 7)."
+    },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M11 Connector SDK — capability negotiation schema"
-    }
-   ],
-   "semantic_role": "schema contract for connector capability negotiation results and degradations"
-  },
-  {
-   "local_path": "schemas/experience-event.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-66.md",
+      "notion_pages": [
+        {
+          "title": "66 — Fase C Documentation System v2 (M5)",
+          "uuid": "3d69bb7d023f8106a544fd0fd1dbb7cb",
+          "logical_id": "PHASE-66",
+          "role": "Fase/Gate de implementação (66 — Fase C Documentation System v2 (M5))."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (66 — Fase C Documentation System v2 (M5))."
+    },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M9 Experience Layer — session event schema"
-    }
-   ],
-   "semantic_role": "schema contract for structured session events"
-  },
-  {
-   "local_path": "schemas/experience-handoff.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-67.md",
+      "notion_pages": [
+        {
+          "title": "67 — Fase D1 Runtime Foundation I — Run, Budget, C",
+          "uuid": "3d69bb7d023f8140a9c9fc2298958de6",
+          "logical_id": "PHASE-67",
+          "role": "Fase/Gate de implementação (67 — Fase D1 Runtime Foundation I — Run, Budget, C)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (67 — Fase D1 Runtime Foundation I — Run, Budget, C)."
+    },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M9 Experience Layer — handoff protocol schema"
-    }
-   ],
-   "semantic_role": "schema contract for structured agent state handoff"
-  },
-  {
-   "local_path": "schemas/journal-entry.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-68.md",
+      "notion_pages": [
+        {
+          "title": "68 — Fase D2 Runtime Foundation II — Tools, Models",
+          "uuid": "3d69bb7d023f81cb8456f72fec41e144",
+          "logical_id": "PHASE-68",
+          "role": "Fase/Gate de implementação (68 — Fase D2 Runtime Foundation II — Tools, Models)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (68 — Fase D2 Runtime Foundation II — Tools, Models)."
+    },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M8 History & Traceability — implementation journal entry schema"
-    }
-   ],
-   "semantic_role": "schema contract for implementation journal entries"
-  },
-  {
-   "local_path": "schemas/mapping-candidate.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-69.md",
+      "notion_pages": [
+        {
+          "title": "69 — Fase D3 Runtime Infrastructure — Packages, Mi",
+          "uuid": "3d69bb7d023f811cad83ea0cb6658856",
+          "logical_id": "PHASE-69",
+          "role": "Fase/Gate de implementação (69 — Fase D3 Runtime Infrastructure — Packages, Mi)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (69 — Fase D3 Runtime Infrastructure — Packages, Mi)."
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "MappingCandidate schema — F-G04 semantic document mapping and candidate bindings contract"
-    }
-   ],
-   "semantic_role": "schema contract for semantic document mapping candidates and bindings"
-  },
-  {
-   "local_path": "schemas/observed-fact.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-70.md",
+      "notion_pages": [
+        {
+          "title": "70 — Fase E Living Plan & Interview Engine (M6)",
+          "uuid": "3d69bb7d023f813f8eceeddd3d38b079",
+          "logical_id": "PHASE-70",
+          "role": "Fase/Gate de implementação (70 — Fase E Living Plan & Interview Engine (M6))."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (70 — Fase E Living Plan & Interview Engine (M6))."
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "ObservedFact schema — F-G01 scanner output contract"
-    }
-   ],
-   "semantic_role": "schema contract for adoption scanner observed facts"
-  },
-  {
-   "local_path": "schemas/repository-classification.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-71.md",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F Adoption Engine para Projetos Existent",
+          "uuid": "3d69bb7d023f81669a9de83e05558dcf",
+          "logical_id": "PHASE-71",
+          "role": "Fase/Gate de implementação (71 — Fase F Adoption Engine para Projetos Existent)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (71 — Fase F Adoption Engine para Projetos Existent)."
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "RepositoryClassification schema — F-G02 classification output contract"
-    }
-   ],
-   "semantic_role": "schema contract for repository classification output"
-  },
-  {
-   "local_path": "schemas/scan-result.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-72.md",
+      "notion_pages": [
+        {
+          "title": "72 — Fase G Skill System v3 + Quality Platform",
+          "uuid": "3d69bb7d023f81a3a3f2c4f75b9efbbf",
+          "logical_id": "PHASE-72",
+          "role": "Fase/Gate de implementação (72 — Fase G Skill System v3 + Quality Platform)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (72 — Fase G Skill System v3 + Quality Platform)."
+    },
     {
-     "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
-     "role": "ScanResult schema — F-G01 complete scanner output envelope"
-    }
-   ],
-   "semantic_role": "schema contract for adoption scanner complete output"
-  },
-  {
-   "local_path": "schemas/trace-graph.schema.json",
-   "notion_pages": [
+      "local_path": "docs/development/phases/phase-73.md",
+      "notion_pages": [
+        {
+          "title": "73 — Fase H Engineering Traceability, Experience &",
+          "uuid": "3d69bb7d023f816da304d08263438d01",
+          "logical_id": "PHASE-73",
+          "role": "Fase/Gate de implementação (73 — Fase H Engineering Traceability, Experience &)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (73 — Fase H Engineering Traceability, Experience &)."
+    },
     {
-     "title": "14 — Roadmap de Implementação v0.4",
-     "role": "M8 History & Traceability — typed traceability graph schema"
+      "local_path": "docs/development/phases/phase-74.md",
+      "notion_pages": [
+        {
+          "title": "74 — Fase I OpenCode Native Harness (M10)",
+          "uuid": "3d69bb7d023f812b8514d801c1ead108",
+          "logical_id": "PHASE-74",
+          "role": "Fase/Gate de implementação (74 — Fase I OpenCode Native Harness (M10))."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (74 — Fase I OpenCode Native Harness (M10))."
+    },
+    {
+      "local_path": "docs/development/phases/phase-75.md",
+      "notion_pages": [
+        {
+          "title": "75 — Fase J Connector SDK, Capability Contract e M",
+          "uuid": "3d69bb7d023f81b3b21ef0170aeec0fd",
+          "logical_id": "PHASE-75",
+          "role": "Fase/Gate de implementação (75 — Fase J Connector SDK, Capability Contract e M)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (75 — Fase J Connector SDK, Capability Contract e M)."
+    },
+    {
+      "local_path": "docs/development/phases/phase-76.md",
+      "notion_pages": [
+        {
+          "title": "76 — Gates Transversais CI CD, Schemas, Release, S",
+          "uuid": "3d69bb7d023f813e9070e83368dbbf15",
+          "logical_id": "PHASE-76",
+          "role": "Fase/Gate de implementação (76 — Gates Transversais CI CD, Schemas, Release, S)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (76 — Gates Transversais CI CD, Schemas, Release, S)."
+    },
+    {
+      "local_path": "docs/development/phases/phase-77.md",
+      "notion_pages": [
+        {
+          "title": "77 — Portable Continuation Protocol Continuidade A",
+          "uuid": "3d69bb7d023f813b8255de44b67379df",
+          "logical_id": "PHASE-77",
+          "role": "Fase/Gate de implementação (77 — Portable Continuation Protocol Continuidade A)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (77 — Portable Continuation Protocol Continuidade A)."
+    },
+    {
+      "local_path": "docs/development/phases/phase-78.md",
+      "notion_pages": [
+        {
+          "title": "78 — Continuous Execution Mode Program Runner, Wor",
+          "uuid": "3d69bb7d023f8123beaae66f6250512e",
+          "logical_id": "PHASE-78",
+          "role": "Fase/Gate de implementação (78 — Continuous Execution Mode Program Runner, Wor)."
+        }
+      ],
+      "semantic_role": "Fase/Gate de implementação (78 — Continuous Execution Mode Program Runner, Wor)."
+    },
+    {
+      "local_path": "docs/development/repository-layout.md",
+      "notion_pages": [
+        {
+          "title": "17 — Estrutura Canônica de Repositório Alvo",
+          "role": "target tree, package rules, embedding strategy, canonical vs derived"
+        }
+      ],
+      "semantic_role": "canonical tree, directory responsibilities, go:embed strategy, package rules"
+    },
+    {
+      "local_path": "docs/development/testing-strategy.md",
+      "notion_pages": [
+        {
+          "title": "13 — Testes, Conformance, Evals e Quality Gates",
+          "role": "pyramid, quality gates, conformance fixtures, provider contract, failure taxonomy, evals, budgets"
+        },
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "test provider foundation, security foundation, dogfooding"
+        }
+      ],
+      "semantic_role": "unit/integration/conformance/connector/E2E/LLM evals, quality gates, fixtures, provider contract, failure taxonomy, eval corpus, dogfooding"
+    },
+    {
+      "local_path": "docs/development/waves.md",
+      "notion_pages": [
+        {
+          "title": "14-09_00h33-deep-research-report.md",
+          "role": "local deep research"
+        },
+        {
+          "title": "PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md",
+          "role": "documentation control plane deep audit"
+        }
+      ],
+      "semantic_role": "implementation waves (W0-W21) & gap register mapping"
+    },
+    {
+      "local_path": "docs/framework/specs/ch00.md",
+      "notion_pages": [
+        {
+          "title": "00 — Princípios, Governança e Regras de Engenharia",
+          "uuid": "3d59bb7d023f81eea9abe4c5221cecd0",
+          "logical_id": "PART1-CH-00",
+          "role": "Especificação de engenharia do Framework (Capítulo 00)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 00)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch01.md",
+      "notion_pages": [
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Pytho",
+          "uuid": "3d59bb7d023f81c5a804f589d8daf696",
+          "logical_id": "PART1-CH-01",
+          "role": "Especificação de engenharia do Framework (Capítulo 01)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 01)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch02.md",
+      "notion_pages": [
+        {
+          "title": "02 — Arquitetura Atlas v0 4 e Boundaries do Core",
+          "uuid": "3d59bb7d023f81dca786d0338eb4ec16",
+          "logical_id": "PART1-CH-02",
+          "role": "Especificação de engenharia do Framework (Capítulo 02)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 02)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch03.md",
+      "notion_pages": [
+        {
+          "title": "03 — Documentation Contracts, Profiles e Qualidade",
+          "uuid": "3d59bb7d023f81a6b307fb72e510ff9c",
+          "logical_id": "PART1-CH-03",
+          "role": "Especificação de engenharia do Framework (Capítulo 03)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 03)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch04.md",
+      "notion_pages": [
+        {
+          "title": "04 — UI UX Documentation Pack Completo",
+          "uuid": "3d59bb7d023f81a49cfdefbee7c1b202",
+          "logical_id": "PART1-CH-04",
+          "role": "Especificação de engenharia do Framework (Capítulo 04)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 04)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch05.md",
+      "notion_pages": [
+        {
+          "title": "05 — Living Plan Mode e Interview Engine",
+          "uuid": "3d59bb7d023f818ea927d1f7ea75dfb3",
+          "logical_id": "PART1-CH-05",
+          "role": "Especificação de engenharia do Framework (Capítulo 05)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 05)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch06.md",
+      "notion_pages": [
+        {
+          "title": "06 — Adoption Engine para Projetos Existentes",
+          "uuid": "3d59bb7d023f81d08858d501ae093847",
+          "logical_id": "PART1-CH-06",
+          "role": "Especificação de engenharia do Framework (Capítulo 06)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 06)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch07.md",
+      "notion_pages": [
+        {
+          "title": "07 — Engineering Narrative, Journal, Experimentos",
+          "uuid": "3d59bb7d023f81ad81a3ffdfc455ed5f",
+          "logical_id": "PART1-CH-07",
+          "role": "Especificação de engenharia do Framework (Capítulo 07)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 07)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch08.md",
+      "notion_pages": [
+        {
+          "title": "08 — Experience Layer, Memória e Handoff inspirado",
+          "uuid": "3d59bb7d023f817dbc41d342e686bf6b",
+          "logical_id": "PART1-CH-08",
+          "role": "Especificação de engenharia do Framework (Capítulo 08)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 08)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch09.md",
+      "notion_pages": [
+        {
+          "title": "09 — OpenCode Native Harness",
+          "uuid": "3d59bb7d023f810582f7e1de430e2170",
+          "logical_id": "PART1-CH-09",
+          "role": "Especificação de engenharia do Framework (Capítulo 09)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 09)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch10.md",
+      "notion_pages": [
+        {
+          "title": "10 — Connector SDK, Capability Contract e Roadmap",
+          "uuid": "3d59bb7d023f81ca9db7f37ce628cd48",
+          "logical_id": "PART1-CH-10",
+          "role": "Especificação de engenharia do Framework (Capítulo 10)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 10)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch11.md",
+      "notion_pages": [
+        {
+          "title": "11 — Instalação, Atualização, Desinstalação e Dist",
+          "uuid": "3d59bb7d023f8158bf24d72b2cef258a",
+          "logical_id": "PART1-CH-11",
+          "role": "Especificação de engenharia do Framework (Capítulo 11)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 11)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch12.md",
+      "notion_pages": [
+        {
+          "title": "12 — Segurança, Trust, Permissions e Supply Chain",
+          "uuid": "3d59bb7d023f819892a4e3caf2df9141",
+          "logical_id": "PART1-CH-12",
+          "role": "Especificação de engenharia do Framework (Capítulo 12)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 12)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch13.md",
+      "notion_pages": [
+        {
+          "title": "13 — Testes, Conformance, Evals e Quality Gates",
+          "uuid": "3d59bb7d023f814bb4a1f65f29941287",
+          "logical_id": "PART1-CH-13",
+          "role": "Especificação de engenharia do Framework (Capítulo 13)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 13)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch14.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0 4",
+          "uuid": "3d59bb7d023f81519df5f4cb15d4d7fa",
+          "logical_id": "PART1-CH-14",
+          "role": "Especificação de engenharia do Framework (Capítulo 14)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 14)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch15.md",
+      "notion_pages": [
+        {
+          "title": "15 — Novas Recomendações e Incrementações Futuras",
+          "uuid": "3d59bb7d023f811d8b65c15ae01ec27d",
+          "logical_id": "PART1-CH-15",
+          "role": "Especificação de engenharia do Framework (Capítulo 15)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 15)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch16.md",
+      "notion_pages": [
+        {
+          "title": "16 — Gap Analysis v0 3 → v0 4 e Correções Necessár",
+          "uuid": "3d59bb7d023f8132b4b4c1d433e36267",
+          "logical_id": "PART1-CH-16",
+          "role": "Especificação de engenharia do Framework (Capítulo 16)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 16)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch17.md",
+      "notion_pages": [
+        {
+          "title": "17 — Estrutura Canônica de Repositório Alvo",
+          "uuid": "3d59bb7d023f81f3ba47d7356888015b",
+          "logical_id": "PART1-CH-17",
+          "role": "Especificação de engenharia do Framework (Capítulo 17)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 17)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch18.md",
+      "notion_pages": [
+        {
+          "title": "18 — Superfície CLI v0 4 e Machine Interface",
+          "uuid": "3d59bb7d023f81b396abefd87690d5cc",
+          "logical_id": "PART1-CH-18",
+          "role": "Especificação de engenharia do Framework (Capítulo 18)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 18)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch19.md",
+      "notion_pages": [
+        {
+          "title": "19 — Registro Consolidado de Decisões v0 4",
+          "uuid": "3d59bb7d023f81cdac7dddde5cc74b74",
+          "logical_id": "PART1-CH-19",
+          "role": "Especificação de engenharia do Framework (Capítulo 19)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 19)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch20.md",
+      "notion_pages": [
+        {
+          "title": "20 — Pesquisa de Harnesses e Evidências para o Roa",
+          "uuid": "3d59bb7d023f81358f92c433b7715a81",
+          "logical_id": "PART1-CH-20",
+          "role": "Especificação de engenharia do Framework (Capítulo 20)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 20)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch21.md",
+      "notion_pages": [
+        {
+          "title": "21 — Skill Package v3, Resolver, Configuração e Ev",
+          "uuid": "3d59bb7d023f8137a49eccdb5ab5a67e",
+          "logical_id": "PART1-CH-21",
+          "role": "Especificação de engenharia do Framework (Capítulo 21)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 21)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch22.md",
+      "notion_pages": [
+        {
+          "title": "22 — Cognitive Accessibility, Clean Code e Ambient",
+          "uuid": "3d59bb7d023f810abea2daeea75a1cfd",
+          "logical_id": "PART1-CH-22",
+          "role": "Especificação de engenharia do Framework (Capítulo 22)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 22)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch23.md",
+      "notion_pages": [
+        {
+          "title": "23 — Segurança Web, SaaS, Vibe Coding Skills e Wor",
+          "uuid": "3d59bb7d023f81d98eb7f209fc05d317",
+          "logical_id": "PART1-CH-23",
+          "role": "Especificação de engenharia do Framework (Capítulo 23)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 23)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch24.md",
+      "notion_pages": [
+        {
+          "title": "24 — Protocolo DevSecOps e Rotinas de Teste Web Sa",
+          "uuid": "3d59bb7d023f810e8a29e811b0c8fe9d",
+          "logical_id": "PART1-CH-24",
+          "role": "Especificação de engenharia do Framework (Capítulo 24)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 24)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch25.md",
+      "notion_pages": [
+        {
+          "title": "25 — Playwright como Native Web Test Provider",
+          "uuid": "3d59bb7d023f812fb9e3d44adf279f7d",
+          "logical_id": "PART1-CH-25",
+          "role": "Especificação de engenharia do Framework (Capítulo 25)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 25)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch26.md",
+      "notion_pages": [
+        {
+          "title": "26 — Native Desktop GUI Test Bridge",
+          "uuid": "3d59bb7d023f812b9ea4f4d7c8a134e8",
+          "logical_id": "PART1-CH-26",
+          "role": "Especificação de engenharia do Framework (Capítulo 26)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 26)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch27.md",
+      "notion_pages": [
+        {
+          "title": "27 — Protocolo de Testes para Linguagens, Compilad",
+          "uuid": "3d59bb7d023f81f0bce4e9258ba5ceba",
+          "logical_id": "PART1-CH-27",
+          "role": "Especificação de engenharia do Framework (Capítulo 27)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 27)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch28.md",
+      "notion_pages": [
+        {
+          "title": "28 — Kernel, Drivers, Embedded, Fault Injection e",
+          "uuid": "3d59bb7d023f812ea444f0142685e87b",
+          "logical_id": "PART1-CH-28",
+          "role": "Especificação de engenharia do Framework (Capítulo 28)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 28)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch29.md",
+      "notion_pages": [
+        {
+          "title": "29 — Engineering Blog e Publishing System",
+          "uuid": "3d59bb7d023f8155b788d9f4a3895a16",
+          "logical_id": "PART1-CH-29",
+          "role": "Especificação de engenharia do Framework (Capítulo 29)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 29)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch30.md",
+      "notion_pages": [
+        {
+          "title": "30 — Skill Catalog Target Segurança, Testing, Tool",
+          "uuid": "3d59bb7d023f81728e62c20b15ac009e",
+          "logical_id": "PART1-CH-30",
+          "role": "Especificação de engenharia do Framework (Capítulo 30)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 30)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch31.md",
+      "notion_pages": [
+        {
+          "title": "31 — Research Evidence Security, Web Testing, Comp",
+          "uuid": "3d59bb7d023f8145be7fcbee5eb901c4",
+          "logical_id": "PART1-CH-31",
+          "role": "Especificação de engenharia do Framework (Capítulo 31)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 31)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch32.md",
+      "notion_pages": [
+        {
+          "title": "32 — Test Provider Contract, Quality Orchestrator",
+          "uuid": "3d59bb7d023f81b6aa94f5e4ff8712d8",
+          "logical_id": "PART1-CH-32",
+          "role": "Especificação de engenharia do Framework (Capítulo 32)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 32)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch33.md",
+      "notion_pages": [
+        {
+          "title": "33 — Game Development Suite Profiles, Quality Mode",
+          "uuid": "3d59bb7d023f8108892af864a8c42a07",
+          "logical_id": "PART1-CH-33",
+          "role": "Especificação de engenharia do Framework (Capítulo 33)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 33)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch34.md",
+      "notion_pages": [
+        {
+          "title": "34 — Deterministic Simulation, Replay e Automated",
+          "uuid": "3d59bb7d023f8100b765cbab1e510fc7",
+          "logical_id": "PART1-CH-34",
+          "role": "Especificação de engenharia do Framework (Capítulo 34)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 34)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch35.md",
+      "notion_pages": [
+        {
+          "title": "35 — Game AI Modelos, Implementação, Observabilida",
+          "uuid": "3d59bb7d023f817fa043c9e48df4244c",
+          "logical_id": "PART1-CH-35",
+          "role": "Especificação de engenharia do Framework (Capítulo 35)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 35)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch36.md",
+      "notion_pages": [
+        {
+          "title": "36 — Physics, Collision, Character Controllers e M",
+          "uuid": "3d59bb7d023f8149bfa4fed9e221423e",
+          "logical_id": "PART1-CH-36",
+          "role": "Especificação de engenharia do Framework (Capítulo 36)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 36)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch37.md",
+      "notion_pages": [
+        {
+          "title": "37 — Game Feel, Controls, Camera, Feedback e Playe",
+          "uuid": "3d59bb7d023f81718205d2573654c85a",
+          "logical_id": "PART1-CH-37",
+          "role": "Especificação de engenharia do Framework (Capítulo 37)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 37)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch38.md",
+      "notion_pages": [
+        {
+          "title": "38 — GDD, Game Design, Balance, Economy, Progressi",
+          "uuid": "3d59bb7d023f814f9392ed855c6a3583",
+          "logical_id": "PART1-CH-38",
+          "role": "Especificação de engenharia do Framework (Capítulo 38)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 38)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch39.md",
+      "notion_pages": [
+        {
+          "title": "39 — Level Design, Map Design, PCG, Reachability e",
+          "uuid": "3d59bb7d023f8164a5c0da5b09eb6812",
+          "logical_id": "PART1-CH-39",
+          "role": "Especificação de engenharia do Framework (Capítulo 39)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 39)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch40.md",
+      "notion_pages": [
+        {
+          "title": "40 — Game Performance, Frame Budgets, Memory, Stre",
+          "uuid": "3d59bb7d023f81a8adc9ebdb4391fef6",
+          "logical_id": "PART1-CH-40",
+          "role": "Especificação de engenharia do Framework (Capítulo 40)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 40)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch41.md",
+      "notion_pages": [
+        {
+          "title": "41 — Multiplayer, Netcode, Scalability e Network A",
+          "uuid": "3d59bb7d023f8167b498edfdf85fd554",
+          "logical_id": "PART1-CH-41",
+          "role": "Especificação de engenharia do Framework (Capítulo 41)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 41)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch42.md",
+      "notion_pages": [
+        {
+          "title": "42 — Game Tooling, Editors, Asset Pipelines e Cont",
+          "uuid": "3d59bb7d023f8143a29cf7881c692328",
+          "logical_id": "PART1-CH-42",
+          "role": "Especificação de engenharia do Framework (Capítulo 42)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 42)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch43.md",
+      "notion_pages": [
+        {
+          "title": "43 — Engine Adapters Unreal, Unity, Godot e Engine",
+          "uuid": "3d59bb7d023f81a58e30c666e0c6ef5f",
+          "logical_id": "PART1-CH-43",
+          "role": "Especificação de engenharia do Framework (Capítulo 43)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 43)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch44.md",
+      "notion_pages": [
+        {
+          "title": "44 — Game Skill Catalog Target e Bundles Automátic",
+          "uuid": "3d59bb7d023f81d6a45cce71e31d05f2",
+          "logical_id": "PART1-CH-44",
+          "role": "Especificação de engenharia do Framework (Capítulo 44)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 44)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch45.md",
+      "notion_pages": [
+        {
+          "title": "45 — Visual, Rendering, Animation, Audio e Interac",
+          "uuid": "3d59bb7d023f810bb028d24cbd546211",
+          "logical_id": "PART1-CH-45",
+          "role": "Especificação de engenharia do Framework (Capítulo 45)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 45)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch46.md",
+      "notion_pages": [
+        {
+          "title": "46 — Game Quality Orchestrator Rotina de Testes e",
+          "uuid": "3d59bb7d023f8141bb8ff7216ac4bf36",
+          "logical_id": "PART1-CH-46",
+          "role": "Especificação de engenharia do Framework (Capítulo 46)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 46)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch47.md",
+      "notion_pages": [
+        {
+          "title": "47 — Research Evidence Game AI, Playtesting, Desig",
+          "uuid": "3d59bb7d023f81ec88d2d9b376723026",
+          "logical_id": "PART1-CH-47",
+          "role": "Especificação de engenharia do Framework (Capítulo 47)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 47)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch48.md",
+      "notion_pages": [
+        {
+          "title": "48 — Agent Runtime Control Plane Arquitetura e Pri",
+          "uuid": "3d59bb7d023f81e8826acb0302c78a95",
+          "logical_id": "PART1-CH-48",
+          "role": "Especificação de engenharia do Framework (Capítulo 48)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 48)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch49.md",
+      "notion_pages": [
+        {
+          "title": "49 — Budget Manager, Cost Governance e Rate Limits",
+          "uuid": "3d59bb7d023f81fc9022f57109b864f8",
+          "logical_id": "PART1-CH-49",
+          "role": "Especificação de engenharia do Framework (Capítulo 49)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 49)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch50.md",
+      "notion_pages": [
+        {
+          "title": "50 — Context Compiler, Token Budget, Cache e Compa",
+          "uuid": "3d59bb7d023f8133a9cffaa3c4e21d93",
+          "logical_id": "PART1-CH-50",
+          "role": "Especificação de engenharia do Framework (Capítulo 50)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 50)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch51.md",
+      "notion_pages": [
+        {
+          "title": "51 — Run Engine, Checkpoints, Retry, Resume e Canc",
+          "uuid": "3d59bb7d023f81278531f323e52a9c0f",
+          "logical_id": "PART1-CH-51",
+          "role": "Especificação de engenharia do Framework (Capítulo 51)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 51)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch52.md",
+      "notion_pages": [
+        {
+          "title": "52 — Tool Gateway, MCP Governance e Lazy Tool Disc",
+          "uuid": "3d59bb7d023f81c5808fcf22f54aee97",
+          "logical_id": "PART1-CH-52",
+          "role": "Especificação de engenharia do Framework (Capítulo 52)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 52)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch53.md",
+      "notion_pages": [
+        {
+          "title": "53 — Model Registry, Router, Drift, Fallback e Pro",
+          "uuid": "3d59bb7d023f815c8683eff78eab2774",
+          "logical_id": "PART1-CH-53",
+          "role": "Especificação de engenharia do Framework (Capítulo 53)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 53)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch54.md",
+      "notion_pages": [
+        {
+          "title": "54 — Execution Environments, Sandbox e Blast-Radiu",
+          "uuid": "3d59bb7d023f815b9474ccb20ce9d035",
+          "logical_id": "PART1-CH-54",
+          "role": "Especificação de engenharia do Framework (Capítulo 54)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 54)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch55.md",
+      "notion_pages": [
+        {
+          "title": "55 — Observability Plane, Run Explainability e Inc",
+          "uuid": "3d59bb7d023f81748fe3c10c243b9e97",
+          "logical_id": "PART1-CH-55",
+          "role": "Especificação de engenharia do Framework (Capítulo 55)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 55)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch56.md",
+      "notion_pages": [
+        {
+          "title": "56 — Automation Engine, Event Rules, DLQ e Safety",
+          "uuid": "3d59bb7d023f81db8f48f207302309b2",
+          "logical_id": "PART1-CH-56",
+          "role": "Especificação de engenharia do Framework (Capítulo 56)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 56)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch57.md",
+      "notion_pages": [
+        {
+          "title": "57 — Atlas Package & Runtime Manager, atlas lock e",
+          "uuid": "3d59bb7d023f81ed9fcff5bdde889cf5",
+          "logical_id": "PART1-CH-57",
+          "role": "Especificação de engenharia do Framework (Capítulo 57)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 57)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch58.md",
+      "notion_pages": [
+        {
+          "title": "58 — Migration Engine, Unified Review Queue e Stat",
+          "uuid": "3d59bb7d023f81d6a739e9065472e162",
+          "logical_id": "PART1-CH-58",
+          "role": "Especificação de engenharia do Framework (Capítulo 58)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 58)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch59.md",
+      "notion_pages": [
+        {
+          "title": "59 — Repository Scale, Incremental Indexing, Branc",
+          "uuid": "3d59bb7d023f81b381b3ff7de982c75b",
+          "logical_id": "PART1-CH-59",
+          "role": "Especificação de engenharia do Framework (Capítulo 59)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 59)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch60.md",
+      "notion_pages": [
+        {
+          "title": "60 — Secrets, Data Classification e Egress Governa",
+          "uuid": "3d59bb7d023f81c79303e006858bcbd5",
+          "logical_id": "PART1-CH-60",
+          "role": "Especificação de engenharia do Framework (Capítulo 60)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 60)."
+    },
+    {
+      "local_path": "docs/framework/specs/ch61.md",
+      "notion_pages": [
+        {
+          "title": "61 — Atlas Harness Eval Suite, Canary e Runtime Qu",
+          "uuid": "3d59bb7d023f8183a541dfa19216d468",
+          "logical_id": "PART1-CH-61",
+          "role": "Especificação de engenharia do Framework (Capítulo 61)."
+        }
+      ],
+      "semantic_role": "Especificação de engenharia do Framework (Capítulo 61)."
+    },
+    {
+      "local_path": "docs/glossary.json",
+      "notion_pages": [],
+      "semantic_role": "canonical terminology registry (preferred/deprecated/forbidden) enforced by `prumo docs glossary` and `docs verify` (W20.2)"
+    },
+    {
+      "local_path": "docs/governance/authority.md",
+      "notion_pages": [],
+      "semantic_role": "authority order, document roles and drift policy (W0)"
+    },
+    {
+      "local_path": "docs/governance/consolidation-crosswalk.md",
+      "notion_pages": [
+        {
+          "title": "90 — Crosswalk de Consolidação Prumo Framework ↔ C",
+          "uuid": "3e29bb7d023f81458af2f245c5a3b23d",
+          "logical_id": "CONST-90",
+          "role": "Constituição 90: Crosswalk de Consolidação, Ownership e Supersession."
+        }
+      ],
+      "semantic_role": "Constituição 90: Crosswalk de Consolidação, Ownership e Supersession."
+    },
+    {
+      "local_path": "docs/governance/m10-exit-gate.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M10 Exit Gate — OpenCode Native Harness validation and criteria"
+        }
+      ],
+      "semantic_role": "M10 exit gate formal validation: native compiler, TS plugin, tool guards, session hooks, and cleanup"
+    },
+    {
+      "local_path": "docs/governance/m11-exit-gate.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M11 Exit Gate — Connector SDK validation and criteria"
+        }
+      ],
+      "semantic_role": "M11 exit gate formal validation: capability negotiation, test kit, Gemini connector, Claude Code/Codex elevation"
+    },
+    {
+      "local_path": "docs/governance/m12-exit-gate.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M12 Governance Assessment — Team/Advanced Runtime deferred status"
+        }
+      ],
+      "semantic_role": "M12 governance assessment: architectural justification for deferred runtime and team daemon status"
+    },
+    {
+      "local_path": "docs/governance/m7-exit-gate.md",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "M7 Exit Gate — ADOPTION READY validation, evidence, brownfield corpus results"
+        }
+      ],
+      "semantic_role": "M7 exit gate formal validation: zero forced layout, facts vs inferences, confidence ledger, M5 bindings, Living Plan uncertainty, review governed migration proposals, incremental scanner, security"
+    },
+    {
+      "local_path": "docs/governance/m8-exit-gate.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M8 Exit Gate — History and Traceability validation and criteria"
+        }
+      ],
+      "semantic_role": "M8 exit gate formal validation: implementation journal, experiment/rejection/debt registers, typed graph, trace CLI"
+    },
+    {
+      "local_path": "docs/governance/m9-exit-gate.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M9 Exit Gate — Experience Layer validation and criteria"
+        }
+      ],
+      "semantic_role": "M9 exit gate formal validation: session events, summaries, handoff protocol, experience proposals, retention"
+    },
+    {
+      "local_path": "docs/harness/capability-skill-gap-register.md",
+      "notion_pages": [
+        {
+          "title": "93 — Capability & Skill Gap Register Lacunas Obrig",
+          "uuid": "3e29bb7d023f81dd9258f046a178894b",
+          "logical_id": "CONST-93",
+          "role": "Constituição 93: Capability & Skill Gap Register do Harness."
+        }
+      ],
+      "semantic_role": "Constituição 93: Capability & Skill Gap Register do Harness."
+    },
+    {
+      "local_path": "docs/harness/overview.md",
+      "notion_pages": [
+        {
+          "title": "03 — Arquitetura Alvo do Agent Harness",
+          "role": "target architecture"
+        },
+        {
+          "title": "35 — Harness Build Strategy",
+          "role": "build strategy"
+        },
+        {
+          "title": "40 — Repository Boundary",
+          "role": "split gate"
+        },
+        {
+          "title": "41 — Notebook-to-Repository Promotion",
+          "role": "promotion workflow"
+        }
+      ],
+      "semantic_role": "harness canonical entry",
+      "snapshot": "2026-09-11-d41f18bb65f5"
+    },
+    {
+      "local_path": "docs/harness/reconnect-replay.md",
+      "notion_pages": [],
+      "semantic_role": "Daemon reconnect/replay client contract, failure matrix and TUI state recovery (W12)"
+    },
+    {
+      "local_path": "docs/harness/roadmap-status.md",
+      "notion_pages": [
+        {
+          "title": "18 — Roadmap H0-H18",
+          "role": "roadmap"
+        },
+        {
+          "title": "19 — Registro de Decisões",
+          "role": "accepted decisions"
+        }
+      ],
+      "semantic_role": "implementation truth table",
+      "snapshot": "2026-09-11-d41f18bb65f5"
+    },
+    {
+      "local_path": "docs/harness/specs/ch00.md",
+      "notion_pages": [
+        {
+          "title": "00 — Visão, Escopo e Relação com o Prumo Framework",
+          "uuid": "3d89bb7d023f818f8507f9dac3fb8cbb",
+          "logical_id": "PART2-CH-00",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 00)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 00)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch01.md",
+      "notion_pages": [
+        {
+          "title": "01 — Baseline Herdado O que o Prumo Já Possui",
+          "uuid": "3d89bb7d023f810d9b35e1c9a8bbfd96",
+          "logical_id": "PART2-CH-01",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 01)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 01)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch02.md",
+      "notion_pages": [
+        {
+          "title": "02 — Referências de Harnesses, Agent Frameworks e",
+          "uuid": "3d89bb7d023f8153abb1e3705857d9f4",
+          "logical_id": "PART2-CH-02",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 02)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 02)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch03.md",
+      "notion_pages": [
+        {
+          "title": "03 — Arquitetura Alvo do Agent Harness",
+          "uuid": "3d89bb7d023f81598dd0d1d2b2105d75",
+          "logical_id": "PART2-CH-03",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 03)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 03)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch04.md",
+      "notion_pages": [
+        {
+          "title": "04 — Model Runtime, Providers, Streaming, Routing",
+          "uuid": "3d89bb7d023f811ea779d4dde25b17ed",
+          "logical_id": "PART2-CH-04",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 04)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 04)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch05.md",
+      "notion_pages": [
+        {
+          "title": "05 — Agent Loop, Conversation, Turns, Checkpoints",
+          "uuid": "3d89bb7d023f814aa91fdff68fef108f",
+          "logical_id": "PART2-CH-05",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 05)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 05)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch06.md",
+      "notion_pages": [
+        {
+          "title": "06 — Coding ACI, Native Tools, MCP, ACP e A2A",
+          "uuid": "3d89bb7d023f810b85b2d97c6b30b181",
+          "logical_id": "PART2-CH-06",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 06)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 06)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch07.md",
+      "notion_pages": [
+        {
+          "title": "07 — Permissions, Sandbox, Egress e Security Runti",
+          "uuid": "3d89bb7d023f81178340f2a5932f8ac6",
+          "logical_id": "PART2-CH-07",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 07)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 07)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch08.md",
+      "notion_pages": [
+        {
+          "title": "08 — Context Compiler v2, Repo Map, LSP e Code Int",
+          "uuid": "3d89bb7d023f81ff86c1e42169acfaef",
+          "logical_id": "PART2-CH-08",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 08)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 08)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch09.md",
+      "notion_pages": [
+        {
+          "title": "09 — Prumo Code Desktop Produto inspirado em Panes",
+          "uuid": "3d89bb7d023f81348e2ae6d7149ea491",
+          "logical_id": "PART2-CH-09",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 09)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 09)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch10.md",
+      "notion_pages": [
+        {
+          "title": "10 — Native Desktop UI GPUI, Floem, Iced, libcosmi",
+          "uuid": "3d89bb7d023f814f906bffaea6d8a421",
+          "logical_id": "PART2-CH-10",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 10)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 10)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch11.md",
+      "notion_pages": [
+        {
+          "title": "11 — Terminal Engine Nativo libghostty, WezTerm Co",
+          "uuid": "3d89bb7d023f814fb136d96719ee694f",
+          "logical_id": "PART2-CH-11",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 11)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 11)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch12.md",
+      "notion_pages": [
+        {
+          "title": "12 — Editor Engine Rope, Transactions, Syntax, LSP",
+          "uuid": "3d89bb7d023f81a39375c298cc06a032",
+          "logical_id": "PART2-CH-12",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 12)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 12)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch13.md",
+      "notion_pages": [
+        {
+          "title": "13 — Prumo Code TUI um VS Code no Terminal",
+          "uuid": "3d89bb7d023f81dca60be07a6c801307",
+          "logical_id": "PART2-CH-13",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 13)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 13)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch14.md",
+      "notion_pages": [
+        {
+          "title": "14 — TUI Technology Matrix R3BL, Revue, Ratatui Ki",
+          "uuid": "3d89bb7d023f814fb532e63bb5ec22f6",
+          "logical_id": "PART2-CH-14",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 14)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 14)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch15.md",
+      "notion_pages": [
+        {
+          "title": "15 — Daemon, IPC, Remote, Cross-device e Escalabil",
+          "uuid": "3d89bb7d023f812eabebe0341fe056d6",
+          "logical_id": "PART2-CH-15",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 15)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 15)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch16.md",
+      "notion_pages": [
+        {
+          "title": "16 — Performance Budgets e Hardware Modesto",
+          "uuid": "3d89bb7d023f81d6a978fb14f4bad5f3",
+          "logical_id": "PART2-CH-16",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 16)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 16)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch17.md",
+      "notion_pages": [
+        {
+          "title": "17 — Plugin, Extension Architecture e Public SDK",
+          "uuid": "3d89bb7d023f81908e91cc4dbf3fd42f",
+          "logical_id": "PART2-CH-17",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 17)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 17)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch18.md",
+      "notion_pages": [
+        {
+          "title": "18 — Roadmap de Exploração e Evolução H0–H18",
+          "uuid": "3d89bb7d023f811c8a9ad8096d6b0cca",
+          "logical_id": "PART2-CH-18",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 18)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 18)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch19.md",
+      "notion_pages": [
+        {
+          "title": "19 — Registro de Decisões, Benchmarks, Experimento",
+          "uuid": "3d89bb7d023f81f7a428eb616f3ed5fb",
+          "logical_id": "PART2-CH-19",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 19)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 19)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch20.md",
+      "notion_pages": [
+        {
+          "title": "20 — Estudo Comparativo de Produto e Arquitetura P",
+          "uuid": "3d89bb7d023f814688e4d00a8a25559d",
+          "logical_id": "PART2-CH-20",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 20)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 20)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch22.md",
+      "notion_pages": [
+        {
+          "title": "22 — Agent Connectivity Runtime Providers, OAuth,",
+          "uuid": "3d89bb7d023f817aa2e8c45d56cfb35b",
+          "logical_id": "PART2-CH-22",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 22)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 22)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch23.md",
+      "notion_pages": [
+        {
+          "title": "23 — Shared Product Contract Entities, State Owner",
+          "uuid": "3d89bb7d023f81cb97eaef814aca2f17",
+          "logical_id": "PART2-CH-23",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 23)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 23)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch24.md",
+      "notion_pages": [
+        {
+          "title": "24 — Workforce Runtime, Model Gateway, Routing, Fa",
+          "uuid": "3d89bb7d023f81ffa25be2396876182c",
+          "logical_id": "PART2-CH-24",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 24)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 24)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch25.md",
+      "notion_pages": [
+        {
+          "title": "25 — Planning & Knowledge Runtime Plan Mode, Decis",
+          "uuid": "3d89bb7d023f81398521c9de2aa4acf2",
+          "logical_id": "PART2-CH-25",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 25)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 25)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch26.md",
+      "notion_pages": [
+        {
+          "title": "26 — Deterministic Documentation Compiler IR, DAG,",
+          "uuid": "3d89bb7d023f81b5a70bcd0ccdc78d05",
+          "logical_id": "PART2-CH-26",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 26)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 26)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch27.md",
+      "notion_pages": [
+        {
+          "title": "27 — Gap Analysis LLM Knowledge & Documentation Ar",
+          "uuid": "3d89bb7d023f816f8466d212c1a6a481",
+          "logical_id": "PART2-CH-27",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 27)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 27)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch28.md",
+      "notion_pages": [
+        {
+          "title": "28 — Local Knowledge Pack Small Models, Offline RA",
+          "uuid": "3d89bb7d023f818089dce53649bce94f",
+          "logical_id": "PART2-CH-28",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 28)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 28)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch29.md",
+      "notion_pages": [
+        {
+          "title": "29 — Local Intelligence Profiles, Resource Manager",
+          "uuid": "3d89bb7d023f819aa669cafda46c1f2b",
+          "logical_id": "PART2-CH-29",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 29)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 29)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch30.md",
+      "notion_pages": [
+        {
+          "title": "30 — Local Inference Runtime Architecture Workers,",
+          "uuid": "3d89bb7d023f81bb8341fd1e52b4ec52",
+          "logical_id": "PART2-CH-30",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 30)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 30)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch31.md",
+      "notion_pages": [
+        {
+          "title": "31 — Context Compiler v2 Hybrid Retrieval, Authori",
+          "uuid": "3d89bb7d023f81908e1cdf3677ff68b7",
+          "logical_id": "PART2-CH-31",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 31)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 31)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch32.md",
+      "notion_pages": [
+        {
+          "title": "32 — Handoff v2 e Knowledge API Typed Continuation",
+          "uuid": "3d89bb7d023f81cd9afbc31f43d6682d",
+          "logical_id": "PART2-CH-32",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 32)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 32)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch33.md",
+      "notion_pages": [
+        {
+          "title": "33 — Knowledge Runtime Semantic Model Records, Cla",
+          "uuid": "3d89bb7d023f8121b1dbda9852cb01ba",
+          "logical_id": "PART2-CH-33",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 33)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 33)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch34.md",
+      "notion_pages": [
+        {
+          "title": "34 — Contradiction, Coverage & Readiness Engine Se",
+          "uuid": "3d89bb7d023f81d2a05bf794c5845565",
+          "logical_id": "PART2-CH-34",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 34)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 34)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch35.md",
+      "notion_pages": [
+        {
+          "title": "35 — Harness Build Strategy Prumo-Native Core, Ext",
+          "uuid": "3d89bb7d023f815b8bebcec36288113b",
+          "logical_id": "PART2-CH-35",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 35)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 35)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch36.md",
+      "notion_pages": [
+        {
+          "title": "36 — Human Documentation Runtime Audiences, Profil",
+          "uuid": "3d89bb7d023f81c79cade95f4c7c7fc6",
+          "logical_id": "PART2-CH-36",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 36)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 36)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch37.md",
+      "notion_pages": [
+        {
+          "title": "37 — Documentation Planner Discovery, Information",
+          "uuid": "3d89bb7d023f81039ef5d01617a3d3ac",
+          "logical_id": "PART2-CH-37",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 37)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 37)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch38.md",
+      "notion_pages": [
+        {
+          "title": "38 — Human Docs Quality, Publishing, Website Runti",
+          "uuid": "3d89bb7d023f817d8255e65b120eea7e",
+          "logical_id": "PART2-CH-38",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 38)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 38)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch39.md",
+      "notion_pages": [
+        {
+          "title": "39 — Development Chronicle, Changelog, Release Not",
+          "uuid": "3d89bb7d023f811b8a20ee1fde927ae5",
+          "logical_id": "PART2-CH-39",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 39)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 39)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch40.md",
+      "notion_pages": [
+        {
+          "title": "40 — Repository Boundary & Product Split Prumo Pla",
+          "uuid": "3d89bb7d023f81b1ad81ecdd5ac99017",
+          "logical_id": "PART2-CH-40",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 40)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 40)."
+    },
+    {
+      "local_path": "docs/harness/specs/ch41.md",
+      "notion_pages": [
+        {
+          "title": "41 — Notebook-to-Repository Promotion Export, Reco",
+          "uuid": "3d89bb7d023f81559c14e3a7eac6b018",
+          "logical_id": "PART2-CH-41",
+          "role": "Especificação especializada do Harness / Code Agent (Capítulo 41)."
+        }
+      ],
+      "semantic_role": "Especificação especializada do Harness / Code Agent (Capítulo 41)."
+    },
+    {
+      "local_path": "docs/harness/specs/superseded-floem-stack.md",
+      "notion_pages": [
+        {
+          "title": "21 — HISTÓRICO SUPERSEDED Stack H Floem + Bubble T",
+          "uuid": "3d89bb7d023f8151842bf5c40e49c0b0",
+          "logical_id": "PART2-CH-21",
+          "role": "Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi."
+        }
+      ],
+      "semantic_role": "Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi."
+    },
+    {
+      "local_path": "docs/i18n/translations.json",
+      "notion_pages": [],
+      "semantic_role": "canonical translation records; currency is derived from source digests, never stored (W6, W20)"
+    },
+    {
+      "local_path": "docs/integration/connector-contract.md",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "Connector Contract Specification"
+        }
+      ],
+      "semantic_role": "Connector contract specification: capabilities, enforcement primitives, lifecycle operations"
+    },
+    {
+      "local_path": "docs/lifecycle.json",
+      "notion_pages": [],
+      "semantic_role": "Documentation lifecycle registry: release gates and deprecation records (W20)"
+    },
+    {
+      "local_path": "docs/media/records.json",
+      "notion_pages": [],
+      "semantic_role": "canonical media records linked to the UI state/theme/locale/platform they illustrate; staleness derived from digests (W20.4)"
+    },
+    {
+      "local_path": "docs/migration/conformance-strategy.md",
+      "notion_pages": [
+        {
+          "title": "13 — Testes, Conformance, Evals e Quality Gates",
+          "role": "conformance approach, migration gate"
+        },
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "conformance 100% gate"
+        }
+      ],
+      "semantic_role": "comparison contract, fixture layout, golden generation, determinism, gate progression, differential runner"
+    },
+    {
+      "local_path": "docs/migration/protocol-inventory.md",
+      "notion_pages": [
+        {
+          "title": "16 — Gap Analysis v0.3 → v0.4",
+          "role": "component classification, canonical schemas, root scripts, doc updates"
+        },
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "migration phases, criteria"
+        }
+      ],
+      "semantic_role": "Python module map, CLI surface, schemas, resources, scripts, baseline, critical contracts, open questions"
+    },
+    {
+      "local_path": "docs/product/scope-v0.4.md",
+      "notion_pages": [
+        {
+          "title": "Prumo — Livro Vivo v0.4 (hub)",
+          "role": "macro-architecture, objective"
+        },
+        {
+          "title": "01 — Stack Go, Clean Code e Migração do Core Python",
+          "role": "target stack, migration phases, deprecation criteria"
+        },
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "milestones, dependency ordering, release strategy, amendments"
+        },
+        {
+          "title": "16 — Gap Analysis v0.3 → v0.4",
+          "role": "component classification, corrections, doc updates"
+        }
+      ],
+      "semantic_role": "detailed in-scope/out-of-scope, migration boundary"
+    },
+    {
+      "local_path": "docs/product/tui-spike-h10.md",
+      "notion_pages": [
+        {
+          "title": "Living Book pages 13, 14, 18, 21, 23",
+          "role": "source"
+        }
+      ],
+      "semantic_role": "tui spike"
+    },
+    {
+      "local_path": "docs/product/vision.md",
+      "notion_pages": [
+        {
+          "title": "Prumo — Livro Vivo v0.4 (hub)",
+          "role": "vision summary, fundamental decisions, macro-architecture"
+        }
+      ],
+      "semantic_role": "product vision, scope, non-goals, operational target"
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84.md",
+      "notion_pages": [
+        {
+          "title": "84 — Total Assurance Constitution Gauntlet Loop, E",
+          "uuid": "3e29bb7d023f817ca077d37f62038fd1",
+          "logical_id": "84",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 — Total Assurance Constitution Gauntlet Loop, E)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 — Total Assurance Constitution Gauntlet Loop, E)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_a.md",
+      "notion_pages": [
+        {
+          "title": "84 A — Universal Surface Coverage, Evidence Graph",
+          "uuid": "3e29bb7d023f81a0a812c169ae1e5151",
+          "logical_id": "84 A",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 A — Universal Surface Coverage, Evidence Graph)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 A — Universal Surface Coverage, Evidence Graph)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_b.md",
+      "notion_pages": [
+        {
+          "title": "84 B — Blind-Spot Hunting, Oracle Quality, Negativ",
+          "uuid": "3e29bb7d023f810e9bdfc5ff8506ea9c",
+          "logical_id": "84 B",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 B — Blind-Spot Hunting, Oracle Quality, Negativ)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 B — Blind-Spot Hunting, Oracle Quality, Negativ)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_c.md",
+      "notion_pages": [
+        {
+          "title": "84 C — Performance, Resource Budgets, Scalability,",
+          "uuid": "3e29bb7d023f81f89fbbddc9ab722bc4",
+          "logical_id": "84 C",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 C — Performance, Resource Budgets, Scalability,)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 C — Performance, Resource Budgets, Scalability,)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_d.md",
+      "notion_pages": [
+        {
+          "title": "84 D — Security, Resilience, Data Integrity, Recov",
+          "uuid": "3e29bb7d023f811b9968e49ab5de7d7e",
+          "logical_id": "84 D",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 D — Security, Resilience, Data Integrity, Recov)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 D — Security, Resilience, Data Integrity, Recov)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_e.md",
+      "notion_pages": [
+        {
+          "title": "84 E — UI UX, Interaction Fidelity, Accessibility",
+          "uuid": "3e29bb7d023f8173848cc4fa2995af62",
+          "logical_id": "84 E",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 E — UI UX, Interaction Fidelity, Accessibility)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 E — UI UX, Interaction Fidelity, Accessibility)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_f.md",
+      "notion_pages": [
+        {
+          "title": "84 F — Documentation Refactoring, Drift, NFR Cover",
+          "uuid": "3e29bb7d023f8139a32ee1744fe2802d",
+          "logical_id": "84 F",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 F — Documentation Refactoring, Drift, NFR Cover)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 F — Documentation Refactoring, Drift, NFR Cover)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_g.md",
+      "notion_pages": [
+        {
+          "title": "84 G — Release Candidate Exit Gates, 10 10 Sem Méd",
+          "uuid": "3e29bb7d023f81e58e99e8e58035fd93",
+          "logical_id": "84 G",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 G — Release Candidate Exit Gates, 10 10 Sem Méd)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 G — Release Candidate Exit Gates, 10 10 Sem Méd)."
+    },
+    {
+      "local_path": "docs/quality/gauntlet-84_h.md",
+      "notion_pages": [
+        {
+          "title": "84 H — Native Graphics DCC Assurance Profile GPU,",
+          "uuid": "3e29bb7d023f812d8825ffe1738c4da2",
+          "logical_id": "84 H",
+          "role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 H — Native Graphics DCC Assurance Profile GPU,)."
+        }
+      ],
+      "semantic_role": "Constituição 84: Perfis do Gauntlet / Total Assurance (84 H — Native Graphics DCC Assurance Profile GPU,)."
+    },
+    {
+      "local_path": "docs/reference/canonical-glossary.md",
+      "notion_pages": [
+        {
+          "title": "91 — Glossário Canônico, Ontologia Operacional e T",
+          "uuid": "3e29bb7d023f81feb977ec88bac4193a",
+          "logical_id": "CONST-91",
+          "role": "Constituição 91: Glossário Canônico e Ontologia Operacional."
+        }
+      ],
+      "semantic_role": "Constituição 91: Glossário Canônico e Ontologia Operacional."
+    },
+    {
+      "local_path": "docs/reference/notion-3d89bb7d.md",
+      "notion_pages": [
+        {
+          "title": "79 A — Baseline da Auditoria, Taxonomia de Lacunas",
+          "uuid": "3d89bb7d023f81c69edde8f22dfd66e8",
+          "logical_id": "79 A",
+          "role": "Documento especializado: 79 A — Baseline da Auditoria, Taxonomia de Lacunas."
+        },
+        {
+          "title": "79 B — Contratos Transversais, Schemas, Permission",
+          "uuid": "3d89bb7d023f818b9291f90a0600d096",
+          "logical_id": "79 B",
+          "role": "Documento especializado: 79 B — Contratos Transversais, Schemas, Permission."
+        },
+        {
+          "title": "79 C — Hardening dos 26 Agents Planejamento Indivi",
+          "uuid": "3d89bb7d023f810482f1db59bd5ab75a",
+          "logical_id": "79 C",
+          "role": "Documento especializado: 79 C — Hardening dos 26 Agents Planejamento Indivi."
+        },
+        {
+          "title": "79 D — Hardening das 14 Recipes DAGs, Gates Condic",
+          "uuid": "3d89bb7d023f81a3be24cf3141c30cf2",
+          "logical_id": "79 D",
+          "role": "Documento especializado: 79 D — Hardening das 14 Recipes DAGs, Gates Condic."
+        },
+        {
+          "title": "79 E — Accessibility, UX e Cognitive Quality Skill",
+          "uuid": "3d89bb7d023f81408b76eaac40d47b34",
+          "logical_id": "79 E",
+          "role": "Documento especializado: 79 E — Accessibility, UX e Cognitive Quality Skill."
+        },
+        {
+          "title": "79 F — Security, Trust, Permissions e Supply Chain",
+          "uuid": "3d89bb7d023f811eb481dedc79ff4353",
+          "logical_id": "79 F",
+          "role": "Documento especializado: 79 F — Security, Trust, Permissions e Supply Chain."
+        },
+        {
+          "title": "79 G — Context, Agentic Workflow, Orchestration, M",
+          "uuid": "3d89bb7d023f81d9b143cd2d4b14ffa2",
+          "logical_id": "79 G",
+          "role": "Documento especializado: 79 G — Context, Agentic Workflow, Orchestration, M."
+        },
+        {
+          "title": "79 H — Testing, Code Quality, Review, Benchmarking",
+          "uuid": "3d89bb7d023f816cb230dc8ef54cbe94",
+          "logical_id": "79 H",
+          "role": "Documento especializado: 79 H — Testing, Code Quality, Review, Benchmarking."
+        },
+        {
+          "title": "79 I — Language Skills Contract e Hardening de Tod",
+          "uuid": "3d89bb7d023f81faa922ff4c08b7a7d0",
+          "logical_id": "79 I",
+          "role": "Documento especializado: 79 I — Language Skills Contract e Hardening de Tod."
+        },
+        {
+          "title": "79 J — Compiler, Native, Memory, Concurrency, Runt",
+          "uuid": "3d89bb7d023f8185876bc2a9c64e6af7",
+          "logical_id": "79 J",
+          "role": "Documento especializado: 79 J — Compiler, Native, Memory, Concurrency, Runt."
+        },
+        {
+          "title": "79 K — Backend, API, Database, Caching, Serializat",
+          "uuid": "3d89bb7d023f81358874c144d514c488",
+          "logical_id": "79 K",
+          "role": "Documento especializado: 79 K — Backend, API, Database, Caching, Serializat."
+        },
+        {
+          "title": "79 L — Frontend, Design System, UI Implementation,",
+          "uuid": "3d89bb7d023f818683bdeddd03d7852a",
+          "logical_id": "79 L",
+          "role": "Documento especializado: 79 L — Frontend, Design System, UI Implementation,."
+        },
+        {
+          "title": "79 M — DevOps, CI CD, Containers, Release Engineer",
+          "uuid": "3d89bb7d023f8123ab90f6202042d65b",
+          "logical_id": "79 M",
+          "role": "Documento especializado: 79 M — DevOps, CI CD, Containers, Release Engineer."
+        },
+        {
+          "title": "79 N — Git, GitHub, Documentation, Editor Tooling",
+          "uuid": "3d89bb7d023f816cab28c0b666bc02e7",
+          "logical_id": "79 N",
+          "role": "Documento especializado: 79 N — Git, GitHub, Documentation, Editor Tooling."
+        },
+        {
+          "title": "79 O — Game, Rendering, Physics, Networking, Asset",
+          "uuid": "3d89bb7d023f81bb9fdee94b104e9dd1",
+          "logical_id": "79 O",
+          "role": "Documento especializado: 79 O — Game, Rendering, Physics, Networking, Asset."
+        },
+        {
+          "title": "79 P — Novas Capacidades Candidatas Skills, Agents",
+          "uuid": "3d89bb7d023f81f4aa6fc1eae57a1d0f",
+          "logical_id": "79 P",
+          "role": "Documento especializado: 79 P — Novas Capacidades Candidatas Skills, Agents."
+        },
+        {
+          "title": "79 Q — Matriz Completa de Prioridade, Work Package",
+          "uuid": "3d89bb7d023f810192b1db43142af6f5",
+          "logical_id": "79 Q",
+          "role": "Documento especializado: 79 Q — Matriz Completa de Prioridade, Work Package."
+        },
+        {
+          "title": "79 R — Evals, Métricas, Canary, Definition of Done",
+          "uuid": "3d89bb7d023f811abb89c3a8262d2d86",
+          "logical_id": "79 R",
+          "role": "Documento especializado: 79 R — Evals, Métricas, Canary, Definition of Done."
+        },
+        {
+          "title": "79 S — Architecture Quality, Goal Management, Stat",
+          "uuid": "3d89bb7d023f81de9cdfff52196d2354",
+          "logical_id": "79 S",
+          "role": "Documento especializado: 79 S — Architecture Quality, Goal Management, Stat."
+        },
+        {
+          "title": "79 — Programa de Aprimoramento do Workforce Agents",
+          "uuid": "3d89bb7d023f8197a3bec0dba3a2ad29",
+          "logical_id": "79",
+          "role": "Documento especializado: 79 — Programa de Aprimoramento do Workforce Agents."
+        }
+      ],
+      "semantic_role": "Documento especializado: 79 A — Baseline da Auditoria, Taxonomia de Lacunas."
+    },
+    {
+      "local_path": "docs/reference/notion-3dd9bb7d.md",
+      "notion_pages": [
+        {
+          "title": "79 T — Technology Skill Packs egui, Bubble Tea v2",
+          "uuid": "3dd9bb7d023f81868bbde5eda5cce20f",
+          "logical_id": "79 T",
+          "role": "Documento especializado: 79 T — Technology Skill Packs egui, Bubble Tea v2."
+        },
+        {
+          "title": "79 U — Skill Research, Knowledge Freshness, Vision",
+          "uuid": "3dd9bb7d023f815984c2debfd46acea1",
+          "logical_id": "79 U",
+          "role": "Documento especializado: 79 U — Skill Research, Knowledge Freshness, Vision."
+        },
+        {
+          "title": "79 V — Language Ecosystem Packs C, C3, Odin, D, Lu",
+          "uuid": "3dd9bb7d023f81cbbf63d68a19e9bd87",
+          "logical_id": "79 V",
+          "role": "Documento especializado: 79 V — Language Ecosystem Packs C, C3, Odin, D, Lu."
+        },
+        {
+          "title": "79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo",
+          "uuid": "3dd9bb7d023f81e0905bc500fc0354cc",
+          "logical_id": "79 W",
+          "role": "Documento especializado: 79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo."
+        },
+        {
+          "title": "79 X — Programming Language Engineering, Paradigms",
+          "uuid": "3dd9bb7d023f81dca878cb14e2324a41",
+          "logical_id": "79 X",
+          "role": "Documento especializado: 79 X — Programming Language Engineering, Paradigms."
+        },
+        {
+          "title": "79 Y — Computer Science, Software Engineering, Dat",
+          "uuid": "3dd9bb7d023f81fda05ccde2975d66cb",
+          "logical_id": "79 Y",
+          "role": "Documento especializado: 79 Y — Computer Science, Software Engineering, Dat."
+        },
+        {
+          "title": "79 Z — Teaching Module, Professor Agents e Neurodi",
+          "uuid": "3dd9bb7d023f8156ace1f5075fc16d3a",
+          "logical_id": "79 Z",
+          "role": "Documento especializado: 79 Z — Teaching Module, Professor Agents e Neurodi."
+        }
+      ],
+      "semantic_role": "Documento especializado: 79 T — Technology Skill Packs egui, Bubble Tea v2."
+    },
+    {
+      "local_path": "docs/reference/notion-3de9bb7d.md",
+      "notion_pages": [
+        {
+          "title": "79 W — Modern C++, WebAssembly WAT, WebGPU e Three",
+          "uuid": "3de9bb7d023f812eb484d49cf076f909",
+          "logical_id": "79 W",
+          "role": "Documento especializado: 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
+        },
+        {
+          "title": "79 X — Assembly, ISA, ABI, Reverse Engineering e L",
+          "uuid": "3de9bb7d023f8116ae44dde0a1901cc6",
+          "logical_id": "79 X",
+          "role": "Documento especializado: 79 X — Assembly, ISA, ABI, Reverse Engineering e L."
+        },
+        {
+          "title": "79 Y — Programming Languages, Computer Science, So",
+          "uuid": "3de9bb7d023f81d38bf8ecf60419e56a",
+          "logical_id": "79 Y",
+          "role": "Documento especializado: 79 Y — Programming Languages, Computer Science, So."
+        },
+        {
+          "title": "79 Z — Teaching Module Professor Mode, Neurodiverg",
+          "uuid": "3de9bb7d023f8112b8ecdbc088c81714",
+          "logical_id": "79 Z",
+          "role": "Documento especializado: 79 Z — Teaching Module Professor Mode, Neurodiverg."
+        },
+        {
+          "title": "80 — Prumo Ask Headless One-Shot Interface e Machi",
+          "uuid": "3de9bb7d023f81f1a5c2e6d44111461b",
+          "logical_id": "CONST-80",
+          "role": "Documento especializado: 80 — Prumo Ask Headless One-Shot Interface e Machi."
+        },
+        {
+          "title": "81 — Global Learning Layer Padrões Cross-Project,",
+          "uuid": "3de9bb7d023f81deb239f020182d4972",
+          "logical_id": "CONST-81",
+          "role": "Documento especializado: 81 — Global Learning Layer Padrões Cross-Project,."
+        },
+        {
+          "title": "82 — Prumo Native sobre Oxi Workspace Viewer Agent",
+          "uuid": "3de9bb7d023f81c791d4e4145393fa10",
+          "logical_id": "CONST-82",
+          "role": "Documento especializado: 82 — Prumo Native sobre Oxi Workspace Viewer Agent."
+        }
+      ],
+      "semantic_role": "Documento especializado: 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
+    },
+    {
+      "local_path": "docs/reference/notion-3e09bb7d.md",
+      "notion_pages": [
+        {
+          "title": "83 — Adendo Decision Intelligence Runtime, System",
+          "uuid": "3e09bb7d023f81f8ac4afb4e85cc5d01",
+          "logical_id": "CONST-83",
+          "role": "Documento especializado: 83 — Adendo Decision Intelligence Runtime, System."
+        }
+      ],
+      "semantic_role": "Documento especializado: 83 — Adendo Decision Intelligence Runtime, System."
+    },
+    {
+      "local_path": "docs/reference/notion-3e29bb7d.md",
+      "notion_pages": [
+        {
+          "title": "79 AA — Grounding, Spec Compliance, Surface Confor",
+          "uuid": "3e29bb7d023f811a9490f5c1ae91f9f2",
+          "logical_id": "79 AA",
+          "role": "Documento especializado: 79 AA — Grounding, Spec Compliance, Surface Confor."
+        },
+        {
+          "title": "84 A — Universal Surface Coverage, Evidence Graph",
+          "uuid": "3e29bb7d023f81a0a812c169ae1e5151",
+          "logical_id": "84 A",
+          "role": "Documento especializado: 84 A — Universal Surface Coverage, Evidence Graph."
+        },
+        {
+          "title": "84 B — Blind-Spot Hunting, Oracle Quality, Negativ",
+          "uuid": "3e29bb7d023f810e9bdfc5ff8506ea9c",
+          "logical_id": "84 B",
+          "role": "Documento especializado: 84 B — Blind-Spot Hunting, Oracle Quality, Negativ."
+        },
+        {
+          "title": "84 C — Performance, Resource Budgets, Scalability,",
+          "uuid": "3e29bb7d023f81f89fbbddc9ab722bc4",
+          "logical_id": "84 C",
+          "role": "Documento especializado: 84 C — Performance, Resource Budgets, Scalability,."
+        },
+        {
+          "title": "84 D — Security, Resilience, Data Integrity, Recov",
+          "uuid": "3e29bb7d023f811b9968e49ab5de7d7e",
+          "logical_id": "84 D",
+          "role": "Documento especializado: 84 D — Security, Resilience, Data Integrity, Recov."
+        },
+        {
+          "title": "84 E — UI UX, Interaction Fidelity, Accessibility",
+          "uuid": "3e29bb7d023f8173848cc4fa2995af62",
+          "logical_id": "84 E",
+          "role": "Documento especializado: 84 E — UI UX, Interaction Fidelity, Accessibility."
+        },
+        {
+          "title": "84 F — Documentation Refactoring, Drift, NFR Cover",
+          "uuid": "3e29bb7d023f8139a32ee1744fe2802d",
+          "logical_id": "84 F",
+          "role": "Documento especializado: 84 F — Documentation Refactoring, Drift, NFR Cover."
+        },
+        {
+          "title": "84 G — Release Candidate Exit Gates, 10 10 Sem Méd",
+          "uuid": "3e29bb7d023f81e58e99e8e58035fd93",
+          "logical_id": "84 G",
+          "role": "Documento especializado: 84 G — Release Candidate Exit Gates, 10 10 Sem Méd."
+        },
+        {
+          "title": "84 H — Native Graphics DCC Assurance Profile GPU,",
+          "uuid": "3e29bb7d023f812d8825ffe1738c4da2",
+          "logical_id": "84 H",
+          "role": "Documento especializado: 84 H — Native Graphics DCC Assurance Profile GPU,."
+        },
+        {
+          "title": "84 — Total Assurance Constitution Gauntlet Loop, E",
+          "uuid": "3e29bb7d023f817ca077d37f62038fd1",
+          "logical_id": "84",
+          "role": "Documento especializado: 84 — Total Assurance Constitution Gauntlet Loop, E."
+        },
+        {
+          "title": "85 A — LLM & Agent Execution Contract Grounding, S",
+          "uuid": "3e29bb7d023f81b69571d23c290cfc47",
+          "logical_id": "85 A",
+          "role": "Documento especializado: 85 A — LLM & Agent Execution Contract Grounding, S."
+        },
+        {
+          "title": "85 — Canonical Truth, Authority Graph e Constituiç",
+          "uuid": "3e29bb7d023f8190bd95ce21475ae2e3",
+          "logical_id": "85",
+          "role": "Documento especializado: 85 — Canonical Truth, Authority Graph e Constituiç."
+        },
+        {
+          "title": "87 — Model Portfolio, Roteamento por Custo Quota e",
+          "uuid": "3e29bb7d023f8123bfbef4369c8b8da1",
+          "logical_id": "CONST-87",
+          "role": "Documento especializado: 87 — Model Portfolio, Roteamento por Custo Quota e."
+        },
+        {
+          "title": "88 — Arquitetura Documental v2 Canonical Graph, IR",
+          "uuid": "3e29bb7d023f816c9f3fc45bdb57db7c",
+          "logical_id": "CONST-88",
+          "role": "Documento especializado: 88 — Arquitetura Documental v2 Canonical Graph, IR."
+        }
+      ],
+      "semantic_role": "Documento especializado: 79 AA — Grounding, Spec Compliance, Surface Confor."
+    },
+    {
+      "local_path": "docs/reference/prumo-ask-headless.md",
+      "notion_pages": [
+        {
+          "title": "80 — Prumo Ask Headless One-Shot Interface e Machi",
+          "uuid": "3de9bb7d023f81f1a5c2e6d44111461b",
+          "logical_id": "CONST-80",
+          "role": "Especificação do Prumo Ask Headless One-Shot Interface."
+        }
+      ],
+      "semantic_role": "Especificação do Prumo Ask Headless One-Shot Interface."
+    },
+    {
+      "local_path": "docs/runtime/adoption-engine.md",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "pipeline, discovery sources/output, classification, semantic mapping, confidence ledger, profile proposal, adoption report, modes, migration proposals, security, goal decomposition, exit gate"
+        },
+        {
+          "title": "06 — Adoption Engine para Projetos Existentes",
+          "role": "inference confidence + evidence pointers, adoption report, candidate bindings"
+        }
+      ],
+      "semantic_role": "M7 Adoption Engine: discovery pipeline, observed facts vs inference, classification, semantic mapping, confidence ledger, adoption report, migration proposals, brownfield boundary, exit gate"
+    },
+    {
+      "local_path": "docs/runtime/control-plane.md",
+      "notion_pages": [
+        {
+          "title": "02 — Arquitetura Prumo v0.4 e Boundaries do Core",
+          "role": "control plane boundary, dependency direction, new application boundaries"
+        },
+        {
+          "title": "48 — Agent Runtime Control Plane: Arquitetura e Princípios",
+          "role": "planes, governance rule, success criteria"
+        },
+        {
+          "title": "49 — Budget Manager, Cost Governance e Rate Limits",
+          "role": "budget envelope, scopes, limits, cost manager, rate limits, evidence"
+        },
+        {
+          "title": "50 — Context Compiler, Token Budget, Cache e Compaction",
+          "role": "compiler pipeline, manifest, window distinction, tool-output budgets, pressure, retrieval, evals"
+        },
+        {
+          "title": "51 — Run Engine, Checkpoints, Retry, Resume e Cancellation",
+          "role": "run state machine, checkpoint, retry taxonomy, idempotency, resume, cancellation, livelock"
+        },
+        {
+          "title": "52 — Tool Gateway, MCP Governance e Lazy Tool Discovery",
+          "role": "gateway pipeline, descriptor, lazy discovery, side-effect journal, MCP governance, policy, evals"
+        },
+        {
+          "title": "53 — Model Registry, Router, Drift, Fallback e Provider Health",
+          "role": "registry metadata, router inputs/outputs, eval-driven, drift, fallback, health, verification"
+        },
+        {
+          "title": "55 — Observability Plane, Run Explainability e Incident Bundles",
+          "role": "telemetry, explainability commands, storage, OTLP, incident bundles, privacy"
+        },
+        {
+          "title": "56 — Automation Engine, Event Rules, DLQ e Safety",
+          "role": "automation model, contract, idempotency, retry, DLQ, scheduler deferral"
+        },
+        {
+          "title": "57 — Prumo Package & Runtime Manager, prumo.lock e Provider Isolation",
+          "role": "package types, manifest, lockfile, runtime manager, installation ownership, offline bundles"
+        },
+        {
+          "title": "58 — Migration Engine, Unified Review Queue e State Evolution",
+          "role": "migration contract, safety, journal, review queue, rule"
+        },
+        {
+          "title": "60 — Secrets, Data Classification e Egress Governance",
+          "role": "data classes, egress policy, secret provider, scopes, redaction, injection boundary, audit"
+        }
+      ],
+      "semantic_role": "Run, Budget, Context, Model, Tool, Environment, Automation, Observability, Package/Runtime, Migration, Review, Secrets/Egress"
+    },
+    {
+      "local_path": "docs/runtime/decision-intelligence-runtime.md",
+      "notion_pages": [
+        {
+          "title": "83 — Adendo Decision Intelligence Runtime, System",
+          "uuid": "3e09bb7d023f81f8ac4afb4e85cc5d01",
+          "logical_id": "CONST-83",
+          "role": "Especificação do Decision Intelligence Runtime."
+        }
+      ],
+      "semantic_role": "Especificação do Decision Intelligence Runtime."
+    },
+    {
+      "local_path": "docs/runtime/global-learning-layer.md",
+      "notion_pages": [
+        {
+          "title": "81 — Global Learning Layer Padrões Cross-Project,",
+          "uuid": "3de9bb7d023f81deb239f020182d4972",
+          "logical_id": "CONST-81",
+          "role": "Especificação da Global Learning Layer e Padrões Cross-Project."
+        }
+      ],
+      "semantic_role": "Especificação da Global Learning Layer e Padrões Cross-Project."
+    },
+    {
+      "local_path": "docs/runtime/living-plan.md",
+      "notion_pages": [
+        {
+          "title": "05 — Living Plan Mode e Interview Engine",
+          "role": "incremental interview, answer types, open questions registry, coverage model, modes"
+        },
+        {
+          "title": "70 — Fase E: Living Plan & Interview Engine (M6)",
+          "role": "pipeline, planning scopes, question priority, decision model, authority, confidence, goal decomposition, exit gate"
+        }
+      ],
+      "semantic_role": "M6 Living Plan: interview pipeline, question priority, answer classification, decision/authority/confidence model, open questions registry, decision preview, readiness feedback, exit gate"
+    },
+    {
+      "local_path": "docs/runtime/model-portfolio-and-routing.md",
+      "notion_pages": [
+        {
+          "title": "87 — Model Portfolio, Roteamento por Custo Quota e",
+          "uuid": "3e29bb7d023f8123bfbef4369c8b8da1",
+          "logical_id": "CONST-87",
+          "role": "Constituição 87: Roteamento por Custo/Quota, Budget e Fallback."
+        }
+      ],
+      "semantic_role": "Constituição 87: Roteamento por Custo/Quota, Budget e Fallback."
+    },
+    {
+      "local_path": "docs/security/trust-model.md",
+      "notion_pages": [
+        {
+          "title": "12 — Segurança, Trust, Permissions e Supply Chain",
+          "role": "trust layers, rules, connector trust, config merge, artifact markers, supply chain, docs contract, safe mode, classification, egress, secrets, redaction, injection boundary, audit"
+        }
+      ],
+      "semantic_role": "trust layers, connector primitives, config safety, artifact markers, supply chain, security contracts, safe mode, classification, egress, secrets, redaction, audit"
+    },
+    {
+      "local_path": "docs/skills/specs/accessibility-ux-e-cognitive-quality-skill.md",
+      "notion_pages": [
+        {
+          "title": "79 E — Accessibility, UX e Cognitive Quality Skill",
+          "uuid": "3d89bb7d023f81408b76eaac40d47b34",
+          "logical_id": "79 E",
+          "role": "Skill Package de referência para 79 E — Accessibility, UX e Cognitive Quality Skill."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 E — Accessibility, UX e Cognitive Quality Skill."
+    },
+    {
+      "local_path": "docs/skills/specs/architecture-quality-goal-management-stat.md",
+      "notion_pages": [
+        {
+          "title": "79 S — Architecture Quality, Goal Management, Stat",
+          "uuid": "3d89bb7d023f81de9cdfff52196d2354",
+          "logical_id": "79 S",
+          "role": "Skill Package de referência para 79 S — Architecture Quality, Goal Management, Stat."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 S — Architecture Quality, Goal Management, Stat."
+    },
+    {
+      "local_path": "docs/skills/specs/assembly-isa-abi-reverse-engineering-e-l.md",
+      "notion_pages": [
+        {
+          "title": "79 X — Assembly, ISA, ABI, Reverse Engineering e L",
+          "uuid": "3de9bb7d023f8116ae44dde0a1901cc6",
+          "logical_id": "79 X",
+          "role": "Skill Package de referência para 79 X — Assembly, ISA, ABI, Reverse Engineering e L."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 X — Assembly, ISA, ABI, Reverse Engineering e L."
+    },
+    {
+      "local_path": "docs/skills/specs/backend-api-database-caching-serializat.md",
+      "notion_pages": [
+        {
+          "title": "79 K — Backend, API, Database, Caching, Serializat",
+          "uuid": "3d89bb7d023f81358874c144d514c488",
+          "logical_id": "79 K",
+          "role": "Skill Package de referência para 79 K — Backend, API, Database, Caching, Serializat."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 K — Backend, API, Database, Caching, Serializat."
+    },
+    {
+      "local_path": "docs/skills/specs/baseline-da-auditoria-taxonomia-de-lacunas.md",
+      "notion_pages": [
+        {
+          "title": "79 A — Baseline da Auditoria, Taxonomia de Lacunas",
+          "uuid": "3d89bb7d023f81c69edde8f22dfd66e8",
+          "logical_id": "79 A",
+          "role": "Skill Package de referência para 79 A — Baseline da Auditoria, Taxonomia de Lacunas."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 A — Baseline da Auditoria, Taxonomia de Lacunas."
+    },
+    {
+      "local_path": "docs/skills/specs/compiler-native-memory-concurrency-runt.md",
+      "notion_pages": [
+        {
+          "title": "79 J — Compiler, Native, Memory, Concurrency, Runt",
+          "uuid": "3d89bb7d023f8185876bc2a9c64e6af7",
+          "logical_id": "79 J",
+          "role": "Skill Package de referência para 79 J — Compiler, Native, Memory, Concurrency, Runt."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 J — Compiler, Native, Memory, Concurrency, Runt."
+    },
+    {
+      "local_path": "docs/skills/specs/computer-science-software-engineering-dat.md",
+      "notion_pages": [
+        {
+          "title": "79 Y — Computer Science, Software Engineering, Dat",
+          "uuid": "3dd9bb7d023f81fda05ccde2975d66cb",
+          "logical_id": "79 Y",
+          "role": "Skill Package de referência para 79 Y — Computer Science, Software Engineering, Dat."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 Y — Computer Science, Software Engineering, Dat."
+    },
+    {
+      "local_path": "docs/skills/specs/context-agentic-workflow-orchestration-m.md",
+      "notion_pages": [
+        {
+          "title": "79 G — Context, Agentic Workflow, Orchestration, M",
+          "uuid": "3d89bb7d023f81d9b143cd2d4b14ffa2",
+          "logical_id": "79 G",
+          "role": "Skill Package de referência para 79 G — Context, Agentic Workflow, Orchestration, M."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 G — Context, Agentic Workflow, Orchestration, M."
+    },
+    {
+      "local_path": "docs/skills/specs/contratos-transversais-schemas-permission.md",
+      "notion_pages": [
+        {
+          "title": "79 B — Contratos Transversais, Schemas, Permission",
+          "uuid": "3d89bb7d023f818b9291f90a0600d096",
+          "logical_id": "79 B",
+          "role": "Skill Package de referência para 79 B — Contratos Transversais, Schemas, Permission."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 B — Contratos Transversais, Schemas, Permission."
+    },
+    {
+      "local_path": "docs/skills/specs/devops-ci-cd-containers-release-engineer.md",
+      "notion_pages": [
+        {
+          "title": "79 M — DevOps, CI CD, Containers, Release Engineer",
+          "uuid": "3d89bb7d023f8123ab90f6202042d65b",
+          "logical_id": "79 M",
+          "role": "Skill Package de referência para 79 M — DevOps, CI CD, Containers, Release Engineer."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 M — DevOps, CI CD, Containers, Release Engineer."
+    },
+    {
+      "local_path": "docs/skills/specs/evals-métricas-canary-definition-of-done.md",
+      "notion_pages": [
+        {
+          "title": "79 R — Evals, Métricas, Canary, Definition of Done",
+          "uuid": "3d89bb7d023f811abb89c3a8262d2d86",
+          "logical_id": "79 R",
+          "role": "Skill Package de referência para 79 R — Evals, Métricas, Canary, Definition of Done."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 R — Evals, Métricas, Canary, Definition of Done."
+    },
+    {
+      "local_path": "docs/skills/specs/frontend-design-system-ui-implementation.md",
+      "notion_pages": [
+        {
+          "title": "79 L — Frontend, Design System, UI Implementation,",
+          "uuid": "3d89bb7d023f818683bdeddd03d7852a",
+          "logical_id": "79 L",
+          "role": "Skill Package de referência para 79 L — Frontend, Design System, UI Implementation,."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 L — Frontend, Design System, UI Implementation,."
+    },
+    {
+      "local_path": "docs/skills/specs/game-rendering-physics-networking-asset.md",
+      "notion_pages": [
+        {
+          "title": "79 O — Game, Rendering, Physics, Networking, Asset",
+          "uuid": "3d89bb7d023f81bb9fdee94b104e9dd1",
+          "logical_id": "79 O",
+          "role": "Skill Package de referência para 79 O — Game, Rendering, Physics, Networking, Asset."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 O — Game, Rendering, Physics, Networking, Asset."
+    },
+    {
+      "local_path": "docs/skills/specs/git-github-documentation-editor-tooling.md",
+      "notion_pages": [
+        {
+          "title": "79 N — Git, GitHub, Documentation, Editor Tooling",
+          "uuid": "3d89bb7d023f816cab28c0b666bc02e7",
+          "logical_id": "79 N",
+          "role": "Skill Package de referência para 79 N — Git, GitHub, Documentation, Editor Tooling."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 N — Git, GitHub, Documentation, Editor Tooling."
+    },
+    {
+      "local_path": "docs/skills/specs/grounding-spec-compliance.md",
+      "notion_pages": [
+        {
+          "title": "79 AA — Grounding, Spec Compliance, Surface Confor",
+          "uuid": "3e29bb7d023f811a9490f5c1ae91f9f2",
+          "logical_id": "79 AA",
+          "role": "Skill Package P0: Grounding, Spec Compliance e Surface Conformance."
+        }
+      ],
+      "semantic_role": "Skill Package P0: Grounding, Spec Compliance e Surface Conformance."
+    },
+    {
+      "local_path": "docs/skills/specs/hardening-das-14-recipes-dags-gates-condic.md",
+      "notion_pages": [
+        {
+          "title": "79 D — Hardening das 14 Recipes DAGs, Gates Condic",
+          "uuid": "3d89bb7d023f81a3be24cf3141c30cf2",
+          "logical_id": "79 D",
+          "role": "Skill Package de referência para 79 D — Hardening das 14 Recipes DAGs, Gates Condic."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 D — Hardening das 14 Recipes DAGs, Gates Condic."
+    },
+    {
+      "local_path": "docs/skills/specs/hardening-dos-26-agents-planejamento-indivi.md",
+      "notion_pages": [
+        {
+          "title": "79 C — Hardening dos 26 Agents Planejamento Indivi",
+          "uuid": "3d89bb7d023f810482f1db59bd5ab75a",
+          "logical_id": "79 C",
+          "role": "Skill Package de referência para 79 C — Hardening dos 26 Agents Planejamento Indivi."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 C — Hardening dos 26 Agents Planejamento Indivi."
+    },
+    {
+      "local_path": "docs/skills/specs/language-ecosystem-packs-c-c3-odin-d-lu.md",
+      "notion_pages": [
+        {
+          "title": "79 V — Language Ecosystem Packs C, C3, Odin, D, Lu",
+          "uuid": "3dd9bb7d023f81cbbf63d68a19e9bd87",
+          "logical_id": "79 V",
+          "role": "Skill Package de referência para 79 V — Language Ecosystem Packs C, C3, Odin, D, Lu."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 V — Language Ecosystem Packs C, C3, Odin, D, Lu."
+    },
+    {
+      "local_path": "docs/skills/specs/language-skills-contract-e-hardening-de-tod.md",
+      "notion_pages": [
+        {
+          "title": "79 I — Language Skills Contract e Hardening de Tod",
+          "uuid": "3d89bb7d023f81faa922ff4c08b7a7d0",
+          "logical_id": "79 I",
+          "role": "Skill Package de referência para 79 I — Language Skills Contract e Hardening de Tod."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 I — Language Skills Contract e Hardening de Tod."
+    },
+    {
+      "local_path": "docs/skills/specs/matriz-completa-de-prioridade-work-package.md",
+      "notion_pages": [
+        {
+          "title": "79 Q — Matriz Completa de Prioridade, Work Package",
+          "uuid": "3d89bb7d023f810192b1db43142af6f5",
+          "logical_id": "79 Q",
+          "role": "Skill Package de referência para 79 Q — Matriz Completa de Prioridade, Work Package."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 Q — Matriz Completa de Prioridade, Work Package."
+    },
+    {
+      "local_path": "docs/skills/specs/modern-c++-wasm-wat-webgpu-three-js-e-lo.md",
+      "notion_pages": [
+        {
+          "title": "79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo",
+          "uuid": "3dd9bb7d023f81e0905bc500fc0354cc",
+          "logical_id": "79 W",
+          "role": "Skill Package de referência para 79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 W — Modern C++, WASM WAT, WebGPU, Three js e Lo."
+    },
+    {
+      "local_path": "docs/skills/specs/modern-c++-webassembly-wat-webgpu-e-three.md",
+      "notion_pages": [
+        {
+          "title": "79 W — Modern C++, WebAssembly WAT, WebGPU e Three",
+          "uuid": "3de9bb7d023f812eb484d49cf076f909",
+          "logical_id": "79 W",
+          "role": "Skill Package de referência para 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
+    },
+    {
+      "local_path": "docs/skills/specs/novas-capacidades-candidatas-skills-agents.md",
+      "notion_pages": [
+        {
+          "title": "79 P — Novas Capacidades Candidatas Skills, Agents",
+          "uuid": "3d89bb7d023f81f4aa6fc1eae57a1d0f",
+          "logical_id": "79 P",
+          "role": "Skill Package de referência para 79 P — Novas Capacidades Candidatas Skills, Agents."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 P — Novas Capacidades Candidatas Skills, Agents."
+    },
+    {
+      "local_path": "docs/skills/specs/programa-de-aprimoramento-do-workforce-agents.md",
+      "notion_pages": [
+        {
+          "title": "79 — Programa de Aprimoramento do Workforce Agents",
+          "uuid": "3d89bb7d023f8197a3bec0dba3a2ad29",
+          "logical_id": "79",
+          "role": "Skill Package de referência para 79 — Programa de Aprimoramento do Workforce Agents."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 — Programa de Aprimoramento do Workforce Agents."
+    },
+    {
+      "local_path": "docs/skills/specs/programming-language-engineering-paradigms.md",
+      "notion_pages": [
+        {
+          "title": "79 X — Programming Language Engineering, Paradigms",
+          "uuid": "3dd9bb7d023f81dca878cb14e2324a41",
+          "logical_id": "79 X",
+          "role": "Skill Package de referência para 79 X — Programming Language Engineering, Paradigms."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 X — Programming Language Engineering, Paradigms."
+    },
+    {
+      "local_path": "docs/skills/specs/programming-languages-computer-science-so.md",
+      "notion_pages": [
+        {
+          "title": "79 Y — Programming Languages, Computer Science, So",
+          "uuid": "3de9bb7d023f81d38bf8ecf60419e56a",
+          "logical_id": "79 Y",
+          "role": "Skill Package de referência para 79 Y — Programming Languages, Computer Science, So."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 Y — Programming Languages, Computer Science, So."
+    },
+    {
+      "local_path": "docs/skills/specs/security-trust-permissions-e-supply-chain.md",
+      "notion_pages": [
+        {
+          "title": "79 F — Security, Trust, Permissions e Supply Chain",
+          "uuid": "3d89bb7d023f811eb481dedc79ff4353",
+          "logical_id": "79 F",
+          "role": "Skill Package de referência para 79 F — Security, Trust, Permissions e Supply Chain."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 F — Security, Trust, Permissions e Supply Chain."
+    },
+    {
+      "local_path": "docs/skills/specs/skill-research-knowledge-freshness-vision.md",
+      "notion_pages": [
+        {
+          "title": "79 U — Skill Research, Knowledge Freshness, Vision",
+          "uuid": "3dd9bb7d023f815984c2debfd46acea1",
+          "logical_id": "79 U",
+          "role": "Skill Package de referência para 79 U — Skill Research, Knowledge Freshness, Vision."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 U — Skill Research, Knowledge Freshness, Vision."
+    },
+    {
+      "local_path": "docs/skills/specs/teaching-module-professor-agents-e-neurodi.md",
+      "notion_pages": [
+        {
+          "title": "79 Z — Teaching Module, Professor Agents e Neurodi",
+          "uuid": "3dd9bb7d023f8156ace1f5075fc16d3a",
+          "logical_id": "79 Z",
+          "role": "Skill Package de referência para 79 Z — Teaching Module, Professor Agents e Neurodi."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 Z — Teaching Module, Professor Agents e Neurodi."
+    },
+    {
+      "local_path": "docs/skills/specs/teaching-module-professor-mode-neurodiverg.md",
+      "notion_pages": [
+        {
+          "title": "79 Z — Teaching Module Professor Mode, Neurodiverg",
+          "uuid": "3de9bb7d023f8112b8ecdbc088c81714",
+          "logical_id": "79 Z",
+          "role": "Skill Package de referência para 79 Z — Teaching Module Professor Mode, Neurodiverg."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 Z — Teaching Module Professor Mode, Neurodiverg."
+    },
+    {
+      "local_path": "docs/skills/specs/technology-skill-packs-egui-bubble-tea-v2.md",
+      "notion_pages": [
+        {
+          "title": "79 T — Technology Skill Packs egui, Bubble Tea v2",
+          "uuid": "3dd9bb7d023f81868bbde5eda5cce20f",
+          "logical_id": "79 T",
+          "role": "Skill Package de referência para 79 T — Technology Skill Packs egui, Bubble Tea v2."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 T — Technology Skill Packs egui, Bubble Tea v2."
+    },
+    {
+      "local_path": "docs/skills/specs/testing-code-quality-review-benchmarking.md",
+      "notion_pages": [
+        {
+          "title": "79 H — Testing, Code Quality, Review, Benchmarking",
+          "uuid": "3d89bb7d023f816cb230dc8ef54cbe94",
+          "logical_id": "79 H",
+          "role": "Skill Package de referência para 79 H — Testing, Code Quality, Review, Benchmarking."
+        }
+      ],
+      "semantic_role": "Skill Package de referência para 79 H — Testing, Code Quality, Review, Benchmarking."
+    },
+    {
+      "local_path": "docs/ui-ux/interaction.md",
+      "notion_pages": [],
+      "semantic_role": "canonical interaction specification: input methods, keyboard map, focus and selection semantics, terminal size classes and mouse policy; `ui.interaction` and `tui.interaction` bind to it"
+    },
+    {
+      "local_path": "docs/ui-ux/interface-map.json",
+      "notion_pages": [],
+      "semantic_role": "canonical interface map for the Prumo TUI (dogfood): composition tree, element positions, labelled interconnections and implementation trace; `ui.component-contracts`, `ui.information-architecture`, `ui.screen-inventory` and `ui.layout` bind to it"
+    },
+    {
+      "local_path": "docs/ui-ux/state-matrix.json",
+      "notion_pages": [],
+      "semantic_role": "canonical UI state matrix: every state in the closed vocabulary with explicit applicability, user-visible text and recovery behaviour; the `ui.state-model` contract binds to it"
+    },
+    {
+      "local_path": "schemas/adoption-migration-proposal.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "AdoptionMigrationProposal schema — F-G08 adoption migration proposal contract"
+        }
+      ],
+      "semantic_role": "schema contract for formal adoption migration proposals"
+    },
+    {
+      "local_path": "schemas/adoption-report.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "AdoptionReport schema — F-G06 canonical adoption report contract"
+        }
+      ],
+      "semantic_role": "schema contract for canonical adoption report"
+    },
+    {
+      "local_path": "schemas/adoption-resolution.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "AdoptionResolution schema — F-G07 uncertainty resolution contract"
+        }
+      ],
+      "semantic_role": "schema contract for adoption uncertainty questions and resolution choices"
+    },
+    {
+      "local_path": "schemas/capability-proposal.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "CapabilityProposal schema — F-G03 capability and profile proposals contract"
+        }
+      ],
+      "semantic_role": "schema contract for candidate capability and profile proposals"
+    },
+    {
+      "local_path": "schemas/confidence-ledger.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "ConfidenceLedger schema — F-G05 confidence ledger contract"
+        }
+      ],
+      "semantic_role": "schema contract for adoption engine confidence ledger"
+    },
+    {
+      "local_path": "schemas/connector-contract.schema.json",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M10 OpenCode Native Harness — connector contract schema"
+        }
+      ],
+      "semantic_role": "schema contract for connector capabilities and lifecycle"
+    },
+    {
+      "local_path": "schemas/connector-negotiation.schema.json",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M11 Connector SDK — capability negotiation schema"
+        }
+      ],
+      "semantic_role": "schema contract for connector capability negotiation results and degradations"
+    },
+    {
+      "local_path": "schemas/experience-event.schema.json",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M9 Experience Layer — session event schema"
+        }
+      ],
+      "semantic_role": "schema contract for structured session events"
+    },
+    {
+      "local_path": "schemas/experience-handoff.schema.json",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M9 Experience Layer — handoff protocol schema"
+        }
+      ],
+      "semantic_role": "schema contract for structured agent state handoff"
+    },
+    {
+      "local_path": "schemas/journal-entry.schema.json",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M8 History & Traceability — implementation journal entry schema"
+        }
+      ],
+      "semantic_role": "schema contract for implementation journal entries"
+    },
+    {
+      "local_path": "schemas/mapping-candidate.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "MappingCandidate schema — F-G04 semantic document mapping and candidate bindings contract"
+        }
+      ],
+      "semantic_role": "schema contract for semantic document mapping candidates and bindings"
+    },
+    {
+      "local_path": "schemas/observed-fact.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "ObservedFact schema — F-G01 scanner output contract"
+        }
+      ],
+      "semantic_role": "schema contract for adoption scanner observed facts"
+    },
+    {
+      "local_path": "schemas/repository-classification.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "RepositoryClassification schema — F-G02 classification output contract"
+        }
+      ],
+      "semantic_role": "schema contract for repository classification output"
+    },
+    {
+      "local_path": "schemas/scan-result.schema.json",
+      "notion_pages": [
+        {
+          "title": "71 — Fase F: Adoption Engine para Projetos Existentes (M7)",
+          "role": "ScanResult schema — F-G01 complete scanner output envelope"
+        }
+      ],
+      "semantic_role": "schema contract for adoption scanner complete output"
+    },
+    {
+      "local_path": "schemas/trace-graph.schema.json",
+      "notion_pages": [
+        {
+          "title": "14 — Roadmap de Implementação v0.4",
+          "role": "M8 History & Traceability — typed traceability graph schema"
+        }
+      ],
+      "semantic_role": "schema contract for typed traceability graph"
     }
-   ],
-   "semantic_role": "schema contract for typed traceability graph"
-  },
-  {
-   "local_path": "docs/adr/012-interface-map-artifact-and-projections.md",
-   "notion_pages": [],
-   "semantic_role": "ADR defining the interface map as a canonical artifact with declared+derived fill, semantic slots with optional per-platform geometry, a composition tree plus labelled interconnection edges, and per-audience projections driven by prumo.json `ui` configuration"
-  },
-  {
-   "local_path": "docs/ui-ux/interface-map.json",
-   "notion_pages": [],
-   "semantic_role": "canonical interface map for the Prumo TUI (dogfood): composition tree, element positions, labelled interconnections and implementation trace; `ui.component-contracts`, `ui.information-architecture`, `ui.screen-inventory` and `ui.layout` bind to it"
-  }
- ]
+  ],
+  "snapshot_id": "2026-09-21-e3a56193",
+  "snapshot_archive_sha256": "e3a561937bfc00209f968f4ead96b84c76a5544b0eb40f50c504dc7037501b4d"
 }

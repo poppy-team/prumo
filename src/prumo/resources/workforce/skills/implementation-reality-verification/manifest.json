@@ -1,0 +1,66 @@
+{
+  "id": "implementation-reality-verification",
+  "name": "Implementation Reality Verification (Anti-False-Green)",
+  "version": 1,
+  "schema_version": 2,
+  "purpose": "Differentiate presence vs reachability vs exercise vs verification; eliminate false-green illusions where dead code passes superficial tests.",
+  "risk_level": "high",
+  "modes": [
+    "testing",
+    "review"
+  ],
+  "inputs": [
+    "Source code",
+    "Test suites",
+    "Runtime wiring",
+    "Call sites"
+  ],
+  "outputs": [
+    "Reachability proof",
+    "Call site inventory",
+    "Verification report"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "process.spawn"
+  ],
+  "references": [],
+  "templates": [],
+  "checks": [
+    "checks/implementation-reality-verification-checklist.md"
+  ],
+  "scripts": [],
+  "examples": [
+    "examples/example.md"
+  ],
+  "required_evidence": [
+    "test",
+    "conformance"
+  ],
+  "stop_conditions": [
+    "Real reachability verified with evidence",
+    "Dead code / false-green detected"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.6.0",
+    "checksum": "",
+    "modified": "2026-09-21"
+  },
+  "select": {
+    "features_any": [
+      "implementation-reality-verification",
+      "harness"
+    ],
+    "risk_any": [
+      "high"
+    ]
+  },
+  "requires_any": [],
+  "tools": [],
+  "instructions": "---\nname: implementation-reality-verification\ndescription: Eliminates false-greens: verifies code is reachable, exercised, evidenced, and verified beyond shallow unit tests.\n---\n# Implementation Reality Verification\n\n## 1. Do Not Confuse File Presence with Feature Implementation\nFinding a file does not mean the feature works. Verify interfaces, call sites, runtime wiring, lifecycle, error paths, and CLI exposure.\n\n## 2. Eliminate False-Green Oracles\nDetect tests that pass because assertions are weak, mocks are used instead of real capabilities, or errors are silently swallowed.\n\n## 3. Terminal State Hierarchy\nDerive completion strictly through:\nimplemented -> reachable -> exercised -> evidenced -> verified -> accepted -> released.\nAgents are strictly prohibited from declaring DONE by text output.\n"
+}

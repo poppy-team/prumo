@@ -1,0 +1,1306 @@
+[
+  {
+    "path": "docs/AI_WORKFORCE.md",
+    "type": "markdown",
+    "size_bytes": 2133,
+    "lines": 48,
+    "sha256": "803d1bb7feb25168e03b8602096a6a9c28f3cae7c57f94aa5734ea169e702c01",
+    "first_h1": "Agents, Skills and Recipes"
+  },
+  {
+    "path": "docs/ARCHITECTURE.md",
+    "type": "markdown",
+    "size_bytes": 3444,
+    "lines": 91,
+    "sha256": "5beebe5ac58e844c0134e900d01f75a38b85bcd008e22f00f3bd9b56d5ad857a",
+    "first_h1": "Architecture"
+  },
+  {
+    "path": "docs/AUTHORITY_MAP.json",
+    "type": "json",
+    "size_bytes": 2683,
+    "lines": 31,
+    "sha256": "42aa0c675efc6605659719c0535425ae40a734206a8ea1cf2dad75997e5160e3",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/CONTRIBUTING.md",
+    "type": "markdown",
+    "size_bytes": 1075,
+    "lines": 27,
+    "sha256": "c20b604a11721bf3d4a84679c65914ba2791c3c4b1cb833b070448cc489140fd",
+    "first_h1": "Contributing and Framework Evolution"
+  },
+  {
+    "path": "docs/DOCUMENTATION_SYSTEM.md",
+    "type": "markdown",
+    "size_bytes": 6371,
+    "lines": 221,
+    "sha256": "90c74e6d6512a0bbceeafa3044e0c38c9ddca7603202e85069ffb41428604df7",
+    "first_h1": "Documentation System"
+  },
+  {
+    "path": "docs/EVENT_PROTOCOL.md",
+    "type": "markdown",
+    "size_bytes": 4555,
+    "lines": 115,
+    "sha256": "c951dbcce2033e9f572b733b2bec7b479c5b02af08228c568b44a280ee904db9",
+    "first_h1": "Prumo Event Protocol"
+  },
+  {
+    "path": "docs/FRAMEWORK_CHANGE_PROPOSAL.md",
+    "type": "markdown",
+    "size_bytes": 874,
+    "lines": 40,
+    "sha256": "97d4692b72d296b33eeecf26e2056e8d600818dd676f2eb927e3c2ebb06f7017",
+    "first_h1": "Framework Change Proposal Template"
+  },
+  {
+    "path": "docs/GOAL_SYSTEM.md",
+    "type": "markdown",
+    "size_bytes": 2075,
+    "lines": 60,
+    "sha256": "ee0a5bf43f79c3888fae3b13560d3b2b22b786561e937db9a681c8bed7a5ece7",
+    "first_h1": "Goal System"
+  },
+  {
+    "path": "docs/LEAN_PROGRESSIVE_CONTEXT.md",
+    "type": "markdown",
+    "size_bytes": 5386,
+    "lines": 210,
+    "sha256": "112e1c9966ba327bc4efff85d40eb6ef379c8387bbdf19e7e0d979624cd9dfa6",
+    "first_h1": "Lean Progressive Context (LPC)"
+  },
+  {
+    "path": "docs/PORTABILITY.md",
+    "type": "markdown",
+    "size_bytes": 1261,
+    "lines": 55,
+    "sha256": "83caedfc3b1864d00db5c0cbabd6c7897aad60af4e9507885aa05a076a253f3c",
+    "first_h1": "Portability and Platform Adapters"
+  },
+  {
+    "path": "docs/PROJECT_INTELLIGENCE.md",
+    "type": "markdown",
+    "size_bytes": 4106,
+    "lines": 203,
+    "sha256": "a1a23d8708ea99bba5c0e8b0f95222c24ace6dafedf8148d9416392cb85e7885",
+    "first_h1": "Project Intelligence"
+  },
+  {
+    "path": "docs/PROJECT_ORCHESTRATION_PROTOCOL.md",
+    "type": "markdown",
+    "size_bytes": 2587,
+    "lines": 73,
+    "sha256": "2dfaf0c73b5dc5ba6e3c1795c1174e3d3717878862f001de1057dd5396b2180d",
+    "first_h1": "Project Orchestration Protocol (POP)"
+  },
+  {
+    "path": "docs/PRUMO.md",
+    "type": "markdown",
+    "size_bytes": 4066,
+    "lines": 108,
+    "sha256": "1165faf65f51f488956365cb0ad5f66792abddded7b9c90bd6b37ff69a6028d1",
+    "first_h1": "Prumo — Documentation Router"
+  },
+  {
+    "path": "docs/QUALITY.md",
+    "type": "markdown",
+    "size_bytes": 1398,
+    "lines": 46,
+    "sha256": "37fbe42615b0b903160347a31721cf5c8c5433b312ed1a29cc6734e756005437",
+    "first_h1": "Validation and Quality"
+  },
+  {
+    "path": "docs/SOURCE_MAP.json",
+    "type": "json",
+    "size_bytes": 25553,
+    "lines": 687,
+    "sha256": "986fa05d6fb879b1ab98b0152770511a4906218508d8d7a9d7d0690e6d4c9d80",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/TRUST_MODEL.md",
+    "type": "markdown",
+    "size_bytes": 4361,
+    "lines": 64,
+    "sha256": "27cd18313cc1d0b8289c6ffa414e9f2481e5167c1c43a9cdea6170724f0b40d7",
+    "first_h1": "Prumo Trust Model"
+  },
+  {
+    "path": "docs/USAGE.md",
+    "type": "markdown",
+    "size_bytes": 2336,
+    "lines": 95,
+    "sha256": "8d338b56799a18d525ba0a3c93b0acffb1a6cd2768e7ed8576dcdb60181c5fac",
+    "first_h1": "Usage"
+  },
+  {
+    "path": "docs/glossary.json",
+    "type": "json",
+    "size_bytes": 3163,
+    "lines": 73,
+    "sha256": "66b80cb5fca530faf33be027ac5caa15555a6d1affb51eb26f61ce577f725054",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/lifecycle.json",
+    "type": "json",
+    "size_bytes": 748,
+    "lines": 22,
+    "sha256": "3d51b56e23302f547fe9453dfcbb4b7ba38ff26b5cb6dea414ce9542d3303f2f",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/media/records.json",
+    "type": "json",
+    "size_bytes": 3,
+    "lines": 1,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/governance/authority.md",
+    "type": "markdown",
+    "size_bytes": 2426,
+    "lines": 59,
+    "sha256": "00e59c9467e4f617bdbbbc366d0393cc5ed3bd0d54326d57599af01cce5d64bd",
+    "first_h1": "Authority & Projection Policy"
+  },
+  {
+    "path": "docs/governance/documentation-dogfood.md",
+    "type": "markdown",
+    "size_bytes": 1187,
+    "lines": 26,
+    "sha256": "b79f041eda84b1f5f35a54f6066ff071d79d5ccf7797d0535cb6d92bca597ecb",
+    "first_h1": "M5 Documentation System v2 — Dogfood Report"
+  },
+  {
+    "path": "docs/governance/documentation-system.md",
+    "type": "markdown",
+    "size_bytes": 3022,
+    "lines": 63,
+    "sha256": "7865d79f50317a9587b137ed0d9633bfa5953cde1ab59522c7f61da5570da824",
+    "first_h1": "Documentation System v2"
+  },
+  {
+    "path": "docs/governance/m10-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 3395,
+    "lines": 64,
+    "sha256": "1f45d466a6570e314bf83cb87d2aaf1facfa4665533c9b9f1521316c546db8d1",
+    "first_h1": "M10 OpenCode Native Harness — Exit Gate"
+  },
+  {
+    "path": "docs/governance/m11-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 3074,
+    "lines": 59,
+    "sha256": "804c71fa91f31efb232c146932d3b836518130a3fab3ffa62d8f5afa882ff839",
+    "first_h1": "M11 Connector SDK — Exit Gate"
+  },
+  {
+    "path": "docs/governance/m12-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 1540,
+    "lines": 20,
+    "sha256": "6d5e93cdf7bd314153fc644c76b7b1658795f48fc666c43f31758ef427c03097",
+    "first_h1": "M12 Team / Advanced Runtime — Governance Evaluation & Status"
+  },
+  {
+    "path": "docs/governance/m5-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 3499,
+    "lines": 61,
+    "sha256": "169c7f09aa7f006a825a520030bf5bb7f1d5220e1cbd2aa6c1b0c3d14cae1723",
+    "first_h1": "M5 Documentation System v2 — Exit Gate"
+  },
+  {
+    "path": "docs/governance/m6-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 5510,
+    "lines": 114,
+    "sha256": "34a4a788a765d84639010bec0bbb3d91bdfd45316e40f474e6b0bcec1fe06e9a",
+    "first_h1": "M6 Living Plan / Interview Engine — Exit Gate"
+  },
+  {
+    "path": "docs/governance/m7-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 6531,
+    "lines": 114,
+    "sha256": "1c2415a087bf0963954633a27a634e508dbd6fabe6f3b821ae7ec93eec0cd14c",
+    "first_h1": "M7 Adoption Engine — Exit Gate"
+  },
+  {
+    "path": "docs/governance/m8-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 3038,
+    "lines": 65,
+    "sha256": "033be71551a1421e84cc165145b48bd6db7b426491f2aa77a973baa895c1dc08",
+    "first_h1": "M8 History + Traceability — Exit Gate"
+  },
+  {
+    "path": "docs/governance/m9-exit-gate.md",
+    "type": "markdown",
+    "size_bytes": 3780,
+    "lines": 95,
+    "sha256": "0c9c87643216dd34bd60b26ef6fed2b73b7c59580d9d7b9047cbd10f540c623b",
+    "first_h1": "M9 Experience Layer — Exit Gate"
+  },
+  {
+    "path": "docs/governance/release-policy.md",
+    "type": "markdown",
+    "size_bytes": 1211,
+    "lines": 57,
+    "sha256": "d587ebee545221a27357dd2fbece4ec3ad3a2f94c94f79a5f7b5a36669d9e576",
+    "first_h1": "Release Policy"
+  },
+  {
+    "path": "docs/governance/repository-governance.md",
+    "type": "markdown",
+    "size_bytes": 3849,
+    "lines": 85,
+    "sha256": "ed33edf5bcd58332fa7f27f1b6f0600eab5c8aeaa1dddbba40370b986312bae0",
+    "first_h1": "Repository Governance"
+  },
+  {
+    "path": "docs/architecture/accessibility.md",
+    "type": "markdown",
+    "size_bytes": 2583,
+    "lines": 51,
+    "sha256": "0469fc23a9d8c67478a3bac4f94b65154195b13871c45e6ddce094eecab0493f",
+    "first_h1": "Accessibility Contracts"
+  },
+  {
+    "path": "docs/architecture/dependency-rules.md",
+    "type": "markdown",
+    "size_bytes": 6267,
+    "lines": 149,
+    "sha256": "86dadd3e413a7851e7e28375fe6ad6fbb1aaa703646285feee9a383e251e375a",
+    "first_h1": "Prumo Dependency Rules"
+  },
+  {
+    "path": "docs/architecture/documentation-compiler.md",
+    "type": "markdown",
+    "size_bytes": 3017,
+    "lines": 71,
+    "sha256": "beec1b3709566ea561a2d798fad2f43fc7b697f2a06f4b5a69cdf1f6f7e66e96",
+    "first_h1": "Documentation Compiler"
+  },
+  {
+    "path": "docs/architecture/documentation-control-plane.md",
+    "type": "markdown",
+    "size_bytes": 11125,
+    "lines": 211,
+    "sha256": "24a8d4432e05e9943e3491370db307141e0c3de436720157e2b474059d778944",
+    "first_h1": "Documentation Control Plane"
+  },
+  {
+    "path": "docs/architecture/overview.md",
+    "type": "markdown",
+    "size_bytes": 5069,
+    "lines": 137,
+    "sha256": "a610d2ce41c125c67ec1019c112c3b28d4496030c0d13998a5e0f46fc4783baa",
+    "first_h1": "Prumo Architecture Overview"
+  },
+  {
+    "path": "docs/architecture/shared-product-contract.json",
+    "type": "json",
+    "size_bytes": 3200,
+    "lines": 40,
+    "sha256": "4bc940fd3a908399f15a0647ba155e75cbe4b3c85ef16bc2e8a404398f54b3ef",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/architecture/shared-product-contract.md",
+    "type": "markdown",
+    "size_bytes": 2171,
+    "lines": 50,
+    "sha256": "8a1087a6a09b667fc76f84fa3ea678e996da038a9a2d58399bf3cff465fadc85",
+    "first_h1": "Shared Product Contract"
+  },
+  {
+    "path": "docs/architecture/visual-constitution.md",
+    "type": "markdown",
+    "size_bytes": 5388,
+    "lines": 107,
+    "sha256": "7ddd2349dba89a25021ed3aa7a35b89a0033eab313886c2ff5ad2cb2c296aa9b",
+    "first_h1": "Visual Constitution — Prumo Code TUI"
+  },
+  {
+    "path": "docs/user-guide/agents.md",
+    "type": "markdown",
+    "size_bytes": 633,
+    "lines": 13,
+    "sha256": "fc233c33662e645aacfaf8243fc3d23b5e5b86fec814f44e1cd1f9d7b4c036e0",
+    "first_h1": "Agent Contract v2"
+  },
+  {
+    "path": "docs/user-guide/context.md",
+    "type": "markdown",
+    "size_bytes": 334,
+    "lines": 7,
+    "sha256": "5da53003d930bd10bea75a89d4f8411353828f6f80b41ebcb9f87af46e1ec966",
+    "first_h1": "Lean Progressive Context (LPC/PCA)"
+  },
+  {
+    "path": "docs/user-guide/evidence-and-gates.md",
+    "type": "markdown",
+    "size_bytes": 396,
+    "lines": 11,
+    "sha256": "b2f4991e15429032b846b609b6947161c54b4a8a8d24d5138c55c4dcdedf9fda",
+    "first_h1": "Evidence and Gates"
+  },
+  {
+    "path": "docs/user-guide/execution.md",
+    "type": "markdown",
+    "size_bytes": 269,
+    "lines": 5,
+    "sha256": "337ebdcefeda02c83709405fef27e3502dd6db8d823774fffdce10420df0353b",
+    "first_h1": "Execution Policy"
+  },
+  {
+    "path": "docs/user-guide/goals-101.md",
+    "type": "markdown",
+    "size_bytes": 6407,
+    "lines": 271,
+    "sha256": "66b0ff8a2f5625f43ea007b2115707d78c65f7ca7b04c70121a4d6ad1f7d5fef",
+    "first_h1": "Goals 101: Minha Primeira Goal"
+  },
+  {
+    "path": "docs/user-guide/goals.md",
+    "type": "markdown",
+    "size_bytes": 704,
+    "lines": 18,
+    "sha256": "216bc93e46e78e727f30c7bd723b1a6ade645cfa47742a7cd8fb5463361c1e61",
+    "first_h1": "Goal System v2"
+  },
+  {
+    "path": "docs/user-guide/models.md",
+    "type": "markdown",
+    "size_bytes": 253,
+    "lines": 6,
+    "sha256": "9e0b4685073c1519a458bd108046fa4f280180ee2513fc47c63bdf885a8b61ef",
+    "first_h1": "Model Policy v2"
+  },
+  {
+    "path": "docs/user-guide/plans-and-tasks.md",
+    "type": "markdown",
+    "size_bytes": 331,
+    "lines": 8,
+    "sha256": "9234aba7b742fa0de9091d8d170b164c14b406eb11350367c7966f08d42ac92d",
+    "first_h1": "Plans, Tasks & DAGs"
+  },
+  {
+    "path": "docs/user-guide/project-intelligence.md",
+    "type": "markdown",
+    "size_bytes": 224,
+    "lines": 6,
+    "sha256": "75dfa3d37d0a4bb18b72f3ba92666bb3b540e9e13de9a2ee10eec941c2ca93ef",
+    "first_h1": "Project Intelligence"
+  },
+  {
+    "path": "docs/user-guide/projects.md",
+    "type": "markdown",
+    "size_bytes": 407,
+    "lines": 10,
+    "sha256": "7576461261ae19b5f7015562f062289ac30bce90c37b69aad464f8a3375a7a19",
+    "first_h1": "Managing Projects"
+  },
+  {
+    "path": "docs/user-guide/recipes.md",
+    "type": "markdown",
+    "size_bytes": 546,
+    "lines": 12,
+    "sha256": "9764bc803bc7aa1cf04ce0f572f78699d0f2880838776304decd22237170ad8e",
+    "first_h1": "Recipes v2"
+  },
+  {
+    "path": "docs/user-guide/skills.md",
+    "type": "markdown",
+    "size_bytes": 369,
+    "lines": 14,
+    "sha256": "3e11bf9e24242e70f57b30c009bdda38e6faf64f1c4d199e931c716cf7e60a2f",
+    "first_h1": "Skill Packages v2"
+  },
+  {
+    "path": "docs/user-guide/troubleshooting.md",
+    "type": "markdown",
+    "size_bytes": 2442,
+    "lines": 81,
+    "sha256": "09b4e2eb44ff5bb5ca563965aef292dbe4aa326ba72054d46324d5b66d2cc908",
+    "first_h1": "Troubleshooting and Operations"
+  },
+  {
+    "path": "docs/migration/conformance-strategy.md",
+    "type": "markdown",
+    "size_bytes": 4105,
+    "lines": 113,
+    "sha256": "8273254be67acafa576d973f9eca1292aec4c237d939ab89450fe140700ccd4d",
+    "first_h1": "Python ↔ Go Conformance Strategy"
+  },
+  {
+    "path": "docs/migration/notion-final-docs-inventory.json",
+    "type": "json",
+    "size_bytes": 134678,
+    "lines": 3432,
+    "sha256": "84211c3d37d40c4257dca072d30533cee0072fee744ba9fabe10d4dc60291adb",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/migration/notion-final-docs-inventory.md",
+    "type": "markdown",
+    "size_bytes": 28851,
+    "lines": 186,
+    "sha256": "bb0fcac237794fbce56d59b379ff87584e88c58ed51d22bbd6603c15c295224f",
+    "first_h1": "Inventário Completo — Documentação Final Prumo (Snapshot 2026-09-21)"
+  },
+  {
+    "path": "docs/migration/protocol-inventory.md",
+    "type": "markdown",
+    "size_bytes": 5670,
+    "lines": 104,
+    "sha256": "343be60b4ed446d37e3665d710eaa343e5ef7386d15fcc6d0eadd8d66813abfa",
+    "first_h1": "v0.3 → v0.4 Protocol Inventory"
+  },
+  {
+    "path": "docs/migration/repo-docs-inventory.json",
+    "type": "json",
+    "size_bytes": 39787,
+    "lines": 1290,
+    "sha256": "7ba8376ff1f9e904225310f94e870330eb5de8cbc7799bc16365688fe0422014",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/migration/repo-docs-inventory.md",
+    "type": "markdown",
+    "size_bytes": 9825,
+    "lines": 167,
+    "sha256": "d5ff046e6f313970380c0b43772546003d13798ea54351803e746d660795a313",
+    "first_h1": "Inventário da Documentação Preexistente no Repositório"
+  },
+  {
+    "path": "docs/migration/v0.3-to-v0.4-go.md",
+    "type": "markdown",
+    "size_bytes": 7122,
+    "lines": 126,
+    "sha256": "9ff493d04158b50b6e13f25669ac05780f2778bbda82c793a0e6471a71e86713",
+    "first_h1": "Migration Guide: Prumo v0.3 (Python) to v0.4 (Go)"
+  },
+  {
+    "path": "docs/manual/installation.md",
+    "type": "markdown",
+    "size_bytes": 4895,
+    "lines": 161,
+    "sha256": "b5dadc408e335345d3124367ba58e44955dec3e141d1bd544304cbb60011ea4d",
+    "first_h1": "Manual de Instalação"
+  },
+  {
+    "path": "docs/manual/uninstallation.md",
+    "type": "markdown",
+    "size_bytes": 3040,
+    "lines": 102,
+    "sha256": "7cefc191c0540741ccb0688e296754de3797739fcaeb9bdcd9cf0623335319a2",
+    "first_h1": "Manual de Desinstalação"
+  },
+  {
+    "path": "docs/manual/usage.md",
+    "type": "markdown",
+    "size_bytes": 6226,
+    "lines": 210,
+    "sha256": "3617fcfbd2a6e995e5dbb45b428547af2f1bcdcf71c0084f0e61fc20843fd969",
+    "first_h1": "Manual de Uso"
+  },
+  {
+    "path": "docs/agents/instruction-ir.json",
+    "type": "json",
+    "size_bytes": 3668,
+    "lines": 114,
+    "sha256": "f8e8cb2248f4cc6f0e3726d24517b7d3a6b66fb271c8effcb40d13f9fe4771a8",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/contracts/bindings.json",
+    "type": "json",
+    "size_bytes": 112035,
+    "lines": 2985,
+    "sha256": "4429b59c0878c41d4453e3bd0081a7e64d0ba55b314134af41df2c1e6713dc34",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/contracts/builtin.json",
+    "type": "json",
+    "size_bytes": 25487,
+    "lines": 1108,
+    "sha256": "8d33f50e7854e621fbb77936091fa066fe9cc0fe6422fc2ee62f5f68159947b3",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/integration/claude-code.md",
+    "type": "markdown",
+    "size_bytes": 910,
+    "lines": 28,
+    "sha256": "80c143ff147fc104e29cc9590c73097194b3ab02144f780e1aec0ad4312a6c7c",
+    "first_h1": "Claude Code Integration"
+  },
+  {
+    "path": "docs/integration/codex.md",
+    "type": "markdown",
+    "size_bytes": 1216,
+    "lines": 33,
+    "sha256": "d402dacabe27a0c1379aa9b635dacccb33cd06ea9692609c0350af373b23a683",
+    "first_h1": "Codex Integration"
+  },
+  {
+    "path": "docs/integration/connector-contract.md",
+    "type": "markdown",
+    "size_bytes": 2555,
+    "lines": 63,
+    "sha256": "b811a8e0d0e82654a75b028cfd2f4641f8ae7f92c2edbb1d7a04352f62813135",
+    "first_h1": "Prumo Connector Contract"
+  },
+  {
+    "path": "docs/integration/gemini.md",
+    "type": "markdown",
+    "size_bytes": 575,
+    "lines": 15,
+    "sha256": "bd289596c8a8245ebf6955d15d37fbc545b80c9dedd1967fd56a2720331ddd5b",
+    "first_h1": "Gemini Integration"
+  },
+  {
+    "path": "docs/integration/generic.md",
+    "type": "markdown",
+    "size_bytes": 135,
+    "lines": 3,
+    "sha256": "c5175f292ec05cd8d210473a066fd016518b6a2b22d723b52def7269e992a4fb",
+    "first_h1": "Generic Platform Integration"
+  },
+  {
+    "path": "docs/integration/opencode.md",
+    "type": "markdown",
+    "size_bytes": 2839,
+    "lines": 71,
+    "sha256": "1a994f53c9af0b308ac2f9b6c771caf58c4da0ca8c64941a61a472461dc6897c",
+    "first_h1": "OpenCode Native Integration"
+  },
+  {
+    "path": "docs/reference/cli.md",
+    "type": "markdown",
+    "size_bytes": 4017,
+    "lines": 142,
+    "sha256": "cbb6201f20faf69276f88643fb14fe69a5627cf98aaf7b169e33fd0371aa1bce",
+    "first_h1": "CLI Reference"
+  },
+  {
+    "path": "docs/reference/events.md",
+    "type": "markdown",
+    "size_bytes": 121,
+    "lines": 3,
+    "sha256": "ce337752f5260a3646f1f748374c3ba7c3121ad0512f84ce036ba6ed076dbb2c",
+    "first_h1": "Event Reference"
+  },
+  {
+    "path": "docs/reference/installation-contract.md",
+    "type": "markdown",
+    "size_bytes": 2429,
+    "lines": 84,
+    "sha256": "562ae517ae9631304d8d8745c45f595c754032aec03acb0197c230005fe83957",
+    "first_h1": "Prumo Installation Contract"
+  },
+  {
+    "path": "docs/reference/project-layout.md",
+    "type": "markdown",
+    "size_bytes": 111,
+    "lines": 3,
+    "sha256": "9c2491d635871eb3fa96738734feea3b49d59fff593f741e7fa3895bb73c08d8",
+    "first_h1": "Project Layout Reference"
+  },
+  {
+    "path": "docs/reference/schemas.md",
+    "type": "markdown",
+    "size_bytes": 769,
+    "lines": 28,
+    "sha256": "3ffd1e7d00dd899116a5c9d945643a3fd5a0dadd6f734a19f8b6ffbc343afa8f",
+    "first_h1": "Schemas Reference"
+  },
+  {
+    "path": "docs/reference/workforce-resolution.md",
+    "type": "markdown",
+    "size_bytes": 138,
+    "lines": 3,
+    "sha256": "122468162f9eed803f9772755c710b84df531abdd65e8fe6c3c637023d08414a",
+    "first_h1": "Workforce Resolution Reference"
+  },
+  {
+    "path": "docs/security/trust-model.md",
+    "type": "markdown",
+    "size_bytes": 4148,
+    "lines": 109,
+    "sha256": "19ac637cc51a9e73bd5f2cdd3296ae2b7a045a856890611e5cad48cb3f6dcb09",
+    "first_h1": "Prumo Security & Trust Model"
+  },
+  {
+    "path": "docs/development/architecture.md",
+    "type": "markdown",
+    "size_bytes": 2113,
+    "lines": 51,
+    "sha256": "8e9b59bdfe3d40a8c495cb8cb1372abb8966f29f2aa90c45a5fe332e38b57cea",
+    "first_h1": "Architecture"
+  },
+  {
+    "path": "docs/development/coding-standards.md",
+    "type": "markdown",
+    "size_bytes": 4124,
+    "lines": 108,
+    "sha256": "9c8d5fbfb31dcef8a239611d420bf1e6bf351032a5dda992c9325cae8b738271",
+    "first_h1": "Prumo Coding Standards (Go)"
+  },
+  {
+    "path": "docs/development/compiler.md",
+    "type": "markdown",
+    "size_bytes": 7715,
+    "lines": 313,
+    "sha256": "3aac820df88dcd4b22c59527e623377d3c05a0e066226f2e00f7551c89b330f3",
+    "first_h1": "Compiler Internals"
+  },
+  {
+    "path": "docs/development/contributing.md",
+    "type": "markdown",
+    "size_bytes": 2474,
+    "lines": 55,
+    "sha256": "53200fc68e34ff8fa6d1a519d41e5d838e22d4767522d9b8aec035695bb6cfbc",
+    "first_h1": "Contributing"
+  },
+  {
+    "path": "docs/development/implementation-blueprint.md",
+    "type": "markdown",
+    "size_bytes": 7866,
+    "lines": 153,
+    "sha256": "2bc70614f41c7bd6f87ca471b275f0d725d4d720ba47a3d0b6b523d015467f2b",
+    "first_h1": "Prumo Implementation Blueprint"
+  },
+  {
+    "path": "docs/development/localization.md",
+    "type": "markdown",
+    "size_bytes": 2313,
+    "lines": 61,
+    "sha256": "d55726b0331aadbe0d3fdedb2d15d03d2ef5d99524931cccdd4a64b718105a43",
+    "first_h1": "Localization & Translation"
+  },
+  {
+    "path": "docs/development/migrations.md",
+    "type": "markdown",
+    "size_bytes": 97,
+    "lines": 3,
+    "sha256": "d097e697134dd145aa0088f14d3f661edb113382d32b65ca3ad6861a0e477d1c",
+    "first_h1": "Migration Architecture"
+  },
+  {
+    "path": "docs/development/phases.md",
+    "type": "markdown",
+    "size_bytes": 20796,
+    "lines": 498,
+    "sha256": "a9ea9a370ab52316d18b685d0c08bc1ee63153274d86c07434a54bfc82ad4a8b",
+    "first_h1": "Prumo Implementation Phases"
+  },
+  {
+    "path": "docs/development/repository-layout.md",
+    "type": "markdown",
+    "size_bytes": 6003,
+    "lines": 148,
+    "sha256": "d3a28bc8034b68c575cf330ea2916e2b750c0fa56d1a1bcc7acf0ca94cc3f80b",
+    "first_h1": "Prumo Canonical Repository Layout"
+  },
+  {
+    "path": "docs/development/resolver.md",
+    "type": "markdown",
+    "size_bytes": 904,
+    "lines": 31,
+    "sha256": "ae98d771fb8745ca1d87d49ffee76df5df027df3ca16aba0ce6e9bd8fdc5735b",
+    "first_h1": "Resolver"
+  },
+  {
+    "path": "docs/development/testing-strategy.md",
+    "type": "markdown",
+    "size_bytes": 5182,
+    "lines": 140,
+    "sha256": "e9745904143727af7a64a729a28ebe3f1afe399559ec4ff8316e7161b0bedfe3",
+    "first_h1": "Prumo Testing Strategy"
+  },
+  {
+    "path": "docs/development/testing.md",
+    "type": "markdown",
+    "size_bytes": 2034,
+    "lines": 50,
+    "sha256": "55503b7bc76d1fcb9f4af7f8d710613bce4a4386e03d5384eb3672c661f33729",
+    "first_h1": "Testing"
+  },
+  {
+    "path": "docs/development/waves.md",
+    "type": "markdown",
+    "size_bytes": 61641,
+    "lines": 902,
+    "sha256": "ea54478909894c056810dd7928cd17765b86c5a96b07dd45a2a5bc98f0f9036b",
+    "first_h1": "Implementation Waves — Post-Harness, Pre-TUI"
+  },
+  {
+    "path": "docs/getting-started/concepts.md",
+    "type": "markdown",
+    "size_bytes": 1129,
+    "lines": 14,
+    "sha256": "5f11b4e245271abba06ecc1ab36972e58c467bd792ac7fa48def38915f583568",
+    "first_h1": "Core Concepts"
+  },
+  {
+    "path": "docs/getting-started/first-project.md",
+    "type": "markdown",
+    "size_bytes": 551,
+    "lines": 25,
+    "sha256": "6cad0d3e62f74ad4a635dd3888dd37804ff0fb2d2ecdf8abea5418b71ff9fe65",
+    "first_h1": "First Project Walkthrough"
+  },
+  {
+    "path": "docs/getting-started/installation.md",
+    "type": "markdown",
+    "size_bytes": 1181,
+    "lines": 47,
+    "sha256": "df9efcd4e53509dab39b344576b3f95ea08a2dc28815e1d4bd94a5f8a3a24367",
+    "first_h1": "Installing Prumo"
+  },
+  {
+    "path": "docs/i18n/translations.json",
+    "type": "json",
+    "size_bytes": 3,
+    "lines": 1,
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/profiles/builtin.json",
+    "type": "json",
+    "size_bytes": 4421,
+    "lines": 195,
+    "sha256": "d140828a356ebe5efccb15c7f054e21d8965cd17e22755597806e01a809eeedb",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/adr/001-go-core.md",
+    "type": "markdown",
+    "size_bytes": 1999,
+    "lines": 42,
+    "sha256": "7e359e460288c7919d9d574489884c842cf8362a793b116afa9d487004022a2a",
+    "first_h1": "ADR 001: Go Core for Prumo v0.4"
+  },
+  {
+    "path": "docs/adr/002-retire-python-runtime.md",
+    "type": "markdown",
+    "size_bytes": 2754,
+    "lines": 44,
+    "sha256": "d1ac725973c1397eaa47b7bddf99c0462ccebcf74ed8ba40479f461ae5585857",
+    "first_h1": "ADR 002: Retire Python v0.3 Runtime and Packaging"
+  },
+  {
+    "path": "docs/adr/003-language-engineering-safety-subsystem.md",
+    "type": "markdown",
+    "size_bytes": 3360,
+    "lines": 44,
+    "sha256": "2c312cf550228fb97200d3ef8075cb04d3b40c40452ea78b5191642a37c3b271",
+    "first_h1": "ADR 003: Language Engineering & Safety Skills Subsystem"
+  },
+  {
+    "path": "docs/adr/004-rename-atlas-to-prumo.md",
+    "type": "markdown",
+    "size_bytes": 3644,
+    "lines": 77,
+    "sha256": "f42aa7a6d608c49548a1b8ed25a5813f5ca665b3f56c25eac2c552190436795b",
+    "first_h1": "ADR 004: Rename Project Atlas Framework to Prumo"
+  },
+  {
+    "path": "docs/adr/005-cli-layer-import-policy.md",
+    "type": "markdown",
+    "size_bytes": 1576,
+    "lines": 37,
+    "sha256": "2d2e3e12cfff114021ea5412a164f0626d0615f2a83350e20cfb9dc69470f33b",
+    "first_h1": "ADR 005: CLI Layer as Composition Root (Import Policy)"
+  },
+  {
+    "path": "docs/adr/006-container-runtime-default.md",
+    "type": "markdown",
+    "size_bytes": 2398,
+    "lines": 47,
+    "sha256": "1bf0fcb75ec8edfbaa7ff759b7336a3a5719c2b13e0367b1a4a62750b8e3b107",
+    "first_h1": "ADR 006: Container Runtime Default (Docker/Podman, Rootless)"
+  },
+  {
+    "path": "docs/adr/007-sqlite-driver.md",
+    "type": "markdown",
+    "size_bytes": 1847,
+    "lines": 39,
+    "sha256": "e1466485899cf1e1972d5d551b482bfbf6b2915019026d9066c41e9f2434b451",
+    "first_h1": "ADR 007: SQLite Driver for Derived Runtime State"
+  },
+  {
+    "path": "docs/adr/008-plugin-isolation.md",
+    "type": "markdown",
+    "size_bytes": 1716,
+    "lines": 38,
+    "sha256": "bf730e826db87a4b16fa5fd993b1f2f5dd9623ca771deb853a1cc1ff9173cc96",
+    "first_h1": "ADR 008: Plugin Isolation Model"
+  },
+  {
+    "path": "docs/adr/009-performance-budgets.md",
+    "type": "markdown",
+    "size_bytes": 2470,
+    "lines": 46,
+    "sha256": "de224fc8208287c70eee2bee4eadebbbbfdd9e796bd74d38a48b97107c93fcbf",
+    "first_h1": "ADR 009: Performance Budgets and Pressure Policy"
+  },
+  {
+    "path": "docs/adr/010-documentation-control-plane.md",
+    "type": "markdown",
+    "size_bytes": 4002,
+    "lines": 72,
+    "sha256": "641cf29f6d8eee2ecddae64ce6c403ed45d0b2be6524e5146a36ab66b93b6ee9",
+    "first_h1": "ADR 010: Documentation Control Plane"
+  },
+  {
+    "path": "docs/adr/011-documentation-telemetry-refusal.md",
+    "type": "markdown",
+    "size_bytes": 3476,
+    "lines": 66,
+    "sha256": "30fad6400459c79bb5baa43cae877823f04ffda8e080ef66da539a102b4cba21",
+    "first_h1": "ADR 011: No Documentation Telemetry — Query and Intent Tracking Refused"
+  },
+  {
+    "path": "docs/adr/012-interface-map-artifact-and-projections.md",
+    "type": "markdown",
+    "size_bytes": 7627,
+    "lines": 143,
+    "sha256": "6fb99d326dd68d1df7760c759cf10c13334aa39c6a844ae62a41776289a093eb",
+    "first_h1": "ADR 012 — Interface map artifact, declared-versus-derived authority, and per-project projections"
+  },
+  {
+    "path": "docs/adr/013-tui-foundation.md",
+    "type": "markdown",
+    "size_bytes": 6553,
+    "lines": 111,
+    "sha256": "4637b8016a2f74cebfd1e9e15edd9ac127ccb3ec978794d420024e4a3c31efcf",
+    "first_h1": "ADR 013 — OpenCode Go as the terminal client foundation, and the client/core module boundary"
+  },
+  {
+    "path": "docs/adr/014-protocol-reads-and-push.md",
+    "type": "markdown",
+    "size_bytes": 5120,
+    "lines": 93,
+    "sha256": "49845d92f234d0e6797f8778c854e196e6f1f3d2e02914c0662872f98a54fa0d",
+    "first_h1": "ADR 014 — Reading what a run changed, and being told instead of asking"
+  },
+  {
+    "path": "docs/adr/015-command-name.md",
+    "type": "markdown",
+    "size_bytes": 2480,
+    "lines": 48,
+    "sha256": "8e14bbc7cffa9162f92fc1071805d2160b5b1cad644c0c01660f408477b745cd",
+    "first_h1": "ADR 015 — The command is `prumo-agent`"
+  },
+  {
+    "path": "docs/adr/016-product-split-agent-and-harness.md",
+    "type": "markdown",
+    "size_bytes": 2496,
+    "lines": 40,
+    "sha256": "ed10a5770b2f35266e6b569b7df5f1031688c6ca825a2948687c5c26c0e10058",
+    "first_h1": "ADR 016 — Product Identity: `prumo` is the Framework CLI, `prumo agent` or `pa` Launches the Interactive Agent"
+  },
+  {
+    "path": "docs/runtime/adoption-engine.md",
+    "type": "markdown",
+    "size_bytes": 8114,
+    "lines": 282,
+    "sha256": "a9b58494331d1241372925a6a6df90333f7ad7989a71971284556ac2b7771bae",
+    "first_h1": "Adoption Engine (M7)"
+  },
+  {
+    "path": "docs/runtime/control-plane.md",
+    "type": "markdown",
+    "size_bytes": 8319,
+    "lines": 136,
+    "sha256": "fefc272988c7180f7df89bf747c70887ef05356f42267cc5238f228d478bb7b2",
+    "first_h1": "Agent Runtime Control Plane"
+  },
+  {
+    "path": "docs/runtime/d1-progress.md",
+    "type": "markdown",
+    "size_bytes": 1885,
+    "lines": 29,
+    "sha256": "dbe00fd16ac77f55d112fe5abfee84193212dff6dc4ebb65d8c942532a3887ca",
+    "first_h1": "D1 Runtime Foundation Progress"
+  },
+  {
+    "path": "docs/runtime/d2-progress.md",
+    "type": "markdown",
+    "size_bytes": 2173,
+    "lines": 31,
+    "sha256": "dbb0addd437d07b167014d5c802208c20103d096e35ecbb781d01afb4bf73929",
+    "first_h1": "D2 Runtime Foundation II Progress"
+  },
+  {
+    "path": "docs/runtime/d3-progress.md",
+    "type": "markdown",
+    "size_bytes": 854,
+    "lines": 19,
+    "sha256": "5687e1245137438bc58524f11056ff26a3a47c7ca943d877aed97a226fba65b1",
+    "first_h1": "D3 Runtime Infrastructure Progress"
+  },
+  {
+    "path": "docs/runtime/living-plan.md",
+    "type": "markdown",
+    "size_bytes": 8181,
+    "lines": 267,
+    "sha256": "efbac0a64f44c3cadc85a505ad8cfe6526e0984ec5b6f94375d223b9b77da0ce",
+    "first_h1": "Living Plan & Interview Engine (M6)"
+  },
+  {
+    "path": "docs/runtime/portable-continuation.md",
+    "type": "markdown",
+    "size_bytes": 1253,
+    "lines": 29,
+    "sha256": "739a7d126324d55e7c9372ba8dcb61b8f61530bda944dc46f4f9abcde3816ec6",
+    "first_h1": "Portable Continuation"
+  },
+  {
+    "path": "docs/authoring/adapters.md",
+    "type": "markdown",
+    "size_bytes": 158,
+    "lines": 3,
+    "sha256": "7f78a802099f5705ed36523ecd5a98159ce9052295332203c57da3bf1ef813b6",
+    "first_h1": "Platform Adapters"
+  },
+  {
+    "path": "docs/authoring/project-bundles.md",
+    "type": "markdown",
+    "size_bytes": 160,
+    "lines": 3,
+    "sha256": "762ac1d975c2cbd162703355ce2779630c6de74b435e1448ef045fcfbf6eebc7",
+    "first_h1": "Project Bundles"
+  },
+  {
+    "path": "docs/authoring/risk-rules.md",
+    "type": "markdown",
+    "size_bytes": 168,
+    "lines": 3,
+    "sha256": "432c5258c8eeedf0ce63e2cac2c5bf4317de047e24d67ccbb6270764c4cbd68b",
+    "first_h1": "Risk Rules"
+  },
+  {
+    "path": "docs/authoring/writing-agents.md",
+    "type": "markdown",
+    "size_bytes": 1746,
+    "lines": 51,
+    "sha256": "c8a20b1d963c43016453e921cb7a1bfd3e7357611ff31411f7eaa28b741ecda3",
+    "first_h1": "Writing Agents"
+  },
+  {
+    "path": "docs/authoring/writing-recipes.md",
+    "type": "markdown",
+    "size_bytes": 1644,
+    "lines": 55,
+    "sha256": "ed49a1b362513fd4fd06947db1dc923cc3a73316a2073ae382cad677f9c03b47",
+    "first_h1": "Writing Recipes"
+  },
+  {
+    "path": "docs/authoring/writing-skills.md",
+    "type": "markdown",
+    "size_bytes": 3425,
+    "lines": 89,
+    "sha256": "509fb86a13aca3237b4ca4586d4cf4dcf07ca34564512e7ac14ce3fb1f634a63",
+    "first_h1": "Writing Skills"
+  },
+  {
+    "path": "docs/product/scope-v0.4.md",
+    "type": "markdown",
+    "size_bytes": 7896,
+    "lines": 141,
+    "sha256": "fa433f3057c43a8b3ed0643f78d1e07fd1391963ad839b082d2a78821ec1b300",
+    "first_h1": "Prumo v0.4 Scope"
+  },
+  {
+    "path": "docs/product/tui-spike-h10.md",
+    "type": "markdown",
+    "size_bytes": 5033,
+    "lines": 87,
+    "sha256": "d866f9c68876815e8d29058bf11bf2a8317819cc15615d98c5f833ebc7d369c7",
+    "first_h1": "H10 — TUI Spike Scope (Prumo Code first client)"
+  },
+  {
+    "path": "docs/product/vision.md",
+    "type": "markdown",
+    "size_bytes": 3895,
+    "lines": 53,
+    "sha256": "81ea5cf88f4a1f92b69021a7d7e910eb40fec766fe5efa1d530ae8ea070eacff",
+    "first_h1": "Prumo — Product Vision"
+  },
+  {
+    "path": "docs/operations/agentd.md",
+    "type": "markdown",
+    "size_bytes": 1007,
+    "lines": 30,
+    "sha256": "01868e16d8f3a9ed6976cb209d11863595d15af6ac50fcf67a1a7c32178f34af",
+    "first_h1": "prumo-agentd operations"
+  },
+  {
+    "path": "docs/operations/deployment.md",
+    "type": "markdown",
+    "size_bytes": 2083,
+    "lines": 61,
+    "sha256": "91bd0ce9d0f96b6dd38059eccbd76669a86b543f06da86c956ea463375c6bb6b",
+    "first_h1": "Installation and Deployment"
+  },
+  {
+    "path": "docs/operations/incident-response.md",
+    "type": "markdown",
+    "size_bytes": 3426,
+    "lines": 107,
+    "sha256": "8797cdf466654f32fd4ce03a6187fd79f350196bd8711e1d9344130bee2386a8",
+    "first_h1": "Incident Response Playbook"
+  },
+  {
+    "path": "docs/operations/monitoring.md",
+    "type": "markdown",
+    "size_bytes": 1915,
+    "lines": 71,
+    "sha256": "0708cd09556b7b7ca7261489337ad0d883cc7cf2d080441abf4c068923980f03",
+    "first_h1": "Monitoring Guide"
+  },
+  {
+    "path": "docs/operations/recovery.md",
+    "type": "markdown",
+    "size_bytes": 1952,
+    "lines": 68,
+    "sha256": "1ba9ea70a1c44ddba9cbdc90153fd328e6aba63fd2beef9ab877ff488345f913",
+    "first_h1": "Recovery Guide"
+  },
+  {
+    "path": "docs/ui-ux/design-tokens.json",
+    "type": "json",
+    "size_bytes": 4414,
+    "lines": 60,
+    "sha256": "757d77865bdbf4d0b1a6ffed3bf4077e234a2c1f3fe73bb6b604bbcc103a3d46",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/ui-ux/flows.md",
+    "type": "markdown",
+    "size_bytes": 4386,
+    "lines": 96,
+    "sha256": "d7f9b95e0a0b9fde4a7130d431a04cf5288ce29a410d977a02c595405bbad927",
+    "first_h1": "Flows — prumo-agent tui"
+  },
+  {
+    "path": "docs/ui-ux/interaction.md",
+    "type": "markdown",
+    "size_bytes": 11263,
+    "lines": 203,
+    "sha256": "78877edfe895081201c12e8d61319688853259b0d41a958ff854c5e4cf25b9ae",
+    "first_h1": "Interaction Specification — prumo-agent tui"
+  },
+  {
+    "path": "docs/ui-ux/interface-map.json",
+    "type": "json",
+    "size_bytes": 33372,
+    "lines": 1059,
+    "sha256": "76b9a6127d3cae2d492fe3f88b1a7df28ca6aa6bf0978cef111628cd863eef78",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/ui-ux/state-matrix.json",
+    "type": "json",
+    "size_bytes": 13109,
+    "lines": 273,
+    "sha256": "6c5452462c6c624e392acf0618073206ff95f658013cd78386d3283c37f6ffc3",
+    "first_h1": ""
+  },
+  {
+    "path": "docs/ui-ux/theming.md",
+    "type": "markdown",
+    "size_bytes": 6830,
+    "lines": 100,
+    "sha256": "a3b87bea4535ed81e3417d2912aa27c456b51a20d3f3416e2a0cb11f24f200f7",
+    "first_h1": "Theming — prumo-agent tui"
+  },
+  {
+    "path": "docs/harness/agent-runtime.md",
+    "type": "markdown",
+    "size_bytes": 2003,
+    "lines": 45,
+    "sha256": "2b4db7aa1d02932909a743b8b5196fe6dc607027569df2a0ad45c22961f650ad",
+    "first_h1": "Agent Runtime contracts (HA0) + Native Agent (HA2)"
+  },
+  {
+    "path": "docs/harness/context-knowledge.md",
+    "type": "markdown",
+    "size_bytes": 4365,
+    "lines": 83,
+    "sha256": "320f692acc560d58731107e3be0da601e8af3218dbc98cbd1871f887da5cfe50",
+    "first_h1": "Context v2, Knowledge, Documentation Compiler"
+  },
+  {
+    "path": "docs/harness/daemon.md",
+    "type": "markdown",
+    "size_bytes": 3431,
+    "lines": 52,
+    "sha256": "fbdb5da9a3e86d2e98a031ff8b442de95d33a6998523cc290ed68edb34165cbc",
+    "first_h1": "Harness daemon (local + remote)"
+  },
+  {
+    "path": "docs/harness/gap-register.md",
+    "type": "markdown",
+    "size_bytes": 60523,
+    "lines": 245,
+    "sha256": "80c11675b8b30ce67bac92c16acfeb6cfc1d4678e993744bed3588cd38d36765",
+    "first_h1": "Harness Gap Register (canônico)"
+  },
+  {
+    "path": "docs/harness/human-docs.md",
+    "type": "markdown",
+    "size_bytes": 2001,
+    "lines": 37,
+    "sha256": "5839266c7b71d24f1150cb2b9ca8bae9e2e04fd47330e75577c7df520413663e",
+    "first_h1": "Human Documentation Runtime (HD0–HD4)"
+  },
+  {
+    "path": "docs/harness/open-work.md",
+    "type": "markdown",
+    "size_bytes": 14084,
+    "lines": 245,
+    "sha256": "a0a7be9c207fd31b32f6f72d25eabd89ddcf5195697904a20eddd812a193fd60",
+    "first_h1": "O que está aberto, explicado"
+  },
+  {
+    "path": "docs/harness/overview.md",
+    "type": "markdown",
+    "size_bytes": 2326,
+    "lines": 53,
+    "sha256": "4ecbb96be0e499df91906a21556c87cd5bd5cd5884614bc3ffd995a892c813f0",
+    "first_h1": "Prumo Harness — Overview"
+  },
+  {
+    "path": "docs/harness/promotion-report.md",
+    "type": "markdown",
+    "size_bytes": 4820,
+    "lines": 98,
+    "sha256": "cc6a8f76e34b9b689f19622c26c45efa29eac2a5182387351c76618341b8106f",
+    "first_h1": "DocumentationMigrationReport — Notion snapshot → canonical docs"
+  },
+  {
+    "path": "docs/harness/providers.md",
+    "type": "markdown",
+    "size_bytes": 8320,
+    "lines": 160,
+    "sha256": "c1219eddd2cbaf9d8302ef25b1d6b6cead887b8597a88819dbf1f73ef2c2957a",
+    "first_h1": "Providers: Model vs Agent + Model Gateway"
+  },
+  {
+    "path": "docs/harness/reconnect-replay.md",
+    "type": "markdown",
+    "size_bytes": 3593,
+    "lines": 80,
+    "sha256": "ecb248260cab6bb3ba110b44ea2b6e75d1dd589d28cba083da0d213649959ad4",
+    "first_h1": "Reconnect & Replay (client contract)"
+  },
+  {
+    "path": "docs/harness/roadmap-status.md",
+    "type": "markdown",
+    "size_bytes": 7052,
+    "lines": 84,
+    "sha256": "aa417c8bcdbdf6e4b82dabae36524e435c78bbdc0e35e383f2aa83ac6a6af237",
+    "first_h1": "Harness roadmap status (HA0–HA11) + split gate"
+  },
+  {
+    "path": "docs/harness/security.md",
+    "type": "markdown",
+    "size_bytes": 3765,
+    "lines": 65,
+    "sha256": "a1bc03f6c2b9803c1ef0dc980433c653926d902905a751b301323a4b15bebaff",
+    "first_h1": "Security: Permissions, Sandbox, Egress"
+  },
+  {
+    "path": "docs/harness/workforce-handoff.md",
+    "type": "markdown",
+    "size_bytes": 2082,
+    "lines": 40,
+    "sha256": "0d75c66466e8c1314a503af17beaf1fdaee5f3209da175d9ff88c8a10ce40704",
+    "first_h1": "Handoff v2 + Workforce"
+  },
+  {
+    "path": "AGENTS.md",
+    "type": "markdown",
+    "size_bytes": 6331,
+    "lines": 119,
+    "sha256": "2b6a6131ede5253048722083e239329357d2d1dcb30863406adf93055ff94f52",
+    "first_h1": "AGENTS.md"
+  },
+  {
+    "path": "CHANGELOG.md",
+    "type": "markdown",
+    "size_bytes": 8372,
+    "lines": 69,
+    "sha256": "60bc7112d03da8219233c0707eef82e1cf8a10ca87e4b8c5c8cc0f058e990c06",
+    "first_h1": "Changelog"
+  },
+  {
+    "path": "CONTRIBUTING.md",
+    "type": "markdown",
+    "size_bytes": 2480,
+    "lines": 104,
+    "sha256": "0f0f3145d72ae73582b5d3acc688ccdb698e7ade3cbe2f467905cd7c2e8f4c3b",
+    "first_h1": "Contributing to Prumo"
+  },
+  {
+    "path": "ENTRYPOINT.md",
+    "type": "markdown",
+    "size_bytes": 1450,
+    "lines": 20,
+    "sha256": "44c453667897b8913ae21c0c1611af3b6f4b22c488c202c7b90c3ed0f6e4c12b",
+    "first_h1": "Prumo — Agent Entrypoint"
+  },
+  {
+    "path": "FRAMEWORK.md",
+    "type": "markdown",
+    "size_bytes": 6252,
+    "lines": 74,
+    "sha256": "ebfbba571e1df78e89993c1a38de3067b49b2f35d9e2c370211488d04c0809b4",
+    "first_h1": "Framework Contract"
+  },
+  {
+    "path": "HARNESS_IMPLEMENTATION_REPORT.md",
+    "type": "markdown",
+    "size_bytes": 8674,
+    "lines": 165,
+    "sha256": "9eb9a2c533d0a404730fe763b2225ad05c8d8e354e8b4e2fa5e34cdd55b49e21",
+    "first_h1": "HARNESS_IMPLEMENTATION_REPORT"
+  },
+  {
+    "path": "README.md",
+    "type": "markdown",
+    "size_bytes": 7385,
+    "lines": 194,
+    "sha256": "da0f71743e52eb3ce3c84583475c5eb84e755cce77c5659eea9f3bbec131452d",
+    "first_h1": "Prumo"
+  },
+  {
+    "path": "SECURITY.md",
+    "type": "markdown",
+    "size_bytes": 903,
+    "lines": 13,
+    "sha256": "af22f198c292fe526881982683d929f0c9d5cfa1efb7a873bacefc28f9bee3be",
+    "first_h1": "Security Policy"
+  },
+  {
+    "path": "THIRD_PARTY_NOTICES.md",
+    "type": "markdown",
+    "size_bytes": 1962,
+    "lines": 38,
+    "sha256": "e5565ac2b96243e8d4d8f896aa939bb5cc75b5d222cb24c35511b28d5bded88e",
+    "first_h1": "Third-party notices"
+  }
+]

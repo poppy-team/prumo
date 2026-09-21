@@ -21,6 +21,15 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 ## Product and architecture
 
 - [Product vision](product/vision.md)
+- [Unified architecture (Constituição 86)](architecture/unified-architecture.md)
+- [Directive Compiler & Executable Contracts (Constituição 92)](contracts/directive-compiler.md)
+- [LLM & Agent Execution Contract (Constituição 85.A)](contracts/llm-agent-execution-contract.md)
+- [Model Portfolio, Routing & Budgets (Constituição 87)](runtime/model-portfolio-and-routing.md)
+- [Documentation Architecture v2 (Constituição 88)](architecture/documentation-architecture-v2.md)
+- [Consolidation Program (Constituição 89)](development/consolidation-program.md)
+- [Consolidation Crosswalk & Supersession (Constituição 90)](governance/consolidation-crosswalk.md)
+- [Canonical Glossary & Ontology (Constituição 91)](reference/canonical-glossary.md)
+- [Capability & Skill Gap Register (Constituição 93)](harness/capability-skill-gap-register.md)
 - [v0.4 boundary scope (historical)](product/scope-v0.4.md)
 - [Architecture overview](architecture/overview.md)
 - [Dependency rules](architecture/dependency-rules.md)

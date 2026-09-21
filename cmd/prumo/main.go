@@ -190,6 +190,8 @@ func run(args []string) int {
 		return runDocumentation(asJSON, rest)
 	case "run", "continue", "budget", "debug", "tool", "model", "env", "runtime":
 		return runRuntime(asJSON, rest)
+	case "ask":
+		return runAsk(asJSON, rest[1:])
 	case "agent":
 		return runAgent(asJSON, rest[1:])
 	case "tui":
@@ -727,6 +729,51 @@ func runExplain(svc *cliops.Service, asJSON bool, args []string) int {
 			return printEnvelope(protocol.OkEnvelope(result))
 		}
 		fmt.Printf("Profile: %v\n", result["profile_id"])
+		return exitOK
+	case "run":
+		result, err := svc.ExplainRun(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Run ID: %v\n", result["run_id"])
+		return exitOK
+	case "route":
+		result, err := svc.ExplainRoute(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Println("Routing Hierarchy:")
+		if classes, ok := result["classes"].(map[string]any); ok {
+			for k, v := range classes {
+				fmt.Printf("  %s: %s\n", k, v)
+			}
+		}
+		return exitOK
+	case "budget":
+		result, err := svc.ExplainBudget(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Budget Hierarchy: %v | Reserve: %v\n", result["hierarchy"], result["review_reserve"])
+		return exitOK
+	case "decision":
+		result, err := svc.ExplainDecision(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Decision Pipeline: %v\n", result["pipeline"])
 		return exitOK
 	default:
 		fmt.Fprintf(os.Stderr, "error: unknown explain topic: %s\n", topic)

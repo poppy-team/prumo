@@ -372,6 +372,79 @@ func (s *Service) ExplainExecution(root, profileID string) (map[string]any, erro
 	return map[string]any{"profile_id": profileID, "backend": nil, "error": "Execution policy not found or profile missing."}, nil
 }
 
+func (s *Service) ExplainRun(root, runID string) (map[string]any, error) {
+	if runID == "" {
+		return map[string]any{
+			"topic": "run",
+			"description": "Explains harness agent run lifecycle, checkpoints, and derived completion.",
+			"states": []string{"planned", "running", "checkpointed", "evidenced", "verified", "completed"},
+			"invariants": "Completion is strictly derived from verified evidence; self-declared model text is rejected.",
+		}, nil
+	}
+	path := filepath.Join(root, ".prumo", "runtime", "harness", "runs", runID, "record.json")
+	if data, err := os.ReadFile(path); err == nil {
+		var rec map[string]any
+		if err := json.Unmarshal(data, &rec); err == nil {
+			return map[string]any{"run_id": runID, "record": rec}, nil
+		}
+	}
+	return map[string]any{
+		"run_id": runID,
+		"status": "active_or_ephemeral",
+		"checkpoint_dir": filepath.Join(root, ".prumo", "runtime", "harness", "runs", runID),
+	}, nil
+}
+
+func (s *Service) ExplainRoute(root, routeClass string) (map[string]any, error) {
+	classes := map[string]any{
+		"ROUTE-PRIMARY":  "Default primary route for high-capability task execution.",
+		"ROUTE-FALLBACK": "Fallback route engaged upon primary exhaustion, cooldown, or network failure.",
+		"ROUTE-CHEAP":    "Cost-optimized route for trivial, read-only, or high-volume sub-tasks.",
+	}
+	quotaStatuses := []string{"known", "estimated", "unknown", "cooldown", "exhausted"}
+	reasonCodes := []string{"REASON-ROUTING-PRIMARY", "REASON-FALLBACK-COOLDOWN", "REASON-EXHAUSTED-FAILOVER"}
+	if desc, ok := classes[routeClass]; ok {
+		return map[string]any{
+			"class":          routeClass,
+			"description":    desc,
+			"quota_statuses": quotaStatuses,
+			"reason_codes":   reasonCodes,
+		}, nil
+	}
+	return map[string]any{
+		"topic":          "route",
+		"classes":        classes,
+		"quota_statuses": quotaStatuses,
+		"reason_codes":   reasonCodes,
+	}, nil
+}
+
+func (s *Service) ExplainBudget(root, scope string) (map[string]any, error) {
+	return map[string]any{
+		"topic": "budget",
+		"scope": scope,
+		"hierarchy": "Project -> Goal -> Task -> Run",
+		"review_reserve": "10-20% reserved capacity strictly protected from implementation overreach",
+		"hard_stop": "ErrBlockedBudget triggers immediate safe stop and durable blocked_budget checkpoint",
+		"dimensions": []string{"tokens", "cost_usd", "tool_calls"},
+	}, nil
+}
+
+func (s *Service) ExplainDecision(root, decisionID string) (map[string]any, error) {
+	return map[string]any{
+		"topic": "decision",
+		"id": decisionID,
+		"levels": map[string]string{
+			"L0 - Rule":       "Deterministic Go code and policy engines",
+			"L1 - Decision":   "Closed answer space DecisionProvider (scoring, classification, routing)",
+			"L2 - Reasoning":  "Generative LLM for open synthesis and code generation",
+			"L3 - Authority":  "Human approval for high-risk or irreversible mutations",
+		},
+		"pipeline": "DETERMINISTIC -> DECISION MODEL -> GENERATIVE MODEL -> HUMAN",
+		"abstention": "DecisionProviders abstain when uncertainty exceeds threshold, escalating up the hierarchy",
+	}, nil
+}
+
 func (s *Service) Doctor(root string) ([]map[string]any, error) {
 	findings := []map[string]any{}
 	rel := func(path string) string {

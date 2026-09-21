@@ -1,0 +1,65 @@
+{
+  "id": "grounded-implementation",
+  "name": "Grounded Implementation & Anti-Invention",
+  "version": 1,
+  "schema_version": 2,
+  "purpose": "Enforce grounded implementation discipline: inspect reality before claiming existence, never invent APIs/symbols, and fail closed when authority is missing.",
+  "risk_level": "high",
+  "modes": [
+    "implementation",
+    "review"
+  ],
+  "inputs": [
+    "DirectiveIR",
+    "Dossier",
+    "Active decisions",
+    "Repository source"
+  ],
+  "outputs": [
+    "Grounded implementation diff",
+    "Reality inspection findings"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [],
+  "templates": [],
+  "checks": [
+    "checks/grounded-implementation-checklist.md"
+  ],
+  "scripts": [],
+  "examples": [
+    "examples/example.md"
+  ],
+  "required_evidence": [
+    "inspection",
+    "test"
+  ],
+  "stop_conditions": [
+    "Mutations grounded and verified",
+    "Blocked on missing authority"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.6.0",
+    "checksum": "",
+    "modified": "2026-09-21"
+  },
+  "select": {
+    "features_any": [
+      "grounded-implementation",
+      "harness"
+    ],
+    "risk_any": [
+      "high"
+    ]
+  },
+  "requires_any": [],
+  "tools": [],
+  "instructions": "---\nname: grounded-implementation\ndescription: Enforces grounded implementation: inspect before claim, anti-invention, and fail-closed missing authority handling.\n---\n# Grounded Implementation & Anti-Invention\n\n## 1. Inspect Before Claim\nNever claim that a file, directory, symbol, function, interface, command, flag, or test exists without first inspecting the repository with tools.\n\n## 2. Never Invent Requirements or APIs\nAbsence of information is not authorization to invent APIs, generic \"best practices\", or conventions. When required information is missing, transition: UNKNOWN -> search authoritative source -> resolve -> explicit assumption OR block dependent slice.\n\n## 3. Strict Scope Adherence\nDo not perform opportunistic refactoring outside the Task scope. Materialize IN, OUT, and INCIDENTAL boundaries. Never mutate files listed under OUT.\n\n## 4. Fail Closed on Missing Authority\nIf an action is destructive, security-sensitive, or mutates public contracts and canonical authority is missing, fail closed immediately.\n"
+}

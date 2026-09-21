@@ -16,11 +16,20 @@ func captureOutput(f func() int) (int, string) {
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	var buf bytes.Buffer
+	done := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(done)
+	}()
+
 	code := f()
 	_ = w.Close()
 	os.Stdout = oldStdout
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
+	<-done
+	_ = r.Close()
+
 	return code, buf.String()
 }
 
