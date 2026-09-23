@@ -1,7 +1,7 @@
 {
   "id": "wireframe-styleguide",
   "name": "Wireframe Styleguide & Schematic System",
-  "version": 1,
+  "version": 2,
   "schema_version": 3,
   "purpose": "Standardize graybox design tokens, schematic symbols, component states, and annotation conventions for low-fidelity wireframing.",
   "risk_level": "low",

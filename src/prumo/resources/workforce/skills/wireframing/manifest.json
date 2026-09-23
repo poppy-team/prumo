@@ -1,7 +1,7 @@
 {
   "id": "wireframing",
   "name": "Wireframing",
-  "version": 1,
+  "version": 2,
   "schema_version": 3,
   "purpose": "Author structured markdown and schematic wireframes with interactive region definitions.",
   "risk_level": "low",

@@ -66,6 +66,5 @@
     ]
   },
   "requires_any": [],
-  "tools": [],
-  "instructions": "---\nname: surface-protocol-conformance\ndescription: Guarantees semantic uniformity across CLI, TUI, GUI, and daemon over the public Prumo Protocol.\n---\n# Surface & Protocol Conformance\n\n## 1. Single Domain Source\nA domain rule must exist once in application/domain services. Clients and surfaces must never duplicate domain rules locally or invent private behavior.\n\n## 2. Non-Bypassable Governance\nEnsure no surface bypasses the Permission Engine, Budget Manager, or Gauntlet Quality Gates.\n\n## 3. Protocol Version Negotiation & Replay\nVerify that clients negotiate protocol versions and can reconnect/replay events without state corruption.\n"
+  "tools": []
 }

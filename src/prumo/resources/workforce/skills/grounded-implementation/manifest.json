@@ -66,6 +66,5 @@
     ]
   },
   "requires_any": [],
-  "tools": [],
-  "instructions": "---\nname: grounded-implementation\ndescription: Enforces grounded implementation: inspect before claim, anti-invention, and fail-closed missing authority handling.\n---\n# Grounded Implementation & Anti-Invention\n\n## 1. Inspect Before Claim\nNever claim that a file, directory, symbol, function, interface, command, flag, or test exists without first inspecting the repository with tools.\n\n## 2. Never Invent Requirements or APIs\nAbsence of information is not authorization to invent APIs, generic \"best practices\", or conventions. When required information is missing, transition: UNKNOWN -> search authoritative source -> resolve -> explicit assumption OR block dependent slice.\n\n## 3. Strict Scope Adherence\nDo not perform opportunistic refactoring outside the Task scope. Materialize IN, OUT, and INCIDENTAL boundaries. Never mutate files listed under OUT.\n\n## 4. Fail Closed on Missing Authority\nIf an action is destructive, security-sensitive, or mutates public contracts and canonical authority is missing, fail closed immediately.\n"
+  "tools": []
 }

@@ -67,6 +67,5 @@
     ]
   },
   "requires_any": [],
-  "tools": [],
-  "instructions": "---\nname: implementation-reality-verification\ndescription: Eliminates false-greens: verifies code is reachable, exercised, evidenced, and verified beyond shallow unit tests.\n---\n# Implementation Reality Verification\n\n## 1. Do Not Confuse File Presence with Feature Implementation\nFinding a file does not mean the feature works. Verify interfaces, call sites, runtime wiring, lifecycle, error paths, and CLI exposure.\n\n## 2. Eliminate False-Green Oracles\nDetect tests that pass because assertions are weak, mocks are used instead of real capabilities, or errors are silently swallowed.\n\n## 3. Terminal State Hierarchy\nDerive completion strictly through:\nimplemented -> reachable -> exercised -> evidenced -> verified -> accepted -> released.\nAgents are strictly prohibited from declaring DONE by text output.\n"
+  "tools": []
 }
