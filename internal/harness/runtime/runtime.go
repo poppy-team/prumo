@@ -200,6 +200,11 @@ func (r *Runner) SeedMessages(msgs []agent.Message) {
 // persist writes the current state as a new checkpoint revision. Safe points
 // and permission yields both use it, because a run that stops for approval is
 // exactly the run that has to be recoverable. Caller holds mu.
+//
+// The snapshot carries the conversation, the ready tool queue, the observations
+// already produced and the effect flag, not just the state machine position.
+// A phase without a history cannot be continued, so persisting only the state
+// made resume impossible and turned it into a report instead (GAP-123).
 func (r *Runner) persist() error {
 	if r.Svc.Checkpoints == nil {
 		return nil
@@ -207,12 +212,35 @@ func (r *Runner) persist() error {
 	r.State.Revision++
 	r.State.UpdatedAt = agent.Now()
 	cp := agent.Checkpoint{
-		ID:        fmt.Sprintf("%s-r%d", r.State.RunID, r.State.Revision),
-		RunID:     r.State.RunID,
-		State:     r.State,
-		CreatedAt: agent.Now(),
+		ID:               fmt.Sprintf("%s-r%d", r.State.RunID, r.State.Revision),
+		RunID:            r.State.RunID,
+		State:            r.State,
+		Messages:         append([]agent.Message(nil), r.Messages...),
+		ToolQ:            append([]agent.ToolCall(nil), r.ToolQ...),
+		Obs:              append([]agent.Observation(nil), r.Obs...),
+		AfterSideEffects: r.AfterSideEffects,
+		TurnsDone:        r.TurnsDone,
+		CreatedAt:        agent.Now(),
 	}
 	return r.Svc.Checkpoints.Save(cp)
+}
+
+// RestoreFrom rebuilds a runner's resumable state from a checkpoint: the state
+// machine position plus the conversation, tool queue, observations and effect
+// flag that position is meaningless without. It is the continuation counterpart
+// of persist, and it is what makes a checkpoint a recoverable point rather than
+// a status snapshot.
+func (r *Runner) RestoreFrom(cp agent.Checkpoint) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.State = cp.State
+	r.Messages = append([]agent.Message(nil), cp.Messages...)
+	r.ToolQ = append([]agent.ToolCall(nil), cp.ToolQ...)
+	r.Obs = append([]agent.Observation(nil), cp.Obs...)
+	r.AfterSideEffects = cp.AfterSideEffects
+	if cp.TurnsDone > 0 {
+		r.TurnsDone = cp.TurnsDone
+	}
 }
 
 // ResolvePermission answers a pending permission request: it records the

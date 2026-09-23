@@ -228,7 +228,20 @@ type Checkpoint struct {
 	RunID        string           `json:"run_id"`
 	State        NativeAgentState `json:"state"`
 	WorkspaceRev string           `json:"workspace_rev,omitempty"`
-	CreatedAt    string           `json:"created_at"`
+	// Messages is the conversation a continuation has to start from. Without it
+	// a resumed run has a phase but no history, which is why resume used to
+	// report success for a turn it never took (GAP-123).
+	Messages []Message `json:"messages,omitempty"`
+	// ToolQ is the tool calls that were ready but not yet executed at the safe
+	// point, and Obs the observations already produced, so a continuation does
+	// not re-run an effect or lose a result.
+	ToolQ []ToolCall    `json:"tool_queue,omitempty"`
+	Obs   []Observation `json:"observations,omitempty"`
+	// AfterSideEffects records that an observable effect already applied. A
+	// continuation must not transparently fall back after that point.
+	AfterSideEffects bool   `json:"after_side_effects,omitempty"`
+	TurnsDone        int    `json:"turns_done,omitempty"`
+	CreatedAt        string `json:"created_at"`
 }
 
 // Continuation is the pointer-first resume bundle (no full transcript).
@@ -307,4 +320,12 @@ type AgentRuntime interface {
 	CheckPermission(ctx context.Context, req PermissionRequest) (PermissionResolution, error)
 	SaveCheckpoint(ctx context.Context, cp Checkpoint) error
 	EmitEvent(ctx context.Context, ev AgentEvent) error
+}
+
+// Resumable reports whether a checkpoint carries enough to continue a turn. A
+// checkpoint written before the conversation was persisted, or one taken before
+// any model request, legitimately has none; that is not the same as a
+// checkpoint that claims a phase without the history behind it.
+func (cp Checkpoint) Resumable() bool {
+	return len(cp.Messages) > 0
 }

@@ -334,8 +334,8 @@ func runAgentResume(asJSON bool, args []string) int {
 		return serviceError(asJSON, err)
 	}
 	// A run stopped for approval has to be answered, not stepped past. Saying
-	// so is the honest outcome: the checkpoint carries the pending request, but
-	// not the conversation, so a one-shot resume cannot continue the turn.
+	// so is the honest outcome: answering a gate requires the live permission
+	// engine, which only the running daemon holds.
 	if len(cp.State.PendingPerms) > 0 {
 		result := map[string]any{
 			"run_id": runID, "resumed_from": cp.ID, "phase": string(cp.State.Phase),
@@ -348,25 +348,91 @@ func runAgentResume(asJSON bool, args []string) int {
 		fmt.Printf("Answer it against a live daemon: prumo agent approve --run %s --request <id>\n", runID)
 		return exitOK
 	}
-	provider := model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "text", Text: "resumed"}, {Kind: "complete"}}})
+
+	// A checkpoint with no conversation cannot be continued. This used to report
+	// the run as resumed and set its phase to complete, which claimed work that
+	// was never done (GAP-123).
+	if !cp.Resumable() {
+		result := map[string]any{
+			"run_id": runID, "resumed_from": cp.ID, "phase": string(cp.State.Phase),
+			"resumed": false,
+			"reason":  "checkpoint carries no conversation, so the turn cannot be continued",
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Cannot resume %s from %s: the checkpoint carries no conversation.\n", runID, cp.ID)
+		fmt.Printf("The run reached %s; continuing it needs the conversation that was not recorded.\n", cp.State.Phase)
+		return exitOK
+	}
+
+	// A continuation calls a model, so the provider is the caller's to name.
+	// Defaulting to a fake provider here would produce a completed run whose
+	// output no model ever wrote.
+	providerName := f["provider"]
+	if providerName == "" {
+		providerName = "fake"
+	}
+	baseURL := f["base-url"]
+	apiKey := f["api-key"]
+	modelName := f["model"]
+	var provider model.Provider
+	switch providerName {
+	case "fake":
+		provider = model.NewFake(map[string][]model.ScriptStep{
+			"*": {{Kind: "text", Text: "continued from checkpoint"}, {Kind: "complete"}},
+		})
+	case "openai-compat":
+		if baseURL == "" {
+			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
+		}
+		if baseURL == "" {
+			return serviceError(asJSON, fmt.Errorf("openai-compat requires --base-url or PRUMO_MODEL_BASE_URL"))
+		}
+		provider = model.NewOpenAICompat(baseURL, apiKey, modelName).WithHeaders(model.ModelHeaders())
+	case "anthropic":
+		if baseURL == "" {
+			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
+		}
+		provider = model.NewAnthropic(baseURL, apiKey, modelName)
+	default:
+		var factoryErr error
+		provider, factoryErr = model.ForName(providerName, baseURL, apiKey, modelName)
+		if factoryErr != nil {
+			return serviceError(asJSON, factoryErr)
+		}
+	}
+	if aware, ok := provider.(interface{ SetWorkspace(string) }); ok {
+		aware.SetWorkspace(root)
+	}
+
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
 		Models: provider, Tools: aci.New(root),
 		Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
 		Checkpoints: store,
 	}, runID, cp.State.SessionID)
-	runner.State = cp.State
-	// Step once past the saved safe point toward completion.
-	if runner.State.Phase == agent.PhaseCheckpoint || runner.State.Phase == agent.PhaseYield {
-		runner.State.Phase = agent.PhaseComplete
-		if runner.State.StopReason == "" {
-			runner.State.StopReason = "resumed"
-		}
+	runner.RestoreFrom(cp)
+
+	runCtx, cancelRun := context.WithCancel(context.Background())
+	defer cancelRun()
+	stepsBefore := runner.TurnsDone
+	// RunUntilDone carries the runaway-loop guard; a hand-rolled loop here
+	// stepped forever against a provider that keeps asking for tools.
+	if runErr := runner.RunUntilDone(runCtx); runErr != nil {
+		return serviceError(asJSON, runErr)
 	}
-	result := map[string]any{"run_id": runID, "resumed_from": cp.ID, "phase": string(runner.State.Phase)}
+	continued := runner.TurnsDone > stepsBefore
+
+	result := map[string]any{
+		"run_id": runID, "resumed_from": cp.ID, "phase": string(runner.State.Phase),
+		"stop_reason": runner.State.StopReason, "resumed": continued,
+		"messages_restored": len(cp.Messages),
+	}
 	if asJSON {
 		return printEnvelope(protocol.OkEnvelope(result))
 	}
-	fmt.Printf("Resumed %s from %s: %s\n", runID, cp.ID, runner.State.Phase)
+	fmt.Printf("Resumed %s from %s: %s (%d message(s) restored, %d step(s) taken)\n",
+		runID, cp.ID, runner.State.Phase, len(cp.Messages), runner.TurnsDone)
 	return exitOK
 }
 
