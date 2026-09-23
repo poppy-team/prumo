@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Verification script for Native Performance Optimization.
-# Run from the repository root: bash src/prumo/resources/workforce/skills/performance-native/scripts/verify.sh
+# Verification script for Multiplayer Networking.
+# Run from the repository root: bash src/prumo/resources/workforce/skills/multiplayer-networking/scripts/verify.sh
 set -euo pipefail
 
-SKILL_DIR="src/prumo/resources/workforce/skills/performance-native"
+SKILL_DIR="src/prumo/resources/workforce/skills/multiplayer-networking"
 
 echo "===================================================="
-echo " [Prumo Skill: performance-native] Native Performance Audit"
+echo " [Prumo Skill: multiplayer-networking] Multiplayer Networking Audit"
 echo "===================================================="
 
 VIOLATIONS=0
@@ -15,9 +15,9 @@ pass() { echo "[PASS] $1"; }
 
 # 1. Required skill assets exist and are non-empty
 echo "--- 1. Verifying required skill assets ---"
-for f in "SKILL.md" "manifest.json" "checks/performance-native-checklist.md" \
-         "references/performance-native-guide.md" \
-         "templates/performance-native-spec.md" "scripts/verify.sh"; do
+for f in "SKILL.md" "manifest.json" "checks/multiplayer-networking-checklist.md" \
+         "references/multiplayer-networking-guide.md" \
+         "templates/multiplayer-networking-spec.md" "scripts/verify.sh"; do
   if [ -s "$SKILL_DIR/$f" ]; then
     pass "Found non-empty $f."
   else
@@ -28,7 +28,7 @@ done
 # 2. Manifest validity and asset cross-references
 echo "--- 2. Validating manifest and asset cross-references ---"
 if command -v python3 >/dev/null 2>&1; then
-  if ! python3 - "$SKILL_DIR" "performance-native" <<'EOF'
+  if ! python3 - "$SKILL_DIR" "multiplayer-networking" <<'EOF'
 import json
 import os
 import sys
@@ -70,8 +70,8 @@ else
   echo "[SKIP] python3 not found; skipping manifest validation."
 fi
 
-# 3. Content invariants: profiling, cache behavior, allocation, GPU
-echo "--- 3. Checking performance-native content invariants ---"
+# 3. Content invariants: authority, prediction, bandwidth, compensation, reconnect
+echo "--- 3. Checking multiplayer-networking content invariants ---"
 check_grep() {
   if grep -qiE "$1" "$SKILL_DIR/$2" 2>/dev/null; then
     pass "$3."
@@ -79,22 +79,22 @@ check_grep() {
     fail "$3."
   fi
 }
-check_grep "profiler|perf record|tracy" "SKILL.md" "SKILL.md mandates profiler-driven work"
-check_grep "cache.miss|L1-D" "SKILL.md" "SKILL.md mandates cache-miss analysis"
-check_grep "arena|allocation churn|malloc" "SKILL.md" "SKILL.md mandates allocation discipline"
-check_grep "hitch|p99" "checks/performance-native-checklist.md" "Checklist covers p99 and hitch gates"
-check_grep "heaptrack|sanitizer" "checks/performance-native-checklist.md" "Checklist covers memory verification"
-check_grep "false sharing|alignas" "references/performance-native-guide.md" "Reference guide covers false sharing"
-check_grep "SIMD|vectoriz" "references/performance-native-guide.md" "Reference guide covers vectorization"
-check_grep "SoA|Top-Down|top-down" "references/performance-native-guide.md" "Reference guide covers layout and top-down analysis"
-check_grep "RenderDoc|draw call" "templates/performance-native-spec.md" "Perf spec template covers GPU evidence"
-check_grep "p99|RSS" "templates/performance-native-spec.md" "Perf spec template records p99 and RSS"
+check_grep "server.authoritative|server authority|sole writer" "SKILL.md" "SKILL.md mandates server authority"
+check_grep "prediction|reconciliation" "SKILL.md" "SKILL.md mandates prediction and reconciliation"
+check_grep "delta compression|delta bitmask" "SKILL.md" "SKILL.md mandates delta compression"
+check_grep "1200|MTU" "SKILL.md" "SKILL.md mandates the 1200-byte packet ceiling"
+check_grep "lag compensation|rewind" "checks/multiplayer-networking-checklist.md" "Checklist covers lag compensation"
+check_grep "reconnect|resync|baseline" "checks/multiplayer-networking-checklist.md" "Checklist covers reconnection"
+check_grep "bandwidth|kbps" "checks/multiplayer-networking-checklist.md" "Checklist covers bandwidth budget"
+check_grep "interpolation|extrapolation" "references/multiplayer-networking-guide.md" "Reference guide covers snapshot interpolation"
+check_grep "quantization|bitmask" "references/multiplayer-networking-guide.md" "Reference guide covers quantization"
+check_grep "tick|bandwidth|reconnect" "templates/multiplayer-networking-spec.md" "Netcode spec template covers tick, bandwidth, and reconnect"
 
 echo "===================================================="
 if [ "$VIOLATIONS" -eq 0 ]; then
-  echo "[SUCCESS] performance-native verification passed cleanly."
+  echo "[SUCCESS] multiplayer-networking verification passed cleanly."
   exit 0
 else
-  echo "[ERROR] performance-native verification failed with $VIOLATIONS violation(s)."
+  echo "[ERROR] multiplayer-networking verification failed with $VIOLATIONS violation(s)."
   exit 1
 fi
