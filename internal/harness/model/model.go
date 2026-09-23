@@ -303,6 +303,24 @@ func (o *OpenAICompat) Health(ctx context.Context) (string, error) {
 type chatMessage struct {
 	Role    string `json:"role"`
 	Content any    `json:"content"`
+	// ToolCalls is what an assistant message asked for, and ToolCallID names the
+	// call a tool message answers. Both are required by the API for a tool round
+	// trip: a tool result with no tool_call_id cannot be matched to its request,
+	// and an assistant turn that asked for tools but does not say so leaves the
+	// result answering a call that was never made (GAP-115).
+	ToolCalls  []chatToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string         `json:"tool_call_id,omitempty"`
+}
+
+type chatToolCall struct {
+	ID       string       `json:"id"`
+	Type     string       `json:"type"`
+	Function chatToolFunc `json:"function"`
+}
+
+type chatToolFunc struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
@@ -312,9 +330,32 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 	}
 	msgs := make([]chatMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
-		role := string(m.Role)
+		role := openAIRole(m.Role)
 		if len(m.Parts) == 0 {
-			msgs = append(msgs, chatMessage{Role: role, Content: m.Content})
+			content := any(m.Content)
+			if m.Role == agent.RoleTool {
+				content = toolResultContent(m)
+			}
+			msg := chatMessage{Role: role, Content: content, ToolCallID: m.ToolCallID}
+			if len(m.ToolCalls) > 0 {
+				// An assistant that asked for tools says so; the arguments go as
+				// a JSON string, which is what this API expects.
+				for _, tc := range m.ToolCalls {
+					args, err := json.Marshal(tc.Arguments)
+					if err != nil {
+						args = []byte("{}")
+					}
+					msg.ToolCalls = append(msg.ToolCalls, chatToolCall{
+						ID:   tc.ID,
+						Type: "function",
+						Function: chatToolFunc{
+							Name:      tc.Name,
+							Arguments: string(args),
+						},
+					})
+				}
+			}
+			msgs = append(msgs, msg)
 			continue
 		}
 		parts := make([]any, 0, len(m.Parts))
@@ -496,4 +537,55 @@ func parseProviderError(r io.Reader) string {
 		return envelope.Error.Type + ": " + envelope.Error.Message
 	}
 	return envelope.Error.Message
+}
+
+// openAIRole maps an internal role onto one this API accepts.
+//
+// The internal vocabulary has "agent" for a turn the assistant produced; the
+// wire vocabulary does not, and a role it does not know is a rejected request
+// rather than a tolerated one. Passing it through verbatim meant every tool
+// round trip was sent with a role the provider would refuse (GAP-115).
+func openAIRole(role agent.Role) string {
+	switch role {
+	case agent.RoleSystem, agent.RoleUser, agent.RoleTool:
+		return string(role)
+	case agent.RoleAgent:
+		// "agent" is this codebase's word for the assistant's turn; the wire word
+		// is "assistant", and anything else is a rejected request.
+		return "assistant"
+	default:
+		return "user"
+	}
+}
+
+// toolResultContent renders a tool message's body.
+//
+// A successful result is its output. A failed one says so, because a tool that
+// failed leaves its output empty, and an empty tool result is indistinguishable
+// from a tool that succeeded and returned nothing — which is how a model ends up
+// reasoning from a failure as though it were a result.
+func toolResultContent(m agent.Message) string {
+	if m.Metadata == nil {
+		return m.Content
+	}
+	if okFlag, present := m.Metadata["ok"]; present {
+		if isOK, isBool := okFlag.(bool); isBool && isOK {
+			return m.Content
+		}
+	} else {
+		// No verdict recorded: the result is taken at face value.
+		return m.Content
+	}
+	reason, _ := m.Metadata["error"].(string)
+	if reason == "" {
+		if code, present := m.Metadata["exit_code"]; present {
+			reason = fmt.Sprintf("exited %v", code)
+		} else {
+			reason = "reported a failure with no reason"
+		}
+	}
+	if m.Content != "" {
+		return fmt.Sprintf("tool failed: %s\npartial output: %s", reason, m.Content)
+	}
+	return fmt.Sprintf("tool failed: %s", reason)
 }

@@ -91,7 +91,41 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		if role != "user" && role != "assistant" {
 			role = "user"
 		}
+		// A tool result is a user turn carrying a tool_result block, not prose.
+		// Sent as plain text it reads as something the person said, and the model
+		// has no way to tie it to the call that produced it (GAP-115).
+		if m.Role == agent.RoleTool {
+			text := toolResultContent(m)
+			msgs = append(msgs, anthropicOutboundMessage{
+				Role: "user",
+				Content: []map[string]any{{
+					"type":        "tool_result",
+					"tool_use_id": m.ToolCallID,
+					"content":     text,
+				}},
+			})
+			continue
+		}
 		if len(m.Parts) == 0 {
+			if len(m.ToolCalls) > 0 {
+				// An assistant that asked for tools says so with tool_use blocks,
+				// so the result that follows has something to answer.
+				blocks := make([]map[string]any, 0, len(m.ToolCalls))
+				for _, tc := range m.ToolCalls {
+					input := tc.Arguments
+					if input == nil {
+						input = map[string]any{}
+					}
+					blocks = append(blocks, map[string]any{
+						"type":  "tool_use",
+						"id":    tc.ID,
+						"name":  tc.Name,
+						"input": input,
+					})
+				}
+				msgs = append(msgs, anthropicOutboundMessage{Role: "assistant", Content: blocks})
+				continue
+			}
 			msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: m.Content})
 			continue
 		}

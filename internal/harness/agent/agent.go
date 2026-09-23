@@ -59,6 +59,15 @@ type Message struct {
 	Parts     []ContentPart  `json:"parts,omitempty"`
 	Metadata  map[string]any `json:"metadata,omitempty"`
 	CreatedAt string         `json:"created_at"`
+	// ToolCallID names the call a tool message answers. Every provider that
+	// supports tools requires it: without it the result cannot be matched to the
+	// request that produced it, and a conversation carrying a tool result with
+	// no call is rejected or read as ordinary prose (GAP-115).
+	ToolCallID string `json:"tool_call_id,omitempty"`
+	// ToolCalls is what an assistant message asked for. Without it the follow-up
+	// request contains a result and no request, which is a conversation about a
+	// call nobody made.
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // Turn groups one model call + its tool calls + observations.

@@ -864,9 +864,28 @@ func (r *Runner) Step(ctx context.Context) error {
 			r.State.Phase = agent.PhaseCheckpoint
 			r.State.StopReason = "completed"
 		} else if len(r.ToolQ) > 0 {
-			// Feed observations back as messages and continue.
+			// Feed the round trip back: what the assistant asked for, then what
+			// each call returned.
+			//
+			// Only the results used to be recorded, so the follow-up request
+			// carried a tool message with nothing to attach it to. A conversation
+			// that reports a result for a call it never records asking for is not
+			// a conversation any provider accepts (GAP-115).
+			if len(r.ToolQ) > 0 {
+				r.Messages = append(r.Messages, agent.Message{
+					ID:        "msg-toolreq-" + r.State.TurnID,
+					TurnID:    r.State.TurnID,
+					Role:      agent.RoleAgent,
+					ToolCalls: append([]agent.ToolCall{}, r.ToolQ...),
+					CreatedAt: agent.Now(),
+				})
+			}
 			for _, o := range r.Obs {
-				r.Messages = append(r.Messages, agent.Message{ID: o.ID, TurnID: o.TurnID, Role: agent.RoleTool, Content: o.Content, CreatedAt: agent.Now()})
+				r.Messages = append(r.Messages, agent.Message{
+					ID: o.ID, TurnID: o.TurnID, Role: agent.RoleTool,
+					Content: o.Content, ToolCallID: o.ToolCallID,
+					Metadata: observationMeta(o), CreatedAt: agent.Now(),
+				})
 			}
 			r.Obs = nil
 			r.State.Phase = agent.PhaseRequestModel
@@ -937,6 +956,23 @@ func (r *Runner) PendingFingerprint(requestID string) string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.pendingFingerprint(requestID)
+}
+
+// observationMeta carries a tool result's verdict into the message, so a
+// serializer that only knows role and content can still render the failure
+// faithfully rather than passing an empty result through as prose.
+func observationMeta(obs agent.Observation) map[string]any {
+	if obs.OK && obs.Error == "" {
+		return nil
+	}
+	meta := map[string]any{"ok": obs.OK, "exit_code": obs.ExitCode}
+	if obs.Error != "" {
+		meta["error"] = obs.Error
+	}
+	if obs.Truncated {
+		meta["truncated"] = true
+	}
+	return meta
 }
 
 // toolObservation records one tool result as the conversation sees it.

@@ -145,3 +145,91 @@ func TestNoToolsMeansNoSpecsRatherThanAFailure(t *testing.T) {
 		t.Fatalf("a run with no tools must report none, got %+v", got)
 	}
 }
+
+// A tool result used to reach the provider with no call to attach it to, and the
+// assistant turn that asked for the tool was never recorded (GAP-115). The
+// conversation the provider receives has to contain the whole round trip.
+
+func TestTheConversationCarriesTheWholeToolRoundTrip(t *testing.T) {
+	provider := &requestRecorder{
+		inner: model.NewFake(map[string][]model.ScriptStep{"*": {
+			{Kind: "tool_call", Tool: &agent.ToolCall{ID: "c1", TurnID: "t1", Name: "fs.read", Arguments: map[string]any{"path": "README.md"}}},
+			{Kind: "complete"},
+		}}),
+	}
+	r := NewRunner(Services{
+		Models: provider,
+		Tools:  &specRecorder{specs: []agent.ToolSpec{{Name: "fs.read"}}},
+		Perms:  perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+	}, "R-roundtrip", "S1")
+	r.MaxTurns = 3
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "read the readme"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if len(provider.requests) < 2 {
+		t.Fatalf("the run must make a second request after the tool ran, got %d", len(provider.requests))
+	}
+	second := provider.requests[1].Messages
+
+	var sawRequest, sawResult bool
+	for _, m := range second {
+		if m.Role == agent.RoleAgent && len(m.ToolCalls) > 0 {
+			sawRequest = true
+			if m.ToolCalls[0].ID != "c1" {
+				t.Fatalf("the recorded call must be the one made: %+v", m.ToolCalls[0])
+			}
+		}
+		if m.Role == agent.RoleTool {
+			sawResult = true
+			if m.ToolCallID != "c1" {
+				t.Fatalf("a tool result must name the call it answers, got %q", m.ToolCallID)
+			}
+		}
+	}
+	if !sawRequest {
+		t.Fatalf("the assistant turn that requested the tool is missing: %+v", second)
+	}
+	if !sawResult {
+		t.Fatalf("the tool result is missing: %+v", second)
+	}
+}
+
+func TestAFailedToolCarriesItsVerdictIntoTheConversation(t *testing.T) {
+	// The metadata is what lets a serializer tell a failure from an empty
+	// success; without it the model receives an empty string and no way to know.
+	tools := &resultTools{result: agent.ToolResult{ExitCode: 1, Error: "permission denied"}}
+	provider := &requestRecorder{
+		inner: model.NewFake(map[string][]model.ScriptStep{"*": {
+			{Kind: "tool_call", Tool: &agent.ToolCall{ID: "c1", TurnID: "t1", Name: "fs.read", Arguments: map[string]any{"path": "x"}}},
+			{Kind: "complete"},
+		}}),
+	}
+	r := NewRunner(Services{
+		Models: provider, Tools: tools,
+		Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+	}, "R-failmeta", "S1")
+	r.MaxTurns = 3
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "read it"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if len(provider.requests) < 2 {
+		t.Fatalf("a second request was expected, got %d", len(provider.requests))
+	}
+	var toolMsg *agent.Message
+	for i, m := range provider.requests[1].Messages {
+		if m.Role == agent.RoleTool {
+			toolMsg = &provider.requests[1].Messages[i]
+		}
+	}
+	if toolMsg == nil {
+		t.Fatal("no tool message in the follow-up request")
+	}
+	if toolMsg.Metadata == nil || toolMsg.Metadata["ok"] != false {
+		t.Fatalf("a failed result must say so in the message: %+v", toolMsg.Metadata)
+	}
+	if toolMsg.Metadata["error"] != "permission denied" {
+		t.Fatalf("the reason must travel with the message: %+v", toolMsg.Metadata)
+	}
+}
