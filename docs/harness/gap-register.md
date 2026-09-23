@@ -21,11 +21,11 @@ item. Novos gaps entram no fim com o próximo número livre.
 
 | ID | Item | Fonte | Status | Evidência / limite | Próximo passo |
 |----|------|-------|--------|--------------------|---------------|
-| GAP-001 | Budget envelope no path real | DoD §35, HA4 | ✅ done | runlayer Tracker + flags + persist budget-<run>.json, CLI e daemon | — |
+| GAP-001 | Budget envelope no path real | DoD §35, HA4 | 🟡 partial | Tracker + flags + persist existem e o CLI os liga; o **daemon não**: cria o tracker com todos os limites zero (`daemon.go:393-397`) e `Envelope` trata zero como ilimitado (`budget/budget.go:32-39`). `Reserve` grava a reserva sem descontá-la do disponível (`budget/budget.go:23-30`) e a cobrança é pós-resposta (`runlayer/runlayer.go:40-52`), então um run sem `--budget-usd` não tem teto | GAP-098 (teto no daemon) + GAP-100 (verificação pré-flight) |
 | GAP-002 | Evidence/Gates do protocolo no loop | HA2/HA4, pág. 05 | ✅ done | evidence-<run>.json + `--strict` + políticas declarativas (`--gates`) | motores externos futuros |
-| GAP-003 | Team binding real (Runner aninhado por role) | HA10/HA14 | ✅ done | team/bind.go: runs aninhados + budget do role + checkpoints | — |
+| GAP-003 | Team binding real (Runner aninhado por role) | HA10/HA14 | 🟡 partial | `team.Runner`/`RunWork` criam runs aninhados com budget e checkpoint próprios (`team/bind.go:23-81`), mas **nenhum chamador de produção**: o único import é `harness/eval/eval_test.go:24`. CLI e daemon constroem um único `harnessruntime.Runner` (`agent_commands.go:121-315`, `daemon.go:393-445`) e nunca importam `harness/team` | GAP-101 (delegação em produção) |
 | GAP-004 | Egress + segredos no path local | HA-seg, págs. 07/19 | ✅ done | redação default + EgressPolicy fail-closed c/ allowlist (`--egress-deny/--allow`) | postura legacy quando nil (explícito) |
-| GAP-005 | Roteamento por custo/latência/privacidade/quota | HA6, pág. 24 | ✅ done | Policy + QuotaState c/ cooldown 429 + exclusão; pricing via caller | billing vivo futuro |
+| GAP-005 | Roteamento por custo/latência/privacidade/quota | HA6, pág. 24 | 🟡 partial | `harness/gateway` implementa seleção, cooldown, retry, fallback e circuit breaker, mas **zero consumidores fora de teste** (busca por `harness/gateway` em `*.go` exclui `_test.go`: nenhum resultado). O runner chama `r.Svc.Models.Stream` direto (`runtime/runtime.go:303`). Além disso, três defeitos no próprio gateway: `CooldownUntil` é escrito e nunca lido, então circuito aberto nunca recupera (`gateway.go:198-220`); `quotaExhausted` lê o mapa sem mutex enquanto `SetQuota` escreve com lock (`gateway.go:70-75` vs `165-169`); `LocalOnly` aceita privacy desconhecida (`gateway.go:67-69`) | GAP-102 (ligar ao runtime) + GAP-103 (corrigir circuit breaker) |
 | GAP-006 | Retrieval estrutural (FTS/BM25, símbolos/LSP, repo map) | HA9, págs. 08/31 | ✅ done nos limites | BM25 + repo-map + LSP (symbols/hover/definition, fallback) | typed graph + embeddings |
 | GAP-007 | Regiões gerenciadas + JSON Patch no doc compiler | HD-base, pág. 26 | ✅ done nos limites | regions + RFC6902 + seções Markdown estruturais | AST pleno (listas/tabelas) |
 | GAP-008 | Merge/conflict explícito entre worktrees | HA10 | ✅ done | three-way + deleções propagadas/conflitadas, base intacta | — |
@@ -33,16 +33,16 @@ item. Novos gaps entram no fim com o próximo número livre.
 | GAP-010 | ACP Agent Server (expor Runtime a editores) | H11, págs. 06/22 | ✅ done nos limites | servidor ACP v1 (spec oficial) + `agent acp` + bridge testada vs daemon + cliente ACPClient no extagent (dogfood live Prumo→ACP→Prumo 2026-09-14, 0 API key) | verificação c/ cliente real (Zed) |
 | GAP-011 | MCP client (transporte + integração tools) | H5 | ✅ done nos limites | stdio + HTTP c/ sessão + Adapter + Fanout + `--mcp` | SSE streams futuros |
 | GAP-012 | Benchmarks (packing, compilação, Runner) | relatório | ✅ done | compile ~6.8ms, BM25 ~0.78ms, run ~7µs (i7-3632QM) | — |
-| GAP-013 | Operação do daemon (PID lock, rotação, unit, stop) | daemon | ✅ done | lock/stale-takeover + stop + rotação + prune + unit doc | — |
+| GAP-013 | Operação do daemon (PID lock, rotação, unit, stop) | daemon | 🟡 partial | Stop trava e rotação existem, mas: `AcquireLock` faz check-then-write sem `O_EXCL`/`flock`, então dois daemons passam (`daemon/supervise.go:18-35`); PID reutilizado é tratado como vivo e `Stop` envia SIGTERM para o processo errado (`:25-30`, `:47-57`); `Stop` retorna logo após o sinal, sem esperar a saída (`:48-57`); SIGTERM não é shutdown gracioso — contextos de run vêm de `context.Background()` e nada é drenado ou gravado (`daemon.go:371-386`, `remote.go:37-71`) | GAP-104 (lock atômico) + GAP-105 (shutdown gracioso) |
 | GAP-014 | Kill -9 real com side effect pendente | HA4/HA8 | ✅ done | TestDaemonKillRecovery: SIGKILL + takeover + store íntegro | kill mid-side-effect em CI |
-| GAP-015 | Approvals persistidas | HA3/pág. 07 | ✅ done | permissions-<run>.jsonl em CLI+daemon | — |
+| GAP-015 | Approvals persistidas | HA3/pág. 07 | 🟡 partial | `SavePermissions` grava `permissions-<run>.jsonl` (`runlayer/runlayer.go:147-197`), mas **nada o recarrega**: as decisões vivem só no mapa em memória do `perm.Engine` (`perm/perm.go:25-39`, `102-109`) e `Evaluate` não registra as decisões de política automática, só as de `Approve`/`Deny` (`:42-109`). Um restart de daemon não consegue continuar uma aprovação pendente. Além disso a identidade é o `tool_call_id` do modelo, sem comparar ação/recurso/argumentos (`:42-48`) | GAP-106 (recarregar decisões) + GAP-107 (aprovação por fingerprint) |
 | GAP-016 | Bridge AgentEvent → observability.Event | HA4 | ✅ done | obs-<run>.jsonl dual-write CLI+daemon | — |
 | GAP-017 | Planning→Build (PlanningSession ⇒ Run) | pág. 25 | ✅ done | handoff/promote.go + `agent promote [--start]` | — |
 | GAP-018 | Memory Atlas | págs. 25/27-G12 | ✅ done nos limites | Atlas local + recall + Promote c/ gates (restricted/confidential nunca cruzam) | freshness/TTL automáticos |
 | GAP-019 | Agent writes KnowledgeDelta-first (G15) | pág. 27-G15 | ✅ done | seeding via Commit com Author | — |
 | GAP-020 | Retention/GC (checkpoints, eventos, knowledge) | pág. 27-G23 | ✅ done | RetentionPolicy + GC (prune 5, órfãos 30d, provenance intacta) + `agent gc` | política por projeto futura |
-| GAP-021 | Retry com backoff no Gateway | HA6 | ✅ done | classes (rate 5x/servidor 2x) + jitter determinístico | — |
-| GAP-022 | Child runs/subagentes com ownership (H14) | H14 | ✅ done | RunWork aninhado + ChildHandoff + budgets | — |
+| GAP-021 | Retry com backoff no Gateway | HA6 | 🟡 partial | As classes de rate limit e o jitter existem (`gateway/gateway.go:126-140`), mas o gateway não é chamado em produção (ver GAP-005) e o próprio backoff é **linear** com jitter determinístico, divergindo do contrato de exponencial+`Retry-After` (`control-plane.md:44-58`). `isRateLimit` não reconhece `RESOURCE_EXHAUSTED` (`gateway.go:316-327`) | GAP-102 + GAP-108 (exponencial + Retry-After) |
+| GAP-022 | Child runs/subagentes com ownership (H14) | H14 | 🟡 partial | `RunWork` cria `NativeAgent` aninhado com checkpoint e budget próprios (`team/bind.go:23-81`), mas sem chamador de produção (ver GAP-003). Não existe a ferramenta `agent.delegate`/`agent.ask` que `harness/specs/ch06.md:13-24` especifica, nem operação de delegate/spawn no protocolo do daemon (`harness/protocol/manifest.go:6-47`). `RunWork` aceita `PhaseYield` como sucesso (`:72-81`), então um filho cancelado conta como concluído. `may_delegate` não tem uso em Go e `max_delegation_depth` é só configuração | GAP-101 + GAP-109 (fingerprint de profundidade fixo) |
 | GAP-023 | Scheduled runs (H16) | H16 | ✅ done | retry linear + dead-letter + last-status | supervisão externa (systemd doc) |
 | GAP-024 | Provedores sandbox adicionais (H13) | H13 | 🟡 partial | StrongProvider detect + `--sandbox-runtime` (ex. runsc) | execução verificada + remota |
 | GAP-025 | Contratos Local Intel (KnowledgeTask, Router, ResourceManager, Supervisor) | págs. 29–30 | 🟡 partial | tipos + router + supervisão c/ backoff + detecção llama-server | workers de inferência + benchmarks |
@@ -118,7 +118,100 @@ item. Novos gaps entram no fim com o próximo número livre.
 | GAP-079 | Resize: um render por passo do arrasto | ADR 009 | ✅ done | O custo por render já tinha caído (GAP-071), mas um arrasto **multiplica renders**: cada tamanho invalidava todas as linhas. Agora uma mudança de largura espera 80 ms — o layout muda na hora, o conteúdo reassenta quando o terminal para — e um settle ultrapassado é descartado em vez de renderizar para uma largura que já passou. Uma altura que muda continua sem invalidar nada. Provas: `resize_test.go` (tempestade de 3 tamanhos → 1 render; altura sozinha não agenda nada) |
 | GAP-060 | Evidência visual e fechamento das obrigações de acessibilidade | W9/W11, `visual-constitution` §Visual evidence set | 🟡 partial | Produzido: **51 golden frames** (`prumo-agent tui/internal/tui/testdata/golden/`, 17 estados × 3 classes de largura), capturados como frame buffer em texto puro — com digest no cabeçalho, comparação byte-a-byte e regeneração por `-update-golden` — e **derivados da matriz canônica**, de modo que um estado que passe a ser aplicável sem frame falha (`TestEveryApplicableStateIsCapturedOrExcused`), com as exceções declarando o motivo. Junto vieram o fallback ASCII de glifos (`styles.ResolveIcons`), a matriz de largura sem overflow (`TestEveryWidthClassStaysInsideItsTerminal`), a tempestade de resize, a leitura sem cor, e o indicador de foco (GAP-062). **Duas obrigações foram fechadas** com lastro real: `accessibility.keyboard` e `accessibility.focus` deixaram de ser `not-applicable` e passaram a ter `sources`, `requirement_map` e 3 claims cada, com evidência de documento canônico **e de teste** (as provas estão nos testes que falham se a propriedade sumir, não numa frase). Os motivos das 8 que continuam `not-applicable` foram corrigidos para dizer o que já existe e o que falta — em nenhum caso sobrou uma razão obsoleta, que era o defeito original. Falta o que exige gente: estratégia de anúncio para leitor de tela, política de motion, contraste medido no output renderizado, e a política de copy de erro | estratégia de anúncio + política de motion + contraste medido + copy de erro |
 
+## 1.1 Auditoria de implementação — 2026-09-23
+
+Auditoria estática de 6 subsistemas (runtime/daemon, tool-calling, multiagente,
+router, conectores/instalação, protocolo/skills) mais pesquisa comparativa com
+opencode, Claude Code, LiteLLM, OpenRouter, LLM Gateway, multica e Agent
+Orchestrator. Achados que rebaixam gaps já marcados `✅ done` estão na tabela
+acima; os novos estão aqui.
+
+**Regra adotada a partir desta auditoria:** `✅ done` exige **caller de
+produção**, não apenas biblioteca implementada + teste verde. A prova é uma
+busca por import não-teste. Um componente com só testes é `🟡 partial`.
+
+| ID | Item | Sev | Evidência (arquivo:linha) | Onda |
+|----|------|-----|--------------------------|------|
+| GAP-097 | Comando que falha reporta exit 0 | CRITICAL | `aci/aci.go:165-198` ignora `CombinedOutput` e fixa `ExitCode: 0` para `test.run`, `process.exec`, `git.*`, `code.diagnostics`; o pipeline termina em `head`, mascarando o status do `go test` | 0 |
+| GAP-098 | Daemon cria tracker sem teto | CRITICAL | `daemon.go:393-397` | 0 |
+| GAP-099 | Evidência fora do schema canônico | HIGH | `runlayer/runlayer.go:200-221` emite `type: harness_run` (ausente do enum de `schemas/evidence.schema.json:15-28`) e omite `producer`/`timestamp`/`status`/`goal_id`; o validador usado só checa id e type (`protocol/evidence/evidence.go:59-70`) | 0 |
+| GAP-100 | Budget só é conferido depois da chamada | HIGH | `runtime/runtime.go:333-355` recebe usage pós-resposta; `budget/budget.go:32-41` compara o valor já gasto | 4 |
+| GAP-101 | Sem delegação em produção | CRITICAL | nenhum import não-teste de `harness/team`; `agent.delegate`/`agent.ask` não existem no catálogo ACI (`aci/aci.go:29-45`) nem no protocolo | 5 |
+| GAP-102 | Gateway não está no caminho do runner | CRITICAL | `runtime/runtime.go:303` chama o provider direto; `harness/gateway` sem consumidor | 4 |
+| GAP-103 | Circuit breaker nunca recupera | HIGH | `CooldownUntil` escrito e nunca lido (`gateway.go:198-220`); `quotaExhausted` lê sem lock (`:70-75` vs `:165-169`); `LocalOnly` aceita privacy vazia (`:67-69`) | 4 |
+| GAP-104 | PID lock não-atômico e SIGTERM errado | HIGH | `daemon/supervise.go:18-35` sem `O_EXCL`/`flock`; PID reutilizado tratado como vivo (`:25-30`); `Stop` não espera saída (`:48-57`) | 2 |
+| GAP-105 | SIGTERM não drena runs | HIGH | contextos derivam de `context.Background()` (`daemon.go:371-386`); `Serve`/`ServeRemote` só fecham listener (`daemon.go:194-231`, `remote.go:37-71`) | 2 |
+| GAP-106 | Aprovações não são recarregadas | HIGH | `runlayer/runlayer.go:147-197` grava; nada lê de volta; decisões só em memória (`perm/perm.go:25-39`) | 1 |
+| GAP-107 | Aprovação reutilizável entre ações | CRITICAL | cache por `tool_call_id` sem comparar ação/recurso/args (`perm/perm.go:42-48`, ID em `runtime/runtime.go:382-390`) | 1 |
+| GAP-108 | Backoff linear e sem `Retry-After` | HIGH | `gateway.go:126-140`, `316-342`; contratos não reconhecem `RESOURCE_EXHAUSTED`; adapters não leem o header (`model/model.go:352-364`, `anthropic.go:135-141`) | 4 |
+| GAP-109 | Limite de delegação não existe em código | HIGH | `may_delegate` sem uso em Go; `max_delegation_depth` só em `app/goalplan.go:120-123`, `protocol/goals/goals.go:92`, `cliops/ops.go:94-102` | 5 |
+| GAP-110 | Symlink escapa do sandbox | CRITICAL | `aci/aci.go:90-103` containment só lexical; `fs.read` (`:132-142`) e `edit.create` (`:205-213`) seguem symlink; contradiz `docs/harness/security.md:27-29` | 1 |
+| GAP-111 | SSRF + exfiltração da chave do servidor | CRITICAL | `base_url` do cliente + fallback ao `PRUMO_MODEL_API_KEY` do processo (`model/model.go:138-163`, `daemon.go:334-340`, `508-520`) | 1 |
+| GAP-112 | `run_id` e IDs como caminho de arquivo | HIGH | `daemon.go:144-176`, `353-386`; `checkpoint.go:25-28`; `contextv2/store.go:21-23`; `adoption/migration.go:334-354` | 1 |
+| GAP-113 | Imagem lida fora do workspace | HIGH | `runtime/images.go:89-103` aceita caminho absoluto e join sem contenção; sem teto agregado | 1 |
+| GAP-114 | Tools nativas não recebem schema; Anthropic não envia tools | CRITICAL | `aci.Tool` sem `Specs` (`aci/aci.go:17-45`); daemon não seta `ToolSpecs` (`daemon.go:405-430`); Anthropic declara `ToolCalls: true` e omite `req.Tools` do body (`anthropic.go:37-41`, `116-118`) | 3 |
+| GAP-115 | Resultado de tool não é feedback válido de provider | HIGH | observação vira mensagem `role:tool` genérica sem `tool_call_id` (`runtime.go:507-510`); serializer OpenAI não emite `tool_calls` (`model/model.go:275-315`); Anthropic mapeia tool→user text (`anthropic.go:81-118`) | 3 |
+| GAP-116 | `ToolResult.Error`/`ExitCode` descartados | HIGH | só `res.Output` vira observação (`runtime.go:450-455`); erro chega ao modelo como texto vazio com aparência de sucesso | 3 |
+| GAP-117 | TurnID/requestID não avançam entre turnos de tool | HIGH | `TurnID` inicializado uma vez (`runtime.go:84-91`, `297-303`); IDs de provider reutilizados em tool seguinte | 3 |
+| GAP-118 | IDs de evento colidem | HIGH | derivados de `len(payload)+1` (`runtime.go:109-114`, `184-189`); dedup por ID descarta eventos (`daemon.go:796-833`) | 2 |
+| GAP-119 | Assinantes lentos descartados; cursor quebra na rotação | HIGH | send não-bloqueante (`daemon.go:178-190`); cursor é índice do arquivo e a rotação remove a metade velha (`supervise.go:60-81`, `daemon.go:760-810`) | 2 |
+| GAP-120 | Erro de persistência vira sucesso | HIGH | `saveRecord`/`appendEvent`/jobs/diffs ignoram erro (`daemon.go:152-176`, `472-479`; `schedule.go:45-53`, `76-108`; `daemon.go:669-683`) | 2 |
+| GAP-121 | Scheduler tem lost-update | HIGH | `jobs.json` sem mutex, com ticker e handlers concorrentes (`schedule.go:31-53`, `155-168`) | 2 |
+| GAP-122 | Recursos do daemon sem limite | HIGH | sem deadline de conexão, teto de conexões, teto de runs, deadline de run, teto de assinantes, timeout de aprovação (`daemon.go:221-232`, `235-270`, `349-386`, `767-783`) | 2 |
+| GAP-123 | Checkpoint incompleto; `resume` marca Complete | CRITICAL | estado salvo exclui Messages/ToolQ/Turn/Events (`agent/agent.go:225-232` vs `runtime/runtime.go:53-81`); `resume` força `PhaseComplete` sem executar (`agent_commands.go:349-362`) | 0 |
+| GAP-124 | `opCancel` não cancela run aguardando aprovação | HIGH | approval wait libera a goroutine e reteve o run (`daemon.go:492-499`); cancel só chama `cancel()` (`:847-858`) | 2 |
+| GAP-125 | Workspace do run aplicado na camada errada | HIGH | `SetWorkspace` antes de parsear o workspace do request (`daemon.go:342-347` vs `360-365`); OpenCode usa esse dir (`model/opencode.go:52-57`, `136-147`) | 2 |
+| GAP-126 | Journal de side-effect fora do caminho real | CRITICAL | `RecordIntent`/`RecordOutcome` só em teste (`checkpoint.go:157-214`); `pending` retorna `true` e permite reexecução (`:186-203`) | 1 |
+| GAP-127 | Firewall de diretiva só em teste | HIGH | `NewRunnerWithDirective` sem caller de produção (`runtime.go:94-107`); daemon usa `NewRunner` (`daemon.go:405-430`) | 3 |
+| GAP-128 | Manifesto de contexto não chega ao modelo | HIGH | daemon grava o manifesto e devolve só um ID (`daemon.go:418-425`); `ModelRequest` não o carrega (`runtime.go:293-303`) | 3 |
+| GAP-129 | Custo ausente em OpenAI/Anthropic | CRITICAL | nenhum dos dois emite `CostUSD` (`model/model.go:405-428`, `anthropic.go:263-281`); o tracker confia no campo (`:40-52`) → `--budget-usd` é inefetivo | 4 |
+| GAP-130 | Cache/reasoning fora do total | HIGH | campos de cache lidos mas ignorados pelo tracker (`runlayer.go:40-47`); `agent.Usage` sem campo de reasoning (`agent/agent.go:194-205`) | 4 |
+| GAP-131 | Stream truncado vira `completed` | HIGH | `scanner.Err()` não é checado antes de `completed` (`model/model.go:366-450`, `anthropic.go:329-334`) | 4 |
+| GAP-132 | Política de role declarativa e inconsistente | HIGH | `ModelPolicy` gera map, `Doctor` espera string (`cliops/ops.go:88-92` vs `compile.go:597-609`); `DirectiveIR.ModelRoute` nunca consultado (`directive.go:28-47` vs `runtime.go:297-303`) | 4 |
+| GAP-133 | Nenhum catálogo de model/provider/pricing | HIGH | `catalog/catalog.json` só tem workforce; registry é hard-coded no CLI com providers (`local`, `trusted-cloud`, `external-cloud`) que o factory não constrói (`d2_commands.go:109-141` vs `model/model.go:120-166`) | 4 |
+| GAP-134 | Execução de recipe não é DAG | CRITICAL | segue só `step.Next[0]`, descarta os demais ramos e substitui handler ausente por no-op de sucesso (`automation/recipe_dag.go:174-179`, `203-210`) | 5 |
+| GAP-135 | Handoff é artefato, não protocolo | HIGH | `Build`/`Validate` só checam string não-vazia (`handoff/handoff.go:23-61`); sem resolução de alvo, dispatch, ack ou continuação | 5 |
+| GAP-136 | IDs padrão de receita e run colidem | MEDIUM | `R-agent-1` (`agent_commands.go:145-148`) e `R-daemon-1` recomeçam a cada boot (`daemon.go:84-88`, `134-141`) | 6 |
+| GAP-137 | Manifesto de instalação não é multi-projeto | HIGH | guarda 1 connector por ID, sem raiz do projeto (`install/install.go:11-17`, `41-44`); 50 projetos sobrescrevem o registro de cleanup | 6 |
+| GAP-138 | Versão de release inconsistente | CRITICAL | fonte `0.6.0` (`protocol/protocol.go:5-7`); instaladores pinam `v0.5.0` (`scripts/install.sh:5`, `install.ps1:7`); release dispara só em `v0.5.*` (`.github/workflows/release.yml:3-7`); CI compila `./cmd/prumo-agent`, **diretório inexistente** (`.github/workflows/ci.yml:31`) | 6 |
+| GAP-139 | README e GAP-091 descrevem um rename não aplicado | HIGH | README manda `go run ./cmd/prumo-agent` (`README.md:44-45`) e GAP-091 declara o rename `✅ done` com provas de build/smoke, mas só `cmd/prumo` existe; `prumo-tui/go.mod` ainda diz "`prumo` binary" | 6 |
+| GAP-140 | Binário instalado depende de checkout | HIGH | `embedded_assets.go:8-25` embute assets e `resources.DefaultFS` nunca é atribuído; `repoRoot()` varre ancestrais e um home hard-coded (`cmd/prumo/main.go:26-58`) | 6 |
+| GAP-141 | Connector pode sobrescrever e depois apagar arquivo do usuário | CRITICAL | Codex/ClaudeCode/Gemini/Antigravity escrevem `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` sem checar existência (`connectors/codex/codex.go:65-80`, `claudecode/codex.go:69-84`); `RemoveManagedPaths` remove tudo listado (`install/install.go:109-129`) | 7 |
+| GAP-142 | Capabilities de connector declaradas e não implementadas | HIGH | opencode 9→~3, codex 4→2, claudecode 5→2, antigravity 6→2, gemini 4→2; `Codex AgentProvider` declara `usage`/`cancel`/`resume`/`events`/`permissions` e todas são stub (`extagent/extagent.go:372-402`). O testkit só negocia, nunca executa (`connectors/testkit/testkit.go:143-191`) | 7 |
+| GAP-143 | MCP sem initialize e não anunciado ao modelo | HIGH | stdio vai direto a `tools/list` sem `initialize` (`mcp/mcp.go:235-321`); daemon não seta `ToolSpecs` mesmo com Fanout (`agent_commands.go:521-536`); `Fanout.Specs` devolve só MCP e some com as nativas (`mcp/tools.go:105-107`) | 3 |
+| GAP-144 | Secrets expostos a processos filhos | HIGH | MCP/ACP/OpenCode/Codex herdam o env inteiro (`mcp/mcp.go:176-192`, `acpclient.go:67-77`, `opencode.go:145-157`); `--api-key` aparece em argv; stderr de filho volta sem redação | 1 |
+| GAP-145 | Adoption fabrica aprovação | HIGH | `adopt_commands.go:164-175` marca tudo `approved` com actor `operator` sem usar a ReviewQueue; `--audit-only` ignorado (`:54`); snapshot tirado **depois** da mutação (`cliops/projects.go:257-273`) | 8 |
+| GAP-146 | Resolver não é task-aware | HIGH | ignora `modes`/`activation`/`requires_any`/`conflicts`/`context_budget` (`resolver/resolver.go:191-344`); bundles são selecionados inteiros contra `framework/specs/ch21.md:104-110`; sem razão de rejeição | 9 |
+| GAP-147 | Workforcesync baixa pacote incompleto | HIGH | só `manifest.json` + `SKILL.md` (`workforcesync/sync.go:220-260`), perdendo checks/scripts/references/templates/examples do Skill v3 (`framework/specs/ch21.md:24-45`); checksum do lock cobre só o manifest (`:181-195`) | 9 |
+| GAP-148 | `go test ./...` da raiz não alcança `prumo-tui` | MEDIUM | módulo aninhado (`prumo-tui/go.mod`); GAP-055 documenta e CI cobre, mas a suíte local não | 0 |
+| GAP-149 | `contextv2` ciclo de dependência recursiona infinito | MEDIUM | dependências expandidas antes de `inSet` ser atualizado, sem proteção (`contextv2/contextv2.go:177-199`) | 8 |
+| GAP-150 | Artefatos gerados não satisfazem o próprio schema | HIGH | `task` sem `goal_id`/`plan_id`/`title`/`objective`/`role`/`status` (`app/goalplan.go:171-199` vs `schemas/task.schema.json:5-14`); `surface` sem `id`/`canonical`/`status` (`agentsurface/adapters.go:11-22`); `prumo.json` do adoption sem campos obrigatórios e version 1 (`adoption/migration.go:163-170` vs `schemas/prumo.schema.json:4-20`) | 9 |
+| GAP-151 | Validador de JSON Schema é subset incompleto | HIGH | ignora `type` como array, `minItems`, `format`, `if/then`, `contains`, `patternProperties`, `$ref` de fragmento (`validation/validation.go:106-216`) | 9 |
+| GAP-152 | Ajuda anuncia comandos inexistentes | MEDIUM | `adopt scan`/`facts`/`classify`/`scaffold` (`help.go:295-315`) sem dispatch; `compile --target claudecode` (`help.go:253-262`) contra alvo real `claude-code` (`cliops/compile.go:87-90`) | 0 |
+| GAP-153 | Eventos de escrita em disco O(n²) | HIGH | cada evento relê e reescreve o JSONL inteiro (`daemon.go:163-176`, `supervise.go:60-81`) a partir do loop síncrono de stream (`runtime.go:319-347`) | 2 |
+| GAP-154 | `RecordDiff` reescreve tudo sob lock global | HIGH | carrega o mapa, atualiza uma chave, re-serializa, mantém `Server.mu` (`daemon.go:669-683`); trava listagem | 2 |
+| GAP-155 | Tabelas de preço divergentes e sem versão | HIGH | `modelregistry` usa input/output, `gateway` usa `CostPer1k`, `budget/hierarchy.go:29-45` tem uma terceira tabela; sem effective-date, fonte ou moeda | 4 |
+| GAP-156 | Permissão-FW aceita privacy desconhecida no gateway | MEDIUM | `t.Privacy != ""` permite vazio (`gateway.go:67-69`) | 4 |
+| GAP-157 | `EvaluateMCP` destrutivo é branch inalcançável | MEDIUM | `descriptorFor` só emite ReadOnly/SideEffecting (`mcp/tools.go:32-38`), nunca o tipo que ativa o veto (`toolgateway/gateway.go:93-100`) | 8 |
+| GAP-158 | 4 tools do registry sem dispatch | HIGH | `read_file`, `write_file`, `exec_command`, `git_commit` registrados (`d2_commands.go:18-61`) sem casos em `runTool` (`:144-374`) | 3 |
+| GAP-159 | Context de chamada descartado na ponte ACP | MEDIUM | `acp.go:29-47`, `56-86`; CLI passa `context.Background()` (`agent_commands.go:920-937`); `serveConn` não consegue ser cancelado (`acpserver/acpserver.go:117-147`) | 3 |
+| GAP-160 | Lock de permissions não distingue ator | MEDIUM | toda aprovação registrada como `client` (`daemon.go:884-915`) | 1 |
+| GAP-161 | `AcquireLock` + release sem checar dono | HIGH | release remove o path sem verificar posse (`supervise.go:18-35`) | 2 |
+| GAP-162 | `opList`/`opEvents` sem paginação | MEDIUM | `opList` lê todos os records (`daemon.go:584-629`); `opEvents` lê o arquivo inteiro para devolver 500 (`:632-662`) | 2 |
+| GAP-163 | Retenção não coleta run concluído | MEDIUM | "live" = tem checkpoint, e concluídos preservam checkpoint pruned → nunca coletados; prefixos `diffs-`/`daemon-run-` fora do coletor (`checkpoint/retention.go:33-44`, `68-97`) | 2 |
+| GAP-164 | Runs ativos não sobrevivem a restart | HIGH | `New` inicia mapa vazio (`daemon.go:126-141`); record `running` fica `active:false` para sempre (`:545-581`); `RunRecord` não persiste pending permissions (`:46-53`); contradiz `docs/harness/reconnect-replay.md:26-41` | 2 |
+| GAP-165 | Negociação de protocolo não é fail-closed | HIGH | `Negotiate` existe (`harness/protocol/protocol.go:28-54`) mas requests normais não enviam versão (`daemon.go:254-270`, `sdk/prumo/client.go:94-130`); três namespaces de versão (`protocol.go:5-8`, `harness/protocol/protocol.go:12-19`, `cliops/ops.go:124-125`) | 9 |
+| GAP-166 | `remote` não implementa `subscribe` que o SDK anuncia | MEDIUM | local faz caso especial (`daemon.go:260-267`), remoto sempre despacha (`remote.go:74-97`); SDK expõe `Subscribe` (`sdk/prumo/client.go:491-565`) | 3 |
+| GAP-167 | Fila de delegação sugerida pode não terminar | HIGH | `DelegationSuggested` sem cap; o suggester pode devolver sempre a mesma role e o loop nunca sai (`team/exec.go:88-120`) | 5 |
+| GAP-168 | Worktree não é fronteira de segurança | CRITICAL | filho roda `sh -c` no worktree sem container (`team/bind.go:49-63` + `aci/aci.go:177-192`); o provider se declara "git isolation only" (`aci/sandbox.go:40-47`) | 5 |
+| GAP-169 | Timeout por tool não existe | HIGH | timeouts só existem no registry de metadados do CLI (`d2_commands.go:18-105`); execução usa `context.Background()` (`agent_commands.go:303-307`) | 3 |
+| GAP-170 | Teto de output aplicado depois de materializar | HIGH | `os.ReadFile`/`CombinedOutput`/`bytes.Buffer` completam antes do corte (`aci/aci.go:137-142`, `188-192`; `aci/container.go:109-127`) | 3 |
+
 ## 2. Definition of Done (§35) — estado por item
+
+> **Reavaliado em 2026-09-23** contra a auditoria de implementação. Itens que
+> dependem de biblioteca sem caller de produção caíram para `🟡 partial`.
+> O veredito de split (§3) mudou de "READY" para "NÃO READY".
 
 | # | Item DoD | Status |
 |---|----------|--------|
@@ -126,15 +219,15 @@ item. Novos gaps entram no fim com o próximo número livre.
 | 2 | AgentRuntime contracts | ✅ |
 | 3 | FakeProvider conformance | ✅ |
 | 4 | ≥1 real ModelProvider works | ✅ código+discovery (live: GAP-038) |
-| 5 | NativeAgent end-to-end | ✅ |
-| 6 | tools via ToolGateway | ✅ |
-| 7 | permission lifecycle | ✅ persistida (GAP-015) |
-| 8 | Environment/Sandbox baseline | ✅ +redação+strong-detect (live: GAP-037) |
-| 9 | checkpoint/restart/resume | ✅ +kill+SIGHUP-safe lock (GAP-014) |
-| 10 | duplicate side effects prevented | ✅ |
-| 11 | budget enforcement | ✅ fiação CLI/daemon + persist (GAP-001) |
-| 12 | observability/events | ✅ bridge dual-write (GAP-016) |
-| 13 | gateway routing/fallback | ✅ retry + policy (quota: GAP-005) |
+| 5 | NativeAgent end-to-end | 🟡 | run único funciona; `resume` não continua trabalho (GAP-123) |
+| 6 | tools via ToolGateway | 🟡 | executor direto; 3 side-effect engines órfãos; 4 tools sem dispatch (GAP-126/158) |
+| 7 | permission lifecycle | 🟡 | não recarrega após restart; identidade por call-id (GAP-106/107) |
+| 8 | Environment/Sandbox baseline | 🟡 | symlink escapa do root; `--safe` não existe no agente (GAP-110) |
+| 9 | checkpoint/restart/resume | 🟡 | lock não-atômico; resume marca Complete; run ativo não sobrevive (GAP-104/123/164) |
+| 10 | duplicate side effects prevented | 🟡 | journal não está no caminho real; `pending` reexecuta (GAP-126) |
+| 11 | budget enforcement | 🟡 | CLI liga; daemon cria tracker ilimitado; cobrança pós-resposta (GAP-001/100) |
+| 12 | observability/events | 🟡 | dual-write existe; IDs colidem; escrita é O(n²) (GAP-118/153) |
+| 13 | gateway routing/fallback | 🟡 | gateway sem caller; circuito não recupera (GAP-102/103) |
 | 14 | ≥1 external AgentProvider works | ✅ nos limites (send: GAP-039) |
 | 15 | typed Handoff | ✅ |
 | 16 | Context Compiler v2 baseline | ✅ repo-map+LSP+FTS+Atlas (graph futuro) |
@@ -142,10 +235,10 @@ item. Novos gaps entram no fim com o próximo número livre.
 | 18 | KnowledgeDelta validate/commit | ✅ Delta-first + ledger (GAP-019/026) |
 | 19 | Coverage/Readiness baseline | ✅ |
 | 20 | Documentation Compiler baseline | ✅ regions+patch (GAP-007) |
-| 21 | multi-agent/worktree baseline | ✅ binding+merge aninhados |
+| 21 | multi-agent/worktree baseline | 🟡 | binding e merge existem e testam, mas sem chamador de produção; worktree não é fronteira de segurança (GAP-003/168) |
 | 22 | compatibility/eval suite | ✅ +kill-test+benches+TS (GAP-012/014/041) |
-| 23 | `prumo-agent agent` headless usable | ✅ |
-| 24 | docs describe reality | ✅ |
+| 23 | `prumo-agent agent` headless usable | 🟡 | o diretório é `cmd/prumo`; README e CI apontam `cmd/prumo-agent`, que não existe (GAP-139) |
+| 24 | docs describe reality | 🟡 | este register e o README descreviam um rename não aplicado (GAP-139) |
 | 25 | no P0 contradictions | ✅ (contradição não-P0 da regra de imports do `cmd` resolvida por ADR 005) |
 
 ## 3. Split gate — estado por item
@@ -162,7 +255,7 @@ item. Novos gaps entram no fim com o próximo número livre.
 | versioned public protocol | ✅ (IDL + SDK Go + SDK TS com roundtrip live: GAP-041) |
 | reconnect/replay | ✅ local + remoto TLS c/ token (GAP-030 nos limites: CA corporativa) |
 | ADRs do split | ✅ ADR 005–009 escritos (005/006/008 Accepted; 007/009 Proposed pendentes de medição) |
-| **Veredito** | **READY (condicional)** — falta: PR/merge, re-testar opencode/codex sends quando quota voltar, Promote dos ADRs 007/009 com medição. Provas live fechadas 2026-09-14 (GAP-037/039/010) |
+| **Veredito** | **NÃO READY (2026-09-23)** — a auditoria de implementação rebaixou 7 gaps com `done` falso e abriu GAP-097–170. Bloqueadores para READY: GAP-097 (comando que falha reporta exit 0), GAP-123 (resume marca Complete), GAP-126 (journal fora do caminho real), GAP-102 (gateway sem caller), GAP-101 (delegação sem caller). Até a Onda 0 e a Onda 2 fecharem, o split gate não pode ser declarado condicional-pronto |
 
 ## 4. Fora deste Goal (não entra na conta)
 
