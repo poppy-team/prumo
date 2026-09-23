@@ -133,7 +133,29 @@ func (r *Runner) emit(kind string, payload map[string]any) {
 	if r.Svc.Events == nil {
 		return
 	}
-	r.Svc.Events(agent.AgentEvent{ID: fmt.Sprintf("ev-%d", len(payload)+1), RunID: r.State.RunID, TurnID: r.State.TurnID, Kind: kind, Payload: payload, CreatedAt: agent.Now()})
+	r.emitEvent(kind, payload)
+}
+
+// nextEventID returns a per-run event id and advances the counter.
+//
+// The id used to be derived from len(payload), so every event of the same shape
+// got the same number: every text_delta was ev-2, every usage ev-6. A
+// subscriber that deduplicates on id then dropped the live events as repeats of
+// the replayed ones, and a client missed them (GAP-118). The counter is part of
+// the state, so a run resumed from a checkpoint continues the sequence instead
+// of reissuing ids it has already used.
+func (r *Runner) nextEventID() string {
+	r.State.EventSeq++
+	return fmt.Sprintf("ev-%d", r.State.EventSeq)
+}
+
+// emitEvent is the one place an event is built, so the id cannot be derived
+// differently by the locked and unlocked paths.
+func (r *Runner) emitEvent(kind string, payload map[string]any) {
+	r.Svc.Events(agent.AgentEvent{
+		ID: r.nextEventID(), RunID: r.State.RunID, TurnID: r.State.TurnID,
+		Kind: kind, Payload: payload, CreatedAt: agent.Now(),
+	})
 }
 
 // Inject enqueues steering input consumed at the next model request.
@@ -229,7 +251,7 @@ func (r *Runner) emitLocked(kind string, payload map[string]any) {
 	if r.Svc.Events == nil {
 		return
 	}
-	r.Svc.Events(agent.AgentEvent{ID: fmt.Sprintf("ev-%d", len(payload)+1), RunID: r.State.RunID, TurnID: r.State.TurnID, Kind: kind, Payload: payload, CreatedAt: agent.Now()})
+	r.emitEvent(kind, payload)
 }
 
 // SeedMessages replaces the conversation buffer. Drivers seed the initial

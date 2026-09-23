@@ -70,20 +70,20 @@ func AcquireLock(storeDir string) (func(), error) {
 		return nil, err
 	}
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
-	if err == nil {
-		if _, werr := file.Write(data); werr != nil {
-			_ = file.Close()
-			_ = os.Remove(path)
-			return nil, werr
-		}
-		if cerr := file.Close(); cerr != nil {
-			_ = os.Remove(path)
-			return nil, cerr
-		}
-		return func() { releaseLock(path, record) }, nil
+	// The content is written to a temporary and linked into place. Creating the
+	// lock with O_EXCL and then writing into it leaves a window in which the file
+	// exists and is empty, and a second daemon arriving in that window reads an
+	// unreadable lock and takes it over — so two can win. link is atomic and
+	// fails when the target exists, so the lock never exists without its content.
+	staging := path + ".claim." + strconv.Itoa(os.Getpid())
+	if err := os.WriteFile(staging, data, 0o644); err != nil {
+		return nil, err
 	}
-	if !os.IsExist(err) {
+	defer os.Remove(staging)
+
+	if err := os.Link(staging, path); err == nil {
+		return func() { releaseLock(path, record) }, nil
+	} else if !os.IsExist(err) {
 		return nil, err
 	}
 

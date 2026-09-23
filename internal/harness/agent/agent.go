@@ -216,11 +216,16 @@ type Usage struct {
 // NativeAgentState is the canonical resumable state. Provider-private
 // reasoning is never required here.
 type NativeAgentState struct {
-	RunID             string         `json:"run_id"`
-	SessionID         string         `json:"session_id"`
-	TurnID            string         `json:"turn_id"`
-	Phase             Phase          `json:"phase"`
-	Revision          int            `json:"revision"`
+	RunID     string `json:"run_id"`
+	SessionID string `json:"session_id"`
+	TurnID    string `json:"turn_id"`
+	Phase     Phase  `json:"phase"`
+	Revision  int    `json:"revision"`
+	// EventSeq is the number of events this run has emitted. It is part of the
+	// state so it travels in the checkpoint: a resumed run that restarted the
+	// count would reissue ids it had already used, and a subscriber deduplicating
+	// on id would then drop the new events as repeats (GAP-118).
+	EventSeq          int            `json:"event_seq,omitempty"`
 	ContextManifestID string         `json:"context_manifest_id,omitempty"`
 	ModelRoute        string         `json:"model_route,omitempty"`
 	PendingRequest    *ModelRequest  `json:"pending_request,omitempty"`
