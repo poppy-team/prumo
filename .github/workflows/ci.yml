@@ -28,42 +28,42 @@ jobs:
       - name: Go test
         run: go test -v -race ./...
       - name: Build Prumo CLI
-        run: go build -o /tmp/prumo-agent ./cmd/prumo-agent
+        run: go build -o /tmp/prumo ./cmd/prumo
       - name: Documentation authority gate
-        run: /tmp/prumo-agent docs authority --path . --json
+        run: /tmp/prumo docs authority --path . --json
       - name: Agent surface context-rot gate
-        run: /tmp/prumo-agent docs agents verify --path . --json
+        run: /tmp/prumo docs agents verify --path . --json
       - name: Documentation verification gate
-        run: /tmp/prumo-agent docs verify --path . --json
+        run: /tmp/prumo docs verify --path . --json
       - name: Documentation strict readiness gate
-        run: /tmp/prumo-agent docs verify --path . --strict --json
+        run: /tmp/prumo docs verify --path . --strict --json
       - name: Terminology gate
-        run: /tmp/prumo-agent docs glossary --path . --json
+        run: /tmp/prumo docs glossary --path . --json
       # The projections are derived artifacts, so they live under the runtime
       # directory and are never committed. A gate that only verified them would
       # fail on every clean checkout; building them first is what makes the step
       # about the map rather than about a directory nobody ships.
       - name: Interface map gate
         run: |
-          /tmp/prumo-agent ui map --path . --write --json
-          /tmp/prumo-agent ui verify --path . --json
+          /tmp/prumo ui map --path . --write --json
+          /tmp/prumo ui verify --path . --json
       - name: Documentation version policy gate
-        run: /tmp/prumo-agent docs version --path . --json
+        run: /tmp/prumo docs version --path . --json
       - name: Documentation gauntlet (deterministic rounds)
-        run: /tmp/prumo-agent docs gauntlet --path . --json
+        run: /tmp/prumo docs gauntlet --path . --json
       - name: CLI smoke test
         run: |
           rm -rf /tmp/prumo-smoke
-          /tmp/prumo-agent init /tmp/prumo-smoke --profile examples/brasa/project-profile.json --non-interactive
-          /tmp/prumo-agent validate /tmp/prumo-smoke
-          /tmp/prumo-agent context plan "add a transition template" --path /tmp/prumo-smoke --json
-          /tmp/prumo-agent goal new P00-G01 "Foundation" --phase P00 --path /tmp/prumo-smoke
-          /tmp/prumo-agent goal list --path /tmp/prumo-smoke
-          /tmp/prumo-agent compile --target codex --path /tmp/prumo-smoke
-          /tmp/prumo-agent compile --target traycer --path /tmp/prumo-smoke
-          /tmp/prumo-agent compile --target opencode --path /tmp/prumo-smoke
-          /tmp/prumo-agent connector list
-          /tmp/prumo-agent framework-check
+          /tmp/prumo init /tmp/prumo-smoke --profile examples/brasa/project-profile.json --non-interactive
+          /tmp/prumo validate /tmp/prumo-smoke
+          /tmp/prumo context plan "add a transition template" --path /tmp/prumo-smoke --json
+          /tmp/prumo goal new P00-G01 "Foundation" --phase P00 --path /tmp/prumo-smoke
+          /tmp/prumo goal list --path /tmp/prumo-smoke
+          /tmp/prumo compile --target codex --path /tmp/prumo-smoke
+          /tmp/prumo compile --target traycer --path /tmp/prumo-smoke
+          /tmp/prumo compile --target opencode --path /tmp/prumo-smoke
+          /tmp/prumo connector list
+          /tmp/prumo framework-check
           test ! -e /tmp/prumo-smoke/PROJECT_MANIFEST.yaml
           test ! -e /tmp/prumo-smoke/.prumo/project-profile.yaml
 

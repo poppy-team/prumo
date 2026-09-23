@@ -174,7 +174,7 @@ busca por import não-teste. Um componente com só testes é `🟡 partial`.
 | GAP-136 | IDs padrão de receita e run colidem | MEDIUM | `R-agent-1` (`agent_commands.go:145-148`) e `R-daemon-1` recomeçam a cada boot (`daemon.go:84-88`, `134-141`) | 6 |
 | GAP-137 | Manifesto de instalação não é multi-projeto | HIGH | guarda 1 connector por ID, sem raiz do projeto (`install/install.go:11-17`, `41-44`); 50 projetos sobrescrevem o registro de cleanup | 6 |
 | GAP-138 | Versão de release inconsistente | CRITICAL | fonte `0.6.0` (`protocol/protocol.go:5-7`); instaladores pinam `v0.5.0` (`scripts/install.sh:5`, `install.ps1:7`); release dispara só em `v0.5.*` (`.github/workflows/release.yml:3-7`); CI compila `./cmd/prumo-agent`, **diretório inexistente** (`.github/workflows/ci.yml:31`) | 6 |
-| GAP-139 | README e GAP-091 descrevem um rename não aplicado | HIGH | README manda `go run ./cmd/prumo-agent` (`README.md:44-45`) e GAP-091 declara o rename `✅ done` com provas de build/smoke, mas só `cmd/prumo` existe; `prumo-tui/go.mod` ainda diz "`prumo` binary" | 6 |
+| GAP-139 | README e CI carregam nomenclatura superada pelo ADR 016 | CRITICAL | ADR 016 (2026-09-18) superseded a alocação de binário do ADR 015: o framework CLI é `prumo` de `cmd/prumo` e o TUI é `prumo-agent` de `prumo-tui/cmd/prumo-tui`. O código segue o ADR 016. Quem ficou na nomenclatura do ADR 015 é: `README.md:44-45` (`go run ./cmd/prumo-agent version`) e `.github/workflows/ci.yml:31` (`go build -o /tmp/prumo-agent ./cmd/prumo-agent`) — **diretório inexistente, o job de docs falha**. GAP-091 ainda declara o rename para `cmd/prumo-agent` como `✅ done` com provas de build/smoke que não podem ter rodado nesta árvore | 0 (CI) |
 | GAP-140 | Binário instalado depende de checkout | HIGH | `embedded_assets.go:8-25` embute assets e `resources.DefaultFS` nunca é atribuído; `repoRoot()` varre ancestrais e um home hard-coded (`cmd/prumo/main.go:26-58`) | 6 |
 | GAP-141 | Connector pode sobrescrever e depois apagar arquivo do usuário | CRITICAL | Codex/ClaudeCode/Gemini/Antigravity escrevem `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` sem checar existência (`connectors/codex/codex.go:65-80`, `claudecode/codex.go:69-84`); `RemoveManagedPaths` remove tudo listado (`install/install.go:109-129`) | 7 |
 | GAP-142 | Capabilities de connector declaradas e não implementadas | HIGH | opencode 9→~3, codex 4→2, claudecode 5→2, antigravity 6→2, gemini 4→2; `Codex AgentProvider` declara `usage`/`cancel`/`resume`/`events`/`permissions` e todas são stub (`extagent/extagent.go:372-402`). O testkit só negocia, nunca executa (`connectors/testkit/testkit.go:143-191`) | 7 |
@@ -237,8 +237,8 @@ busca por import não-teste. Um componente com só testes é `🟡 partial`.
 | 20 | Documentation Compiler baseline | ✅ regions+patch (GAP-007) |
 | 21 | multi-agent/worktree baseline | 🟡 | binding e merge existem e testam, mas sem chamador de produção; worktree não é fronteira de segurança (GAP-003/168) |
 | 22 | compatibility/eval suite | ✅ +kill-test+benches+TS (GAP-012/014/041) |
-| 23 | `prumo-agent agent` headless usable | 🟡 | o diretório é `cmd/prumo`; README e CI apontam `cmd/prumo-agent`, que não existe (GAP-139) |
-| 24 | docs describe reality | 🟡 | este register e o README descreviam um rename não aplicado (GAP-139) |
+| 23 | `prumo agent` headless usable | ✅ | CLI canônico é `prumo` de `cmd/prumo` conforme ADR 016; TUI em `prumo-tui/cmd/prumo-tui` (GAP-139 é drift de doc/CI, não do binário) |
+| 24 | docs describe reality | 🟡 | README e workflow de CI ainda na nomenclatura do ADR 015, superseded pelo ADR 016 (GAP-139) |
 | 25 | no P0 contradictions | ✅ (contradição não-P0 da regra de imports do `cmd` resolvida por ADR 005) |
 
 ## 3. Split gate — estado por item

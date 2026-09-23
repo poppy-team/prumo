@@ -6,7 +6,7 @@ The repository is the durable source of truth. Prumo stores canonical project st
 
 ## Names
 
-The framework is **Prumo**. The command you run is **`prumo-agent`**, and the terminal client is launched with **`prumo-agent tui`** — a separate binary (`prumo-agent-tui`) that `prumo-agent tui` finds and runs. Documents that predate the rename and say `prumo <command>` mean the same binary.
+The framework is **Prumo**. The command you run is **`prumo`** (built from `cmd/prumo`), and the terminal client is a separate binary launched by **`prumo agent`** — installed as **`prumo-agent`** (or its short alias **`pa`**). See [ADR 016](docs/adr/016-product-split-agent-and-harness.md) for the naming decision.
 
 ## Current release line
 
@@ -41,44 +41,44 @@ Requirements:
 git clone git@github.com:raillen/prumo.git
 cd prumo
 
-go run ./cmd/prumo-agent version
-go run ./cmd/prumo-agent --json version
+go run ./cmd/prumo version
+go run ./cmd/prumo --json version
 ```
 
 Expected version output:
 
 ```text
-0.5.0
+0.6.0
 ```
 
-Run `prumo-agent --help` or `prumo-agent <command> --help` to view all available commands, options, and quick examples. You can also consult the [CLI reference](docs/manual/usage.md#command-reference).
+Run `prumo --help` or `prumo <command> --help` to view all available commands, options, and quick examples. You can also consult the [CLI reference](docs/manual/usage.md#command-reference).
 
 ## Initialize a project
 
 Create a profile with at least one preferred model, then initialize a project:
 
 ```bash
-go run ./cmd/prumo-agent init ./my-project \
+go run ./cmd/prumo init ./my-project \
   --profile examples/brasa/project-profile.json \
   --non-interactive
 
-go run ./cmd/prumo-agent validate ./my-project
-go run ./cmd/prumo-agent doctor ./my-project
+go run ./cmd/prumo validate ./my-project
+go run ./cmd/prumo doctor ./my-project
 ```
 
-`prumo-agent init` creates canonical project files such as `prumo.json`, `.ai/`, `docs/PRUMO.md`, `PROJECT_STATE.md`, and `.prumo/history/`. It does not install a harness globally.
+`prumo init` creates canonical project files such as `prumo.json`, `.ai/`, `docs/PRUMO.md`, `PROJECT_STATE.md`, and `.prumo/history/`. It does not install a harness globally.
 
 ## Work with Goals
 
 ```bash
-go run ./cmd/prumo-agent goal new P00-G01 "Foundation" \
+go run ./cmd/prumo goal new P00-G01 "Foundation" \
   --phase P00 \
   --objective "Establish the project foundation." \
   --path ./my-project
 
-go run ./cmd/prumo-agent goal state P00-G01 PLANNED --path ./my-project
-go run ./cmd/prumo-agent goal state P00-G01 LOCKED --path ./my-project
-go run ./cmd/prumo-agent goal list --path ./my-project
+go run ./cmd/prumo goal state P00-G01 PLANNED --path ./my-project
+go run ./cmd/prumo goal state P00-G01 LOCKED --path ./my-project
+go run ./cmd/prumo goal list --path ./my-project
 ```
 
 Locked Goals must be changed through `goal amend`; direct edits are detected by the lock digest.
@@ -86,9 +86,9 @@ Locked Goals must be changed through `goal amend`; direct edits are detected by 
 ## Compile a harness adapter
 
 ```bash
-go run ./cmd/prumo-agent compile --target generic --path ./my-project
-go run ./cmd/prumo-agent compile --target codex --path ./my-project
-go run ./cmd/prumo-agent compile --target claude-code --path ./my-project
+go run ./cmd/prumo compile --target generic --path ./my-project
+go run ./cmd/prumo compile --target codex --path ./my-project
+go run ./cmd/prumo compile --target claude-code --path ./my-project
 ```
 
 Generated artifacts are derived. The canonical project files and workforce packages remain the source of truth.
@@ -121,9 +121,9 @@ sh uninstall.sh --mode pure
 Use a portable installation home when testing or working in CI:
 
 ```bash
-go run ./cmd/prumo-agent --home ./prumo-home setup
-go run ./cmd/prumo-agent --home ./prumo-home install connector opencode
-go run ./cmd/prumo-agent --home ./prumo-home uninstall --connectors --purge-cache --purge-global-config
+go run ./cmd/prumo --home ./prumo-home setup
+go run ./cmd/prumo --home ./prumo-home install connector opencode
+go run ./cmd/prumo --home ./prumo-home uninstall --connectors --purge-cache --purge-global-config
 ```
 
 Uninstall never removes project files, `.ai/`, docs, Goals, Plans, Evidence, or other repository data. Read the [installation manual](docs/manual/installation.md) and [uninstall manual](docs/manual/uninstallation.md).
@@ -133,9 +133,9 @@ Uninstall never removes project files, `.ai/`, docs, Goals, Plans, Evidence, or 
 Commands that support automation accept `--json`:
 
 ```bash
-go run ./cmd/prumo-agent --json version
-go run ./cmd/prumo-agent --json doctor ./my-project
-go run ./cmd/prumo-agent --json framework-check
+go run ./cmd/prumo --json version
+go run ./cmd/prumo --json doctor ./my-project
+go run ./cmd/prumo --json framework-check
 ```
 
 The envelope is:
