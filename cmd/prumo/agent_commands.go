@@ -231,10 +231,11 @@ func runAgentRun(asJSON bool, args []string) int {
 	var timeline []agent.AgentEvent
 	appendAgentEvent(eventLog, agent.AgentEvent{ID: runID + "-started", RunID: runID, Kind: "run.started", Payload: map[string]any{"goal": goal, "provider": providerName}, CreatedAt: agent.Now()})
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
-		Models:      provider,
-		Tools:       counting,
-		Perms:       engine,
-		Checkpoints: checkpoints,
+		Models:        provider,
+		Tools:         counting,
+		Perms:         engine,
+		Checkpoints:   checkpoints,
+		EffectJournal: checkpoints,
 		Events: func(ev agent.AgentEvent) {
 			if !asJSON {
 				fmt.Fprintf(os.Stderr, "[%s] %s\n", ev.Kind, ev.TurnID)
@@ -408,8 +409,9 @@ func runAgentResume(asJSON bool, args []string) int {
 
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
 		Models: provider, Tools: aci.New(root),
-		Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
-		Checkpoints: store,
+		Perms:         perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints:   store,
+		EffectJournal: store,
 	}, runID, cp.State.SessionID)
 	runner.RestoreFrom(cp)
 

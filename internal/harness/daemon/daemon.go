@@ -443,12 +443,13 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 		}
 	}
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
-		Models:      provider,
-		Tools:       counting,
-		Perms:       engine,
-		Checkpoints: checkpoints,
-		Workspace:   workspace,
-		HasVision:   hasVision,
+		Models:        provider,
+		Tools:         counting,
+		Perms:         engine,
+		Checkpoints:   checkpoints,
+		EffectJournal: checkpoints,
+		Workspace:     workspace,
+		HasVision:     hasVision,
 		Events: func(ev agent.AgentEvent) {
 			s.appendEvent(runID, ev)
 			ar.mu.Lock()

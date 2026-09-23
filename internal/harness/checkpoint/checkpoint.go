@@ -195,8 +195,21 @@ func (s *Store) saveEffects(fx []agent.PendingEffect) error {
 	return os.Rename(tmp, s.fxPath())
 }
 
-// RecordIntent persists intent BEFORE the side effect; replay skips duplicates
-// by idempotency key. Returns false when the effect was already applied.
+// RecordIntent persists intent BEFORE the side effect, and reports whether the
+// caller should go ahead.
+//
+// A pending entry is a promise whose outcome was never recorded — the process
+// died between writing the intent and learning the result. What to do about that
+// depends on whether the effect is safe to repeat, so the decision is made here,
+// from the recovery policy, and not left to the caller. The old behaviour
+// returned true and executed, which re-ran an unknown-outcome effect on every
+// resume (GAP-126).
+//
+//	applied already, any policy      → false, skip: the effect is known done
+//	pending, policy retry            → true,  go ahead: repeating is the plan
+//	pending, policy skip             → false, skip: a human decides
+//	pending, policy fail / unknown   → error: fail closed
+//	failed or rolled_back             → true,  go ahead: it did not take
 func (s *Store) RecordIntent(fx agent.PendingEffect) (bool, error) {
 	if fx.IdempotencyKey == "" {
 		return false, fmt.Errorf("pending effect requires idempotency_key")
@@ -204,10 +217,30 @@ func (s *Store) RecordIntent(fx agent.PendingEffect) (bool, error) {
 	all := s.loadEffects()
 	for _, e := range all {
 		if e.IdempotencyKey == fx.IdempotencyKey && e.Status == agent.EffectApplied {
-			return false, nil // already applied: skip duplicate
+			return false, nil
 		}
 		if e.ID == fx.ID {
-			return true, nil // intent already recorded
+			switch e.Status {
+			case agent.EffectApplied:
+				return false, nil
+			case agent.EffectFailed, agent.EffectRolledBack:
+				// It did not take. Recording the intent again is the right move.
+				return true, nil
+			case agent.EffectPending:
+				switch recoveryPolicy(e) {
+				case "retry":
+					return true, nil
+				case "skip":
+					return false, nil
+				case "fail":
+					return false, fmt.Errorf("effect %s has an unknown outcome and its recovery policy is fail", e.ID)
+				default:
+					// No policy is not permission to repeat. An effect with an
+					// unknown outcome that nobody planned for is the case where
+					// guessing is worst.
+					return false, fmt.Errorf("effect %s has an unknown outcome and no recovery policy", e.ID)
+				}
+			}
 		}
 	}
 	if fx.Status == "" {
@@ -216,8 +249,15 @@ func (s *Store) RecordIntent(fx agent.PendingEffect) (bool, error) {
 	if fx.CreatedAt == "" {
 		fx.CreatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 	}
+	if fx.RecoveryPolicy == "" {
+		fx.RecoveryPolicy = "fail"
+	}
 	all = append(all, fx)
 	return true, s.saveEffects(all)
+}
+
+func recoveryPolicy(fx agent.PendingEffect) string {
+	return strings.ToLower(strings.TrimSpace(fx.RecoveryPolicy))
 }
 
 // RecordOutcome persists outcome AFTER execution.
@@ -236,4 +276,12 @@ func (s *Store) RecordOutcome(id string, status agent.EffectStatus) error {
 func Fingerprint(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
+}
+
+// Effects returns the recorded effects, oldest first by creation time. It is
+// how a caller inspects what a crashed run may have left behind.
+func (s *Store) Effects() []agent.PendingEffect {
+	all := s.loadEffects()
+	sort.SliceStable(all, func(i, j int) bool { return all[i].CreatedAt < all[j].CreatedAt })
+	return all
 }

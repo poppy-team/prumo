@@ -17,13 +17,28 @@ import (
 	"github.com/raillen/prumo/internal/harness/perm"
 )
 
+// EffectJournal is the before/after record around a side effect. It is the port
+// the runtime depends on, not the concrete store, so the runtime does not own
+// persistence.
+type EffectJournal interface {
+	// RecordIntent records that an effect is about to be applied and reports
+	// whether it should go ahead.
+	RecordIntent(agent.PendingEffect) (bool, error)
+	// RecordOutcome records what became of it.
+	RecordOutcome(id string, status agent.EffectStatus) error
+}
+
 // Services wires the ports the loop depends on (no vendor types).
 type Services struct {
 	Models      model.Provider
 	Tools       ToolExecutor
 	Perms       *perm.Engine
 	Checkpoints *checkpoint.Store
-	Events      func(agent.AgentEvent)
+	// EffectJournal is the before/after record around every tool call. Nil
+	// disables replay protection, which is correct for a run with no checkpoint
+	// and therefore no history to consult.
+	EffectJournal EffectJournal
+	Events        func(agent.AgentEvent)
 	// ContextManifest builds the context pointer for a turn.
 	ContextManifest func(ctx context.Context, state agent.NativeAgentState) (string, error)
 	// Budgets enforcement hook; nil disables.
@@ -242,6 +257,71 @@ func (r *Runner) RestoreFrom(cp agent.Checkpoint) {
 	r.AfterSideEffects = cp.AfterSideEffects
 	if cp.TurnsDone > 0 {
 		r.TurnsDone = cp.TurnsDone
+	}
+}
+
+// beginEffect records the intent to apply an effect and reports whether the
+// caller should go ahead.
+//
+// A run may be replayed — resumed from a checkpoint, or restarted after a crash
+// — and a tool call that already happened must not happen again. The journal is
+// what knows. Without a store configured there is nothing to consult, so the
+// answer is yes: the previous behaviour, and the only correct one when there is
+// no history to consult.
+func (r *Runner) beginEffect(effectID string, tc agent.ToolCall) (bool, error) {
+	if r.Svc.EffectJournal == nil {
+		return true, nil
+	}
+	target := ""
+	if tc.Arguments != nil {
+		target = fmt.Sprint(tc.Arguments["path"])
+		if target == "<nil>" || target == "" {
+			target = ""
+		}
+		if target == "" && tc.Name == "edit.move" {
+			if to, ok := tc.Arguments["to"].(string); ok {
+				target = to
+			}
+		}
+	}
+	effect := agent.PendingEffect{
+		ID:               effectID,
+		Kind:             r.Svc.Tools.KindOf(tc.Name),
+		IdempotencyKey:   effectID,
+		Target:           target,
+		RecoveryPolicy:   r.recoveryPolicyFor(tc),
+		ObservableEffect: r.Svc.Tools.OperationOf(tc.Name),
+	}
+	return r.Svc.EffectJournal.RecordIntent(effect)
+}
+
+// finishEffect records what became of an effect. A journal that cannot be
+// written to is not turned into a run failure: the effect already happened, and
+// reporting the run as failed would claim the opposite. The trace is emitted
+// instead, so the gap is visible.
+func (r *Runner) finishEffect(effectID string, status agent.EffectStatus) {
+	if r.Svc.EffectJournal == nil {
+		return
+	}
+	if err := r.Svc.EffectJournal.RecordOutcome(effectID, status); err != nil {
+		r.emitLocked("side_effect_journal_failed", map[string]any{
+			"effect_id": effectID, "status": string(status), "error": err.Error(),
+		})
+	}
+}
+
+// recoveryPolicyFor decides what a replay of this call should do. Reading and
+// listing are safe to repeat. A change is not: repeating an edit whose outcome
+// is unknown is how a file gets written twice, so the default is to stop and
+// let a person decide.
+func (r *Runner) recoveryPolicyFor(tc agent.ToolCall) string {
+	switch r.Svc.Tools.KindOf(tc.Name) {
+	case "read-only", "idempotent":
+		return "retry"
+	case "destructive", "side-effecting":
+		return "skip"
+	default:
+		return "fail"
 	}
 }
 
@@ -539,9 +619,39 @@ func (r *Runner) Step(ctx context.Context) error {
 					}
 				}
 			}
+			// The effect journal is written around the call, not only in tests.
+			// The intent goes down before the tool runs and the outcome after it
+			// returns, so a process that dies mid-call leaves a pending record
+			// rather than no trace. Without this the journal described a mechanism
+			// that nothing used (GAP-126).
+			effectID := "fx-" + tc.ID
+			proceed, journalErr := r.beginEffect(effectID, tc)
+			if journalErr != nil {
+				r.State.Phase = agent.PhaseFailed
+				r.State.StopReason = journalErr.Error()
+				r.emitLocked("side_effect_refused", map[string]any{"tool": tc.Name, "reason": journalErr.Error()})
+				return journalErr
+			}
+			if !proceed {
+				// Already applied in an earlier life of this run. The effect is
+				// not repeated; the run continues as though it had happened.
+				r.emitLocked("side_effect_skipped", map[string]any{
+					"tool": tc.Name, "effect_id": effectID,
+					"reason": "an earlier attempt of this effect is already recorded as applied",
+				})
+				continue
+			}
 			res, err := r.Svc.Tools.Execute(ctx, tc)
 			if err != nil {
+				r.finishEffect(effectID, agent.EffectFailed)
 				return err
+			}
+			if res.ExitCode == 0 {
+				r.finishEffect(effectID, agent.EffectApplied)
+			} else {
+				// The tool reported a failure rather than the transport failing:
+				// the effect is known not to have taken, so replay is safe.
+				r.finishEffect(effectID, agent.EffectFailed)
 			}
 			r.Obs = append(r.Obs, agent.Observation{ID: "obs-" + tc.ID, TurnID: r.State.TurnID, ToolCallID: tc.ID, Content: res.Output, CreatedAt: agent.Now()})
 			if res.ExitCode == 0 {
