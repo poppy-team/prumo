@@ -798,7 +798,20 @@ func (r *Runner) Step(ctx context.Context) error {
 				// the effect is known not to have taken, so replay is safe.
 				r.finishEffect(effectID, agent.EffectFailed)
 			}
-			r.Obs = append(r.Obs, agent.Observation{ID: "obs-" + tc.ID, TurnID: r.State.TurnID, ToolCallID: tc.ID, Content: res.Output, CreatedAt: agent.Now()})
+			// The observation is a faithful record of what the tool did. A tool
+			// that failed put the reason in Error and left Output empty, and only
+			// Output was kept, so the model was handed an empty result for a call
+			// that had failed (GAP-116).
+			r.Obs = append(r.Obs, toolObservation(r.State.TurnID, tc, res))
+			if !res.OK() {
+				// A failed tool is an event a client needs to see, not only a line
+				// in the conversation: a run that is quietly making no progress
+				// looks exactly like one that is working.
+				r.emitLocked("tool.failed", map[string]any{
+					"tool": tc.Name, "tool_call_id": tc.ID,
+					"exit_code": res.ExitCode, "error": res.Error,
+				})
+			}
 			if res.ExitCode == 0 {
 				r.AfterSideEffects = true
 				if op := r.Svc.Tools.OperationOf(tc.Name); op != "" {
@@ -924,4 +937,34 @@ func (r *Runner) PendingFingerprint(requestID string) string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.pendingFingerprint(requestID)
+}
+
+// toolObservation records one tool result as the conversation sees it.
+//
+// The verdict is the tool's own, not an inference from whether the output
+// happens to be empty: a tool that legitimately returns nothing succeeded, and a
+// tool that failed usually returns nothing at all. Only the tool knows which.
+func toolObservation(turnID string, call agent.ToolCall, res agent.ToolResult) agent.Observation {
+	ok := res.OK()
+	obs := agent.Observation{
+		ID:         "obs-" + call.ID,
+		TurnID:     turnID,
+		ToolCallID: call.ID,
+		Content:    res.Output,
+		OK:         ok,
+		ExitCode:   res.ExitCode,
+		Truncated:  res.Truncated,
+		CreatedAt:  agent.Now(),
+	}
+	if !ok {
+		// A failure with no reason would read as a success that returned nothing,
+		// which is the exact confusion this closes. Saying so is better than
+		// leaving it blank.
+		reason := res.Error
+		if reason == "" {
+			reason = fmt.Sprintf("tool %s exited %d", call.Name, res.ExitCode)
+		}
+		obs.Error = reason
+	}
+	return obs
 }

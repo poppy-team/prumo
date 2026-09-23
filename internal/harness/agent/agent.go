@@ -94,13 +94,37 @@ type ToolResult struct {
 	Error      string `json:"error,omitempty"`
 }
 
+// OK reports whether the tool itself said it succeeded.
+//
+// It is a method rather than an expression at each call site because "did this
+// work" has two answers — the exit code and the error — and a caller that
+// checks only one of them reports a tool that failed on a non-zero exit as a
+// success, or the reverse (GAP-116).
+func (r ToolResult) OK() bool { return r.ExitCode == 0 && r.Error == "" }
+
 // Observation records a ToolResult into conversation history.
+//
+// OK and Error exist because "content" alone could not say what happened. A
+// failing tool returned an empty Output and put the reason in Error, and only
+// Output was kept: the model received an empty result for a call that had
+// failed, which reads as a call that succeeded and returned nothing (GAP-116).
+// Content remains the success text, because that is what most readers want;
+// these two say which it is.
 type Observation struct {
 	ID         string `json:"id"`
 	TurnID     string `json:"turn_id"`
 	ToolCallID string `json:"tool_call_id"`
 	Content    string `json:"content"`
-	CreatedAt  string `json:"created_at"`
+	// OK is the tool's own verdict: false when it reported a non-zero exit or an
+	// error. A transport failure never produces an observation.
+	OK bool `json:"ok"`
+	// Error is the reason a tool failed. It is empty on success.
+	Error string `json:"error,omitempty"`
+	// ExitCode is what the tool reported, kept because "failed" and "exited 2"
+	// are different facts and a model can act on the difference.
+	ExitCode  int    `json:"exit_code"`
+	Truncated bool   `json:"truncated,omitempty"`
+	CreatedAt string `json:"created_at"`
 }
 
 // PermissionDecision is the deterministic policy outcome.
