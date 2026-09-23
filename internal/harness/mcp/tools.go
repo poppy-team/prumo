@@ -115,6 +115,12 @@ func (f Fanout) Specs(ctx context.Context) ([]agent.ToolSpec, error) {
 			out = append(out, specer.Specs()...)
 		}
 	}
+	// No client means no server is configured, which is not a failure: a fanout
+	// over native tools alone is a normal thing to build. Listing a nil client
+	// panics, so it is checked before it is asked.
+	if f.MCP.Client == nil {
+		return out, nil
+	}
 	mcpSpecs, err := f.MCP.Specs(ctx)
 	if err != nil {
 		// A server that cannot list its tools does not take the native ones down
