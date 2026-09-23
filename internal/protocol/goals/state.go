@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
+
+	"github.com/raillen/prumo/internal/protocol/evidence"
 )
 
 func loadGoal(path string) (Goal, error) {
@@ -34,6 +37,21 @@ func saveGoal(path string, goal Goal) error {
 }
 
 func TransitionGoal(path, target, reason string) (Goal, error) {
+	return TransitionGoalWithEvidence(path, target, reason, nil)
+}
+
+// TransitionGoalWithEvidence moves a goal between states and, when the target is
+// DONE, requires that the goal's evidence resolves to real records.
+//
+// The check before 2026-09-23 was `len(evidence) == 0`. That accepts
+// `["does-not-exist"]`, `[{}]`, or any non-empty array, so a goal could reach
+// DONE with nothing behind it. FRAMEWORK.md requires that evidence, not model
+// confidence, determines completion.
+//
+// A nil records slice fails closed rather than passing: a caller that cannot see
+// the evidence store cannot certify that evidence exists. That is the
+// uncomfortable direction and the correct one.
+func TransitionGoalWithEvidence(path, target, reason string, records []evidence.Record) (Goal, error) {
 	goal, err := loadGoal(path)
 	if err != nil {
 		return nil, err
@@ -44,10 +62,8 @@ func TransitionGoal(path, target, reason string) (Goal, error) {
 		return nil, fmt.Errorf("Invalid goal transition: %s -> %s", current, target)
 	}
 	if target == "DONE" {
-		if evidence, ok := goal["evidence"].([]any); !ok || len(evidence) == 0 {
-			if ev, ok := goal["evidence"].([]string); !ok || len(ev) == 0 {
-				return nil, fmt.Errorf("A goal cannot be marked DONE without evidence.")
-			}
+		if err := verifyGoalEvidence(goal, records); err != nil {
+			return nil, err
 		}
 	}
 	if target == "LOCKED" {
@@ -76,6 +92,87 @@ func TransitionGoal(path, target, reason string) (Goal, error) {
 		return nil, err
 	}
 	return goal, nil
+}
+
+// verifyGoalEvidence requires that every evidence entry the goal names resolves
+// to a valid, non-stale record. An entry may be a bare id or an object carrying
+// an id; anything that yields no id is rejected rather than skipped.
+func verifyGoalEvidence(goal Goal, records []evidence.Record) error {
+	entries := goalEvidenceIDs(goal)
+	if len(entries) == 0 {
+		return fmt.Errorf("A goal cannot be marked DONE without evidence.")
+	}
+	if records == nil {
+		return fmt.Errorf("A goal cannot be marked DONE without resolvable evidence: no evidence records were supplied for %d reference(s).", len(entries))
+	}
+
+	byID := make(map[string]evidence.Record, len(records))
+	for _, record := range records {
+		byID[record.ID] = record
+	}
+
+	var problems []string
+	for _, id := range entries {
+		record, found := byID[id]
+		if !found {
+			problems = append(problems, fmt.Sprintf("%s: no such evidence record", id))
+			continue
+		}
+		if err := evidence.ValidateRecord(record); err != nil {
+			problems = append(problems, fmt.Sprintf("%s: %v", id, err))
+			continue
+		}
+		if record.Stale {
+			problems = append(problems, fmt.Sprintf("%s: evidence is stale", id))
+			continue
+		}
+		if goalID := strings.TrimSpace(fmt.Sprint(goal["id"])); goalID != "" && record.GoalID != goalID {
+			problems = append(problems, fmt.Sprintf("%s: belongs to goal %q, not %q", id, record.GoalID, goalID))
+		}
+	}
+	if len(problems) > 0 {
+		sort.Strings(problems)
+		return fmt.Errorf("A goal cannot be marked DONE: %s", strings.Join(problems, "; "))
+	}
+	return nil
+}
+
+// goalEvidenceIDs extracts the referenced evidence ids from a goal, accepting
+// both the bare-string and the object-with-id shapes the schema permits.
+func goalEvidenceIDs(goal Goal) []string {
+	raw, present := goal["evidence"]
+	if !present || raw == nil {
+		return nil
+	}
+	ids := []string{}
+	switch items := raw.(type) {
+	case []string:
+		for _, id := range items {
+			if id = strings.TrimSpace(id); id != "" {
+				ids = append(ids, id)
+			}
+		}
+	case []any:
+		for _, item := range items {
+			switch value := item.(type) {
+			case string:
+				if value = strings.TrimSpace(value); value != "" {
+					ids = append(ids, value)
+				}
+			case map[string]any:
+				if id := strings.TrimSpace(fmt.Sprint(value["id"])); id != "" && id != "<nil>" {
+					ids = append(ids, id)
+				}
+			}
+		}
+	case []map[string]any:
+		for _, item := range items {
+			if id := strings.TrimSpace(fmt.Sprint(item["id"])); id != "" && id != "<nil>" {
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids
 }
 
 func AmendGoal(path string, amendment map[string]any) (Goal, error) {
