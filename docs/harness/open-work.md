@@ -238,8 +238,104 @@ máquina e uma decisão sua.
 
 **Tamanho.** M, depois da decisão.
 
+## 10. Por que o registro dizia "feito" para coisas que não funcionavam
+
+> Auditoria de 2026-09-23. GAP-001/003/005/013/015/021/022 e o veredito de split.
+
+**O que é.** Você está lendo um documento que falava. Não é problema de texto:
+é um padrão repetido sete vezes no registro oficial do projeto.
+
+Cada uma dessas sete linhas dizia que uma capacidade estava pronta, com prova de
+teste ao lado. As provas eram reais — os testes existiam e passavam. O que não
+existia era o **caminho que um programa real percorre para chegar lá**.
+
+O exemplo mais claro: roteamento de modelo por custo e cota. Existe um motor
+completo de escolha, com política, cooldown, retry e fallback. Tem testes. O
+documento dizia "feito". Ele está no caminho real de alguma execução? Não. O
+programa de agente pede um modelo direto a um fornecedor, como um interruptor
+com posições — e o motor de escolha fica ao lado, desligado, usado só pelos
+próprios testes dele.
+
+O mesmo aconteceu com subagentes, orçamento no daemon, aprovações depois de
+reinício, trava do processo do daemon, e o registro de tentativas.
+
+**Por que isso importa mais do que parece.** Um registro que erra a direção faz
+duas coisas ruins ao mesmo tempo: esconde o que falta, e faz com que o trabalho
+próximo seja escolhido errado. A regra nova é explícita — **"feito" exige que
+um programa de produção use aquilo, não que um teste consiga**.
+
+**O que destrava.** Onda 0 (evidência e exit code honestos) e Onda 2 (runtime e
+daemon). A regra passa a ser vigiada por teste, para não voltar a apodecer.
+
+**Tamanho.** G.
+
+---
+
+## 11. Um comando que falha aparece como sucesso
+
+> GAP-097, GAP-123. A onda mais urgente do projeto.
+
+**O que é.** Quando o agente roda `go test ./...` e os testes falham, o Prumo
+registra que o comando **passou**. Não é uma imprecisão: o código de execução
+ignora o erro do comando e escreve "código de saída: 0" de volta. O comando de
+teste ainda passa por um `head` no meio do caminho, que troca o status real pelo
+status do `head`.
+
+**Por que importa.** A regra do próprio framework é que evidência decide
+conclusão, não a confiança do modelo. Se a evidência mente, essa regra inverte:
+o sistema passa a aprovar trabalho quebrado com confiança total, e a fraude é
+invisível porque o registro está todo verde.
+
+**O que destrava.** Ler o erro real do comando e repassar o código de saída real.
+Adicionar testes que falham quando um comando falha. E, no mesmo passo, fazer o
+`resume` continuar o trabalho em vez de declarar concluído.
+
+**Tamanho.** P para a correção. G para fechar a cadeia de evidência inteira.
+
+---
+
+## 12. Três furos de segurança que um programa externo consegue abrir
+
+> GAP-110, GAP-111, GAP-112. Onda 1.
+
+**O que é.** Três coisas separadas que, juntas, significam que o agente não pode
+confiar que está preso no seu projeto:
+
+1. **Link simbólico.** A trava de pasta só olha o texto do caminho, não o destino
+   real. Um link para `/etc` dentro do projeto passa.
+2. **Endereço do fornecedor.** O daemon aceita o endereço do fornecedor que o
+   cliente pede e, se a chave não vier junto, usa a chave **do processo servidor**
+   e envia para aquele endereço. Quem consegue falar com o socket local escolhe
+   para onde a sua chave vai.
+3. **Nome de execução.** O identificador do run entra no caminho do arquivo sem
+   verificação. Um identificador com `../` escapa da pasta de estado.
+
+**Por que importa.** A promessa de que o agente trabalha dentro do seu workspace
+é a base de tudo — sem ela, nenhum modo de permissão faz sentido.
+
+**O que destrava.** Uma camada única de contenção de caminho, resolvendo o
+destino real antes de qualquer operação; lista de destinos permitidos para o
+fornecedor; validação de identificador antes de virar caminho.
+
+**Tamanho.** M para os três. G para o ambiente filho saneado e o resto.
+
+---
+
 ## Se a pergunta é "por onde começo"
 
-1. **Itens 1, 2 e 3 (Anexos/Imagens, Diff pós-run, Push Streaming):** ✅ **Fechados e verificados.**
-2. **As verificações de acessibilidade** (item 4) — não depende de código: depende de uma sessão com o leitor de tela ligado e conferência manual em terminal real.
-3. **Pesquisa assistida de modelos** (item 9) — aguarda decisão de produto para iniciar a implementação da proposta.
+1. **Onda 0 — o comando que falha aparecer como sucesso (GAP-097).** É a
+   única coisa aqui que faz o resto do trabalho mentir. Comece por esta.
+2. **Onda 1 — os três furos de segurança (GAP-110, GAP-111, GAP-112).** Antes de
+   rodar o agente em qualquer máquina que não seja a sua de teste.
+3. **Onda 4 — roteamento com cota.** A resposta direta à sua pergunta sobre o
+   roteador inteligente: ele existe, funciona quando chamado, e **não é chamado**.
+   É a peça com mais código pronto e menos ligado.
+4. **Onda 6 — instalação global.** Sete coisas concretas faltam, listadas no
+   ADR 018: serviço de usuário, registro de projetos, executor por projeto,
+   cofre de credenciais, identidade, rolover de custo, e parar de apagar
+   arquivos de outro projeto na desinstalação.
+5. **Onda 5 — subagentes de um nível.** Decidido no ADR 017. O que falta é o
+   caminho de produção e o isolamento de verdade.
+6. **Item 4 (acessibilidade)** — não depende de código: depende de uma sessão
+   com o leitor de tela ligado e conferência manual em terminal real.
+7. **Item 9 (pesquisa assistida de modelos)** — aguarda decisão de produto.
