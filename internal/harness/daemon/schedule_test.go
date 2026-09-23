@@ -1,20 +1,21 @@
 package daemon
 
 import (
+	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 	"testing"
 	"time"
 )
 
 func TestScheduleTickFiresOnce(t *testing.T) {
 	srv := New(t.TempDir()+"/s.sock", t.TempDir(), fakeDeps(false))
-	res := srv.dispatch(map[string]any{"op": "schedule", "goal": "tick", "job_id": "j1", "every_secs": float64(60)})
+	res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "schedule", "goal": "tick", "job_id": "j1", "every_secs": float64(60)})
 	if res["ok"] != true {
 		t.Fatalf("schedule failed: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "schedule", "goal": "x", "job_id": "j1", "every_secs": float64(60)}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "schedule", "goal": "x", "job_id": "j1", "every_secs": float64(60)}); res["ok"] != false {
 		t.Fatal("duplicate job must fail")
 	}
-	if res := srv.dispatch(map[string]any{"op": "schedule", "goal": "x", "every_secs": float64(1)}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "schedule", "goal": "x", "every_secs": float64(1)}); res["ok"] != false {
 		t.Fatal("sub-minimum interval must fail")
 	}
 	// Force due and tick twice: exactly one run (no catch-up storm).
@@ -32,13 +33,13 @@ func TestScheduleTickFiresOnce(t *testing.T) {
 	if runs != 1 {
 		t.Fatalf("expected exactly one fired run, got %d", runs)
 	}
-	if res := srv.dispatch(map[string]any{"op": "unschedule", "job_id": "j1"}); res["ok"] != true {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "unschedule", "job_id": "j1"}); res["ok"] != true {
 		t.Fatalf("unschedule failed: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "unschedule", "job_id": "j1"}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "unschedule", "job_id": "j1"}); res["ok"] != false {
 		t.Fatal("double unschedule must fail")
 	}
-	jobs := srv.dispatch(map[string]any{"op": "jobs"})
+	jobs := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "jobs"})
 	if list, _ := jobs["jobs"].([]any); len(list) != 0 {
 		t.Fatalf("jobs must be empty: %v", list)
 	}

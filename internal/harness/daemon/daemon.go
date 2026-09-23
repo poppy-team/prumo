@@ -580,7 +580,23 @@ func str(m map[string]any, k string) string {
 	return v
 }
 
+// dispatch routes one request, and refuses to route it at all if the client and
+// the engine do not speak the same protocol.
+//
+// Negotiation existed and nothing called it: the version the client sent was
+// never read, so a client built for a different protocol was served until an op
+// behaved differently than it expected. The reconnect contract says a version
+// mismatch fails closed and does not guess, and that a reconnect begins with a
+// handshake (GAP-165).
+//
+// The "protocol" op itself is exempt: it is how a client asks what is supported,
+// and answering that cannot require already knowing the answer.
 func (s *Server) dispatch(msg map[string]any) map[string]any {
+	if str(msg, "op") != "protocol" {
+		if refusal := checkProtocol(msg); refusal != nil {
+			return *refusal
+		}
+	}
 	switch str(msg, "op") {
 	case "protocol":
 		return map[string]any{"ok": true, "version": harnessprotocol.Version, "min_compatible": harnessprotocol.MinCompatible, "schemas": harnessprotocol.Schemas, "ops": harnessprotocol.Ops}
@@ -1370,6 +1386,9 @@ type Client struct {
 }
 
 func (c Client) call(msg map[string]any) (map[string]any, error) {
+	// Every request declares the protocol it speaks, because the daemon now
+	// refuses the ones that do not. Setting it here means no caller can forget.
+	msg["protocol_version"] = harnessprotocol.Version
 	conn, err := c.dial()
 	if err != nil {
 		return nil, err
@@ -1494,6 +1513,42 @@ func (c Client) Diff(runID, path string) (map[string]any, error) {
 // Protocol negotiates versions.
 func (c Client) Protocol() (map[string]any, error) {
 	return c.call(map[string]any{"op": "protocol"})
+}
+
+// checkProtocol negotiates the client's version against this engine and returns
+// a refusal when they cannot work together.
+//
+// A request with no version is refused, not assumed current. Assuming is the
+// exact failure the contract rules out: a client too old to send a version is
+// also too old to know which ops exist, so its idea of any of them may be wrong.
+// The refusal names both versions, so the client can be fixed rather than
+// guessing what went wrong.
+func checkProtocol(msg map[string]any) *map[string]any {
+	declared, _ := msg["protocol_version"].(string)
+	if strings.TrimSpace(declared) == "" {
+		return refusal(
+			fmt.Sprintf("protocol_version required: this daemon speaks %s (compatible from %s); send it on every request",
+				harnessprotocol.Version, harnessprotocol.MinCompatible))
+	}
+	server, compatible, err := harnessprotocol.Negotiate(declared)
+	if err != nil {
+		return refusal(fmt.Sprintf("invalid protocol_version %q: %v", declared, err))
+	}
+	if !compatible {
+		return refusal(fmt.Sprintf("protocol version mismatch: client %s, daemon %s (compatible from %s)",
+			declared, server, harnessprotocol.MinCompatible))
+	}
+	return nil
+}
+
+func refusal(message string) *map[string]any {
+	return &map[string]any{
+		"ok":               false,
+		"error":            message,
+		"version":          harnessprotocol.Version,
+		"min_compatible":   harnessprotocol.MinCompatible,
+		"protocol_version": harnessprotocol.Version,
+	}
 }
 
 // reconcileStore brings the records left by a previous process into line with

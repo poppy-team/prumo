@@ -127,15 +127,15 @@ func waitStatus(t *testing.T, c Client, runID, want string) map[string]any {
 func TestDispatchCoversManifestOps(t *testing.T) {
 	srv := New(t.TempDir()+"/s.sock", t.TempDir(), fakeDeps(false))
 	for _, op := range harnessprotocol.Ops {
-		res := srv.dispatch(map[string]any{"op": op})
+		res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": op})
 		if res["ok"] == false && res["error"] == "unknown op" {
 			t.Fatalf("op %q in manifest but unhandled", op)
 		}
 	}
-	if res := srv.dispatch(map[string]any{"op": "nope"}); res["error"] != "unknown op" {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "nope"}); res["error"] != "unknown op" {
 		t.Fatalf("unknown op must error: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "protocol"}); res["ok"] != true || res["ops"] == nil {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "protocol"}); res["ok"] != true || res["ops"] == nil {
 		t.Fatalf("protocol op must serve ops: %v", res)
 	}
 }
@@ -144,7 +144,7 @@ func TestDispatchCoversManifestOps(t *testing.T) {
 // catalogue: the answer comes from the provider, through the harness.
 func TestDaemonModelsOp(t *testing.T) {
 	srv := New(filepath.Join(t.TempDir(), "s.sock"), t.TempDir(), fakeDeps(false))
-	res := srv.dispatch(map[string]any{"op": "models"})
+	res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "models"})
 	if res["ok"] != true {
 		t.Fatalf("models op failed: %v", res)
 	}
@@ -254,13 +254,13 @@ func TestDispatchSteer(t *testing.T) {
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	srv.runs["R-live"] = &activeRun{cancel: cancel, runner: harnessruntime.NewRunner(harnessruntime.Services{}, "R-live", "S")}
-	if res := srv.dispatch(map[string]any{"op": "steer", "run_id": "R-live", "message": "pivot"}); res["ok"] != true {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "steer", "run_id": "R-live", "message": "pivot"}); res["ok"] != true {
 		t.Fatalf("steer active run failed: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "steer", "run_id": "R-gone", "message": "x"}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "steer", "run_id": "R-gone", "message": "x"}); res["ok"] != false {
 		t.Fatalf("steer inactive run must fail: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "steer", "run_id": "R-live"}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "steer", "run_id": "R-live"}); res["ok"] != false {
 		t.Fatalf("steer without message must fail: %v", res)
 	}
 }
@@ -371,16 +371,16 @@ func TestDaemonDenyPermission(t *testing.T) {
 
 func TestPermissionOpValidatesItsArguments(t *testing.T) {
 	srv := New(t.TempDir()+"/s.sock", t.TempDir(), fakeDeps(false))
-	if res := srv.dispatch(map[string]any{"op": "approve"}); res["error"] != "run_id required" {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "approve"}); res["error"] != "run_id required" {
 		t.Fatalf("approve without run_id must fail: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-x"}); res["error"] != "permission request required" {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "approve", "run_id": "R-x"}); res["error"] != "permission request required" {
 		t.Fatalf("approve without a request id must fail: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-gone", "request_id": "perm-1", "fingerprint": "abc"}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "approve", "run_id": "R-gone", "request_id": "perm-1", "fingerprint": "abc"}); res["ok"] != false {
 		t.Fatalf("approve on an inactive run must fail: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-gone", "request_id": "perm-1"}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "approve", "run_id": "R-gone", "request_id": "perm-1"}); res["ok"] != false {
 		t.Fatalf("approve without a fingerprint must fail: %v", res)
 	}
 }
@@ -412,10 +412,10 @@ func TestDaemonDiff(t *testing.T) {
 	}
 
 	// Missing arguments fail
-	if res := srv.dispatch(map[string]any{"op": "diff"}); res["error"] != "run_id required" {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "diff"}); res["error"] != "run_id required" {
 		t.Fatalf("missing run_id must error: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "diff", "run_id": "R-1"}); res["error"] != "path required" {
+	if res := srv.dispatch(map[string]any{"protocol_version": harnessprotocol.Version, "op": "diff", "run_id": "R-1"}); res["error"] != "path required" {
 		t.Fatalf("missing path must error: %v", res)
 	}
 }

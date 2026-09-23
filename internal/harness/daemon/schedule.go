@@ -7,6 +7,7 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 	"os"
 	"path/filepath"
 	"sort"
@@ -139,8 +140,12 @@ func (s *Server) tickJobs() {
 			maxRetries = 3
 		}
 		runID := fmt.Sprintf("job-%s-%d", jobs[i].ID, now)
+		// A scheduled run is a daemon-initiated request, not a client's, and it
+		// still declares the protocol it speaks: the refusal exists for a
+		// mismatched client, and this daemon is by definition matched.
 		res := s.dispatch(map[string]any{
-			"op": "start", "goal": jobs[i].Goal, "provider": jobs[i].Provider,
+			"protocol_version": harnessprotocol.Version,
+			"op":               "start", "goal": jobs[i].Goal, "provider": jobs[i].Provider,
 			"run_id": runID, "max_turns": jobs[i].MaxTurns,
 		})
 		if res["ok"] == true {

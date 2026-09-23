@@ -17,6 +17,11 @@ import (
 )
 
 // ProtocolVersion is the IDL this SDK speaks.
+//
+// It is a copy of the engine's, because the SDK must not import the server's
+// internals — a public client that compiles against internal packages cannot be
+// used outside the module. A copy is a drift risk, so TestSDKVersionMatchesEngine
+// pins the two together and fails when the engine moves and this does not.
 const ProtocolVersion = "0.4.0"
 
 // Client talks to a harness daemon over its Unix socket.
@@ -93,6 +98,9 @@ func (e *Error) Error() string { return fmt.Sprintf("daemon op %s: %s", e.Op, e.
 
 func (c Client) call(ctx context.Context, msg map[string]any) (map[string]any, error) {
 	op, _ := msg["op"].(string)
+	// The daemon refuses a request that does not declare its protocol, so the SDK
+	// declares it on every one rather than making each call site remember.
+	msg["protocol_version"] = ProtocolVersion
 	conn, err := c.dial(ctx)
 	if err != nil {
 		return nil, err
