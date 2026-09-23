@@ -228,6 +228,27 @@ func (c *CountingTools) KindOf(name string) string { return c.Base.KindOf(name) 
 
 func (c *CountingTools) OperationOf(name string) string { return c.Base.OperationOf(name) }
 
+// Specs forwards the wrapped executor's tool surface.
+//
+// Without this the wrapper is opaque to a caller that asks what tools exist: the
+// runner inspects the executor it was given, which is this one, and the answer
+// would be "none" while the tool underneath can run everything.
+func (c *CountingTools) Specs() []agent.ToolSpec {
+	if specer, ok := c.Base.(interface{ Specs() []agent.ToolSpec }); ok {
+		return specer.Specs()
+	}
+	if specer, ok := c.Base.(interface {
+		Specs(context.Context) ([]agent.ToolSpec, error)
+	}); ok {
+		specs, err := specer.Specs(context.Background())
+		if err != nil {
+			return nil
+		}
+		return specs
+	}
+	return nil
+}
+
 // ReportsCopy returns collected reports.
 func (c *CountingTools) ReportsCopy() []ToolReport {
 	c.mu.Lock()

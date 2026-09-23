@@ -25,26 +25,127 @@ type Tool struct {
 	// either because it does not touch files, or because it can touch anything
 	// (`process.exec`), in which case naming one would be a guess.
 	FileOperation string `json:"file_operation,omitempty"`
+	// Schema is the JSON Schema of this tool's arguments. It is what a model is
+	// shown, so it has to describe what the handler actually reads: a schema that
+	// invents an argument the handler ignores teaches the model to send input
+	// that goes nowhere, and one that omits a required argument produces a tool
+	// call that fails for a reason the model was never told (GAP-114).
+	Schema map[string]any `json:"schema,omitempty"`
+}
+
+// object builds an object schema with the given required names and properties.
+func object(required []string, props map[string]any) map[string]any {
+	return map[string]any{"type": "object", "properties": props, "required": required}
+}
+
+func stringProp(desc string) map[string]any {
+	return map[string]any{"type": "string", "description": desc}
 }
 
 // Catalog is the gradual ACI surface (HA5 baseline).
+//
+// The schemas here are the same contract the handlers implement. A tool whose
+// handler reads an argument has it in the schema; a tool that requires an
+// argument lists it as required.
 func Catalog() []Tool {
 	return []Tool{
-		{"fs.read", "bounded file read", "read-only", ""},
-		{"fs.list", "list directory", "read-only", ""},
-		{"fs.search", "search text", "read-only", ""},
-		{"code.symbols", "list symbols (fallback: grep)", "read-only", ""},
-		{"code.diagnostics", "go vet style diagnostics", "read-only", ""},
-		{"edit.patch", "apply unified patch (guarded)", "side-effecting", "modified"},
-		{"edit.create", "create file", "side-effecting", "created"},
-		{"edit.delete", "delete file", "destructive", "deleted"},
-		{"edit.move", "move file", "side-effecting", "moved"},
-		{"process.exec", "run command in workspace", "side-effecting", ""},
-		{"test.run", "run go test", "idempotent", ""},
-		{"git.status", "git status --short", "read-only", ""},
-		{"git.diff", "git diff (bounded)", "read-only", ""},
+		{
+			"fs.read", "read a file as text", "read-only", "",
+			object([]string{"path"}, map[string]any{
+				"path": stringProp("file to read, relative to the workspace root or absolute inside it"),
+			}),
+		},
+		{
+			"fs.list", "list the entries of a directory", "read-only", "",
+			object(nil, map[string]any{
+				"path": stringProp("directory to list; the workspace root when omitted"),
+			}),
+		},
+		{
+			"fs.search", "search the workspace for text", "read-only", "",
+			object(nil, map[string]any{
+				"pattern": stringProp("text or regular expression to search for"),
+				"query":   stringProp("accepted as an alias for pattern"),
+			}),
+		},
+		{
+			"code.symbols", "list symbols in the workspace", "read-only", "",
+			object(nil, map[string]any{}),
+		},
+		{
+			"code.diagnostics", "run static diagnostics over the workspace", "read-only", "",
+			object(nil, map[string]any{}),
+		},
+		{
+			"edit.patch", "apply a unified diff to the workspace", "side-effecting", "modified",
+			object([]string{"patch"}, map[string]any{
+				"patch":    stringProp("the unified diff to apply"),
+				"base_rev": stringProp("optional git revision the patch is expected to apply onto; refuses if HEAD has moved"),
+			}),
+		},
+		{
+			"edit.create", "create or overwrite a file", "side-effecting", "created",
+			object([]string{"path", "content"}, map[string]any{
+				"path":    stringProp("file to create, inside the workspace root"),
+				"content": stringProp("full contents of the file"),
+			}),
+		},
+		{
+			"edit.delete", "delete a file", "destructive", "deleted",
+			object([]string{"path"}, map[string]any{
+				"path": stringProp("file to delete; directories are refused"),
+			}),
+		},
+		{
+			"edit.move", "move or rename a file", "side-effecting", "moved",
+			object([]string{"from", "to"}, map[string]any{
+				"from": stringProp("existing file to move"),
+				"to":   stringProp("destination path; parent directories are created"),
+			}),
+		},
+		{
+			"process.exec", "run a shell command in the workspace", "side-effecting", "",
+			object([]string{"command"}, map[string]any{
+				"command": stringProp("the command line to run in the workspace root"),
+			}),
+		},
+		{
+			"test.run", "run the workspace test suite", "idempotent", "",
+			object(nil, map[string]any{
+				"command": stringProp("optional override; the workspace test command is used when omitted"),
+			}),
+		},
+		{
+			"git.status", "show the working tree status", "read-only", "",
+			object(nil, map[string]any{}),
+		},
+		{
+			"git.diff", "show a summary of the working tree diff", "read-only", "",
+			object(nil, map[string]any{}),
+		},
 	}
 }
+
+// Specs renders the catalogue as provider-facing tool specifications.
+//
+// This is the only place a native tool becomes something a model can be told
+// about. Without it the request carries no tools at all, whatever the provider
+// would do with them (GAP-114).
+func Specs() []agent.ToolSpec {
+	catalog := Catalog()
+	out := make([]agent.ToolSpec, 0, len(catalog))
+	for _, t := range catalog {
+		out = append(out, agent.ToolSpec{
+			Name:        t.Name,
+			Description: t.Description,
+			Schema:      t.Schema,
+		})
+	}
+	return out
+}
+
+// Executor.Specs reports the native tools this executor can run.
+func (e *Executor) Specs() []agent.ToolSpec { return Specs() }
 
 // Executor runs ACI tools inside a workspace root with path containment.
 type Executor struct {

@@ -120,9 +120,34 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		}
 		msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: blocks})
 	}
-	body, _ := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"model": modelName, "max_tokens": 1024, "stream": true, "messages": msgs,
-	})
+	}
+	// The tool catalogue goes in the request. This provider declared
+	// ToolCalls: true and then never sent a single schema, so a model had no way
+	// to know the tools existed — the capability was a claim in a struct
+	// (GAP-114). Anthropic names the schema "input_schema" and takes no wrapper
+	// type, unlike the OpenAI-compatible shape.
+	if len(req.Tools) > 0 {
+		tools := make([]any, 0, len(req.Tools))
+		for _, ts := range req.Tools {
+			tool := map[string]any{"name": ts.Name}
+			if ts.Description != "" {
+				tool["description"] = ts.Description
+			}
+			// An absent schema is worse than an empty one here: a model asked to
+			// call a tool with no declared arguments tends to send none, and the
+			// call then fails for a reason nothing told it.
+			schema := ts.Schema
+			if schema == nil {
+				schema = map[string]any{"type": "object", "properties": map[string]any{}}
+			}
+			tool["input_schema"] = schema
+			tools = append(tools, tool)
+		}
+		payload["tools"] = tools
+	}
+	body, _ := json.Marshal(payload)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.BaseURL+"/v1/messages", bytes.NewReader(body))
 	if err != nil {
 		return nil, err

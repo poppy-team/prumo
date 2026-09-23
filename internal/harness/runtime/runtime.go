@@ -374,6 +374,39 @@ func (r *Runner) recoveryPolicyFor(tc agent.ToolCall) string {
 	}
 }
 
+// toolSpecs reports what the model is told it can call.
+//
+// The executor is the source: a runner that can run a tool can describe it, and
+// asking every runner construction site to remember a separate wiring is how the
+// daemon ended up sending no tools at all while the provider advertised
+// tool-calling support (GAP-114). An explicit Services.ToolSpecs still wins, for
+// a caller that wants a different view.
+func (r *Runner) toolSpecs(ctx context.Context) []agent.ToolSpec {
+	if r.Svc.ToolSpecs != nil {
+		return r.Svc.ToolSpecs()
+	}
+	if r.Svc.Tools == nil {
+		return nil
+	}
+	switch executor := r.Svc.Tools.(type) {
+	case interface{ Specs() []agent.ToolSpec }:
+		return executor.Specs()
+	case interface {
+		Specs(context.Context) ([]agent.ToolSpec, error)
+	}:
+		specs, err := executor.Specs(ctx)
+		if err != nil {
+			// A tool surface that cannot be listed is still executable; the model
+			// simply does not hear about it. Failing the run here would take down
+			// a turn over a listing.
+			return nil
+		}
+		return specs
+	default:
+		return nil
+	}
+}
+
 // TurnTokenAllowance is what one model call is assumed to cost when a budget is
 // enforced. It is a reservation, not a prediction: the real usage settles it, and
 // anything left over goes back. Its job is to make the ceiling bind the turn
@@ -550,10 +583,7 @@ func (r *Runner) Step(ctx context.Context) error {
 		}
 		r.Messages = resolvedMsgs
 
-		specs := []agent.ToolSpec{}
-		if r.Svc.ToolSpecs != nil {
-			specs = r.Svc.ToolSpecs()
-		}
+		specs := r.toolSpecs(ctx)
 		req := agent.ModelRequest{
 			RequestID: fmt.Sprintf("%s:%s:req", r.State.RunID, r.State.TurnID),
 			RunID:     r.State.RunID, TurnID: r.State.TurnID,

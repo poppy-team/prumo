@@ -102,8 +102,26 @@ func (f Fanout) OperationOf(name string) string {
 	return f.Base.OperationOf(name)
 }
 
+// Specs reports every tool this fanout can run: the native ones and the MCP
+// ones.
+//
+// It used to return only the MCP specs, so a run wired through the fanout told
+// the model about the servers and said nothing about the tools it could actually
+// edit the workspace with (GAP-114).
 func (f Fanout) Specs(ctx context.Context) ([]agent.ToolSpec, error) {
-	return f.MCP.Specs(ctx)
+	out := []agent.ToolSpec{}
+	if f.Base != nil {
+		if specer, ok := f.Base.(interface{ Specs() []agent.ToolSpec }); ok {
+			out = append(out, specer.Specs()...)
+		}
+	}
+	mcpSpecs, err := f.MCP.Specs(ctx)
+	if err != nil {
+		// A server that cannot list its tools does not take the native ones down
+		// with it: the model should still be told what it can do.
+		return out, nil
+	}
+	return append(out, mcpSpecs...), nil
 }
 
 // Execute policy-checks then calls through. Target scoping is best-effort
