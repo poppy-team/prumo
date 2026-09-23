@@ -762,22 +762,27 @@
     },
     {
       "id": "caching",
-      "name": "Caching & Invalidation",
-      "version": 1,
-      "schema_version": 2,
-      "purpose": "Implement distributed and local cache strategies with explicit invalidation rules.",
+      "name": "Caching Architecture, Invalidation & Resilience",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Architect, implement, and audit multi-tiered caching systems (L1 in-process, L2 distributed, L3 edge/CDN) with strict consistency guarantees, deterministic invalidation protocols, mathematical eviction models (LRU, LFU, W-TinyLFU), singleflight deduplication, and robust defenses against cache stampede, penetration, breakdown, and avalanche.",
       "risk_level": "medium",
       "modes": [
-        "implementation"
+        "implementation",
+        "review",
+        "audit",
+        "testing"
       ],
       "inputs": [
-        "API specifications",
-        "Domain models",
-        "UI wireframes"
+        "Target read/write traffic ratios, peak QPS, and latency SLA targets (p50, p99, p99.9)",
+        "Data volatility, staleness tolerance window, and consistency requirements",
+        "Memory budgets for L1 in-process heap and L2 distributed cache cluster",
+        "Network topology and origin database capacity limits"
       ],
       "outputs": [
-        "Tested web / backend service",
-        "API test evidence"
+        "Caching specification document with key schemas, TTLs, and invalidation rules",
+        "Thread-safe, bounded cache implementation with singleflight coalescing",
+        "Automated tests proving stampede prevention and zero memory leaks"
       ],
       "requires": [],
       "conflicts": [],
@@ -786,16 +791,25 @@
         "filesystem.write",
         "process.spawn"
       ],
-      "references": [],
-      "templates": [],
-      "checks": [],
-      "scripts": [],
+      "references": [
+        "references/caching-architecture-guide.md"
+      ],
+      "templates": [
+        "templates/caching-strategy-spec.md"
+      ],
+      "checks": [
+        "checks/caching-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
       "examples": [],
       "required_evidence": [
         "test"
       ],
       "stop_conditions": [
-        "Task acceptance criteria satisfied with evidence",
+        "Complete caching layer implemented and verified against all 4 failure modes (Stampede, Avalanche, Penetration, Breakdown)",
+        "Singleflight deduplication verified with 100% origin query suppression for duplicate concurrent requests",
         "Token budget exhausted",
         "Blocked on external dependency"
       ],
@@ -803,19 +817,27 @@
         "origin": "framework",
         "license": "MIT",
         "source": "prumo",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "checksum": "",
-        "modified": "2026-08-14"
+        "modified": "2026-09-23"
       },
       "select": {
+        "project_types": [
+          "api",
+          "web-saas",
+          "web-app"
+        ],
         "features_any": [
           "caching",
-          "performance"
+          "performance",
+          "invalidation",
+          "resilience",
+          "singleflight",
+          "eviction"
         ]
       },
       "requires_any": [],
-      "tools": [],
-      "instructions": "# Caching & Invalidation\n\n## Purpose\nImplement distributed and local cache strategies with explicit invalidation rules.\n\n## Use when\n- Active Goal or Task explicitly requires caching & invalidation operations.\n- Operating in mode(s): `implementation`.\n\n## Do not use when\n- Task is out of scope or unrelated to caching & invalidation.\n- Bounded token budget or capability policy denies required operations.\n\n## Required context\n- API specifications\n- Domain models\n- UI wireframes\n\n## Procedure\n1. Review contracts and interface definitions for caching & invalidation.\n2. Implement business logic with strict boundary validation.\n3. Maintain explicit error handling and status code mapping.\n4. Run contract verification and integration tests.\n5. Record evidence and update API documentation.\n\n## Decision rules\n- Always prefer smallest sufficient changeset over broad refactoring.\n- Preserve existing public contracts and architecture invariants.\n- Never weaken locked Goal acceptance criteria.\n\n## Evidence required\n- test\n\n## Output contract\n- Tested web / backend service\n- API test evidence\n\n## Stop conditions\n- Task acceptance criteria satisfied with evidence\n- Token budget exhausted\n- Blocked on external dependency\n\n## Escalation rules\n- Escalate to lead architect or human if locked Goal criteria cannot be met.\n- Escalate immediately upon discovering unexpected security vulnerabilities or data loss risks.\n"
+      "tools": []
     },
     {
       "id": "ci-cd",
