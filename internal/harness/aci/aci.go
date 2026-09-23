@@ -5,7 +5,6 @@ package aci
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/raillen/prumo/internal/egress"
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 // Tool identifies one native coding tool.
@@ -88,20 +88,17 @@ func (e *Executor) KindOf(name string) string {
 	return "side-effecting"
 }
 
-func (e *Executor) cleanPath(p string) (string, error) {
+// cleanPath confines p to the workspace root, resolving symlinks before the
+// containment test. mustExist distinguishes a read from a create: edit.create
+// legitimately targets a path that does not exist yet, but its existing
+// ancestors must still be inside the root.
+//
+// The empty path means the root itself, which is what the directory tools pass.
+func (e *Executor) cleanPath(p string, mustExist bool) (string, error) {
 	if p == "" {
 		return e.Root, nil
 	}
-	abs := p
-	if !filepath.IsAbs(p) {
-		abs = filepath.Join(e.Root, p)
-	}
-	abs = filepath.Clean(abs)
-	rel, err := filepath.Rel(e.Root, abs)
-	if err != nil || strings.HasPrefix(rel, "..") {
-		return "", fmt.Errorf("path escapes workspace: %s", p)
-	}
-	return abs, nil
+	return safepath.Resolve(e.Root, p, mustExist)
 }
 
 func bound(s string, max int) (string, bool) {
@@ -186,7 +183,7 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 	}
 	switch call.Name {
 	case "fs.read":
-		p, err := e.cleanPath(arg("path"))
+		p, err := e.cleanPath(arg("path"), true)
 		if err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}
@@ -197,7 +194,7 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 		out, trunc := bound(string(data), e.OutputMax)
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
 	case "fs.list":
-		p, err := e.cleanPath(arg("path"))
+		p, err := e.cleanPath(arg("path"), true)
 		if err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}
@@ -255,7 +252,7 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 	case "edit.move":
 		return e.editMove(call, arg), nil
 	case "edit.create":
-		p, err := e.cleanPath(arg("path"))
+		p, err := e.cleanPath(arg("path"), false)
 		if err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}

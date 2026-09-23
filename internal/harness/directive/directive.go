@@ -88,29 +88,29 @@ type DocDeltaContract struct {
 
 // DirectiveIR is the canonical versioned intermediate representation.
 type DirectiveIR struct {
-	DirectiveIRVersion       string                `json:"directive_ir_version"`
-	ProjectID                string                `json:"project_id"`
-	WorkspaceRoot            string                `json:"workspace_root"`
-	RepositoryRevision       string                `json:"repository_revision"`
-	GoalID                   string                `json:"goal_id"`
-	PlanID                   string                `json:"plan_id,omitempty"`
-	TaskID                   string                `json:"task_id"`
-	TaskIntent               string                `json:"task_intent"`
-	AuthoritySnapshot        AuthoritySnapshot     `json:"authority_snapshot"`
-	ScopeFirewall            ScopeFirewall         `json:"scope_firewall"`
-	UnknownsAndAssumptions   []UnknownOrAssumption `json:"unknowns_and_assumptions,omitempty"`
-	MutationBoundaries       MutationBoundaries    `json:"mutation_boundaries"`
-	PermissionEnvelope       PermissionEnvelope    `json:"permission_envelope"`
-	ToolCapabilities         []ToolCapability      `json:"tool_capabilities"`
-	ModelRoute               ModelRouteSpec        `json:"model_route"`
-	WorkforceBinding         WorkforceBindingSpec  `json:"workforce_binding"`
-	BudgetEnvelope           BudgetEnvelopeSpec    `json:"budget_envelope"`
-	RequiredSkills           []string              `json:"required_skills,omitempty"`
-	RequiredEvidence         []string              `json:"required_evidence"`
-	QualityGates             []string              `json:"quality_gates"`
-	StopConditions           []string              `json:"stop_conditions"`
-	DocumentationDelta       DocDeltaContract      `json:"documentation_delta_contract,omitempty"`
-	SourceDigests            map[string]string     `json:"source_digests"`
+	DirectiveIRVersion     string                `json:"directive_ir_version"`
+	ProjectID              string                `json:"project_id"`
+	WorkspaceRoot          string                `json:"workspace_root"`
+	RepositoryRevision     string                `json:"repository_revision"`
+	GoalID                 string                `json:"goal_id"`
+	PlanID                 string                `json:"plan_id,omitempty"`
+	TaskID                 string                `json:"task_id"`
+	TaskIntent             string                `json:"task_intent"`
+	AuthoritySnapshot      AuthoritySnapshot     `json:"authority_snapshot"`
+	ScopeFirewall          ScopeFirewall         `json:"scope_firewall"`
+	UnknownsAndAssumptions []UnknownOrAssumption `json:"unknowns_and_assumptions,omitempty"`
+	MutationBoundaries     MutationBoundaries    `json:"mutation_boundaries"`
+	PermissionEnvelope     PermissionEnvelope    `json:"permission_envelope"`
+	ToolCapabilities       []ToolCapability      `json:"tool_capabilities"`
+	ModelRoute             ModelRouteSpec        `json:"model_route"`
+	WorkforceBinding       WorkforceBindingSpec  `json:"workforce_binding"`
+	BudgetEnvelope         BudgetEnvelopeSpec    `json:"budget_envelope"`
+	RequiredSkills         []string              `json:"required_skills,omitempty"`
+	RequiredEvidence       []string              `json:"required_evidence"`
+	QualityGates           []string              `json:"quality_gates"`
+	StopConditions         []string              `json:"stop_conditions"`
+	DocumentationDelta     DocDeltaContract      `json:"documentation_delta_contract,omitempty"`
+	SourceDigests          map[string]string     `json:"source_digests"`
 }
 
 // CompilerInput contains the raw inputs to be compiled into a DirectiveIR.
@@ -280,35 +280,68 @@ func (d *DirectiveIR) Validate() error {
 }
 
 // CanMutatePath checks whether a path mutation is allowed by MutationBoundaries and ScopeFirewall.
+//
+// relPath is a workspace-relative path, and a path that is not one is refused
+// outright. A bare containment test here would have let "../etc/passwd"
+// through: it matches no forbidden prefix and no allowlist entry, so with an
+// empty AllowedPaths the old check answered "allowed". An escape has to be
+// rejected before the boundary lists are consulted, not by them.
+//
+// Matching is by path component. A prefix comparison treats "src-secrets" as
+// inside "src", which is the wrong answer in both directions: it denies paths
+// under a forbidden directory that share its name, and for an allowlist it
+// admits them.
 func (d *DirectiveIR) CanMutatePath(relPath string) bool {
-	norm := filepath.ToSlash(filepath.Clean(relPath))
-	// Check forbidden paths
+	norm, ok := workspaceRelative(relPath)
+	if !ok {
+		return false
+	}
 	for _, f := range d.MutationBoundaries.ForbiddenPaths {
-		fnorm := filepath.ToSlash(filepath.Clean(f))
-		if strings.HasPrefix(norm, fnorm) || norm == fnorm {
+		if matchesBoundary(norm, f) {
 			return false
 		}
 	}
-	// Check out of scope
 	for _, out := range d.ScopeFirewall.OutOfScope {
-		outnorm := filepath.ToSlash(filepath.Clean(out))
-		if strings.HasPrefix(norm, outnorm) || norm == outnorm {
+		if matchesBoundary(norm, out) {
 			return false
 		}
 	}
-	// If allowed paths is non-empty, path must match at least one
 	if len(d.MutationBoundaries.AllowedPaths) > 0 {
-		allowed := false
 		for _, a := range d.MutationBoundaries.AllowedPaths {
-			anorm := filepath.ToSlash(filepath.Clean(a))
-			if strings.HasPrefix(norm, anorm) || norm == anorm {
-				allowed = true
-				break
+			if matchesBoundary(norm, a) {
+				return true
 			}
 		}
-		return allowed
+		return false
 	}
 	return true
+}
+
+// workspaceRelative normalises relPath and reports whether it is a relative
+// path confined to the workspace. "." is the workspace root and is accepted;
+// ".." and anything above it is not.
+func workspaceRelative(relPath string) (string, bool) {
+	if relPath == "" {
+		return "", false
+	}
+	if filepath.IsAbs(relPath) || strings.HasPrefix(relPath, "/") {
+		return "", false
+	}
+	cleaned := filepath.Clean(relPath)
+	if cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return filepath.ToSlash(cleaned), true
+}
+
+// matchesBoundary reports whether norm is the boundary path or beneath it. A
+// boundary of "." means the whole workspace.
+func matchesBoundary(norm, boundary string) bool {
+	bnorm := filepath.ToSlash(filepath.Clean(boundary))
+	if bnorm == "." || bnorm == "" {
+		return true
+	}
+	return norm == bnorm || strings.HasPrefix(norm, bnorm+"/")
 }
 
 // FormatAgentPrompt generates the governed prompt projection according to Constitución 92.

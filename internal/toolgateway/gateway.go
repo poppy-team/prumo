@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
+
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 type Kind string
@@ -47,6 +48,12 @@ type Decision struct {
 	Descriptor Descriptor `json:"descriptor"`
 }
 
+// Evaluate decides whether a tool may act on target under a project root.
+//
+// A scope entry of "*" is an explicit wildcard. Every other entry is a root, and
+// containment is decided by path component: "/repo-private" is a sibling of
+// "/repo", not a child of it, and the string-prefix comparison this replaced
+// admitted it.
 func Evaluate(d Descriptor, projectRoot, target string, safe bool) Decision {
 	if d.ID == "" {
 		return Decision{Reason: "tool descriptor missing id", Descriptor: d}
@@ -55,19 +62,25 @@ func Evaluate(d Descriptor, projectRoot, target string, safe bool) Decision {
 		return Decision{Reason: "safe mode denies destructive tool", Descriptor: d}
 	}
 	if d.Kind == SideEffecting || d.Kind == Destructive {
-		inScope := false
-		for _, root := range d.FilesystemScope {
-			effectiveRoot := root
-			if root == "project-root" {
-				effectiveRoot = projectRoot
+		if target != "" {
+			inScope := false
+			for _, root := range d.FilesystemScope {
+				if root == "*" {
+					inScope = true
+					break
+				}
+				effectiveRoot := projectRoot
+				if root != "project-root" {
+					effectiveRoot = root
+				}
+				if safepath.IsWithin(effectiveRoot, target) {
+					inScope = true
+					break
+				}
 			}
-			if target != "" && (strings.HasPrefix(target, effectiveRoot) || effectiveRoot == ".") {
-				inScope = true
-				break
+			if !inScope {
+				return Decision{Reason: fmt.Sprintf("tool target outside allowed scope: %s", target), Descriptor: d}
 			}
-		}
-		if target != "" && !inScope {
-			return Decision{Reason: fmt.Sprintf("tool target outside allowed scope: %s", target), Descriptor: d}
 		}
 	}
 	return Decision{Allowed: true, Reason: "tool permitted by descriptor and policy", Descriptor: d}
@@ -113,7 +126,13 @@ func EvaluateMCP(server MCPServerDescriptor, tool Descriptor, target string, saf
 	if len(server.RootScopes) > 0 && target != "" {
 		inScope := false
 		for _, root := range server.RootScopes {
-			if strings.HasPrefix(target, root) || root == "." || root == "*" {
+			// "*" is an explicit wildcard; everything else is a real root whose
+			// containment is a path question, not a string question.
+			if root == "*" {
+				inScope = true
+				break
+			}
+			if safepath.IsWithin(root, target) {
 				inScope = true
 				break
 			}
@@ -122,7 +141,17 @@ func EvaluateMCP(server MCPServerDescriptor, tool Descriptor, target string, saf
 			return Decision{Reason: fmt.Sprintf("target %s outside mcp server root scopes", target), Descriptor: tool}
 		}
 	}
-	return Evaluate(tool, ".", target, safe)
+	// The server's RootScopes are the filesystem authority for an MCP tool, and
+	// they were just checked. Delegating to Evaluate with a placeholder root of
+	// "." used to re-check them against the process working directory, which
+	// made the outcome depend on where the daemon happened to be started.
+	if tool.ID == "" {
+		return Decision{Reason: "tool descriptor missing id", Descriptor: tool}
+	}
+	if safe && tool.Kind == Destructive {
+		return Decision{Reason: "safe mode denies destructive tool", Descriptor: tool}
+	}
+	return Decision{Allowed: true, Reason: "tool permitted by descriptor and policy", Descriptor: tool}
 }
 
 // Registry provides lazy discovery and tool lookup.

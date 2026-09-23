@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 // Store persists checkpoints + effects under a directory.
@@ -24,8 +25,17 @@ type Store struct {
 
 func New(dir string) *Store { return &Store{Dir: dir} }
 
-func (s *Store) path(id string) string { return filepath.Join(s.Dir, "checkpoint-"+id+".json") }
-func (s *Store) fxPath() string        { return filepath.Join(s.Dir, "side-effects.json") }
+// path names a checkpoint file. The id is validated because it comes from a
+// run and becomes a filename: a value containing a separator previously walked
+// out of the store (GAP-112).
+func (s *Store) path(id string) (string, error) {
+	if err := safepath.ValidateID("checkpoint_id", id); err != nil {
+		return "", err
+	}
+	return filepath.Join(s.Dir, "checkpoint-"+id+".json"), nil
+}
+
+func (s *Store) fxPath() string { return filepath.Join(s.Dir, "side-effects.json") }
 
 // Save writes atomically (tmp + rename) with a SHA-256 fingerprint.
 func (s *Store) Save(cp agent.Checkpoint) error {
@@ -44,17 +54,25 @@ func (s *Store) Save(cp agent.Checkpoint) error {
 	}
 	sum := sha256.Sum256(data)
 	_ = sum
-	tmp := s.path(cp.ID) + ".tmp"
+	path, err := s.path(cp.ID)
+	if err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
 		return err
 	}
-	return os.Rename(tmp, s.path(cp.ID))
+	return os.Rename(tmp, path)
 }
 
 // Load reads a checkpoint by id.
 func (s *Store) Load(id string) (agent.Checkpoint, error) {
 	var cp agent.Checkpoint
-	data, err := os.ReadFile(s.path(id))
+	path, err := s.path(id)
+	if err != nil {
+		return cp, err
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return cp, err
 	}

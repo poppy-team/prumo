@@ -29,6 +29,7 @@ import (
 	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 	"github.com/raillen/prumo/internal/harness/runlayer"
 	harnessruntime "github.com/raillen/prumo/internal/harness/runtime"
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 // StartRequest asks the daemon to run a goal headlessly.
@@ -145,32 +146,52 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 	}
 }
 
-func (s *Server) recordPath(runID string) string {
-	return filepath.Join(s.StoreDir, "daemon-run-"+runID+".json")
+// recordPath and eventPath place a run id into a filename, so the id is
+// validated first. A run id is accepted straight from a request, and before
+// this a value like "../../etc/cron.d/evil" reached Join untouched and wrote
+// outside the store (GAP-112).
+func (s *Server) recordPath(runID string) (string, error) {
+	if err := safepath.ValidateID("run_id", runID); err != nil {
+		return "", err
+	}
+	return filepath.Join(s.StoreDir, "daemon-run-"+runID+".json"), nil
 }
 
-func (s *Server) eventPath(runID string) string {
-	return filepath.Join(s.StoreDir, "events-"+runID+".jsonl")
+func (s *Server) eventPath(runID string) (string, error) {
+	if err := safepath.ValidateID("run_id", runID); err != nil {
+		return "", err
+	}
+	return filepath.Join(s.StoreDir, "events-"+runID+".jsonl"), nil
 }
 
+// saveRecord writes the run record, or does nothing if the id is unusable. A
+// record that cannot be named safely is not written somewhere unsafe.
 func (s *Server) saveRecord(r RunRecord) {
+	path, err := s.recordPath(r.RunID)
+	if err != nil {
+		return
+	}
 	r.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 	data, _ := json.MarshalIndent(r, "", "  ")
 	_ = os.MkdirAll(s.StoreDir, 0o755)
-	tmp := s.recordPath(r.RunID) + ".tmp"
+	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
 		return
 	}
-	_ = os.Rename(tmp, s.recordPath(r.RunID))
+	_ = os.Rename(tmp, path)
 }
 
+// appendEvent appends one event, or drops it if the id is unusable.
 func (s *Server) appendEvent(runID string, ev agent.AgentEvent) {
+	path, err := s.eventPath(runID)
+	if err != nil {
+		return
+	}
 	data, err := json.Marshal(ev)
 	if err != nil {
 		return
 	}
 	_ = os.MkdirAll(s.StoreDir, 0o755)
-	path := s.eventPath(runID)
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return
@@ -360,6 +381,10 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 		s.seq++
 		runID = fmt.Sprintf("R-daemon-%d", s.seq)
 		s.mu.Unlock()
+	} else if err := safepath.ValidateID("run_id", runID); err != nil {
+		// Rejected here so the caller learns why, rather than getting a run that
+		// starts and then silently records nothing.
+		return map[string]any{"ok": false, "error": err.Error()}
 	}
 	workspace := str(msg, "workspace")
 	if workspace == "" {
@@ -567,7 +592,11 @@ func (s *Server) opStatus(runID string) map[string]any {
 		busy = ar.busy
 	}
 	s.mu.Unlock()
-	data, err := os.ReadFile(s.recordPath(runID))
+	path, err := s.recordPath(runID)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return map[string]any{"ok": false, "error": "unknown run " + runID}
 	}
@@ -645,7 +674,11 @@ func (s *Server) opEvents(runID string) map[string]any {
 	if runID == "" {
 		return map[string]any{"ok": false, "error": "run_id required"}
 	}
-	data, err := os.ReadFile(s.eventPath(runID))
+	path, err := s.eventPath(runID)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return map[string]any{"ok": false, "error": "no events for run " + runID}
 	}
@@ -742,7 +775,11 @@ func (s *Server) opDiff(msg map[string]any) map[string]any {
 }
 
 func (s *Server) readRawEvents(runID string) []map[string]any {
-	data, err := os.ReadFile(s.eventPath(runID))
+	path, err := s.eventPath(runID)
+	if err != nil {
+		return nil
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil
 	}

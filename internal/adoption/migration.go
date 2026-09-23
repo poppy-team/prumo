@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/raillen/prumo/internal/migrations"
+
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 // MigrationActionType represents the kind of file operation in an adoption migration proposal.
@@ -270,7 +272,12 @@ func DryRun(repoRoot string, proposal AdoptionMigrationProposal) (DryRunResult, 
 	for _, cond := range proposal.Contract.Preconditions {
 		if strings.HasPrefix(cond, "manifest_absent:") {
 			rel := strings.TrimPrefix(cond, "manifest_absent:")
-			target := filepath.Join(repoRoot, rel)
+			target, pathErr := safepath.Resolve(repoRoot, rel, false)
+			if pathErr != nil {
+				result.PreconditionsPassed = false
+				result.Violations = append(result.Violations, pathErr.Error())
+				continue
+			}
 			if _, err := os.Stat(target); err == nil {
 				result.PreconditionsPassed = false
 				result.Violations = append(result.Violations, fmt.Sprintf("precondition failed: %s already exists", rel))
@@ -279,7 +286,16 @@ func DryRun(repoRoot string, proposal AdoptionMigrationProposal) (DryRunResult, 
 	}
 
 	for _, action := range proposal.Actions {
-		fullPath := filepath.Join(repoRoot, action.TargetPath)
+		// A proposal is a document that can arrive from outside the process, so
+		// its target paths are untrusted input. Joining them onto the repo root
+		// without a containment test let "../.." write anywhere the process could
+		// reach (GAP-110).
+		fullPath, pathErr := safepath.Resolve(repoRoot, action.TargetPath, false)
+		if pathErr != nil {
+			result.PreconditionsPassed = false
+			result.Violations = append(result.Violations, pathErr.Error())
+			continue
+		}
 		exists := false
 		var diffPreview string
 
@@ -333,7 +349,14 @@ func Apply(repoRoot string, proposal AdoptionMigrationProposal) (ApplyResult, er
 
 	hasher := sha256.New()
 	for _, action := range proposal.Actions {
-		targetFile := filepath.Join(repoRoot, action.TargetPath)
+		targetFile, pathErr := safepath.Resolve(repoRoot, action.TargetPath, false)
+		if pathErr != nil {
+			return ApplyResult{
+				ProposalID: proposal.ID,
+				Success:    false,
+				Errors:     []string{pathErr.Error()},
+			}, pathErr
+		}
 		dir := filepath.Dir(targetFile)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return ApplyResult{
