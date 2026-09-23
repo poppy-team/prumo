@@ -1,26 +1,49 @@
-# Agentic Workflow Design — Technical Reference Guide
+# Agentic Workflow Design — Reference Guide
 
-## Overview & Purpose
-Design multi-agent recipes, state transitions, and coordination topologies.
+## 1. Core Concepts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+### 1.1 Stages with Single Owners
+A recipe is a sequence of stages, each owned by exactly one role. The implement-review-
+merge pipeline has three stages and three owners: implementer produces a diff plus test
+log, reviewer produces an approval or rejection with reasons, merger produces the merge
+commit. When a stage fails, exactly one role is accountable for the retry or the
+escalation.
 
-## Operational Standards
-- **Inputs**: Task requirements, System architecture, Relevant source files
-- **Outputs**: Implementation / verification output, Evidence record
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test
+### 1.2 Coordination Topologies
+Pipeline suits linear dependencies (each stage needs the previous output). Fan-out/
+fan-in suits independent shards (5 files refactored in parallel, merged by one stage
+with conflict rules). Supervisor suits dynamic routing (a triage role assigns tasks to
+specialists). Blackboard suits opportunistic collaboration (agents post findings to
+shared state). Default to pipeline; choose fancier topologies only when dependencies
+demand them.
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+### 1.3 Handoff Contracts
+A handoff is a typed message: task_id, producer stage, artifact paths, evidence
+pointers, schema version. Version the contract (handoff v2) so producers and consumers
+can evolve independently. A consumer receiving an unknown version rejects loudly with
+the version mismatch in the log; silent coercion is how pipelines corrupt data.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+### 1.4 Idempotency and Depth Caps
+Retries are safe only when stages are idempotent: re-running produces the same result
+with no duplicate side effects (file writes are overwrites, notifications carry
+dedupe keys). Delegation depth counts handoffs from the root; at depth 3 the chain
+stops and escalates. Unbounded delegation is how two agents politely ping-pong a task
+forever.
+
+## 2. Patterns and Anti-Patterns
+
+| Pattern (do this) | Anti-Pattern (never do this) |
+|---|---|
+| One owner per stage, named in the recipe | "The team" owns the review stage |
+| Versioned handoff schemas beside the recipe | Verbal handoffs in chat threads |
+| Retry cap 2, depth cap 3, then escalate | Unlimited retries "until it works" |
+| Idempotent stages with dedupe keys | Notify-customer stage that double-sends on retry |
+| Explicit transition table | Implied states nobody wrote down |
+
+## 3. Worked Example
+Recipe "fix-and-merge" v1.4.0 for bug BR-2091: pipeline of scout (owner researcher),
+implement (owner coder), test (owner runner), review (owner reviewer, read-only).
+Handoff v2 carries task_id, files_changed, test_log path. Transition table has 6
+allowed edges; retry cap 2 per stage, depth cap 3. Failure walkthrough: reviewer
+rejection returns to implement with reasons (retry 1 of 2); second rejection escalates
+to the Goal owner. No stall path survives review.
