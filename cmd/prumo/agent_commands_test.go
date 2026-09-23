@@ -205,11 +205,23 @@ func TestAgentApprovePendingPermission(t *testing.T) {
 	code, out := captureOutput(func() int {
 		return run([]string{"agent", "ps", "--socket", sock})
 	})
-	if code != 0 || !strings.Contains(out, "waiting-for="+requestID) {
-		t.Fatalf("agent ps must name the pending request: code=%d out=%s", code, out)
+	// The listing names the request and the fingerprint an answer must quote.
+	if code != 0 || !strings.Contains(out, "waiting-for="+requestID+":") {
+		t.Fatalf("agent ps must name the pending request and its fingerprint: code=%d out=%s", code, out)
+	}
+	fingerprint := ""
+	for _, part := range strings.Split(out, "waiting-for=") {
+		for _, entry := range strings.Split(part, ",") {
+			if id, fp, found := strings.Cut(strings.TrimSpace(entry), ":"); found && id == requestID {
+				fingerprint = fp
+			}
+		}
+	}
+	if fingerprint == "" {
+		t.Fatalf("agent ps did not show a fingerprint: %s", out)
 	}
 	code, out = captureOutput(func() int {
-		return run([]string{"agent", "approve", "--run", "R-pcli", "--request", requestID, "--socket", sock})
+		return run([]string{"agent", "approve", "--run", "R-pcli", "--request", requestID, "--fingerprint", fingerprint, "--socket", sock})
 	})
 	if code != 0 || !strings.Contains(out, "Approved") {
 		t.Fatalf("agent approve failed: code=%d out=%s", code, out)
@@ -511,9 +523,45 @@ func TestAgentRunAnthropicAgainstStub(t *testing.T) {
 	defer srv.Close()
 	dir := t.TempDir()
 	code, out := captureOutput(func() int {
-		return run([]string{"agent", "run", "--goal", "anthropic stub", "--path", dir, "--run", "R-anthropic", "--provider", "anthropic", "--base-url", srv.URL, "--model", "stub", "--max-turns", "1"})
+		// The stub is a loopback server, which the default destination policy
+		// refuses. Reaching a local gateway is opt-in, so the test says so.
+		return run([]string{"agent", "run", "--goal", "anthropic stub", "--path", dir, "--run", "R-anthropic", "--provider", "anthropic", "--base-url", srv.URL, "--allow-local-model", "--model", "stub", "--max-turns", "1"})
 	})
 	if code != 0 || !strings.Contains(out, "R-anthropic") {
 		t.Fatalf("anthropic run failed: code=%d out=%s", code, out)
+	}
+}
+
+// --base-url is a command line value, and the harness sends the conversation
+// and the API key wherever it names. The default refuses the addresses an SSRF
+// probe wants; a local gateway is opt-in (GAP-111).
+
+func TestAgentRunRefusesAMetadataBaseURL(t *testing.T) {
+	dir := t.TempDir()
+	for _, baseURL := range []string{
+		"https://169.254.169.254/latest/meta-data/",
+		"https://10.0.0.5/v1",
+		"http://127.0.0.1:11434/v1",
+	} {
+		code, out := captureOutput(func() int {
+			return run([]string{"agent", "run", "--goal", "x", "--path", dir,
+				"--run", "R-ssrf", "--provider", "anthropic", "--base-url", baseURL, "--model", "m", "--max-turns", "1"})
+		})
+		if code == 0 {
+			t.Fatalf("%s must be refused by default; out=%s", baseURL, out)
+		}
+	}
+}
+
+func TestAllowLocalModelStillRefusesTheMetadataEndpoint(t *testing.T) {
+	// The opt-in opens loopback, not the metadata endpoint.
+	dir := t.TempDir()
+	code, out := captureOutput(func() int {
+		return run([]string{"agent", "run", "--goal", "x", "--path", dir,
+			"--run", "R-ssrf2", "--provider", "anthropic", "--base-url", "https://169.254.169.254/",
+			"--allow-local-model", "--model", "m", "--max-turns", "1"})
+	})
+	if code == 0 {
+		t.Fatalf("the metadata endpoint must stay refused even with the local opt-in; out=%s", out)
 	}
 }

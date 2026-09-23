@@ -173,12 +173,21 @@ func runAgentRun(asJSON bool, args []string) int {
 		if baseURL == "" {
 			return serviceError(asJSON, fmt.Errorf("openai-compat requires --base-url or PRUMO_MODEL_BASE_URL"))
 		}
-		provider = model.NewOpenAICompat(baseURL, apiKey, modelName).WithHeaders(model.ModelHeaders())
+		if err := checkModelDestination(baseURL, f); err != nil {
+			return serviceError(asJSON, err)
+		}
+		provider = model.NewOpenAICompatWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f)).
+			WithHeaders(model.ModelHeaders())
 	case "anthropic":
 		if baseURL == "" {
 			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
 		}
-		provider = model.NewAnthropic(baseURL, apiKey, modelName)
+		if baseURL != "" {
+			if err := checkModelDestination(baseURL, f); err != nil {
+				return serviceError(asJSON, err)
+			}
+		}
+		provider = model.NewAnthropicWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
 	default:
 		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", providerName))
 	}
@@ -390,12 +399,21 @@ func runAgentResume(asJSON bool, args []string) int {
 		if baseURL == "" {
 			return serviceError(asJSON, fmt.Errorf("openai-compat requires --base-url or PRUMO_MODEL_BASE_URL"))
 		}
-		provider = model.NewOpenAICompat(baseURL, apiKey, modelName).WithHeaders(model.ModelHeaders())
+		if err := checkModelDestination(baseURL, f); err != nil {
+			return serviceError(asJSON, err)
+		}
+		provider = model.NewOpenAICompatWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f)).
+			WithHeaders(model.ModelHeaders())
 	case "anthropic":
 		if baseURL == "" {
 			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
 		}
-		provider = model.NewAnthropic(baseURL, apiKey, modelName)
+		if baseURL != "" {
+			if err := checkModelDestination(baseURL, f); err != nil {
+				return serviceError(asJSON, err)
+			}
+		}
+		provider = model.NewAnthropicWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
 	default:
 		var factoryErr error
 		provider, factoryErr = model.ForName(providerName, baseURL, apiKey, modelName)
@@ -733,9 +751,20 @@ func runAgentPs(asJSON bool, args []string) int {
 		m, _ := r.(map[string]any)
 		line := fmt.Sprintf("%s %s %s", m["run_id"], m["status"], m["phase"])
 		if ids, ok := m["pending_permissions"].([]any); ok && len(ids) > 0 {
+			// The fingerprint travels with the id because an answer has to
+			// quote it: the id names the request, the fingerprint names the
+			// call (GAP-107). Without it shown here, `agent approve` asks for
+			// something the operator cannot obtain.
+			prints, _ := m["permission_fingerprints"].(map[string]any)
 			parts := make([]string, 0, len(ids))
 			for _, id := range ids {
-				parts = append(parts, fmt.Sprint(id))
+				name := fmt.Sprint(id)
+				if prints != nil {
+					if fp, ok := prints[name].(string); ok && fp != "" {
+						name += ":" + fp
+					}
+				}
+				parts = append(parts, name)
 			}
 			line += " waiting-for=" + strings.Join(parts, ",")
 		}
@@ -813,6 +842,24 @@ func permissionPolicy(f map[string]string) (perm.Policy, error) {
 	return policy, nil
 }
 
+// destinationPolicy decides which network a provider may be reached on.
+//
+// The default refuses loopback, private ranges and the cloud metadata endpoint,
+// because --base-url is a command line value and the harness sends the
+// conversation and the API key wherever it names. A local gateway is a real
+// need, so --allow-local-model opts into it explicitly rather than the default
+// quietly allowing it.
+func destinationPolicy(f map[string]string) model.DestinationPolicy {
+	if _, ok := f["allow-local-model"]; ok {
+		return model.LocalDevelopmentDestinationPolicy()
+	}
+	return model.DefaultDestinationPolicy()
+}
+
+func checkModelDestination(baseURL string, f map[string]string) error {
+	return model.ValidateDestinationURL(baseURL, destinationPolicy(f))
+}
+
 // runAgentPermission answers a permission request on a live daemon. Approving
 // and denying share one path: the daemon sees a different decision, not a
 // different operation.
@@ -830,11 +877,21 @@ func runAgentPermission(asJSON bool, args []string, allow bool) int {
 	if requestID == "" {
 		return serviceError(asJSON, fmt.Errorf("%s requires --request <id> (see `prumo agent ps`)", verb))
 	}
+	// The approval is bound to the content, so the approver quotes the
+	// fingerprint `agent ps` showed them. Without it the daemon refuses, because
+	// a request id names a request rather than a specific call (GAP-107).
+	fingerprint := f["fingerprint"]
+	if fingerprint == "" {
+		return serviceError(asJSON, fmt.Errorf("%s requires --fingerprint <hash> (see `prumo agent ps`)", verb))
+	}
 	op := "deny"
 	if allow {
 		op = "approve"
 	}
-	res, err := daemonClient(f).Call(map[string]any{"op": op, "run_id": runID, "request_id": requestID, "reason": f["reason"]})
+	res, err := daemonClient(f).Call(map[string]any{
+		"op": op, "run_id": runID, "request_id": requestID,
+		"fingerprint": fingerprint, "reason": f["reason"],
+	})
 	if err != nil {
 		return serviceError(asJSON, err)
 	}

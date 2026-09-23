@@ -785,7 +785,7 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo agent protocol --client 0.1.0",
 			"prumo agent serve --path .",
 			"prumo agent ps",
-			"prumo agent approve --run R-agent-1 --request perm-c1",
+			"prumo agent approve --run R-agent-1 --request perm-c1 --fingerprint <sha256>",
 			"prumo agent deny --run R-agent-1 --request perm-c1 --reason 'outside the workspace'",
 			"prumo agent logs --run R-agent-1",
 			"prumo agent providers",

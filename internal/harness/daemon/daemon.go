@@ -654,10 +654,18 @@ func (s *Server) opList() map[string]any {
 	// operator can find what to answer without reading the event log.
 	s.mu.Lock()
 	pending := map[string][]string{}
+	prints := map[string]map[string]any{}
 	for id, ar := range s.runs {
 		if ar != nil && ar.runner != nil {
 			if st := ar.runner.StateCopy(); len(st.PendingPerms) > 0 {
 				pending[id] = append([]string{}, st.PendingPerms...)
+				// The fingerprint goes in the listing too. An answer has to quote
+				// it, so a listing that omits it makes the gate unanswerable from
+				// the only view an operator has (GAP-107).
+				prints[id] = map[string]any{}
+				for _, requestID := range st.PendingPerms {
+					prints[id][requestID] = ar.runner.PendingFingerprint(requestID)
+				}
 			}
 		}
 	}
@@ -680,6 +688,7 @@ func (s *Server) opList() map[string]any {
 		if ids, ok := pending[rec.RunID]; ok {
 			row["status"] = "awaiting_approval"
 			row["pending_permissions"] = ids
+			row["permission_fingerprints"] = prints[rec.RunID]
 		}
 		out = append(out, row)
 	}
