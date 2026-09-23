@@ -1,13 +1,23 @@
-# Issue Title
+# CI Failure Diagnosis Record
+
 ## Summary
-<concise summary of problem or enhancement>
+- Failing run: `https://github.com/acme/api/actions/runs/1842`
+- Job: `test (ubuntu-22.04, node 20)`
+- First failing step: `build`
+- Exit code: `1`
 
-## Context & Motivation
-<why this is needed and linked Goal/roadmap context>
+## Classification
+- Last green run: `1841`
+- Suspect delta: Ubuntu runner image updated OpenSSL defaults.
+- Classification: runner-image drift, not an application regression.
 
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
+## First Error
+```text
+Error: error:0308010C:digital envelope routines::unsupported
+```
 
-## Technical Notes & Dependencies
-<technical guidance and related files>
+## Fix and Evidence
+- Added `NODE_OPTIONS=--openssl-legacy-provider` only to the affected matrix cell.
+- Reproduced with the matching `ubuntu:22.04` container before editing YAML.
+- Re-run `1843` is green; no required check was disabled.
+- Follow-up issue #1856 tracks the permanent webpack upgrade.

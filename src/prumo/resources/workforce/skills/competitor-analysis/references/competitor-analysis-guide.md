@@ -1,26 +1,31 @@
-# Competitor Analysis — Technical Reference Guide
+# Competitor Analysis Reference Guide
 
-## Overview & Purpose
-Analyze competitor interfaces, workflows, and ergonomics to identify opportunities.
+## Evidence Unit
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+Capture one atomic observation per workflow step. Each record contains competitor and version, platform, task, step number, observed behavior, friction cost, capture date, and evidence reference. Interpretation belongs in a separate field.
 
-## Operational Standards
-- **Inputs**: Product requirements, Design tokens, Wireframe / UI view
-- **Outputs**: Design specification / findings, Accessibility audit scorecard, UI tests
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, review
+## Sampling
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+Choose products that address the same user goal, then bound the work to named workflows and platforms. For each workflow, record the starting state and perform the same task without skipping steps. Capture failures, recovery paths, and time or interaction cost when observable.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## Comparison Rubric
+
+Use a fixed 1–5 scale for visibility, match to user language, user control, consistency, error prevention, recognition, efficiency, simplicity, recovery, and help. Add accessibility spot-checks for keyboard operation, focus, names, and contrast. Do not change the rubric between competitors.
+
+## Synthesis
+
+Group observations by user problem, not visual resemblance. Label each conclusion as observed, inferred, or validated. Rank opportunities with impact, frequency, confidence, and implementation effort; preserve links back to the underlying evidence IDs.
+
+## Patterns and Anti-Patterns
+
+| Do | Avoid |
+|---|---|
+| Record version, platform, and capture date | Write timeless claims about a changing product |
+| Quote the observed interaction | Infer motivation from one screenshot |
+| Use identical tasks for every product | Compare different workflows and call it fair |
+| Keep contradictory evidence visible | Delete inconvenient observations |
+| Exclude stale captures from ranking | Blend old and current evidence silently |
+
+## Short Example
+
+Observed: `OBS-17`, participant reaches export in 6 clicks and cannot identify the format control. Inferred: `INF-04`, the format label may not match user vocabulary; unvalidated. Opportunity: test a visible file-type summary before the export action.

@@ -1,24 +1,26 @@
 {
   "id": "lang-javascript",
-  "name": "Modern JavaScript ES2024+ & Security Discipline",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Enforce modern ECMAScript standard, native ESM modules, immutability patterns, ESLint strict security rules, and prohibition of global state pollution.",
+  "name": "Modern JavaScript Systems, Event Loop & Memory Hygiene",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Enforce modern ECMAScript (ES2024+) standards, native ESM, event loop microtask hygiene, AbortController cancellation, prototype pollution defense, and memory leak prevention.",
   "risk_level": "medium",
   "modes": [
     "implementation",
     "review",
-    "testing"
+    "testing",
+    "audit"
   ],
   "inputs": [
-    "Source code",
-    "Project configuration",
-    "Task acceptance criteria"
+    "JavaScript source files (*.js, *.mjs)",
+    "Package configuration (package.json)",
+    "Active task acceptance criteria"
   ],
   "outputs": [
-    "Hardened source code",
-    "Verification evidence",
-    "Test evidence"
+    "Modern ESM JavaScript implementations",
+    "Memory leak and event listener audit evidence",
+    "ESLint and test runner verification evidence",
+    "JavaScript Verification Report"
   ],
   "requires": [
     "clean-code",
@@ -51,29 +53,29 @@
   ],
   "stop_conditions": [
     "Task acceptance criteria satisfied with evidence",
-    "ESLint security clean",
-    "Token budget exhausted"
+    "ESLint passes with zero warnings",
+    "Zero occurrences of eval, new Function, or prototype mutation",
+    "Token budget exhausted",
+    "Blocked on external dependency"
   ],
   "provenance": {
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.4.0",
+    "version": "0.6.0",
     "checksum": "",
-    "modified": "2026-09-09"
+    "modified": "2026-09-23"
   },
   "select": {
     "stack_any": [
       "javascript",
       "js",
+      "esm",
       "node",
-      "nodejs",
-      "npm",
-      "bun"
+      "bun",
+      "deno"
     ]
   },
   "requires_any": [],
-  "tools": [
-    "check-escape-hatches"
-  ]
+  "tools": []
 }

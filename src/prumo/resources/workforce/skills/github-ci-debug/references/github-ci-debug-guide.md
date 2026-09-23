@@ -1,26 +1,34 @@
 # GitHub CI Debugging — Technical Reference Guide
 
-## Overview & Purpose
-Diagnose and fix GitHub Actions workflow failures, matrix mismatches, and flaky pipeline steps.
+## 1. Core Concepts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+**Failure classification** decides the fix: code regression (last-green diff implicates), dependency drift (lockfile vs fresh resolve differs), runner-image change (`ubuntu-22.04` → `ubuntu-24.04` behavior shift), cache poisoning (stale key restores bad artifacts), permission gap (missing `contents:`/`id-token:` scopes), or concurrency artifact (cancelled superseded runs).
 
-## Operational Standards
-- **Inputs**: Repository context, Issue / PR specifications, Roadmap Goal
-- **Outputs**: Structured GitHub artifact, Validation confirmation
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, review
+**Matrix triage** compares failing vs passing cells: one OS fails → platform path/toolchain issue; one version fails → language-version incompatibility; all fail → shared step (checkout, setup, cache restore).
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+**Flakiness proof** is statistical: a test failing 3/20 identical reruns with no code change is quarantined with a tracked issue, not retried into greenness.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 2. Patterns
+
+- **First-error capture**: `gh run view <id> --log-failed` and read the first error block; tail logs mislead.
+- **Last-green bisect**: `git log` between last green and first red SHA; revert-suspect or pin-suspect one at a time.
+- **Cache-key scoping**: `key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}` plus `restore-keys` fallback; bump a `v2` prefix when poisoning is suspected.
+- **Permission minimalism**: declare per-job `permissions:` (e.g. `contents: read`, `pull-requests: write`) instead of workflow-wide write-all.
+- **Local reproduction**: `act -j <job>` or the same container image (`catthehacker/ubuntu:full-22.04`) running the exact step commands before editing YAML.
+
+## 3. Anti-Patterns
+
+- Editing five workflow fields at once ("fix" by shotgun).
+- Disabling the failing required check to go green.
+- Retrying flaky jobs until pass and calling it fixed.
+- Pasting full logs with secrets into public issues (scrub `token`, `secrets.*`, OIDC material).
+
+## 4. Worked Example
+
+`ci.yml` job `test (ubuntu-22.04, node 20)` fails with `ERR_OSSL_EVP_UNSUPPORTED` at the webpack step; macOS/Windows cells pass. Classification: runner-image drift — Ubuntu image bumped OpenSSL 3 defaults. Local reproduction with the matching container confirms. Minimal fix: set `NODE_OPTIONS=--openssl-legacy-provider` for that cell via matrix `include`, one-line change. Re-run of the exact job goes green; follow-up ticket migrates webpack off MD4 hashing permanently.
+
+## 5. Verification Pointers
+
+- Diagnosis cites run URL + step name + exit code + first error lines.
+- The previously-failing job (not just the workflow) is green after the fix.
+- No required check was disabled; flaky tests quarantined with issue links.

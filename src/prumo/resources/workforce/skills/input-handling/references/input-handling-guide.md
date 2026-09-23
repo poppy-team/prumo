@@ -1,26 +1,35 @@
-# Input Subsystem — Technical Reference Guide
+# Input Handling Reference Guide
 
-## Overview & Purpose
-Implement multi-device input mapping, action buffering, and gamepad support.
+## Action Abstraction
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+Gameplay consumes named actions, not device codes. A binding table maps keyboard, mouse, gamepad, and touch controls to actions such as `jump`, `confirm`, and `aim`. Device adapters translate hardware state into timestamped action events.
 
-## Operational Standards
-- **Inputs**: Engine architecture specification, Target hardware / GPU constraints, Benchmark fixtures
-- **Outputs**: Optimized engine subsystem, Deterministic benchmark evidence, Visual test fixtures
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, benchmark
+## Buffered Input
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+Discrete presses may be consumed within a declared forgiveness window. Queues have a maximum size, expiration rule, and drop counter. Overflow policy is explicit; silent loss makes gameplay bugs unreproducible.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## Analog Calibration
+
+Use radial dead zones, a documented response curve, saturation handling, and per-device overrides. Triggers need separate press and release thresholds to prevent flutter. Calibration tables define expected output for representative hardware values.
+
+## Chords and Gestures
+
+Chords require all participants within a simultaneity window. Sequences use a trie or equivalent state machine with per-step timeout and reset rules. Reject conflicting bindings when they are created, not when a player later presses them.
+
+## Persistence and Churn
+
+Store user rebinds as versioned data separate from code defaults. Resolve new-default versus user-binding conflicts deterministically and record the override. Handle hot-plug without using stale device state or crashing mid-frame.
+
+## Patterns and Anti-Patterns
+
+| Do | Avoid |
+|---|---|
+| Map actions through a central table | Branch on raw keycodes in gameplay |
+| Record drops and overflow | Grow input queues without bound |
+| Calibrate radial sticks correctly | Scale both axes independently from a boxed square |
+| Reject conflicts at bind time | Resolve conflicts by whichever event arrives last |
+| Replay timestamped events | Reconstruct input from frame polling only |
+
+## Short Example
+
+`jump` maps to Space, gamepad south button, and the touch jump zone. A press 80 ms before landing remains valid under a 120 ms buffer; the tenth queued press is not possible because the ring holds eight events.

@@ -1,13 +1,21 @@
-# Structured Technical Response Template
+# Structured Technical Response — Checkout Build Failure
 
 ## 1. Objective / Status
-<!-- Single sentence summary of what was accomplished, what is current state, or what decision is needed -->
+**Blocked:** checkout tests fail because the new client rejects the existing PSP sandbox certificate. The expected certificate rotation is not present in the test fixture.
 
-## 2. Technical Rationale (Why)
-<!-- Why this approach was selected, highlighting architectural alignment and trade-offs -->
+## 2. Technical Rationale
+Certificate verification must remain enabled. Disabling it would hide a real trust failure and weaken production transport security.
 
 ## 3. Concrete Action / Next Step
-<!-- Step-by-step isolated action points with code or command snippets -->
+1. Add the approved sandbox CA certificate to the fixture trust store.
+2. Run `go test ./checkout/...`.
+3. Expect 31 passing tests, including `TestRefreshesRejectedClientCertificate`.
 
 ## 4. Verification & Evidence
-<!-- Exact command to run and expected deterministic outcome -->
+```text
+$ go test ./checkout/...
+ok  checkout  4.812s
+```
+
+## 5. Decision Needed
+**Recommendation:** keep verification enabled and update the fixture. Do not add a bypass flag.

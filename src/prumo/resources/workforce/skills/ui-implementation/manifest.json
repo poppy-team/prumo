@@ -1,56 +1,88 @@
 {
   "id": "ui-implementation",
-  "name": "UI Component Implementation",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Implement reusable design system UI components.",
-  "risk_level": "low",
+  "name": "Design System UI Component Implementation",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Implement reusable, token-bound design system components across Web and Native, enforcing a 19-point state matrix, responsive layouts, and accessibility.",
+  "risk_level": "medium",
   "modes": [
-    "implementation"
+    "implementation",
+    "review",
+    "design"
   ],
   "inputs": [
-    "API specifications",
-    "Domain models",
-    "UI wireframes"
+    {
+      "name": "component_spec",
+      "type": "path",
+      "description": "Component anatomy, props, slots, and variant specification",
+      "required": true
+    },
+    {
+      "name": "design_tokens",
+      "type": "path",
+      "description": "DTCG 2025.10 design token definitions (JSON/CSS)",
+      "required": true
+    }
   ],
   "outputs": [
-    "Tested web / backend service",
-    "API test evidence"
+    {
+      "name": "component_source",
+      "type": "diff",
+      "description": "Implemented component code across supported UI stacks"
+    },
+    {
+      "name": "component_report",
+      "type": "document",
+      "description": "Verification report conforming to templates/ui-component-report.md"
+    }
   ],
-  "requires": [],
+  "requires": [
+    "clean-code",
+    "testing-quality"
+  ],
   "conflicts": [],
   "capabilities": [
     "filesystem.read",
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
-  "checks": [],
-  "scripts": [],
+  "references": [
+    "references/ui-implementation-guide.md"
+  ],
+  "templates": [
+    "templates/ui-component-report.md"
+  ],
+  "checks": [
+    "checks/ui-implementation-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
   "examples": [],
   "required_evidence": [
-    "test"
+    "test",
+    "review"
   ],
   "stop_conditions": [
     "Task acceptance criteria satisfied with evidence",
-    "Token budget exhausted",
-    "Blocked on external dependency"
+    "All 19 states of the component state matrix verified",
+    "Token budget exhausted"
   ],
   "provenance": {
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.6.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
     "features_any": [
       "ui",
-      "frontend"
+      "frontend",
+      "design-system",
+      "components"
     ]
   },
-  "requires_any": [],
   "tools": []
 }

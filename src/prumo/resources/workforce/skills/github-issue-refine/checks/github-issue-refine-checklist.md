@@ -1,21 +1,21 @@
 # GitHub Issue Refinement — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Intent Preservation
+- [ ] Reporter intent restated in one sentence and matches the original problem.
+- [ ] Ambiguities resolved by asking the reporter, not by reinterpreting.
+- [ ] Before/after refinement summary recorded with intent-preservation note.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Testable Acceptance Criteria
+- [ ] Every checkbox names an observable verification method (command, metric threshold, error code).
+- [ ] No adjectives without measurements ("fast", "correct", "user-friendly" converted or removed).
+- [ ] Criteria reference defined fixtures, environments, and tooling only.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
+## 3. Dependencies & Sizing
+- [ ] Blocking/blocked-by links, required ADRs, and area labels mapped.
+- [ ] Hidden second deliverables split into cross-linked issues; one deliverable per issue.
+- [ ] Type, severity (P0–P3), milestone, and labels consistent; contradictions removed.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Scope Control & Evidence
+- [ ] Explicit non-goals section declares where implementation stops.
+- [ ] No new scope added without reporter/owner acknowledgment in a comment.
+- [ ] `scripts/verify.sh` exits 0 from the repository root.

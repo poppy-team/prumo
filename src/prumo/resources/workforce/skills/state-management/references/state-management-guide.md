@@ -1,26 +1,70 @@
-# State Management — Technical Reference Guide
+# State Management Architecture & Patterns: Technical Reference Guide
 
-## Overview & Purpose
-Design predictable, unidirectional frontend and backend state machines.
+## 1. Formal State Modeling: Finite State Machines & Statecharts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+Complex state logic suffers when represented as collections of independent flags (`isSubmitting`, `isFailed`, `canRetry`). The number of potential states grows exponentially ($2^N$), creating invalid edge cases.
 
-## Operational Standards
-- **Inputs**: API specifications, Domain models, UI wireframes
-- **Outputs**: Tested web / backend service, API test evidence
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test
+### 1.1 Finite State Machine (FSM) Formal Definition
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+An FSM is a 5-tuple $(S, \Sigma, \delta, s_0, F)$:
+- $S$: A finite set of states (e.g. `Idle`, `Loading`, `Success`, `Error`).
+- $\Sigma$: A finite set of input symbols/events (e.g. `SUBMIT`, `RESOLVE`, `REJECT`).
+- $\delta$: The transition function $\delta: S \times \Sigma \to S$, mapping a current state and event to the next state.
+- $s_0$: The initial state ($s_0 \in S$).
+- $F$: The set of final/terminal states ($F \subseteq S$).
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+### 1.2 Harel Statecharts Extensions
+David Harel's Statecharts extend standard FSMs with:
+1. **Hierarchy (Nested States)**: Common behavior shared across child states (e.g., handling `CANCEL` across any sub-step of a checkout flow).
+2. **Orthogonality (Parallel States)**: Independent state machines running concurrently (e.g., text editing state and network synchronization state).
+3. **Guards & Extended State (Context)**: Conditional transitions based on quantitative data (e.g., `event.amount > 0`).
+
+---
+
+## 2. Unidirectional Data Flow & Immutability
+
+```
+   +------------------------------------------------------+
+   |                                                      |
+   v                                                      |
+[Event / Action] ---> [Pure Reducer / FSM] ---> [New State] ---> [View / Subscriptions]
+```
+
+### 2.1 Pure Transition Functions
+A state transition function must be strictly pure:
+- Deterministic: Same state + same event = identical next state.
+- Zero side-effects: Network requests, storage writes, and timer scheduling must be delegated to action effect runners outside the reducer.
+- Immutability: Modify state via structural sharing. Never mutate existing objects in place.
+
+---
+
+## 3. Server State vs. Client State
+
+| Property | Client Domain State | Server Cache State |
+| :--- | :--- | :--- |
+| **Ownership** | Exclusively owned by client runtime | Owned by remote backend/database |
+| **Persistence** | Ephemeral or local storage | Authoritative remote database |
+| **Freshness** | Synchronously up to date | Potentially stale immediately |
+| **Lifecycle** | Follows UI session / component | Requires TTL, invalidation, refetching |
+| **Examples** | Theme, current step, open modal | User profile, product catalog, cart |
+
+### 3.1 Optimistic Updates with Rollback
+When user experience demands instantaneous feedback:
+1. **Snapshot**: Capture current state $S_0$.
+2. **Optimistic Transition**: Apply predicted state $S_{\text{predicted}}$ immediately to the UI store.
+3. **Dispatch Remote Mutation**: Trigger asynchronous API call.
+4. **On Success**: Reconcile with server payload.
+5. **On Error**: Roll back store to snapshot $S_0$, and dispatch failure notice to user.
+
+---
+
+## 4. Fine-Grained Reactivity: Signals & Dependency Graphs
+
+Modern reactivity models (Signals) represent reactive values as nodes in a directed acyclic graph (DAG):
+
+- **Signal (Source)**: Holds a value and tracks subscribers.
+- **Computed (Derived)**: Memoized pure derivation of one or more signals.
+- **Effect (Sink)**: Side-effect triggered when dependencies change.
+
+### 4.1 Glitch Freedom via Topological Sorting
+When signal $A$ updates, and derived values $B = f(A)$ and $C = g(A, B)$ exist, evaluating $C$ before $B$ produces a "glitch" (an intermediate inconsistent state). Modern signal implementations perform a topological sort or push-pull phase (e.g. marking dirty, then pulling on demand) to guarantee that consumers observe only completely settled states.

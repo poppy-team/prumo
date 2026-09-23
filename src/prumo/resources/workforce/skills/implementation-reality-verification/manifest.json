@@ -1,8 +1,8 @@
 {
   "id": "implementation-reality-verification",
   "name": "Implementation Reality Verification (Anti-False-Green)",
-  "version": 1,
-  "schema_version": 2,
+  "version": 2,
+  "schema_version": 3,
   "purpose": "Differentiate presence vs reachability vs exercise vs verification; eliminate false-green illusions where dead code passes superficial tests.",
   "risk_level": "high",
   "modes": [
@@ -26,12 +26,18 @@
     "filesystem.read",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
+  "references": [
+    "references/implementation-reality-verification-guide.md"
+  ],
+  "templates": [
+    "templates/implementation-reality-verification-spec.md"
+  ],
   "checks": [
     "checks/implementation-reality-verification-checklist.md"
   ],
-  "scripts": [],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
   "examples": [
     "examples/example.md"
   ],
@@ -47,9 +53,9 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.6.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-09-21"
+    "modified": "2026-09-23"
   },
   "select": {
     "features_any": [

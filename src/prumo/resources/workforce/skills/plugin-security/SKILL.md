@@ -1,47 +1,54 @@
 # Plugin & Extension Security
 
 ## Purpose
-Enforce capability-based plugin isolation, memory safety boundaries, and manifest permission checks.
+Enforce capability-based plugin isolation, manifest permission verification, and memory safety boundaries so third-party extensions execute with least privilege and cannot exfiltrate data, escalate privileges, or destabilize the host.
 
 ## Use when
-- Active Goal or Task explicitly requires plugin & extension security operations.
+- Designing or auditing a plugin loading pipeline (discovery, manifest parsing, signature verification, sandbox spawn).
+- Reviewing a plugin manifest for over-broad permissions, undeclared network/filesystem access, or unsafe native bridges.
+- Investigating a suspected plugin escape, data exfiltration, or host crash caused by extension code.
 - Operating in mode(s): `implementation`, `review`.
 
 ## Do not use when
-- Task is out of scope or unrelated to plugin & extension security.
-- Bounded token budget or capability policy denies required operations.
+- Vetting an entire third-party repository before onboarding (use `untrusted-project-security`).
+- Scanning dependency packages for known CVEs or typosquatting (use `supply-chain-security`).
+- Reviewing first-party application code with no extension boundary (use `security-review`).
 
 ## Required context
-- Security policy
-- Target codebase
-- Threat model
+- Plugin manifest schema and the capability catalog (filesystem, network, process, device, UI surface permissions).
+- Host sandbox architecture (in-process WASM, out-of-process IPC, container boundary) and enforcement points.
+- Threat model for the extension ecosystem (untrusted authors, malicious updates, confused-deputy flows).
 
 ## Procedure
-1. Establish trust boundaries and identify all untrusted input vectors relevant to plugin & extension security.
-2. Audit source code and configuration against standard security baselines.
-3. Enforce principle of least privilege and strict input sanitization at system boundaries.
-4. Verify absence of vulnerabilities using automated and manual security test cases.
-5. Generate structured security gate evidence and audit report.
+1. **Inventory the trust boundary**: list every host API exposed to plugins (file, network, clipboard, shell, DOM) and classify each by risk (read-only, mutating, exfiltrating, executing).
+2. **Verify the manifest**: require explicit capability declarations with versioned schema; deny by default anything not declared. Reject wildcard permissions (`fs:*`, `net:*`) and unpinned update channels.
+3. **Verify provenance**: require signed manifests and pinned content hashes; untrusted or unsigned plugins load only in a deny-by-default quarantine with no host capabilities.
+4. **Enforce runtime isolation**: run plugin code in the sandbox (WASM memory-isolated module or separate OS process with seccomp/AppArmor profile); mediate every host call through a capability-checked broker that logs allow/deny decisions.
+5. **Check update and lifecycle hygiene**: updates re-verify signatures and re-prompt on permission expansion; disable or revoke kills plugin processes and revokes tokens within seconds.
+6. **Verify with adversarial tests**: attempt manifest-declared vs actual behavior mismatch, path traversal via plugin file APIs (`../../etc/passwd`), SSRF via plugin fetch, and host-handle leakage across the bridge.
 
 ## Decision rules
-- Never trust untrusted input; validate strictly at the external boundary.
-- Fail securely: system failures must not default to open access.
-- Treat secrets and credentials as confidential; never log or persist in plain text.
+- **Deny by default**: any capability not explicitly declared and approved is denied at runtime, never warned-and-allowed.
+- **No ambient authority**: plugins receive only explicit handles passed through the broker; inheriting host environment, tokens, or filesystem roots is prohibited.
+- **Permission expansion requires re-consent**: an update requesting new capabilities must not auto-install; it re-enters review.
+- **Broker mediates everything**: direct FFI, raw sockets, or unsandboxed `eval` from plugin context are forbidden.
 
 ## Evidence required
-- security-scan
-- test
+- Capability matrix: declared vs exercised permissions per plugin with broker allow/deny log excerpt.
+- Adversarial test results (traversal, SSRF, escape attempts blocked).
+- Passing execution log from `scripts/verify.sh`.
 
 ## Output contract
-- Security audit report
-- Vulnerability remediation patches
-- Security gate evidence
+- Security audit report (findings by severity with manifest excerpts and broker logs).
+- Vulnerability remediation patches (manifest tightening, broker policy fixes, sandbox profile updates).
+- Security gate evidence (signed manifest verification + capability test results).
 
 ## Stop conditions
-- Task acceptance criteria satisfied with evidence
-- Token budget exhausted
-- Blocked on external dependency
+- All in-scope plugins run under declared least-privilege capabilities with broker enforcement verified by adversarial tests.
+- Unsigned or over-permissioned plugins quarantined or remediated.
+- Token budget exhausted.
+- Blocked on external dependency.
 
 ## Escalation rules
-- Escalate to lead architect or human if locked Goal criteria cannot be met.
-- Escalate immediately upon discovering unexpected security vulnerabilities or data loss risks.
+- Escalate to lead architect if a business-critical plugin cannot function without a high-risk capability (e.g. raw socket access).
+- Escalate immediately upon discovering an active sandbox escape or data exfiltration path.

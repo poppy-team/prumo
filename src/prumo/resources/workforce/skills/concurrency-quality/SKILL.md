@@ -1,36 +1,73 @@
----
-name: concurrency-quality
-description: Races, deadlocks, cancellation, backpressure, leaked tasks, unbounded channels, lock scope, resource cleanup, timeouts, ownership, shutdown
----
-# Concurrency Quality
+# Concurrency Quality & Parallel Execution Invariants
 
-## 1. Data Race Prevention
-Eliminate data races by strictly controlling shared mutable state. Prefer message passing (channels/actors) or immutable data structures. When using shared memory, enforce exclusive access using mutexes. Use race detectors during CI runs.
+## Purpose
+Enforce provable correctness, data race freedom, deadlock prevention, bounded resource allocation, and predictable throughput across multi-threaded, asynchronous, and distributed concurrent systems. Guarantee deterministic cancellation trees, backpressure propagation, and zero thread/goroutine leakage across system lifecycles.
 
-## 2. Deadlock Avoidance
-Prevent deadlocks by establishing a strict, global lock acquisition order. Never acquire multiple locks simultaneously if possible. Use timeout-based lock acquisition. Avoid calling foreign, untrusted code while holding a lock.
+## Use when
+- Designing, implementing, or auditing concurrent subsystems, worker pools, async pipelines, and event loops.
+- Synchronizing access to shared mutable state via mutexes, read-write locks, lock-free atomics, or channels.
+- Mitigating concurrency hazards: data races, deadlocks, livelocks, thread starvation, priority inversion, and false sharing.
+- Establishing cooperative task cancellation, graceful termination sequences, and backpressure mechanisms.
+- Validating concurrent code under automated race detectors (`go test -race`, ThreadSanitizer `tsan`, Loom, Tokio console).
 
-## 3. Task Cancellation
-Implement robust cooperative cancellation mechanisms (e.g., Context in Go, CancellationToken in .NET). Long-running tasks must periodically check for cancellation requests and terminate cleanly, releasing resources promptly.
+## Do not use when
+- Implementing purely sequential, single-threaded algorithms with no async boundaries or background tasks.
+- Designing high-level relational database schema migrations without connection pooling or transactional isolation analysis (use `database-review`).
+- Measuring static web asset loading waterfalls without concurrent runtime workers (use `performance-web`).
 
-## 4. Backpressure Mechanisms
-Implement backpressure to prevent fast producers from overwhelming slow consumers. Use bounded queues, rate limiting, or load shedding. When a system is overloaded, it must signal upstream systems to slow down or drop requests cleanly.
+## Required context
+- Target runtime concurrency model: Go CSP (goroutines/channels), Rust (ownership/Send/Sync/Tokio), C++20 (`std::jthread`/atomics), or Python (asyncio/multiprocessing).
+- Memory consistency model: Acquire-Release semantics, Sequential Consistency, or runtime happens-before rules.
+- Hardware concurrency constraints: CPU core count, NUMA architecture, cache line size (typically 64 bytes).
+- System throughput, latency SLAs, and queue backpressure boundaries.
 
-## 5. Task Leakage Prevention
-Ensure every spawned task or goroutine has a guaranteed termination path. Avoid unbounded blocking operations. Use wait groups or structured concurrency patterns to track and await the completion of all child tasks.
+## Procedure
+1. **Model Shared State & Enforce Bernstein Conditions**:
+   - For all concurrent operations $T_j$ and $T_k$ ($j \neq k$), mathematically verify Bernstein's Conditions:
+     $$I_j \cap O_k = \emptyset, \quad O_j \cap I_k = \emptyset, \quad O_j \cap O_k = \emptyset$$
+   - Where shared mutable state is unavoidable, encapsulate state within a protective synchronization boundary (mutex, actor, or atomic register).
+2. **Establish Strict Global Lock Hierarchy**:
+   - Construct a directed acyclic graph (DAG) of all lock acquisitions.
+   - Enforce a strict total order: if lock $L_A$ precedes $L_B$ in the hierarchy, any thread acquiring both must acquire $L_A$ before $L_B$.
+   - Never invoke dynamic callbacks, trait methods, or external blocking I/O while holding a mutex lock.
+3. **Enforce Bounded Buffers & Backpressure**:
+   - Forbid unbounded queues, unbounded channels, and unbounded goroutine/thread spawning.
+   - Size queues using Little's Law ($L = \lambda W$) where buffer capacity accommodates peak burst without exhausting system memory.
+   - Implement explicit rejection, shedding, or upstream throttling when buffer thresholds are saturated.
+4. **Structure Cooperative Cancellation & Task Lifecycles**:
+   - Establish parent-child cancellation trees using structured concurrency (e.g., `context.Context`, `CancellationToken`, or nursery scopes).
+   - Require all blocking primitives (channel reads, socket polls, condition variables) to listen for cancellation signals.
+   - Bind all spawned tasks to a lifecycle tracker (`sync.WaitGroup`, task nursery, or join handle) guaranteeing deterministic joining before shutdown.
+5. **Optimize Hardware & Cache Synchronization**:
+   - Align atomic variables and contended counters to distinct 64-byte cache line boundaries (`alignas(64)` or padding fields) to eliminate false sharing.
+   - Minimize lock hold times: compute results outside the critical section, acquire the lock only to swap pointers/state, and release immediately.
+6. **Verify Under Dynamic & Static Race Analyzers**:
+   - Execute test suites under dynamic race detection (`-race` / `-fsanitize=thread`).
+   - Subject concurrent loops to high-iteration stress tests ($N \ge 10{,}000$) with aggressive context switching to reveal edge interleavings.
 
-## 6. Channel and Queue Management
-Avoid unbounded channels or queues, which can lead to Out-Of-Memory (OOM) crashes under load. Size queues appropriately based on expected throughput and latency requirements. Handle queue full conditions gracefully (block, drop, or return error).
+## Decision rules
+- **Zero Data Races**: Any data race reported by ThreadSanitizer or Go `-race` is a critical severity defect that blocks release.
+- **Bounded Resources**: Every channel, queue, and worker pool must have an explicit capacity limit. Unbounded growth is an anti-pattern.
+- **Minimal Critical Sections**: Critical sections must contain only memory operations; no network calls, disk I/O, or foreign library calls may execute under a lock.
+- **Hierarchical Locking**: Acquiring locks out of hierarchy order is strictly prohibited. If two locks cannot be statically ordered, use `TryLock` with backoff and retry.
+- **Graceful Draining**: Applications must drain pending in-flight tasks within a configurable timeout before forcing SIGKILL or aborting.
 
-## 7. Lock Scoping
-Keep critical sections (code executed while holding a lock) as absolutely short as possible. Do not perform slow I/O or blocking operations while holding a lock. Release the lock immediately after updating the shared state.
+## Evidence required
+- Concurrency architecture specification documenting the lock hierarchy DAG and cancellation propagation.
+- Test logs with race detection enabled (`go test -race` or `tsan`) demonstrating 0 race warnings.
+- Stress benchmark results demonstrating throughput scaling without lock convoying or thread starvation.
+- Verification script execution log from `scripts/verify.sh` exiting with code 0.
 
-## 8. Resource Cleanup
-Guarantee resource cleanup using `defer`, `finally`, or RAII patterns. Ensure file handles, database connections, and network sockets are closed even if a concurrent task panics or is cancelled unexpectedly.
+## Output contract
+- Concurrency design document adhering to `templates/concurrency-architecture-spec.md`.
+- Concurrency checklist verification in `checks/concurrency-checklist.md`.
+- Reproducible, automated race-detection test harness.
 
-## 9. Strict Timeouts
-Apply strict timeouts to every blocking operation, especially network calls. A system without timeouts will eventually hang indefinitely when an external dependency fails. Cascading failures are often caused by missing timeouts.
+## Stop conditions
+- Complete concurrency verification passed with zero data races and zero deadlocks.
+- All tasks bounded, structured, and guaranteed to terminate cleanly upon cancellation.
+- Token budget exhausted or irreconcilable deadlocks in third-party runtime dependencies.
 
-## 10. Graceful Shutdown
-Implement graceful shutdown sequences. When the application receives a termination signal, stop accepting new requests, allow in-flight requests to complete within a timeout, and then safely shut down background tasks and release resources.
-
+## Escalation rules
+- Escalate to Architecture Lead if third-party libraries require holding locks across asynchronous boundaries.
+- Escalate to Infrastructure Lead if memory consumption under peak backpressure exceeds host container cgroup limits.

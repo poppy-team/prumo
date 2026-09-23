@@ -1,26 +1,25 @@
-# Desktop Application Security — Technical Reference Guide
+# Desktop Security Reference Guide
 
-## Overview & Purpose
-Enforce IPC validation, native protocol safety, auto-update verification, and desktop sandbox isolation.
+## Trust Boundaries
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+Map renderer, main process, helper processes, protocol handlers, opened files, update feeds, updater, keychain, and network as separate boundaries. Renderer content is untrusted even when loaded locally. Security checks execute only in the privileged side.
 
-## Operational Standards
-- **Inputs**: Security policy, Target codebase, Threat model
-- **Outputs**: Security audit report, Vulnerability remediation patches, Security gate evidence
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: security-scan, test
+## IPC Validation
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+Allowlist channels and schemas. Validate types, ranges, lengths, enum values, origin, and requested privilege before dispatch. A command such as `openDocument` resolves the path, rejects traversal and escaping links, verifies the extension, and opens through a sandboxed parser. Never expose a generic shell or filesystem capability.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## Protocol and File Handling
+
+Parse custom URLs with a strict grammar. Reject nested credentials, oversized payloads, ambiguous percent-encoding, remote file URLs, and unsupported actions. Treat drag-and-drop and file-open events as attacker-controlled input.
+
+## Signed Updates
+
+Pin the update public key outside the downloaded bundle. Verify the manifest signature first, then the binary signature, version monotonicity, channel, target platform, and expected digest before installation. A verification failure aborts and records an alert; it never falls back to HTTP or an older signer.
+
+## Sandboxing and Secrets
+
+Request only required filesystem, network, JIT, camera, microphone, and automation entitlements. Store tokens in the OS credential vault, keep them out of renderer storage and logs, and minimize their lifetime in process memory.
+
+## Short Example
+
+A deep link requests `file:///etc/passwd`. The privileged handler compares the resolved path with the approved document roots, rejects the request, records the link hash, and never opens the path in a privileged parser.

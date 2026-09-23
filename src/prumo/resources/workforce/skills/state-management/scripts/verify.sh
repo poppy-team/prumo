@@ -1,23 +1,29 @@
 #!/usr/bin/env sh
-# Verification script for state-management (State Management)
+# Verification script for state-management (State Management Architecture)
 set -e
 
 echo "[Prumo Skill: state-management] Starting verification routine..."
 
-# 1. Secret & safety check
-if command -v prumo >/dev/null 2>&1; then
-    prumo tool scan-secrets . || {
-        echo "WARNING: Secrets check flagged potential issues."
+# 1. Execute TypeScript State Machine Invariant Test
+echo "[1/2] Running state machine self-test..."
+if [ -f "examples/state_machine.ts" ] && command -v node >/dev/null 2>&1; then
+    node --experimental-strip-types examples/state_machine.ts || {
+        echo "ERROR: State machine verification test failed."
+        exit 1
     }
 fi
 
-# 2. Syntax & test checks
-if [ -f "go.mod" ] && command -v go >/dev/null 2>&1; then
-    go vet ./... || true
-elif [ -f "package.json" ] && command -v npm >/dev/null 2>&1; then
-    npm test --if-present || true
-elif [ -f "Cargo.toml" ] && command -v cargo >/dev/null 2>&1; then
-    cargo check || true
+# 2. Static scan for boolean flag explosions in state stores
+echo "[2/2] Scanning for boolean soup anti-patterns in stores/components..."
+BOOLEAN_SOUP=$(grep -rnE 'isLoading\s*:\s*boolean.*isError\s*:\s*boolean' . \
+  --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=target --exclude-dir=build --exclude-dir=dist \
+  --exclude="*.md" \
+  --include="*.ts" --include="*.tsx" --include="*.js" 2>/dev/null || true)
+
+if [ -n "$BOOLEAN_SOUP" ]; then
+    echo "NOTICE: Consider replacing multiple boolean status flags with discriminated union states:"
+    echo "$BOOLEAN_SOUP" | head -n 5
 fi
 
-echo "[Prumo Skill: state-management] Verification complete."
+echo "[Prumo Skill: state-management] Verification completed successfully."
+exit 0

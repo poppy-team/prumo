@@ -1,26 +1,27 @@
-# UI Component Implementation — Technical Reference Guide
+# Design Tokens & Component State Matrix Engineering Guide
 
-## Overview & Purpose
-Implement reusable design system UI components.
+## 1. Design Tokens Community Group (DTCG 2025.10) Standard
+Design tokens are the visual atoms of the design system. Prumo adopts the DTCG 2025.10 specification for design tokens:
+- **Primitive Tokens**: Direct raw values (`color.blue.500 = "#0066cc"`). Never consumed directly by UI components.
+- **Semantic Tokens**: Intent-based aliases (`color.surface.brand = "{color.blue.500}"`). Components consume these.
+- **Component Tokens**: Scoped overrides (`button.primary.background = "{color.surface.brand}"`).
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+## 2. The 19-Point State Matrix
+A component is not complete when it only renders the "happy path" default mock. The table below defines the full state matrix required for complex UI:
 
-## Operational Standards
-- **Inputs**: API specifications, Domain models, UI wireframes
-- **Outputs**: Tested web / backend service, API test evidence
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test
+| State | Trigger | Visual Cue | A11y Requirement |
+|---|---|---|---|
+| `default` | Initial render | Neutral baseline | Normal tab order |
+| `hover` | Pointer enters element | Surface luminance shift | `cursor: pointer` |
+| `focus-visible` | Keyboard tab navigation | 2px solid ring, 2px offset | High contrast (>= 3:1) |
+| `pressed` | Mouse down / Key down | Scale or darker surface | Tactile feedback |
+| `disabled` | Business rule | 50% opacity, greyed out | `aria-disabled="true"` |
+| `loading` | Async in flight | Spinner / Skeleton pulse | `aria-busy="true"` |
+| `empty` | Zero items in dataset | Clean icon + call-to-action | Helpful text |
+| `error` | Validation rejected | Red border + error message | `aria-invalid="true"` |
+| `long-content` | German/Spanish locale | Ellipsis + Tooltip | Container overflow hidden |
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
-
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 3. Keyboard & Focus Management Patterns
+- **Buttons / Links**: Space / Enter to activate.
+- **Menus / Dropdowns**: Escape to close and return focus to toggle button.
+- **Composite Widgets (Tabs, Radios)**: Roving tabindex: Only active tab has `tabindex="0"`, inactive tabs have `tabindex="-1"`. Arrow keys cycle through tabs.

@@ -1,21 +1,21 @@
 # GitHub Release Packaging — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Version Intent & Delta
+- [ ] SemVer bump classified from merged changes (breaking → major, feature → minor, fixes → patch).
+- [ ] Changelog generated from merged PRs grouped Features/Fixes/Breaking with PR and issue links.
+- [ ] Prerelease suffixes (`-rc.N`) used for candidates; no published tag mutated.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Build & Asset Integrity
+- [ ] Tag created annotated from the intended commit; CI built assets from that exact commit.
+- [ ] Asset matrix complete (per-platform binaries, `SHA256SUMS`, SBOM in CycloneDX/SPDX).
+- [ ] Checksums verified on clean-machine downloads with log archived; no hand-uploaded binaries.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
+## 3. Notes & Upgrade Guidance
+- [ ] Notes lead with upgrade impact; breaking changes carry migration steps or release is blocked.
+- [ ] Supported upgrade paths stated; full changelog linked.
+- [ ] Tag target SHA proof (`gh release view --json tagCommit`) matches the intended commit.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Evidence & Sign-Off
+- [ ] Release URL, CI run, and checksum log linked in the task report.
+- [ ] Post-publish rendering of notes and asset list confirmed.
+- [ ] `scripts/verify.sh` exits 0 from the repository root.
