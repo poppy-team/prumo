@@ -223,7 +223,7 @@ As subpáginas deste hub detalham: stack Go e migração, arquitetura v0.4, docu
 
 [81 — Global Learning Layer: Padrões Cross-Project, Preferências Globais e Filosofias Compartilhadas](runtime/global-learning-layer.md)
 
-[82 — Prumo Native sobre Oxi: Workspace Viewer Agent-Aware, Editor Leve e Plano de Implementação](architecture/prumo-native-workspace-viewer.md)
+[82 — Prumo Native com Freya: Workspace Viewer Agent-Aware, Editor Leve e Plano de Implementação](architecture/prumo-native-workspace-viewer.md)
 
 [83 — Adendo: Decision Intelligence Runtime, System One e Decision Providers](runtime/decision-intelligence-runtime.md)
 

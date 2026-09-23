@@ -3,13 +3,13 @@
 > Authority: canonical specification.
 > Logical ID: PART2-CH-21
 > Source: Notion Living Book (3d89bb7d023f8151842bf5c40e49c0b0)
-> Status: Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi.
+> Status: Documento histórico: stack Floem superseded por Bubble Tea v2 e Freya.
 
 
 <aside>
 ⚠️
 
-**Status: SUPERSEDED PARCIALMENTE / HISTÓRICO.** Esta página preserva a decisão Stack H e sua pesquisa como provenance. **Go no Core/Harness e Bubble Tea v2 na TUI permanecem vigentes. A escolha Rust + Floem para Desktop foi supersedida pela decisão mais recente do Livro Vivo: Oxi como base do Prumo Native / Workspace Viewer agent-aware.** Para implementação atual, consultar a página 82 e a Constituição 86. O conteúdo abaixo não deve ser recuperado como decisão desktop vigente sem esse contexto.
+**Status: SUPERSEDED PARCIALMENTE / HISTÓRICO.** Esta página preserva a decisão Stack H e sua pesquisa como provenance. **Go no Core/Harness e Bubble Tea v2 na TUI permanecem vigentes. A escolha Rust + Floem para Desktop foi supersedida sucessivamente — primeiro pela direção Oxi, depois pela decisão mais recente do Livro Vivo: reconstrução do zero com Freya como base do Prumo Native / Workspace Viewer agent-aware.** Para implementação atual, consultar a página 82 e a Constituição 86. O conteúdo abaixo não deve ser recuperado como decisão desktop vigente sem esse contexto.
 
 </aside>
 

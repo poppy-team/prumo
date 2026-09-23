@@ -41,7 +41,7 @@ Retrieval operacional deve resolver owner/status antes de usar conteúdo.
 | 06 — Coding ACI, Native Tools, MCP, ACP e A2A | SPECIALIZED DETAIL | 52 + 86 | Coding tools são specialization do Tool Gateway. |
 | 07 — Permissions, Sandbox, Egress e Security Runtime | SPECIALIZED DETAIL | 12 + 54 + 60 | Não criar security policy paralela no Code Agent. |
 | 08 — Context Compiler v2, Repo Map, LSP | SPECIALIZED DETAIL | 50 + 88 | Repo/code intelligence alimenta o Context Compiler único. |
-| 09 — Prumo Code Desktop | SPECIALIZED PRODUCT DETAIL | 82 + 86 | UX/produto; decisão de base atual é Oxi. |
+| 09 — Prumo Code Desktop | SPECIALIZED PRODUCT DETAIL | 82 + 86 | UX/produto; decisão de base atual é Freya. |
 | 10 — Native Desktop UI Matrix | RESEARCH/HISTORICAL | 82 | Matriz preservada como pesquisa; não seleciona toolkit vigente. |
 | 11 — Terminal Engine Nativo | SPECIALIZED PRODUCT DETAIL | 86 + product layer | Terminal é capability/client; process semantics permanecem no Harness. |
 | 12 — Editor Engine | SPECIALIZED PRODUCT DETAIL | 82 | Aplicar escopo Workspace Viewer antes de IDE-grade expansion. |
@@ -93,7 +93,7 @@ Framework 03/05/07/08/50/81/84 + Parte II 25–27/31–39/41.
 
 Parte II 09–14 + Framework 80/82.
 
-**Owner:** 86; TUI Bubble Tea v2 e Native Oxi são decisões atuais.
+**Owner:** 86; TUI Bubble Tea v2 e Native Freya são decisões atuais.
 
 ## Budget/Models
 
@@ -147,6 +147,6 @@ Ao recuperar uma página da Parte II:
 - nenhum capítulo foi perdido;
 - overlap não implica dual authority;
 - Floem está claramente superseded;
-- TUI/Oxi/Protocol owners estão claros;
+- TUI/Freya/Protocol owners estão claros;
 - docs/knowledge possuem owner único;
 - future refactor pode ocorrer sem reinterpretação por LLM.

@@ -449,7 +449,7 @@ Direção vigente: Go + Bubble Tea v2.
 
 Client desktop agent-aware.
 
-Direção vigente: base Oxi, com editor/viewer leve.
+Direção vigente: construído do zero com Freya (Rust + Skia), editor/viewer leve.
 
 Não é um segundo Harness.
 
@@ -459,9 +459,13 @@ Client de editor que consome capabilities de agent/protocol.
 
 # GUI stack status
 
+## Freya
+
+Toolkit vigente do Native Workspace Viewer (GUI declarativa Rust, renderização Skia).
+
 ## Oxi
 
-Base vigente do Native Workspace Viewer.
+Direção histórica/SUPERSEDED para o Desktop principal. Superceded em 22/09/2026 pela reconstrução do zero com Freya.
 
 ## Floem
 
@@ -606,7 +610,7 @@ Se um termo encontrado em documentação antiga conflitar com este glossário:
 - principais entidades possuem definição única;
 - relações negativas importantes estão explícitas;
 - aliases Atlas→Prumo estão documentados;
-- Oxi/Floem status não é ambíguo;
+- Oxi/Freya status não é ambíguo;
 - ModelProvider/AgentProvider e Workforce/Gateway não são confundidos;
 - Run/Session/Thread não são fundidos;
 - Context/Knowledge não são confundidos;

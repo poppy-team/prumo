@@ -143,7 +143,7 @@ Direção vigente:
 
 # Native GUI
 
-A decisão mais recente usa **Oxi como base do Workspace Viewer agent-aware**, supersedendo a antiga direção Floem como stack principal de produto.
+A decisão mais recente é **reconstruir o Workspace Viewer agent-aware do zero com Freya** (GUI declarativa em Rust, renderização Skia), supersedendo tanto a antiga direção Floem quanto a direção Oxi (agora histórica).
 
 Objetivo:
 
@@ -287,7 +287,7 @@ O caderno unificado não desfaz essa boundary; apenas elimina a divisão documen
 
 A antiga decisão “Desktop Rust + Floem” permanece como registro histórico do período exploratório.
 
-A direção corrente para o app nativo é Oxi/Workspace Viewer, sujeita aos gates de performance e arquitetura do Livro Vivo.
+A direção corrente para o app nativo é Freya/Workspace Viewer, sujeita aos gates de performance e arquitetura do Livro Vivo.
 
 # Surface Conformance Suite
 
@@ -310,7 +310,7 @@ O Protocol é a fonte para a semântica; clients não possuem forks comportament
 - Code Agent é subdomínio documentado do Livro Vivo único;
 - nenhuma regra canônica vive apenas em client;
 - CLI/TUI/GUI usam services/protocol comuns;
-- Oxi é tratado como client base, não Harness;
-- Floem está marcado como direção superseded;
+- Freya é tratado como toolkit de UI do client, não Harness;
+- Oxi está marcado como direção histórica/superseded;
 - Surface Conformance Suite detecta drift;
 - protocol é suficiente para construir clients sem internal/.

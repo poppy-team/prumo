@@ -702,7 +702,7 @@ var commandRegistry = map[string]CommandInfo{
 		Summary:  "Start the Prumo Harness daemon over local Unix socket or remote TCP+TLS",
 		Usage:    "prumo serve [--path <dir>] [--socket <path>]",
 		Description: "Starts the persistent Harness daemon providing the versioned JSONL Agent Protocol (v0.4.0) " +
-			"for IDE clients (Oxi / Workspace Viewer), TUI, and external tools.",
+			"for desktop clients (Native Workspace Viewer), TUI, and external tools.",
 		Flags: []string{
 			"--path <dir>         Workspace root (default: .)",
 			"--socket <path>      Daemon Unix socket path",
@@ -717,10 +717,10 @@ var commandRegistry = map[string]CommandInfo{
 		},
 	},
 	"agent": {
-		Name:        "agent",
-		Category:    "Harness",
-		Summary:     "Interactive coding agent TUI or headless harness (run/serve/ps/logs/...)",
-		Usage:       "prumo agent [subcommand|flags]",
+		Name:     "agent",
+		Category: "Harness",
+		Summary:  "Interactive coding agent TUI or headless harness (run/serve/ps/logs/...)",
+		Usage:    "prumo agent [subcommand|flags]",
 		Description: "Without subcommands, launches the interactive terminal coding agent (TUI). " +
 			"With subcommands, runs the NativeAgent state machine headlessly: context, model, tools, permissions, checkpoints. " +
 			"Provider-neutral (fake|fake-tools|openai-compat|anthropic|opencode); external agents via AgentProvider adapters. " +
@@ -822,31 +822,27 @@ var commandRegistry = map[string]CommandInfo{
 	"native": {
 		Name:     "native",
 		Category: "Harness",
-		Summary:  "Native desktop agent-aware Workspace Viewer and light editor (Rust + egui)",
-		Usage:    "prumo native [--workspace <dir>] [--renderer <glow|wgpu>] [--safe-graphics] [--socket <path>]",
-		Description: "Launches the agent-aware Prumo Native Workspace Viewer (built on Rust/egui per Constitution 82). " +
-			"Provides live file tree projection with agent badges, Follow Agent auto-scroll, before/after diffs, " +
-			"human x agent 3-way conflict resolution, Quick Open (Ctrl+P), workspace search, and embedded PTY terminal. " +
-			"Speaks to the Go harness strictly over IPC Unix domain socket or TCP. Interactive: no --json output.",
+		Summary:  "Native desktop agent-aware Workspace Viewer and light editor (Rust + Freya)",
+		Usage:    "prumo native [--workspace <dir>] [--socket <path>]",
+		Description: "Launches the Prumo Native Workspace Viewer built with Rust and Freya. " +
+			"Provides an IDE-style Explorer, multi-tab editing, Quick Open, working-copy diff, daemon timeline, " +
+			"run start, and permission approval over the local Agent Protocol. " +
+			"Interactive: no --json output.",
 		Flags: []string{
 			"--workspace <dir>    Workspace root directory (default: .)",
-			"--renderer <glow|wgpu> Graphics renderer (default: glow)",
-			"--wgpu-backend <gl|vulkan|dx12|metal> Explicit WGPU backend",
-			"--safe-graphics      Force safe graphics mode using Glow baseline",
-			"--socket <path>      Path to daemon IPC Unix socket (default: .prumo/runtime/harness/agentd.sock)",
+			"--socket <path>      Daemon Unix socket (default: <workspace>/.prumo/runtime/harness/agentd.sock)",
 		},
 		Examples: []string{
 			"prumo native",
 			"prumo native --workspace ./my-project",
-			"prumo native --renderer glow",
-			"prumo native --safe-graphics",
+			"prumo native --workspace . --socket .prumo/runtime/harness/agentd.sock",
 		},
 	},
 	"viewer": {
-		Name:     "viewer",
-		Category: "Harness",
-		Summary:  "Alias for `prumo native`: native desktop Workspace Viewer",
-		Usage:    "prumo viewer [flags]",
+		Name:        "viewer",
+		Category:    "Harness",
+		Summary:     "Alias for `prumo native`: native desktop Workspace Viewer",
+		Usage:       "prumo viewer [flags]",
 		Description: "Alias for `prumo native`.",
 		Examples: []string{
 			"prumo viewer",

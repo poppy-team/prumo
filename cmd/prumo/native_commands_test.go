@@ -39,3 +39,18 @@ func TestNativeRefusesJSON(t *testing.T) {
 		t.Fatal("an interactive surface must refuse --json")
 	}
 }
+
+func TestNativeHelpMatchesImplementedFlags(t *testing.T) {
+	info := commandRegistry["native"]
+	joined := info.Summary + " " + info.Usage + " " + info.Description
+	for _, implemented := range []string{"Freya", "--workspace", "--socket"} {
+		if !strings.Contains(joined, implemented) {
+			t.Fatalf("native help omits implemented surface %q", implemented)
+		}
+	}
+	for _, removed := range []string{"egui", "--renderer", "--safe-graphics", "embedded PTY"} {
+		if strings.Contains(joined, removed) {
+			t.Fatalf("native help still advertises removed surface %q", removed)
+		}
+	}
+}

@@ -26,7 +26,7 @@ for ndoc in notion_inv:
         superseded = True
         action = 'PROMOTED_HISTORICAL'
         canonical_target = 'docs/harness/specs/superseded-floem-stack.md'
-        rationale = 'Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi.'
+        rationale = 'Documento histórico: stack Floem superseded por Bubble Tea v2 e Freya.'
     elif lid == 'CONST-86':
         action = 'PROMOTED_CONSTITUTIONAL'
         canonical_target = 'docs/architecture/unified-architecture.md'
@@ -106,7 +106,7 @@ for ndoc in notion_inv:
     elif lid == 'CONST-82':
         action = 'PROMOTED_CONSTITUTIONAL'
         canonical_target = 'docs/architecture/prumo-native-workspace-viewer.md'
-        rationale = 'Especificação do Prumo Native Workspace Viewer sobre Oxi.'
+        rationale = 'Especificação do Prumo Native Workspace Viewer com Freya.'
     elif lid == 'CONST-83':
         action = 'PROMOTED_CONSTITUTIONAL'
         canonical_target = 'docs/runtime/decision-intelligence-runtime.md'

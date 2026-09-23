@@ -67,7 +67,8 @@ Implementar schemas para:
 
 Migrar conflitos conhecidos:
 
-- Floem desktop → historical/superseded pela direção Oxi;
+- Floem desktop → historical/superseded;
+- Oxi desktop → historical/superseded pela direção Freya;
 - referências Atlas antigas → aliases/historical conforme migration;
 - caderno separado Code Agent → subdomínio do Livro Vivo unificado;
 - proposals antigas que parecem ACCEPTED apenas por linguagem → revisar status.
@@ -193,7 +194,7 @@ Gate:
 
 ## GUI
 
-- Oxi-derived Workspace Viewer;
+- Workspace Viewer construído do zero com Freya;
 - agent-aware explorer;
 - Follow Agent;
 - diff/evidence;
@@ -436,7 +437,7 @@ UI pode usar labels amigáveis, mas deve mapear a esses estados.
 - existe um único Livro Vivo do Prumo;
 - Code Agent preserva suas responsabilidades como subdomínio;
 - decisões duplicadas têm precedence/supersession;
-- Oxi/TUI/CLI seguem protocol comum;
+- GUI/TUI/CLI seguem protocol comum;
 - budget e workforce são first-class;
 - anti-invention é enforcement, não só prompt;
 - skills possuem contracts/evals;

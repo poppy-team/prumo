@@ -173,10 +173,10 @@ A pesquisa atual expande o Programa 79 para novas famílias: **C++ moderno/segur
 
 Esta rodada acrescenta quatro extensões oficiais ao Programa 79:
 
-- [79.W — Modern C++, WebAssembly/WAT, WebGPU e Three.js Skill Packs](notion-3dd9bb7d.md);
-- [79.X — Assembly, ISA, ABI, Reverse Engineering e Low-Level Systems Skills](notion-3dd9bb7d.md);
-- [79.Y — Programming Languages, Computer Science, Software Engineering, Databases e Linux Advanced Skills](notion-3dd9bb7d.md);
-- [79.Z — Teaching Module: Professor Mode, Neurodivergent Pedagogy e Learning Progression](notion-3dd9bb7d.md).
+- [79.W — Modern C++, WebAssembly/WAT, WebGPU e Three.js Skill Packs](../skills/specs/modern-c++-wasm-wat-webgpu-three-js-e-lo.md);
+- [79.X — Assembly, ISA, ABI, Reverse Engineering e Low-Level Systems Skills](../skills/specs/assembly-isa-abi-reverse-engineering-e-l.md);
+- [79.Y — Programming Languages, Computer Science, Software Engineering, Databases e Linux Advanced Skills](../skills/specs/computer-science-software-engineering-dat.md);
+- [79.Z — Teaching Module: Professor Mode, Neurodivergent Pedagogy e Learning Progression](../skills/specs/teaching-module-professor-mode-neurodiverg.md).
 
 Estas extensões não alteram a ordem fundamental F0→F7: contracts/evidence/freshness permanecem pré-requisitos para expansão massiva. O Teaching Module, entretanto, adiciona uma nova dimensão arquitetural que deve receber RFC/ADR próprio antes de implementação, pois introduz learning state, curriculum graph e um novo tipo de handoff `teach ↔ build`.
 

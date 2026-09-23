@@ -31,11 +31,19 @@ with open('docs/migration/notion-final-docs-inventory.md', 'w', encoding='utf-8'
 print('Generated docs/migration/notion-final-docs-inventory.md cleanly.')
 
 # 2. Inventory of existing repository documentation
+GENERATED_OUTPUTS = {
+    os.path.join('docs', 'migration', 'repo-docs-inventory.json'),
+    os.path.join('docs', 'migration', 'repo-docs-inventory.md'),
+    os.path.join('docs', 'migration', 'notion-final-docs-inventory.md'),
+}
+
 repo_docs = []
 for root, dirs, files in os.walk('docs'):
     for file in sorted(files):
         if file.endswith('.md') or file.endswith('.json'):
             rel_path = os.path.relpath(os.path.join(root, file), '.')
+            if rel_path in GENERATED_OUTPUTS:
+                continue
             with open(rel_path, 'rb') as fh:
                 data = fh.read()
             digest = hashlib.sha256(data).hexdigest()

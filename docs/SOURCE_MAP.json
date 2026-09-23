@@ -159,10 +159,10 @@
           "title": "82 — Prumo Native sobre Oxi Workspace Viewer Agent",
           "uuid": "3de9bb7d023f81c791d4e4145393fa10",
           "logical_id": "CONST-82",
-          "role": "Especificação do Prumo Native Workspace Viewer sobre Oxi."
+          "role": "Especificação do Prumo Native Workspace Viewer com Freya."
         }
       ],
-      "semantic_role": "Especificação do Prumo Native Workspace Viewer sobre Oxi."
+      "semantic_role": "Especificação do Prumo Native Workspace Viewer com Freya."
     },
     {
       "local_path": "docs/architecture/shared-product-contract.md",
@@ -1898,7 +1898,7 @@
           "title": "21 — HISTÓRICO SUPERSEDED Stack H Floem + Bubble T",
           "uuid": "3d89bb7d023f8151842bf5c40e49c0b0",
           "logical_id": "PART2-CH-21",
-          "role": "Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi."
+          "role": "Documento histórico: stack Floem superseded por Bubble Tea v2 e Freya."
         }
       ],
       "semantic_role": "Documento histórico: stack Floem superseded por Bubble Tea v2 e Oxi."
@@ -2291,54 +2291,6 @@
         }
       ],
       "semantic_role": "Documento especializado: 79 T — Technology Skill Packs egui, Bubble Tea v2."
-    },
-    {
-      "local_path": "docs/reference/notion-3de9bb7d.md",
-      "notion_pages": [
-        {
-          "title": "79 W — Modern C++, WebAssembly WAT, WebGPU e Three",
-          "uuid": "3de9bb7d023f812eb484d49cf076f909",
-          "logical_id": "79 W",
-          "role": "Documento especializado: 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
-        },
-        {
-          "title": "79 X — Assembly, ISA, ABI, Reverse Engineering e L",
-          "uuid": "3de9bb7d023f8116ae44dde0a1901cc6",
-          "logical_id": "79 X",
-          "role": "Documento especializado: 79 X — Assembly, ISA, ABI, Reverse Engineering e L."
-        },
-        {
-          "title": "79 Y — Programming Languages, Computer Science, So",
-          "uuid": "3de9bb7d023f81d38bf8ecf60419e56a",
-          "logical_id": "79 Y",
-          "role": "Documento especializado: 79 Y — Programming Languages, Computer Science, So."
-        },
-        {
-          "title": "79 Z — Teaching Module Professor Mode, Neurodiverg",
-          "uuid": "3de9bb7d023f8112b8ecdbc088c81714",
-          "logical_id": "79 Z",
-          "role": "Documento especializado: 79 Z — Teaching Module Professor Mode, Neurodiverg."
-        },
-        {
-          "title": "80 — Prumo Ask Headless One-Shot Interface e Machi",
-          "uuid": "3de9bb7d023f81f1a5c2e6d44111461b",
-          "logical_id": "CONST-80",
-          "role": "Documento especializado: 80 — Prumo Ask Headless One-Shot Interface e Machi."
-        },
-        {
-          "title": "81 — Global Learning Layer Padrões Cross-Project,",
-          "uuid": "3de9bb7d023f81deb239f020182d4972",
-          "logical_id": "CONST-81",
-          "role": "Documento especializado: 81 — Global Learning Layer Padrões Cross-Project,."
-        },
-        {
-          "title": "82 — Prumo Native sobre Oxi Workspace Viewer Agent",
-          "uuid": "3de9bb7d023f81c791d4e4145393fa10",
-          "logical_id": "CONST-82",
-          "role": "Documento especializado: 82 — Prumo Native sobre Oxi Workspace Viewer Agent."
-        }
-      ],
-      "semantic_role": "Documento especializado: 79 W — Modern C++, WebAssembly WAT, WebGPU e Three."
     },
     {
       "local_path": "docs/reference/notion-3e09bb7d.md",
