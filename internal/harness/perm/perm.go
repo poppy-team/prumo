@@ -158,6 +158,23 @@ func (e *Engine) remember(res agent.PermissionResolution) {
 	e.Log = append(e.Log, res)
 }
 
+// Restore re-adopts a decision loaded from a trail.
+//
+// The fingerprint is required, and deliberately not defaulted. A trail written
+// before fingerprints existed identifies a request but not its content, so
+// reusing it would re-open the hole the fingerprint closed: an approval for one
+// call would answer a different one carrying the same id (GAP-107).
+func (e *Engine) Restore(res agent.PermissionResolution) error {
+	if res.RequestID == "" {
+		return fmt.Errorf("restored decision has no request id")
+	}
+	if res.Fingerprint == "" {
+		return fmt.Errorf("restored decision for %s has no fingerprint and cannot be matched to content", res.RequestID)
+	}
+	e.remember(res)
+	return nil
+}
+
 // Resolution returns a decision already recorded for a request, if any. The
 // fingerprint must be supplied so a caller can tell whether the decision it is
 // about to use was made about the content it now holds.

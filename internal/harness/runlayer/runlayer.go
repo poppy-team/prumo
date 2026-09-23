@@ -200,6 +200,53 @@ func SavePermissions(path string, engine *perm.Engine) error {
 	return os.Rename(tmp, path)
 }
 
+// LoadPermissions reads a decision trail back into an engine, so an approval
+// survives the process that was waiting for it.
+//
+// The write side has existed since the trail was introduced; the read side did
+// not. A daemon that stopped for approval, was restarted, and resumed the run
+// asked the same human the same question again — because the decision was only
+// ever in memory (GAP-106). A missing file is not an error: a run that never hit
+// a gate has no trail to load.
+//
+// A corrupt line is skipped rather than fatal. A decision trail is an audit
+// record; one unreadable line must not make every other approval unusable, and
+// silently ignoring a line is what an append-only JSONL format is for.
+func LoadPermissions(path string, engine *perm.Engine) error {
+	if engine == nil {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for line := range strings.SplitSeq(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var res agent.PermissionResolution
+		if err := json.Unmarshal([]byte(line), &res); err != nil {
+			continue
+		}
+		if res.RequestID == "" {
+			continue
+		}
+		// A trail written before fingerprints existed cannot be matched to
+		// content. Loading it would apply an approval to whatever carries that
+		// id now, which is the hole the fingerprint closed. Such a line is kept
+		// in the log for the audit and skipped for reuse.
+		if res.Fingerprint == "" {
+			continue
+		}
+		engine.Restore(res)
+	}
+	return nil
+}
+
 // EvidenceProducer identifies the writer of run evidence. It is recorded in
 // every record so a reader can tell harness-generated evidence from evidence a
 // human or an external tool produced.

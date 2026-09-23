@@ -3,9 +3,12 @@ package daemon
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/harness/perm"
+	"github.com/raillen/prumo/internal/harness/runlayer"
 )
 
 // A run id is accepted straight from a request and then becomes a filename.
@@ -135,5 +138,42 @@ func TestApproveRefusesAFingerprintForDifferentContent(t *testing.T) {
 	waitStatus(t, c, "R-fp", "complete")
 	if got := tools.callCount(); got != 1 {
 		t.Fatalf("the approved tool must run exactly once, got %d", got)
+	}
+}
+
+// The permission trail was written but never read. An approval given to one
+// process is invisible to the next, so a run resumed after a daemon restart
+// asks the same human the same question (GAP-106). This checks the file the
+// daemon wrote is one it would accept back.
+
+func TestPermissionTrailIsReloadable(t *testing.T) {
+	dir := t.TempDir()
+	tools := &stubTools{kinds: map[string]string{"edit.delete": "destructive"}}
+	_, c, cancel := serveDepsForTest(t, dir, approvalDeps(tools))
+
+	if _, err := c.Start("delete something", "fake", "R-reload", 1); err != nil {
+		t.Fatal(err)
+	}
+	st := waitStatus(t, c, "R-reload", "awaiting_approval")
+	requestID := pendingPermission(t, st)
+	if _, err := c.Approve("R-reload", requestID, pendingFingerprint(t, st, requestID)); err != nil {
+		t.Fatal(err)
+	}
+	waitStatus(t, c, "R-reload", "complete")
+	cancel()
+
+	// The trail the run left behind must be loadable by a fresh engine, which is
+	// what a restarted daemon builds.
+	trail := filepath.Join(dir, "store", "permissions-R-reload.jsonl")
+	data, err := os.ReadFile(trail)
+	if err != nil {
+		t.Fatalf("no permission trail was written: %v", err)
+	}
+	if !strings.Contains(string(data), `"fingerprint"`) {
+		t.Fatalf("the trail must record the fingerprint, otherwise it cannot be matched to content:\n%s", data)
+	}
+	engine := perm.New(perm.Policy{DefaultAction: agent.PermissionDeny})
+	if err := runlayer.LoadPermissions(trail, engine); err != nil {
+		t.Fatalf("the daemon wrote a trail it cannot read back: %v", err)
 	}
 }

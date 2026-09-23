@@ -424,6 +424,17 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 	tracker := runlayer.NewTracker(0, 0, 0)
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
 	engine := perm.New(s.policy)
+	// Decisions are read back before the run starts. Without this an approval
+	// given to a previous process is unknown here, and a run resumed after a
+	// daemon restart asks the same human the same question again (GAP-106).
+	if err := runlayer.LoadPermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), engine); err != nil {
+		// A trail that cannot be read is not a reason to start a run that would
+		// then re-ask; it is a reason to say so.
+		s.appendEvent(runID, agent.AgentEvent{
+			ID: runID + "-perm-load-failed", RunID: runID, Kind: "permission_trail_unreadable",
+			Payload: map[string]any{"error": err.Error()}, CreatedAt: agent.Now(),
+		})
+	}
 	checkpoints := checkpoint.New(filepath.Join(dir, "checkpoints"))
 	hasVision := false
 	if declared, err := model.LoadDeclarations(workspace); err == nil {
