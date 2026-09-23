@@ -1,21 +1,28 @@
 # Language Tooling & LSP — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Task requirements, System architecture, Relevant source files) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Session Handshake & Capability Negotiation
+- [ ] `initialize` carries processId, rootUri, and the full client capability set including snippet support.
+- [ ] Server `capabilities` reply is recorded; every method the workflow needs is advertised before use.
+- [ ] Server version is pinned to an exact release, never a floating latest tag.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Document Synchronization & Semantic Queries
+- [ ] Files open with `textDocument/didOpen`, stream incremental `didChange` events, and close with `didClose`.
+- [ ] Hover, definition, references with includeDeclaration, and workspace symbol lookup all resolve against the current document version.
+- [ ] `workspace/symbol` results are capped at 50 entries and definition responses are cached per document version.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test) has been generated and recorded.
+## 3. Diagnostics, Formatting & Code Actions
+- [ ] Diagnostics arrive via push or pull with at most 250 ms debounce after the last keystroke.
+- [ ] Stale markers for closed files are cleared immediately on `didClose`.
+- [ ] Formatting is idempotent: formatting twice yields byte-identical output.
+- [ ] Every `workspace/applyEdit` has a confirmation record with before and after text.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Debug Adapter Sessions
+- [ ] DAP `launch` or `attach` reaches a stopped-at-breakpoint state on the sample target.
+- [ ] `threads`, `stackTrace`, and `variables` return coherent frames for the stopped thread.
+- [ ] `disconnect` reaps the adapter process; no orphaned debug processes remain.
+
+## 5. Performance & Verification Evidence
+- [ ] Server startup completes in under 2 seconds on the reference workspace.
+- [ ] Hover p95 under 150 ms and completion p95 under 300 ms on the replay script.
+- [ ] 200-request replay covering hover, definition, references, rename, and formatting shows zero protocol errors.
+- [ ] `scripts/verify.sh` executes with exit code 0.

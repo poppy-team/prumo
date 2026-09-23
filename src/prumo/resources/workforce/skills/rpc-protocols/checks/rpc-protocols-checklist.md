@@ -1,21 +1,27 @@
 # RPC & Message Protocols — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Task requirements, System architecture, Relevant source files) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. IDL Modeling & Toolchain
+- [ ] Service is authored in a checked-in IDL with package version, language options, and streaming modes declared.
+- [ ] Stubs are generated with pinned `buf generate`; hand-edited generated code is absent.
+- [ ] Toolchain pins for buf, protoc, grpcurl, and capnp where used are recorded.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Numbering & Evolution Discipline
+- [ ] No field or method number is reused or repurposed; removed fields are `reserved` with reason comments.
+- [ ] Changes within a major version are purely additive; renames and type changes ship as a new package version.
+- [ ] A v2 package coexists with v1 under a documented 90-day migration window.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test) has been generated and recorded.
+## 3. Error Contract & Retry Policy
+- [ ] Every failure maps to a canonical gRPC status code with structured `google.rpc.Status` details.
+- [ ] Each method is labeled idempotent or non-idempotent; retries apply only to idempotent methods.
+- [ ] Retry policy uses capped exponential backoff with jitter: base 100 ms, max 3 attempts.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Time, Size & Streaming Budgets
+- [ ] Per-method deadlines are set and documented, for example 800 ms reads and 5 s exports.
+- [ ] Responses over 256 KB paginate or stream; unary blobs above the ceiling are absent.
+- [ ] Streaming choices use unary, server-streaming, or bidirectional modes with backpressure notes.
+
+## 5. Compatibility & Performance Evidence
+- [ ] `buf lint` and `buf breaking` against main report zero findings.
+- [ ] `grpcurl` live listing confirms the deployed surface matches the IDL.
+- [ ] Load test at 500 RPS shows p99 under 120 ms on golden methods.
+- [ ] v1 clients replay cleanly against v2 servers and `scripts/verify.sh` exits 0.
