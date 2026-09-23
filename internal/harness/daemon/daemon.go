@@ -64,6 +64,44 @@ type Deps struct {
 	// policy" (allow, ask for destructive), so leaving it unset does not
 	// silently turn every tool call into an approval request.
 	PermPolicy perm.Policy
+	// Budget is the ceiling one run gets. The zero value means
+	// DefaultRunBudget, because a run with no ceiling at all is the failure
+	// this field exists to remove (GAP-098): the daemon used to build every
+	// tracker with three zeroes, and zero means unlimited in the envelope.
+	Budget Budget
+}
+
+// Budget is a per-run ceiling in the three dimensions the envelope tracks.
+type Budget struct {
+	Tokens    float64
+	CostUSD   float64
+	ToolCalls float64
+}
+
+// DefaultRunBudget is what a daemon runs with when nothing is configured.
+//
+// These are not aspirations. The old tracker had all three limits at zero, and
+// the envelope reads zero as unlimited, so every run through the daemon could
+// spend without limit until the provider declined. The numbers here are sized
+// for an ordinary agent task: enough that normal work is not interrupted, low
+// enough that a runaway loop or a pathological tool result is stopped.
+func DefaultRunBudget() Budget {
+	return Budget{Tokens: 2_000_000, CostUSD: 5, ToolCalls: 500}
+}
+
+func (b Budget) limits() (tokens, usd, tools float64) {
+	def := DefaultRunBudget()
+	tokens, usd, tools = b.Tokens, b.CostUSD, b.ToolCalls
+	if tokens <= 0 {
+		tokens = def.Tokens
+	}
+	if usd <= 0 {
+		usd = def.CostUSD
+	}
+	if tools <= 0 {
+		tools = def.ToolCalls
+	}
+	return tokens, usd, tools
 }
 
 // DefaultPermPolicy is the policy a daemon runs with when none is configured.
@@ -425,7 +463,8 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 // approval and then continues still ends with exactly one coherent record.
 func (s *Server) execute(ctx context.Context, runID, goal, modelName string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int, ar *activeRun) {
 	dir := s.StoreDir
-	tracker := runlayer.NewTracker(0, 0, 0)
+	budgetTokens, budgetUSD, budgetTools := s.Deps.Budget.limits()
+	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
 	engine := perm.New(s.policy)
 	// Decisions are read back before the run starts. Without this an approval
@@ -474,7 +513,11 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 		},
 	}, runID, "S-daemon")
 	runner.MaxTurns = maxTurns
-	runner.Svc.ConsumeBudget = tracker.ConsumeUsage
+	// Preflight: a run stops before making a call it cannot afford, and
+	// reserves what the call may cost so the ceiling binds the last turn too
+	// rather than only being checked after the money is spent (GAP-098).
+	runner.Svc.ReserveBudget = tracker.Reserve
+	runner.Svc.BudgetExhausted = tracker.Exhausted
 	runner.SeedMessages([]agent.Message{{ID: "m1", Role: agent.RoleUser, Content: goal, CreatedAt: agent.Now()}})
 	kstore := knowledge.New()
 	knowledge.SeedRequirement(kstore, runID, goal)

@@ -42,7 +42,13 @@ type Services struct {
 	// ContextManifest builds the context pointer for a turn.
 	ContextManifest func(ctx context.Context, state agent.NativeAgentState) (string, error)
 	// Budgets enforcement hook; nil disables.
-	ConsumeBudget func(usage agent.Usage) error
+	// ReserveBudget holds an allowance before a model call and returns a
+	// release that settles it against the real usage. It replaces a
+	// ConsumeBudget-after-the-call hook: usage arrives once the call is paid
+	// for, so a limit checked only there bounds nothing (GAP-098).
+	ReserveBudget func(tokens float64) (release func(actualTokens, actualCost float64), err error)
+	// BudgetExhausted is the preflight, consulted before a call is made.
+	BudgetExhausted func() error
 	// ToolSpecs advertises callable tools to the model (MCP servers, ACI
 	// catalogs). Nil sends no specs; execution still policy-gated.
 	ToolSpecs func() []agent.ToolSpec
@@ -325,6 +331,45 @@ func (r *Runner) recoveryPolicyFor(tc agent.ToolCall) string {
 	}
 }
 
+// TurnTokenAllowance is what one model call is assumed to cost when a budget is
+// enforced. It is a reservation, not a prediction: the real usage settles it, and
+// anything left over goes back. Its job is to make the ceiling bind the turn
+// that would otherwise cross it.
+const TurnTokenAllowance = 32_000
+
+// reserveForCall takes the preflight and the reservation for one model call.
+//
+// Both halves matter and neither is sufficient alone. Exhausted stops a run
+// that has already spent its budget. The reservation is what stops the turn
+// that would take it past: without it, every turn is individually within the
+// limit and the last one is unlimited.
+func (r *Runner) reserveForCall(req agent.ModelRequest) (func(float64, float64), error) {
+	if r.Svc.BudgetExhausted != nil {
+		if err := r.Svc.BudgetExhausted(); err != nil {
+			return nil, err
+		}
+	}
+	if r.Svc.ReserveBudget == nil {
+		return func(float64, float64) {}, nil
+	}
+	// A request with a large conversation needs a larger allowance, so the
+	// reservation tracks the prompt rather than assuming one size.
+	allowance := float64(TurnTokenAllowance)
+	for _, msg := range req.Messages {
+		// Four characters per token is the usual English ratio; it only has to
+		// be the right order of magnitude for the reservation to bind.
+		allowance += float64(len(msg.Content)) / 4
+	}
+	release, err := r.Svc.ReserveBudget(allowance)
+	if err != nil {
+		return nil, err
+	}
+	if release == nil {
+		return func(float64, float64) {}, nil
+	}
+	return release, nil
+}
+
 // permissionRequestFor builds the request for one tool call. Both the
 // evaluation and the fingerprint check go through it, so the two cannot drift:
 // a fingerprint computed from a different shape of request would approve one
@@ -472,11 +517,35 @@ func (r *Runner) Step(ctx context.Context) error {
 			Messages: append([]agent.Message{}, r.Messages...),
 			Tools:    specs,
 		}
+		// Budget preflight, before the call. Usage arrives afterwards, so
+		// checking there bounds nothing: the last turn of a run is the one that
+		// can cross the ceiling. The reservation covers what this call may cost
+		// and is released when the real usage is known (GAP-098).
+		release, budgetErr := r.reserveForCall(req)
+		if budgetErr != nil {
+			r.State.Phase = agent.PhaseFailed
+			r.State.StopReason = "budget exhausted: " + budgetErr.Error()
+			r.emitLocked("budget_exhausted", map[string]any{
+				"reason": budgetErr.Error(), "turn": r.State.TurnID,
+			})
+			return budgetErr
+		}
 		ch, err := r.Svc.Models.Stream(ctx, req)
 		if err != nil {
+			release(0, 0)
 			r.State.Phase = agent.PhaseFailed
 			r.State.StopReason = err.Error()
 			return err
+		}
+		// The stream reports the real cost once its usage event arrives; until
+		// then the reservation stands.
+		settled := false
+		settle := func(tokens, cost float64) {
+			if settled {
+				return
+			}
+			settled = true
+			release(tokens, cost)
 		}
 		r.Events = nil
 		for ev := range ch {
@@ -517,20 +586,23 @@ func (r *Runner) Step(ctx context.Context) error {
 					"cache_write_tokens": ev.Usage.CacheWriteTokens,
 					"cost_usd":           ev.Usage.CostUSD,
 				})
-				if r.Svc.ConsumeBudget != nil {
-					if err := r.Svc.ConsumeBudget(*ev.Usage); err != nil {
-						r.State.Phase = agent.PhaseFailed
-						r.State.StopReason = "budget exhausted: " + err.Error()
-						return err
-					}
-				}
+				// The call is accounted for: the reservation becomes the real
+				// cost, so the next turn's preflight sees the truth.
+				settle(float64(ev.Usage.InputTokens+ev.Usage.OutputTokens), ev.Usage.CostUSD)
 			}
 			if ev.Kind == agent.EventError && !ev.Retryable {
+				// A failed call spent nothing that will be reported, so the
+				// reservation is released rather than left held against a limit
+				// that was never crossed.
+				settle(0, 0)
 				r.State.Phase = agent.PhaseFailed
 				r.State.StopReason = ev.Error
 				return fmt.Errorf("model error: %s", ev.Error)
 			}
 		}
+		// A stream that ended without a usage event still released its hold:
+		// the reservation exists to cover an unreported call, not to be spent.
+		settle(0, 0)
 		r.State.Phase = agent.PhaseConsumeModelEvent
 	case agent.PhaseConsumeModelEvent:
 		r.State.Phase = agent.PhasePlanToolCalls

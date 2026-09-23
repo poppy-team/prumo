@@ -60,7 +60,8 @@ func RunWork(deps RunnerDeps) Work {
 			ContextManifest: func(_ context.Context, _ agent.NativeAgentState) (string, error) {
 				return "ctx-" + runID, nil
 			},
-			ConsumeBudget: tracker.ConsumeUsage,
+			ReserveBudget:   tracker.Reserve,
+			BudgetExhausted: tracker.Exhausted,
 		}, runID, "S-"+role.Name)
 		runner.MaxTurns = maxTurns
 		if deps.Strict {

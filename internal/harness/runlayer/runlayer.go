@@ -29,6 +29,10 @@ import (
 type Tracker struct {
 	mu       sync.Mutex
 	envelope budget.Envelope
+	// reserved holds allowances for calls that have been made but whose usage
+	// has not been reported yet. Without it a run could start N concurrent
+	// calls, each individually within the limit, and land N times over it.
+	reserved map[string]float64
 }
 
 // NewTracker builds a hard envelope from limits (0 = untracked dimension).
@@ -37,7 +41,104 @@ func NewTracker(tokens, usd, tools float64) *Tracker {
 		Version: 1, Scope: "run",
 		Limits: map[string]float64{"tokens": tokens, "cost_usd": usd, "tool_calls": tools},
 		Usage:  map[string]float64{}, Mode: "hard",
-	}}
+	}, reserved: map[string]float64{}}
+}
+
+// Reserve holds back an allowance before a call is made, and is released once
+// the real usage is known.
+//
+// Checking the envelope after the usage arrives bounds nothing: the call has
+// already been paid for. A turn can overshoot by its whole cost, so the last
+// turn of a run is the one that can cross the ceiling. Reserving before the
+// request is what makes the limit a limit rather than a post-mortem.
+//
+// The release takes both dimensions because a call is bounded by what it sent
+// and by what it cost, and settling only one of them would leave the other
+// reserved forever or charged twice.
+func (t *Tracker) Reserve(tokens float64) (release func(actualTokens, actualCost float64), err error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if err := t.checkHeadroom(map[string]float64{"tokens": tokens}); err != nil {
+		return nil, err
+	}
+	t.reserved["tokens"] += tokens
+	released := false
+	return func(actualTokens, actualCost float64) {
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		if released {
+			return
+		}
+		released = true
+		t.reserved["tokens"] -= tokens
+		settle := map[string]float64{}
+		if actualTokens > 0 {
+			settle["tokens"] = actualTokens
+		}
+		if actualCost > 0 {
+			settle["cost_usd"] = actualCost
+		}
+		if len(settle) == 0 {
+			return
+		}
+		// The cost is already incurred, so it is recorded even when it passes the
+		// ceiling. The envelope's Consume refuses to cross a hard limit, which is
+		// right for a request and wrong for a bill: dropping the last call's
+		// usage would leave the tracker reporting less than the run actually
+		// spent, and the next preflight would see headroom that does not exist.
+		for key, value := range settle {
+			t.envelope.Usage[key] += value
+		}
+	}, nil
+}
+
+// Exhausted reports whether a dimension has no headroom left, counting what is
+// reserved but not yet spent. It is the preflight: a run about to make another
+// call should stop when it cannot afford one.
+//
+// The comparison is >=, so a run sitting exactly on a limit reports exhausted.
+// There is no free turn at the boundary, and a preflight that says "not
+// exhausted" there invites the call that crosses it.
+func (t *Tracker) Exhausted() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for key, limit := range t.envelope.Limits {
+		if limit <= 0 {
+			continue
+		}
+		committed := t.envelope.Usage[key] + t.reserved[key]
+		if committed >= limit {
+			return fmt.Errorf("hard budget exhausted for %s: %g of %g already committed", key, committed, limit)
+		}
+	}
+	return nil
+}
+
+// checkHeadroom accounts for outstanding reservations. Caller holds t.mu.
+func (t *Tracker) checkHeadroom(extra map[string]float64) error {
+	for key, limit := range t.envelope.Limits {
+		if limit <= 0 {
+			// Zero is unlimited. That is the documented meaning, and it is why
+			// a tracker built with NewTracker(0, 0, 0) has no ceiling at all.
+			continue
+		}
+		projected := t.envelope.Usage[key] + t.reserved[key] + extra[key]
+		if projected > limit {
+			return fmt.Errorf("hard budget exhausted for %s: %g of %g already committed", key, projected, limit)
+		}
+	}
+	return nil
+}
+
+// LimitsCopy reports the configured limits, for a status response.
+func (t *Tracker) LimitsCopy() map[string]float64 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	out := map[string]float64{}
+	for key, value := range t.envelope.Limits {
+		out[key] = value
+	}
+	return out
 }
 
 // ConsumeUsage feeds model usage into the envelope (tokens + cost).

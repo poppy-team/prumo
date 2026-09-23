@@ -292,7 +292,8 @@ func runAgentRun(asJSON bool, args []string) int {
 			return runlayer.GatesQualityGate(policies, reports.ReportsCopy, usage.Snapshot)()
 		}
 	}
-	runner.Svc.ConsumeBudget = tracker.ConsumeUsage
+	runner.Svc.ReserveBudget = tracker.Reserve
+	runner.Svc.BudgetExhausted = tracker.Exhausted
 	runner.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: goal, CreatedAt: agent.Now()}}
 	kstore := knowledge.New()
 	knowledge.SeedRequirement(kstore, runID, goal)

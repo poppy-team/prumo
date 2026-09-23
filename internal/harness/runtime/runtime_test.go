@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -253,18 +254,78 @@ func TestToolWithoutFileOperationReportsNoChange(t *testing.T) {
 	}
 }
 
-func TestBudgetExhaustion(t *testing.T) {
+// A budget that is checked only after the usage arrives bounds nothing: the
+// call is already paid for. The real tracker refuses the call instead, so this
+// uses it rather than a stub hook that no longer exists.
+func TestBudgetStopsARunBeforeTheCallItCannotAfford(t *testing.T) {
 	fake := model.NewFake(map[string][]model.ScriptStep{"*": []model.ScriptStep{{Kind: "usage", Usage: &agent.Usage{InputTokens: 1000000, OutputTokens: 0}}, {Kind: "complete"}}})
+	budget := &tinyBudget{limit: 10} // one call cannot fit
 	r := NewRunner(Services{
 		Models: fake, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
 		Checkpoints:   checkpoint.New(t.TempDir()),
-		ConsumeBudget: func(u agent.Usage) error { return errors.New("hard budget exhausted") },
+		ReserveBudget: budget.reserve, BudgetExhausted: budget.exhausted,
 	}, "R5", "S1")
 	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
 	err := r.RunUntilDone(context.Background())
 	if err == nil {
-		t.Fatal("expected budget error")
+		t.Fatal("a run that cannot afford its first call must fail")
 	}
+	if !strings.Contains(err.Error(), "budget") {
+		t.Fatalf("the failure must name the budget, got %v", err)
+	}
+	if r.State.Phase != agent.PhaseFailed {
+		t.Fatalf("phase = %s, want failed", r.State.Phase)
+	}
+}
+
+// The allowance is a reservation, not a cap: what a call does not use goes back,
+// so a run is stopped by the real spend rather than by the pessimism of the
+// estimate.
+func TestBudgetReleasesWhatACallDidNotUse(t *testing.T) {
+	budget := &tinyBudget{limit: 100_000}
+	release, err := budget.reserve(50_000)
+	if err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+	release(10, 0)
+	if err := budget.exhausted(); err != nil {
+		t.Fatalf("an unused reservation must be released, not held: %v", err)
+	}
+}
+
+// tinyBudget is the reservation protocol in miniature. The real tracker lives
+// in runlayer, which imports this package, so exercising it here would be an
+// import cycle; what belongs to this test is that the runtime uses the protocol
+// correctly, not how the tracker implements it.
+type tinyBudget struct {
+	limit   float64
+	spent   float64
+	held    float64
+	failNow bool
+}
+
+func (b *tinyBudget) reserve(tokens float64) (func(float64, float64), error) {
+	if b.failNow || b.spent+b.held+tokens > b.limit {
+		b.failNow = true
+		return nil, errors.New("hard budget exhausted for tokens")
+	}
+	b.held += tokens
+	released := false
+	return func(actual, _ float64) {
+		if released {
+			return
+		}
+		released = true
+		b.held -= tokens
+		b.spent += actual
+	}, nil
+}
+
+func (b *tinyBudget) exhausted() error {
+	if b.failNow {
+		return errors.New("hard budget exhausted for tokens")
+	}
+	return nil
 }
 
 func TestCheckpointResume(t *testing.T) {
