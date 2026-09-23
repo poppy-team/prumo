@@ -4,6 +4,7 @@ package aci
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -120,6 +121,61 @@ func (e *Executor) Execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 	return res, err
 }
 
+// runCommand executes cmd in the workspace root and reports the process's real
+// exit status.
+//
+// The exit code is the command's own, taken from *exec.ExitError. It is not
+// derived from whether output was produced and it is not replaced by a constant:
+// a gate that trusts this value can only be as honest as the command that
+// produced it. GAP-097 recorded that this used to be hardcoded to 0, which let a
+// failing `go test ./...` satisfy the strict quality gate.
+//
+// A command that could not be started (missing binary, permission denied) is
+// reported as 127, the conventional shell code for "not found", and a context
+// cancellation is 130, matching the shell's convention for SIGINT. Both are
+// failures; neither is silently success.
+func (e *Executor) runCommand(ctx context.Context, name string, args ...string) (output string, exitCode int) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Dir = e.Root
+	data, err := cmd.CombinedOutput()
+	if err == nil {
+		return string(data), 0
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return string(data), exitErr.ExitCode()
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return string(data), 124
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
+		return string(data), 130
+	}
+	return string(data), 127
+}
+
+// runShell executes a shell command in the workspace root and reports the real
+// exit status, with the same contract as runCommand.
+func (e *Executor) runShell(ctx context.Context, script string) (output string, exitCode int) {
+	cmd := exec.CommandContext(ctx, "sh", "-c", script)
+	cmd.Dir = e.Root
+	data, err := cmd.CombinedOutput()
+	if err == nil {
+		return string(data), 0
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return string(data), exitErr.ExitCode()
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return string(data), 124
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
+		return string(data), 130
+	}
+	return string(data), 127
+}
+
 func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.ToolResult, error) {
 	arg := func(k string) string {
 		if call.Arguments == nil {
@@ -163,21 +219,21 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 		out, trunc := e.searchText(pattern)
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
 	case "git.status":
-		cmd := exec.CommandContext(ctx, "git", "status", "--short")
-		cmd.Dir = e.Root
-		data, _ := cmd.CombinedOutput()
-		out, trunc := bound(string(data), e.OutputMax)
-		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
+		data, code := e.runCommand(ctx, "git", "status", "--short")
+		out, trunc := bound(data, e.OutputMax)
+		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "git.diff":
-		cmd := exec.CommandContext(ctx, "git", "diff", "--stat", "--", ".")
-		cmd.Dir = e.Root
-		data, _ := cmd.CombinedOutput()
-		out, trunc := bound(string(data), e.OutputMax)
-		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
+		data, code := e.runCommand(ctx, "git", "diff", "--stat", "--", ".")
+		out, trunc := bound(data, e.OutputMax)
+		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "test.run", "process.exec":
 		bin := arg("command")
 		if call.Name == "test.run" {
-			bin = "go test ./... 2>&1 | head -c 8000"
+			// No pipe to `head`: a pipeline reports the exit status of its last
+			// command, so truncating the output this way replaced the test
+			// result with head's. The output is bounded by bound() instead, which
+			// leaves the test's own status intact.
+			bin = "go test ./... 2>&1"
 		}
 		if bin == "" {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: "missing command"}, nil
@@ -185,17 +241,13 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 		if err := CheckEgress(e.Egress, bin); err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}
-		cmd := exec.CommandContext(ctx, "sh", "-c", bin)
-		cmd.Dir = e.Root
-		data, _ := cmd.CombinedOutput()
-		out, trunc := bound(string(data), e.OutputMax)
-		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
+		data, code := e.runShell(ctx, bin)
+		out, trunc := bound(data, e.OutputMax)
+		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "code.diagnostics":
-		cmd := exec.CommandContext(ctx, "go", "vet", "./...")
-		cmd.Dir = e.Root
-		data, _ := cmd.CombinedOutput()
-		out, trunc := bound(string(data), e.OutputMax)
-		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
+		data, code := e.runCommand(ctx, "go", "vet", "./...")
+		out, trunc := bound(data, e.OutputMax)
+		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "edit.patch":
 		return e.editPatch(call, arg), nil
 	case "edit.delete":
