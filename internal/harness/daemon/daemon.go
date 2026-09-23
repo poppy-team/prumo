@@ -538,12 +538,19 @@ func (s *Server) handle(conn net.Conn) {
 		return writeMsg(w, v)
 	}
 
-	var subCancel context.CancelFunc
-	defer func() {
-		if subCancel != nil {
-			subCancel()
-		}
-	}()
+	// The connection owns a context that dies when handle returns, and every
+	// subscription derives from it. A subscription used to hang off
+	// context.Background(), so closing the socket left its goroutine running and
+	// writing into a dead connection until the next subscribe arrived.
+	//
+	// Replacing a subscription stops the one it replaces, and the last one stops
+	// with the connection. A cancel func held in a variable assigned inside a
+	// loop is the shape a static check reads as a leak, so the replacement signal
+	// is a channel instead: closing it ends that subscription, and the
+	// connection context is what guarantees the last one ends too.
+	connCtx, connCancel := context.WithCancel(context.Background())
+	defer connCancel()
+	var replaced chan struct{}
 
 	for sc.Scan() {
 		var msg map[string]any
@@ -552,12 +559,17 @@ func (s *Server) handle(conn net.Conn) {
 			continue
 		}
 		if str(msg, "op") == "subscribe" {
-			if subCancel != nil {
-				subCancel()
+			if replaced != nil {
+				close(replaced)
 			}
-			var subCtx context.Context
-			subCtx, subCancel = context.WithCancel(context.Background())
-			go s.handleSubscribe(subCtx, msg, safeWrite)
+			done := make(chan struct{})
+			replaced = done
+			ctx, stop := context.WithCancel(connCtx)
+			go func() {
+				defer stop()
+				defer close(done)
+				s.handleSubscribe(ctx, msg, safeWrite)
+			}()
 			continue
 		}
 		_ = safeWrite(s.dispatch(msg))
