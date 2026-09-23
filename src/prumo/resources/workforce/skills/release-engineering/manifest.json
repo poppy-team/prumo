@@ -1,6 +1,7 @@
 {
   "id": "release-engineering",
   "name": "Release Engineering, Packaging & Rollback Readiness",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Cut safe, traceable software releases with SemVer versioning, reproducible signed packaging, checksum verification, bidirectional migration rehearsals, staged rollouts, and rehearsed rollback plans.",

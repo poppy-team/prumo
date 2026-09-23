@@ -1,6 +1,7 @@
 {
   "id": "git-workflow",
   "name": "Git Workflow, Branching & Evidence-Backed Review",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Keep changes isolated, reviewable, and traceable with focused branches or worktrees, small conventional commits, secret-free history, and pull requests carrying test evidence and acceptance mapping.",

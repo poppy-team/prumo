@@ -1,6 +1,7 @@
 {
   "id": "lean-progressive-context",
   "name": "Lean Progressive Context",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Select the smallest sufficient context for a task under strict token budgets through staged loading, a running token ledger, sufficiency testing per layer, and Working Context Capsule handoffs.",

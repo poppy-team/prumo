@@ -1202,6 +1202,7 @@
     {
       "id": "clean-code",
       "name": "Pragmatic Clean Code & Design Ergonomics",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Enforce pragmatic Clean Code: domain naming, function single-responsibility, cohesion & coupling metrics, anti-premature abstraction, and smell elimination.",
@@ -2501,6 +2502,7 @@
     {
       "id": "documentation",
       "name": "Documentation Engineering & Canonical Markdown Publishing",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Maintain canonical Markdown documentation for users, developers, and operators with explicit ownership, authority roles, drift detection against code, link integrity, and versioned publishing.",
@@ -3313,6 +3315,7 @@
     {
       "id": "git-workflow",
       "name": "Git Workflow, Branching & Evidence-Backed Review",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Keep changes isolated, reviewable, and traceable with focused branches or worktrees, small conventional commits, secret-free history, and pull requests carrying test evidence and acceptance mapping.",
@@ -4015,6 +4018,7 @@
     {
       "id": "goal-management",
       "name": "Prumo Goal Authoring, Phasing & Lock Management",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Author and manage Prumo Goals with measurable acceptance criteria, phased execution plans, evidence linkage, and lock discipline so scope stays explicit and locked criteria are never silently weakened.",
@@ -7340,6 +7344,7 @@
     {
       "id": "lean-progressive-context",
       "name": "Lean Progressive Context",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Select the smallest sufficient context for a task under strict token budgets through staged loading, a running token ledger, sufficiency testing per layer, and Working Context Capsule handoffs.",
@@ -8938,6 +8943,7 @@
     {
       "id": "project-intelligence",
       "name": "Project Intelligence",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Record honest task-level cost, effort, quality, and token metrics in a durable intelligence ledger and apply estimate-vs-actual variance to calibrate future planning.",
@@ -9309,6 +9315,7 @@
     {
       "id": "release-engineering",
       "name": "Release Engineering, Packaging & Rollback Readiness",
+      "core": true,
       "version": 2,
       "schema_version": 3,
       "purpose": "Cut safe, traceable software releases with SemVer versioning, reproducible signed packaging, checksum verification, bidirectional migration rehearsals, staged rollouts, and rehearsed rollback plans.",

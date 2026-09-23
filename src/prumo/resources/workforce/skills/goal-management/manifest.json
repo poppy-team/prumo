@@ -1,6 +1,7 @@
 {
   "id": "goal-management",
   "name": "Prumo Goal Authoring, Phasing & Lock Management",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Author and manage Prumo Goals with measurable acceptance criteria, phased execution plans, evidence linkage, and lock discipline so scope stays explicit and locked criteria are never silently weakened.",

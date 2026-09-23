@@ -1,6 +1,7 @@
 {
   "id": "project-intelligence",
   "name": "Project Intelligence",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Record honest task-level cost, effort, quality, and token metrics in a durable intelligence ledger and apply estimate-vs-actual variance to calibrate future planning.",

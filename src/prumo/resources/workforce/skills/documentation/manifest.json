@@ -1,6 +1,7 @@
 {
   "id": "documentation",
   "name": "Documentation Engineering & Canonical Markdown Publishing",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Maintain canonical Markdown documentation for users, developers, and operators with explicit ownership, authority roles, drift detection against code, link integrity, and versioned publishing.",

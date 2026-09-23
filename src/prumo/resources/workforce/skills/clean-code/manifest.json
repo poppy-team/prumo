@@ -1,6 +1,7 @@
 {
   "id": "clean-code",
   "name": "Pragmatic Clean Code & Design Ergonomics",
+  "core": true,
   "version": 2,
   "schema_version": 3,
   "purpose": "Enforce pragmatic Clean Code: domain naming, function single-responsibility, cohesion & coupling metrics, anti-premature abstraction, and smell elimination.",
