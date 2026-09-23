@@ -128,6 +128,10 @@ type PermissionRequest struct {
 	Reversibility    string   `json:"reversibility,omitempty"`
 	Risk             string   `json:"risk,omitempty"`
 	CreatedAt        string   `json:"created_at"`
+	// Fingerprint is derived from the action, the resource and the arguments.
+	// It is computed by the permission engine rather than supplied by the caller,
+	// because a caller that computed its own would compute the one it wanted.
+	Fingerprint string `json:"fingerprint,omitempty"`
 }
 
 // PermissionResolution is the persisted approval event.
@@ -139,6 +143,11 @@ type PermissionResolution struct {
 	Constraints []string           `json:"constraints,omitempty"`
 	Actor       string             `json:"actor,omitempty"`
 	DecidedAt   string             `json:"decided_at"`
+	// Fingerprint identifies the content that was approved. An approval is for
+	// one specific action on one specific resource with one specific set of
+	// arguments; without this, a reused request id silently carried an approval
+	// from a different call to a different one (GAP-107).
+	Fingerprint string `json:"fingerprint,omitempty"`
 }
 
 // ModelRequest is what the NativeAgent asks a ModelProvider to do.
