@@ -11,7 +11,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/raillen/prumo/internal/budget"
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -197,14 +200,55 @@ func SavePermissions(path string, engine *perm.Engine) error {
 	return os.Rename(tmp, path)
 }
 
+// EvidenceProducer identifies the writer of run evidence. It is recorded in
+// every record so a reader can tell harness-generated evidence from evidence a
+// human or an external tool produced.
+const EvidenceProducer = "prumo-harness"
+
 // WriteEvidence validates and persists the run's protocol evidence record.
-func WriteEvidence(path, runID, phase, stopReason string, usage map[string]float64, reports []ToolReport) (evidence.Record, error) {
-	rec := evidence.Record{
-		ID:      "ev-" + runID + "-" + phase,
-		Type:    "harness_run",
-		Summary: fmt.Sprintf("run %s %s (%s) usage=%v reports=%d", runID, phase, stopReason, usage, len(reports)),
+//
+// The record carries every field schemas/evidence.schema.json requires. Before
+// the 2026-09-23 audit it wrote only id, type and summary, used a type
+// (`harness_run`) absent from the schema enum, and validated through a helper
+// that checked two fields — so a record that could not describe what produced
+// it, when it happened, or which goal it belonged to was still accepted as
+// evidence.
+//
+// Status is derived from the run, not asserted by the caller: a run that
+// reached a failed phase, or that executed a tool reporting a non-zero exit
+// code, is `failed` regardless of what the caller believes. Confidence is
+// `unknown` because a run summary is not verification of the goal it ran for.
+func WriteEvidence(path, runID, goalID, phase, stopReason string, usage map[string]float64, reports []ToolReport) (evidence.Record, error) {
+	goal := strings.TrimSpace(goalID)
+	if goal == "" {
+		goal = "unassigned"
 	}
-	if err := evidence.Validate(map[string]any{"id": rec.ID, "type": rec.Type}); err != nil {
+
+	recordType := "harness_run"
+	status := runStatusFrom(phase, stopReason, reports)
+
+	rec := evidence.Record{
+		ID:        "ev-" + runID + "-" + phase,
+		Type:      recordType,
+		Summary:   fmt.Sprintf("run %s %s (%s) usage=%v reports=%d", runID, phase, stopReason, usage, len(reports)),
+		Producer:  EvidenceProducer,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Status:    status,
+		GoalID:    goal,
+		RunID:     runID,
+		// A run summary reports what happened; it does not verify the goal.
+		// Marking it low rather than unknown would overstate it, and leaving it
+		// blank would let a reader assume the strongest available claim.
+		Confidence: "low",
+		Metadata: map[string]any{
+			"phase":        phase,
+			"stop_reason":  stopReason,
+			"usage":        usage,
+			"report_count": len(reports),
+			"failed_tools": failedToolNames(reports),
+		},
+	}
+	if err := evidence.ValidateRecord(rec); err != nil {
 		return evidence.Record{}, err
 	}
 	data, err := json.MarshalIndent(rec, "", "  ")
@@ -221,7 +265,37 @@ func WriteEvidence(path, runID, phase, stopReason string, usage map[string]float
 	return rec, os.Rename(tmp, path)
 }
 
-// BridgeToObservability projects timeline events into the observability sink.
+// runStatusFrom derives a run's status from what actually happened.
+func runStatusFrom(phase, stopReason string, reports []ToolReport) string {
+	if strings.EqualFold(stopReason, "cancelled") || strings.EqualFold(stopReason, "denied") {
+		return "cancelled"
+	}
+	if strings.EqualFold(stopReason, "failed") || strings.EqualFold(phase, "failed") {
+		return "failed"
+	}
+	for _, report := range reports {
+		if report.ExitCode != 0 {
+			return "failed"
+		}
+	}
+	if strings.EqualFold(phase, "complete") {
+		return "passed"
+	}
+	return "incomplete"
+}
+
+// failedToolNames lists the tools that reported a non-zero exit code, so the
+// evidence record names what failed rather than only that something did.
+func failedToolNames(reports []ToolReport) []string {
+	failed := []string{}
+	for _, report := range reports {
+		if report.ExitCode != 0 {
+			failed = append(failed, fmt.Sprintf("%s(exit=%d)", report.Name, report.ExitCode))
+		}
+	}
+	sort.Strings(failed)
+	return failed
+} // BridgeToObservability projects timeline events into the observability sink.
 // The file is created even for empty timelines (explicit "no events").
 func BridgeToObservability(path string, events []agent.AgentEvent) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

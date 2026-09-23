@@ -1,18 +1,73 @@
 package evidence
 
 import (
+	"strings"
 	"testing"
 )
 
-func TestValidate(t *testing.T) {
-	if err := Validate(map[string]any{"id": "EV-001", "type": "test"}); err != nil {
-		t.Fatalf("expected valid evidence: %v", err)
+// A record carrying only id and type is not valid evidence.
+// schemas/evidence.schema.json requires id, type, producer, timestamp, status
+// and goal_id. This test used to assert the opposite, which is how the harness
+// came to write records that named neither a producer, a time, a status nor a
+// goal and still had them accepted (GAP-099).
+func completeMap() map[string]any {
+	return map[string]any{
+		"id":        "EV-001",
+		"type":      "test",
+		"producer":  "go-test",
+		"timestamp": "2026-09-23T10:00:00Z",
+		"status":    "passed",
+		"goal_id":   "P00-G01",
 	}
-	if err := Validate(map[string]any{"type": "test"}); err == nil {
-		t.Fatalf("expected missing id error")
+}
+
+func TestValidateAcceptsACompleteRecord(t *testing.T) {
+	if err := Validate(completeMap()); err != nil {
+		t.Fatalf("a complete record must validate: %v", err)
 	}
-	if err := Validate(map[string]any{"id": "EV-001"}); err == nil {
-		t.Fatalf("expected missing type error")
+}
+
+func TestValidateRejectsARecordMissingRequiredFields(t *testing.T) {
+	cases := map[string][]string{
+		"missing id":         {"id"},
+		"missing type":       {"type"},
+		"missing producer":   {"producer"},
+		"missing timestamp":  {"timestamp"},
+		"missing status":     {"status"},
+		"missing goal_id":    {"goal_id"},
+		"missing everything": {"goal_id", "id", "producer", "status", "timestamp", "type"},
+	}
+	for name, expected := range cases {
+		record := completeMap()
+		for _, field := range expected {
+			delete(record, field)
+		}
+		err := Validate(record)
+		if err == nil {
+			t.Errorf("%s: expected rejection, got acceptance", name)
+			continue
+		}
+		for _, field := range expected {
+			if !strings.Contains(err.Error(), field) {
+				t.Errorf("%s: error must name %q, got %q", name, field, err.Error())
+			}
+		}
+	}
+}
+
+func TestValidateRejectsABadTimestamp(t *testing.T) {
+	record := completeMap()
+	record["timestamp"] = "last tuesday"
+	if err := Validate(record); err == nil {
+		t.Fatal("a non-RFC3339 timestamp must be rejected")
+	}
+}
+
+func TestValidateRejectsAnUnknownType(t *testing.T) {
+	record := completeMap()
+	record["type"] = "unregistered_type"
+	if err := Validate(record); err == nil {
+		t.Fatal("a type outside the schema enum must be rejected")
 	}
 }
 

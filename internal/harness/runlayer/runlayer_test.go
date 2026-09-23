@@ -70,10 +70,19 @@ func TestDumpPermissions(t *testing.T) {
 }
 
 func TestWriteEvidence(t *testing.T) {
-	rec, err := WriteEvidence(filepath.Join(t.TempDir(), "ev.json"), "R1", "complete", "completed",
+	rec, err := WriteEvidence(filepath.Join(t.TempDir(), "ev.json"), "R1", "P00-G01", "complete", "completed",
 		map[string]float64{"tokens": 5}, []ToolReport{{Name: "test.run"}})
-	if err != nil || rec.Type != "harness_run" {
-		t.Fatalf("evidence failed: %+v %v", rec, err)
+	if err != nil {
+		t.Fatalf("evidence write failed: %v", err)
+	}
+	if rec.Type != "harness_run" {
+		t.Fatalf("unexpected type %q", rec.Type)
+	}
+	if rec.Producer == "" || rec.Timestamp == "" || rec.Status == "" || rec.GoalID != "P00-G01" {
+		t.Fatalf("record is missing a required field: %+v", rec)
+	}
+	if rec.Status != "passed" {
+		t.Fatalf("a completed run with no failing reports must be passed, got %q", rec.Status)
 	}
 }
 

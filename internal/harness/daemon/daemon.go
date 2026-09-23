@@ -121,6 +121,10 @@ type activeRun struct {
 	// busy is true while the run loop is advancing, so an approval cannot
 	// start a second loop over the same state. Guarded by Server.mu.
 	busy bool
+
+	// goal is the request's goal text, recorded so the run's evidence can name
+	// the goal it speaks to. The schema requires goal_id on every record.
+	goal string
 }
 
 // New creates a server; call Serve to block.
@@ -375,7 +379,7 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 		cancel()
 		return map[string]any{"ok": false, "error": "run already active: " + runID}
 	}
-	ar := &activeRun{cancel: cancel, ctx: runCtx, busy: true}
+	ar := &activeRun{cancel: cancel, ctx: runCtx, busy: true, goal: goal}
 	s.runs[runID] = ar
 	s.mu.Unlock()
 
@@ -473,8 +477,16 @@ func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
 	_ = ar.kstore.Save(filepath.Join(dir, "knowledge-"+runID+".json"))
 	_ = ar.tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
 	_ = runlayer.SavePermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), ar.engine)
-	_, _ = runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
-		runID, string(phase), runner.State.StopReason, ar.tracker.Snapshot(), ar.counting.ReportsCopy())
+	if _, evErr := runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
+		runID, ar.goal, string(phase), runner.State.StopReason, ar.tracker.Snapshot(), ar.counting.ReportsCopy()); evErr != nil {
+		// Evidence that cannot be written must be visible. Reporting the run
+		// as successful while its evidence is missing is the false green this
+		// audit closed, so the failure becomes part of the run's own timeline.
+		s.appendEvent(runID, agent.AgentEvent{
+			ID: runID + "-evidence-failed", RunID: runID, Kind: "evidence.write_failed",
+			Payload: map[string]any{"error": evErr.Error()}, CreatedAt: agent.Now(),
+		})
+	}
 	_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
 	_, _ = checkpoint.New(filepath.Join(dir, "checkpoints")).Prune(5)
 	// "finished" is for a run that ended. A run that stopped for a decision has

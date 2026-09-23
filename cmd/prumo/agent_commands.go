@@ -295,8 +295,10 @@ func runAgentRun(asJSON bool, args []string) int {
 		saveKnowledge()
 		_ = tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
 		_ = runlayer.DumpPermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), engine)
-		_, _ = runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
-			runID, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy())
+		if _, evErr := runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
+			runID, goal, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy()); evErr != nil {
+			fmt.Fprintf(os.Stderr, "evidence: %v\n", evErr)
+		}
 		_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
 		_, _ = checkpoints.Prune(5)
 	}
