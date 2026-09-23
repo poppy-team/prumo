@@ -130,6 +130,13 @@ type Server struct {
 	rln  net.Listener
 	seq  int
 
+	// rootCtx is what every run context derives from. Runs used to derive from
+	// context.Background(), so nothing the daemon did could reach them: a
+	// SIGTERM closed the listener and the process exited with its runs still
+	// mid-flight, and their work was simply gone (GAP-105).
+	rootCtx    context.Context
+	rootCancel context.CancelFunc
+
 	subsMu      sync.Mutex
 	subscribers map[string][]chan map[string]any
 }
@@ -178,6 +185,7 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 	if deps.PermPolicy.DefaultAction == "" {
 		deps.PermPolicy = DefaultPermPolicy()
 	}
+	rootCtx, rootCancel := context.WithCancel(context.Background())
 	return &Server{
 		SocketPath:  socketPath,
 		StoreDir:    storeDir,
@@ -185,6 +193,8 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 		policy:      deps.PermPolicy,
 		runs:        map[string]*activeRun{},
 		subscribers: map[string][]chan map[string]any{},
+		rootCtx:     rootCtx,
+		rootCancel:  rootCancel,
 	}
 }
 
@@ -290,12 +300,157 @@ func (s *Server) Serve(ctx context.Context) error {
 		if err != nil {
 			select {
 			case <-ctx.Done():
+				// Stop accepting first, then let the work in flight finish. The
+				// listener closing is not the end of the daemon's job: a run mid
+				// model call has a checkpoint and a record to write, and exiting
+				// here lost both (GAP-105).
+				s.drain()
 				return nil
 			default:
 				continue
 			}
 		}
 		go s.handle(conn)
+	}
+}
+
+// drainGrace is how long runs in flight are given to reach a stopping point on
+// their own before they are cancelled. It is long enough for a model call to
+// return, which is the thing a run is usually waiting on.
+const drainGrace = 10 * time.Second
+
+// drain ends the daemon's runs in the order that loses least.
+//
+// A run that is already advancing is left alone for up to drainGrace, so a
+// SIGTERM during a model call ends with the call finished and the checkpoint
+// written rather than with the call abandoned. A run still inside that window
+// is then cancelled, which unwinds it through the same path a client-side
+// cancel takes, so its record is written either way.
+//
+// Runs parked waiting for a permission are cancelled immediately: nobody is
+// coming to answer them, and a drain that waited for an answer would wait
+// forever.
+func (s *Server) drain() {
+	deadline := time.Now().Add(drainGrace)
+	for {
+		if !s.waitForRuns(deadline) {
+			break
+		}
+		if time.Now().After(deadline) {
+			break
+		}
+	}
+	s.cancelAllRuns()
+}
+
+// waitForRuns reports whether any run is still advancing, waiting until they
+// have all finished or the deadline passes.
+func (s *Server) waitForRuns(deadline time.Time) bool {
+	for {
+		s.mu.Lock()
+		active := 0
+		for _, ar := range s.runs {
+			if ar == nil {
+				continue
+			}
+			// A run with no runner yet is starting up; it is still work the
+			// daemon owns, so it counts.
+			if ar.runner == nil {
+				active++
+				continue
+			}
+			// The snapshot must not block. A runner holds its lock for the whole
+			// of a step, so a model call or a tool call can hold it for seconds,
+			// and a drain that waits on it waits for the run it is meant to be
+			// draining. A busy runner counts as advancing, which it is.
+			state, read := ar.runner.TryStateCopy()
+			if !read {
+				active++
+				continue
+			}
+			if len(state.PendingPerms) > 0 {
+				// Parked on an answer nobody is going to give during a shutdown.
+				continue
+			}
+			active++
+		}
+		s.mu.Unlock()
+		if active == 0 {
+			return false
+		}
+		if time.Now().After(deadline) {
+			return true
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+// cancelAllRuns stops every run still present, so each one unwinds and writes
+// its record rather than being dropped.
+//
+// Cancelling is not finishing. A cancelled run is still inside its persist step
+// when this returns, so the daemon would exit with a checkpoint half-written and
+// the caller would be told the drain completed. The second phase waits, bounded,
+// for the runs to actually leave the map.
+func (s *Server) cancelAllRuns() {
+	s.mu.Lock()
+	cancels := make([]context.CancelFunc, 0, len(s.runs))
+	for _, ar := range s.runs {
+		if ar != nil && ar.cancel != nil {
+			cancels = append(cancels, ar.cancel)
+		}
+	}
+	s.mu.Unlock()
+	for _, cancel := range cancels {
+		cancel()
+	}
+	if s.rootCancel != nil {
+		s.rootCancel()
+	}
+	s.releaseParked()
+	s.awaitUnwind(cancelGrace)
+}
+
+// releaseParked drops runs that are waiting for an answer nobody is coming to
+// give.
+//
+// Cancelling one does not remove it: its observe call already returned when it
+// parked, so there is no goroutine left to notice the cancellation and clear
+// its entry. Without this the drain would wait out its whole grace for a run
+// that was never going to move, and the daemon would exit still holding it.
+//
+// Nothing is lost. A parked run persisted its record and its checkpoint before
+// it parked; that is what a client reconnects to.
+func (s *Server) releaseParked() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for runID, ar := range s.runs {
+		if ar == nil || ar.runner == nil {
+			continue
+		}
+		state, read := ar.runner.TryStateCopy()
+		if read && len(state.PendingPerms) > 0 {
+			delete(s.runs, runID)
+		}
+	}
+}
+
+// cancelGrace is how long cancelled runs are given to unwind and persist. It
+// covers the persist step — a checkpoint write, a knowledge save, a budget save
+// and an evidence record — which is fast but is real work.
+const cancelGrace = 5 * time.Second
+
+// awaitUnwind waits, bounded, for the run map to empty.
+func (s *Server) awaitUnwind(grace time.Duration) {
+	deadline := time.Now().Add(grace)
+	for time.Now().Before(deadline) {
+		s.mu.Lock()
+		remaining := len(s.runs)
+		s.mu.Unlock()
+		if remaining == 0 {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 
@@ -439,7 +594,7 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	if tools == nil {
 		return map[string]any{"ok": false, "error": "no tool executor configured"}
 	}
-	runCtx, cancel := context.WithCancel(context.Background())
+	runCtx, cancel := context.WithCancel(s.rootCtx)
 	s.mu.Lock()
 	if _, dup := s.runs[runID]; dup {
 		s.mu.Unlock()
@@ -666,7 +821,14 @@ func (s *Server) opStatus(runID string) map[string]any {
 	pending := []string{}
 	fingerprints := map[string]any{}
 	if active && runner != nil {
-		live := runner.StateCopy()
+		// A non-blocking read: a client polling status during a long model call
+		// must get an answer, not wait for the call to return before it can be
+		// told the run is busy.
+		live, read := runner.TryStateCopy()
+		if !read {
+			rec.Status = "running"
+			return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "active": active, "pending_permissions": pending, "permission_fingerprints": fingerprints}
+		}
 		rec.Phase = string(live.Phase)
 		pending = append(pending, live.PendingPerms...)
 		// The fingerprint travels with the request so an approver can quote what

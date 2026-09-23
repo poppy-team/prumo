@@ -169,6 +169,27 @@ func (r *Runner) StateCopy() agent.NativeAgentState {
 	return r.State
 }
 
+// TryStateCopy returns the current state without waiting, and reports whether it
+// could be read.
+//
+// StateCopy blocks for as long as a step is running, because a step holds the
+// lock across the work it does — including a model call and a tool call, each of
+// which can take seconds. That is fine for a caller that has nothing better to
+// do and wrong for a reader that must not stall behind the thing it is reading
+// about: a daemon answering "is this run parked?" cannot afford to wait for the
+// run to finish before finding out.
+//
+// A busy runner reports false rather than a stale answer. A reader that cannot
+// get the state knows the run is mid-step, which is the more useful of the two
+// facts.
+func (r *Runner) TryStateCopy() (agent.NativeAgentState, bool) {
+	if !r.mu.TryLock() {
+		return agent.NativeAgentState{}, false
+	}
+	defer r.mu.Unlock()
+	return r.State, true
+}
+
 // maybeCompactLocked collapses oldest tool observations into a summary.
 // Caller must hold mu.
 func (r *Runner) maybeCompactLocked() {
