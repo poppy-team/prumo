@@ -169,4 +169,3 @@ func TestOpenAICompatMultipartImagePayload(t *testing.T) {
 		t.Errorf("part 1 url mismatch: %v", imgURL)
 	}
 }
-

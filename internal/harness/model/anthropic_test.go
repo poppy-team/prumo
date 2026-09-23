@@ -185,4 +185,3 @@ func TestAnthropicMultipartImagePayload(t *testing.T) {
 		t.Errorf("block 1 source mismatch: %v", src)
 	}
 }
-

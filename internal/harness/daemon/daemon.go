@@ -81,6 +81,10 @@ type Server struct {
 	StoreDir   string
 	Deps       Deps
 	policy     perm.Policy
+	// diffsMu guards the diff store only. It is deliberately not s.mu: the run
+	// map and the disk are different resources, and holding one lock across both
+	// made every recorded diff block the run list (GAP-154).
+	diffsMu sync.Mutex
 
 	mu   sync.Mutex
 	runs map[string]*activeRun
@@ -726,33 +730,52 @@ func (s *Server) opEvents(runID string) map[string]any {
 	return map[string]any{"ok": true, "run_id": runID, "events": evs}
 }
 
-func (s *Server) diffPath(runID string) string {
-	return filepath.Join(s.StoreDir, "diffs-"+runID+".json")
+// diffPath names a run's diff store. The run id is validated because it becomes
+// a filename, the same reason recordPath and eventPath validate theirs.
+func (s *Server) diffPath(runID string) (string, error) {
+	if err := safepath.ValidateID("run_id", runID); err != nil {
+		return "", err
+	}
+	return filepath.Join(s.StoreDir, "diffs-"+runID+".json"), nil
 }
 
+// saveDiff records one file change.
+//
+// It takes diffMu, not s.mu. The global lock guards the run map, and holding it
+// across a file read, a marshal, a write and a rename meant every recorded diff
+// blocked opList, opStatus and every run start for the duration of the disk
+// write (GAP-154). The diff store has its own lock because it is its own
+// resource; nothing that touches the run map waits on it.
 func (s *Server) saveDiff(runID, path, kind, content string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	diffs := s.loadDiffsLocked(runID)
+	target, err := s.diffPath(runID)
+	if err != nil {
+		return
+	}
+	s.diffsMu.Lock()
+	defer s.diffsMu.Unlock()
+	diffs := s.loadDiffs(target)
 	diffs[path] = DiffRecord{Path: path, Kind: kind, Content: content}
 	data, err := json.MarshalIndent(diffs, "", "  ")
 	if err != nil {
 		return
 	}
 	_ = os.MkdirAll(s.StoreDir, 0o755)
-	tmp := s.diffPath(runID) + ".tmp"
+	tmp := target + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err == nil {
-		_ = os.Rename(tmp, s.diffPath(runID))
+		_ = os.Rename(tmp, target)
 	}
 }
 
-func (s *Server) loadDiffsLocked(runID string) map[string]DiffRecord {
-	data, err := os.ReadFile(s.diffPath(runID))
+func (s *Server) loadDiffs(target string) map[string]DiffRecord {
+	data, err := os.ReadFile(target)
 	if err != nil {
 		return map[string]DiffRecord{}
 	}
 	var m map[string]DiffRecord
 	if err := json.Unmarshal(data, &m); err != nil {
+		return map[string]DiffRecord{}
+	}
+	if m == nil {
 		return map[string]DiffRecord{}
 	}
 	return m
@@ -768,9 +791,15 @@ func (s *Server) opDiff(msg map[string]any) map[string]any {
 	if path == "" {
 		return map[string]any{"ok": false, "error": "path required"}
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	diffs := s.loadDiffsLocked(runID)
+	target, err := s.diffPath(runID)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	// The diff store's own lock, for the same reason saveDiff uses it: a read
+	// here must not block the run map (GAP-154).
+	s.diffsMu.Lock()
+	defer s.diffsMu.Unlock()
+	diffs := s.loadDiffs(target)
 	entry, ok := diffs[path]
 	if !ok {
 		clean := filepath.Clean(path)

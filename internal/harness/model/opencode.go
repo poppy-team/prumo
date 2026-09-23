@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+
+	"github.com/raillen/prumo/internal/harness/childenv"
 )
 
 // OpenCode delegates a whole turn to the opencode CLI.
@@ -146,6 +148,14 @@ func (o *OpenCode) Stream(ctx context.Context, req agent.ModelRequest) (<-chan a
 	if o.Dir != "" {
 		cmd.Dir = o.Dir
 	}
+	// opencode brings its own authentication for the models it serves. It does
+	// not need Prumo's, and inheriting it would hand a delegated turn every
+	// credential the harness holds (GAP-144).
+	cmd.Env = childenv.Build(childenv.Options{})
+
+	// Whatever opencode may print, these are the values worth scrubbing from it.
+	// Read from the parent because the child no longer has them.
+	childSecrets := []string{os.Getenv("PRUMO_MODEL_API_KEY"), os.Getenv("OPENAI_API_KEY"), os.Getenv("ANTHROPIC_API_KEY")}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("opencode: %w", err)
@@ -267,7 +277,12 @@ func (o *OpenCode) Stream(ctx context.Context, req agent.ModelRequest) (<-chan a
 		// turn, and one with a non-zero status is reported with what it said,
 		// because "the run ended" and "the run worked" are different facts.
 		if waitErr != nil {
-			msg := strings.TrimSpace(stderr.String())
+			// A child that prints its own environment prints the credential with
+			// it, and that text goes on to the model and into the run record. The
+			// values are passed explicitly because the child no longer inherits
+			// them, so anything secret here arrived from its own configuration or
+			// its arguments.
+			msg := childenv.Redact(strings.TrimSpace(stderr.String()), childSecrets)
 			if msg == "" {
 				msg = "opencode: " + waitErr.Error()
 			}

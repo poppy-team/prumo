@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+
+	"github.com/raillen/prumo/internal/harness/childenv"
 )
 
 // ACPClient is the stdio ACP v1 AgentProvider.
@@ -65,6 +67,9 @@ func (c *ACPClient) start(ctx context.Context) error {
 		return nil
 	}
 	cmd := exec.CommandContext(ctx, c.Command, c.Args...)
+	// An external agent process gets the safe subset, not the harness's whole
+	// environment (GAP-144).
+	cmd.Env = childenv.Build(childenv.Options{})
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err

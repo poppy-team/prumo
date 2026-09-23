@@ -19,6 +19,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/raillen/prumo/internal/harness/childenv"
 )
 
 // Request is one JSON-RPC request.
@@ -176,6 +178,10 @@ type StdioTransport struct {
 // Start launches the server process.
 func StartStdio(ctx context.Context, bin string, args ...string) (*StdioTransport, error) {
 	cmd := exec.CommandContext(ctx, bin, args...)
+	// A spawned server sees only what it needs. Without this it inherited the
+	// whole parent environment, model API keys included, whatever its own
+	// permission policy says (GAP-144).
+	cmd.Env = childenv.Build(childenv.Options{})
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
