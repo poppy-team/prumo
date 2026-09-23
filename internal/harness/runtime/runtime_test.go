@@ -105,16 +105,29 @@ func TestPermissionResume(t *testing.T) {
 	if len(cp.State.PendingPerms) != 1 || len(cp.State.PendingTools) != 1 {
 		t.Fatalf("checkpoint lost the pending state: %+v", cp.State)
 	}
-	// Nothing decided yet: the pending request has no resolution on the engine.
-	if _, decided := engine.Resolution("perm-c1"); decided {
-		t.Fatal("no decision should exist before the client answers")
+	// The policy's own evaluation is on the engine, but no human has answered:
+	// the decision must still be the policy's ask, by no one but "policy".
+	if res, decided := engine.Resolution("perm-c1", ""); !decided || res.Decision != agent.PermissionAsk || res.Actor != "policy" {
+		t.Fatalf("no human decision should exist before the client answers: %+v", res)
 	}
 	// A request id that is not pending must be refused, not silently accepted.
-	if err := r.ResolvePermission("perm-other", true, "operator", ""); err == nil {
+	if err := r.ResolvePermission("perm-other", "some-fingerprint", true, "operator", ""); err == nil {
 		t.Fatal("unknown request id must be refused")
 	}
+	// An answer must quote the fingerprint of what is actually pending.
+	pendingID := r.State.PendingPerms[0]
+	if err := r.ResolvePermission(pendingID, "", true, "operator", ""); err == nil {
+		t.Fatal("an answer without a fingerprint must be refused")
+	}
+	if err := r.ResolvePermission(pendingID, "wrong-fingerprint", true, "operator", ""); err == nil {
+		t.Fatal("an answer quoting the wrong fingerprint must be refused")
+	}
 	// Answer by the real path — no Phase hack — and the turn finishes.
-	if err := r.ResolvePermission(r.State.PendingPerms[0], true, "operator", ""); err != nil {
+	fingerprint := r.PendingFingerprint(pendingID)
+	if fingerprint == "" {
+		t.Fatal("a pending request must expose the fingerprint an approver is shown")
+	}
+	if err := r.ResolvePermission(pendingID, fingerprint, true, "operator", ""); err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
 	if err := r.RunUntilDone(context.Background()); err != nil {
@@ -140,7 +153,8 @@ func TestResolvePermissionRejectionFailsTheRun(t *testing.T) {
 	if err := r.RunUntilDone(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.ResolvePermission(r.State.PendingPerms[0], false, "operator", "outside the workspace"); err != nil {
+	pendingID := r.State.PendingPerms[0]
+	if err := r.ResolvePermission(pendingID, r.PendingFingerprint(pendingID), false, "operator", "outside the workspace"); err != nil {
 		t.Fatalf("reject: %v", err)
 	}
 	if err := r.RunUntilDone(context.Background()); err == nil {
@@ -156,7 +170,7 @@ func TestResolvePermissionRejectionFailsTheRun(t *testing.T) {
 
 func TestResolvePermissionRequiresAPendingRequest(t *testing.T) {
 	r := NewRunner(Services{Perms: perm.New(perm.Policy{})}, "R8", "S1")
-	if err := r.ResolvePermission("perm-c1", true, "operator", ""); err == nil {
+	if err := r.ResolvePermission("perm-c1", "fp", true, "operator", ""); err == nil {
 		t.Fatal("answering with nothing pending must be refused")
 	}
 }

@@ -57,8 +57,12 @@ func TestStrictGate(t *testing.T) {
 
 func TestDumpPermissions(t *testing.T) {
 	eng := perm.New(perm.Policy{DefaultAction: agent.PermissionAllow})
-	eng.Approve("p1", "user")
-	eng.Deny("p2", "user", "nope")
+	if _, err := eng.Approve("p1", "fp-p1", "user"); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	if _, err := eng.Deny("p2", "fp-p2", "user", "nope"); err != nil {
+		t.Fatalf("deny: %v", err)
+	}
 	path := filepath.Join(t.TempDir(), "perms.jsonl")
 	if err := DumpPermissions(path, eng); err != nil {
 		t.Fatal(err)

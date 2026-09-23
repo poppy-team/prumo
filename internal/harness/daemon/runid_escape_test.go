@@ -98,3 +98,42 @@ func TestStartRunRefusesAMetadataBaseURL(t *testing.T) {
 		}
 	}
 }
+
+// The fingerprint is what makes an approval mean something. An approval quoted
+// for different content must be refused, not applied to whatever happens to be
+// pending (GAP-107).
+
+func TestApproveRefusesAFingerprintForDifferentContent(t *testing.T) {
+	dir := t.TempDir()
+	tools := &stubTools{kinds: map[string]string{"edit.delete": "destructive"}}
+	_, c, cancel := serveDepsForTest(t, dir, approvalDeps(tools))
+	defer cancel()
+
+	if _, err := c.Start("delete something", "fake", "R-fp", 1); err != nil {
+		t.Fatal(err)
+	}
+	st := waitStatus(t, c, "R-fp", "awaiting_approval")
+	requestID := pendingPermission(t, st)
+
+	// A fingerprint for content the approver was never shown.
+	res, err := c.Approve("R-fp", requestID, "0000000000000000000000000000000000000000000000000000000000000000")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res["ok"] != false {
+		t.Fatalf("a mismatched fingerprint must be refused, got %v", res)
+	}
+	if got := tools.callCount(); got != 0 {
+		t.Fatalf("the tool must not run after a refused approval, got %d calls", got)
+	}
+	// The real fingerprint still works: the refusal was about the content, not
+	// about breaking the flow.
+	fingerprint := pendingFingerprint(t, st, requestID)
+	if res, err := c.Approve("R-fp", requestID, fingerprint); err != nil || res["ok"] != true {
+		t.Fatalf("the matching fingerprint must be accepted: %v %v", err, res)
+	}
+	waitStatus(t, c, "R-fp", "complete")
+	if got := tools.callCount(); got != 1 {
+		t.Fatalf("the approved tool must run exactly once, got %d", got)
+	}
+}

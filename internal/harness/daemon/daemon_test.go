@@ -289,6 +289,22 @@ func pendingPermission(t *testing.T, st map[string]any) string {
 	return id
 }
 
+// pendingFingerprint reads the fingerprint the client is shown for a pending
+// request. An approval has to quote it: it identifies the content, not just the
+// request (GAP-107).
+func pendingFingerprint(t *testing.T, st map[string]any, requestID string) string {
+	t.Helper()
+	fps, ok := st["permission_fingerprints"].(map[string]any)
+	if !ok {
+		t.Fatalf("status does not expose permission fingerprints: %v", st)
+	}
+	fp, _ := fps[requestID].(string)
+	if fp == "" {
+		t.Fatalf("no fingerprint for %s: %v", requestID, fps)
+	}
+	return fp
+}
+
 // TestDaemonApprovePermission is H10 criterion 2's mechanism: a run stops at a
 // permission gate, a client answers over the protocol, and the run continues
 // and finishes without the daemon being restarted.
@@ -301,9 +317,11 @@ func TestDaemonApprovePermission(t *testing.T) {
 	if _, err := c.Start("delete something", "fake", "R-approve", 1); err != nil {
 		t.Fatal(err)
 	}
-	requestID := pendingPermission(t, waitStatus(t, c, "R-approve", "awaiting_approval"))
+	st := waitStatus(t, c, "R-approve", "awaiting_approval")
+	requestID := pendingPermission(t, st)
+	fingerprint := pendingFingerprint(t, st, requestID)
 
-	res, err := c.Approve("R-approve", requestID)
+	res, err := c.Approve("R-approve", requestID, fingerprint)
 	if err != nil || res["ok"] != true {
 		t.Fatalf("approve failed: %v %v", err, res)
 	}
@@ -323,7 +341,7 @@ func TestDaemonApprovePermission(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A finished run is gone from the live map: answering it is not an option.
-	if res, err := c.Approve("R-approve", requestID); err != nil || res["ok"] != false {
+	if res, err := c.Approve("R-approve", requestID, fingerprint); err != nil || res["ok"] != false {
 		t.Fatalf("approving an inactive run must fail: %v %v", err, res)
 	}
 }
@@ -337,9 +355,11 @@ func TestDaemonDenyPermission(t *testing.T) {
 	if _, err := c.Start("delete something", "fake", "R-deny", 1); err != nil {
 		t.Fatal(err)
 	}
-	requestID := pendingPermission(t, waitStatus(t, c, "R-deny", "awaiting_approval"))
+	st := waitStatus(t, c, "R-deny", "awaiting_approval")
+	requestID := pendingPermission(t, st)
+	fingerprint := pendingFingerprint(t, st, requestID)
 
-	res, err := c.Deny("R-deny", requestID, "outside the workspace")
+	res, err := c.Deny("R-deny", requestID, fingerprint, "outside the workspace")
 	if err != nil || res["ok"] != true {
 		t.Fatalf("deny failed: %v %v", err, res)
 	}
@@ -357,8 +377,11 @@ func TestPermissionOpValidatesItsArguments(t *testing.T) {
 	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-x"}); res["error"] != "permission request required" {
 		t.Fatalf("approve without a request id must fail: %v", res)
 	}
-	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-gone", "request_id": "perm-1"}); res["ok"] != false {
+	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-gone", "request_id": "perm-1", "fingerprint": "abc"}); res["ok"] != false {
 		t.Fatalf("approve on an inactive run must fail: %v", res)
+	}
+	if res := srv.dispatch(map[string]any{"op": "approve", "run_id": "R-gone", "request_id": "perm-1"}); res["ok"] != false {
+		t.Fatalf("approve without a fingerprint must fail: %v", res)
 	}
 }
 
@@ -441,4 +464,3 @@ func TestDaemonSubscribe(t *testing.T) {
 		t.Fatalf("expected 1 event with cursor %d, got %d", cursor, len(received2))
 	}
 }
-

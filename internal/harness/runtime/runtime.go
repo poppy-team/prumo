@@ -6,6 +6,8 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -243,11 +245,61 @@ func (r *Runner) RestoreFrom(cp agent.Checkpoint) {
 	}
 }
 
+// permissionRequestFor builds the request for one tool call. Both the
+// evaluation and the fingerprint check go through it, so the two cannot drift:
+// a fingerprint computed from a different shape of request would approve one
+// call and answer another.
+func permissionRequestFor(state agent.NativeAgentState, tc agent.ToolCall) agent.PermissionRequest {
+	resource := ""
+	if tc.Arguments != nil {
+		resource = fmt.Sprint(tc.Arguments["path"])
+	}
+	return agent.PermissionRequest{
+		ID: "perm-" + tc.ID, RunID: state.RunID, TurnID: state.TurnID,
+		Action: tc.Name, Resource: resource,
+		ArgumentsSummary: summarizeArguments(tc.Arguments),
+	}
+}
+
+// summarizeArguments renders arguments deterministically so the fingerprint does
+// not depend on map iteration order.
+func summarizeArguments(args map[string]any) string {
+	if len(args) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(args))
+	for k := range args {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+"="+fmt.Sprint(args[k]))
+	}
+	return strings.Join(parts, ";")
+}
+
+// pendingFingerprint recomputes the fingerprint of the tool call behind a
+// pending request. It is derived from state, never from what the caller sent,
+// which is the point: the caller's value is the claim being checked.
+func (r *Runner) pendingFingerprint(requestID string) string {
+	for _, tc := range r.State.PendingTools {
+		if "perm-"+tc.ID == requestID {
+			return perm.Fingerprint(permissionRequestFor(r.State, tc))
+		}
+	}
+	return ""
+}
+
 // ResolvePermission answers a pending permission request: it records the
 // decision in the engine and rewinds the run to re-evaluate it, so the turn
 // continues from where it stopped. Denying needs no special case — the
 // re-evaluation returns deny and the run fails the way a policy denial does.
-func (r *Runner) ResolvePermission(requestID string, allow bool, actor, reason string) error {
+//
+// fingerprint must be the one the approver was shown. It is recomputed here from
+// the tool call actually pending and compared, so an approval cannot be aimed at
+// a different call that happens to carry the same request id (GAP-107).
+func (r *Runner) ResolvePermission(requestID, fingerprint string, allow bool, actor, reason string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.State.Phase != agent.PhaseYield || len(r.State.PendingPerms) == 0 {
@@ -265,10 +317,22 @@ func (r *Runner) ResolvePermission(requestID string, allow bool, actor, reason s
 	if !pending {
 		return fmt.Errorf("no pending permission %q for run %s", requestID, r.State.RunID)
 	}
+	if fingerprint == "" {
+		return fmt.Errorf("resolving %q requires the fingerprint of the pending request", requestID)
+	}
+	if actual := r.pendingFingerprint(requestID); actual == "" {
+		return fmt.Errorf("cannot identify the tool call behind %q", requestID)
+	} else if actual != fingerprint {
+		return fmt.Errorf("fingerprint mismatch for %q: the pending request is %s", requestID, actual)
+	}
 	if allow {
-		r.Svc.Perms.Approve(requestID, actor)
+		if _, err := r.Svc.Perms.Approve(requestID, fingerprint, actor); err != nil {
+			return err
+		}
 	} else {
-		r.Svc.Perms.Deny(requestID, actor, reason)
+		if _, err := r.Svc.Perms.Deny(requestID, fingerprint, actor, reason); err != nil {
+			return err
+		}
 	}
 	r.State.PendingPerms = nil
 	r.State.PendingTools = nil
@@ -412,10 +476,7 @@ func (r *Runner) Step(ctx context.Context) error {
 			if r.Svc.Tools != nil {
 				kind = r.Svc.Tools.KindOf(tc.Name)
 			}
-			res := r.Svc.Perms.Evaluate(agent.PermissionRequest{
-				ID: fmt.Sprintf("perm-%s", tc.ID), RunID: r.State.RunID, TurnID: r.State.TurnID,
-				Action: tc.Name, Resource: fmt.Sprint(tc.Arguments["path"]),
-			}, kind, "policy")
+			res := r.Svc.Perms.Evaluate(permissionRequestFor(r.State, tc), kind, "policy")
 			if res.Decision == agent.PermissionDeny {
 				r.State.Phase = agent.PhaseFailed
 				r.State.StopReason = "permission denied: " + res.Reason
@@ -430,14 +491,17 @@ func (r *Runner) Step(ctx context.Context) error {
 				// daemon answering the request) needs the tool it stopped on,
 				// and the request id is what a client answers with.
 				r.State.PendingTools = append([]agent.ToolCall{}, r.ToolQ...)
-				// The arguments travel with the request, which is the one place
-				// this timeline is not minimal: a gate asks a person to approve
-				// what a tool is about to do, and a request that carries no
-				// evidence cannot be answered — only obeyed or refused on faith.
+				// The arguments and the fingerprint travel with the request, which
+				// is the one place this timeline is not minimal: a gate asks a
+				// person to approve what a tool is about to do, and a request that
+				// carries no evidence cannot be answered — only obeyed or refused
+				// on faith. The fingerprint is what the answer must quote back, so
+				// approval is bound to this call and not merely to its id.
 				// The cost is bounded by the calls a policy gates, and the
 				// timeline already carries them in the checkpoint.
 				r.emit("permission_wait", map[string]any{
 					"tool": tc.Name, "request_id": res.RequestID, "arguments": tc.Arguments,
+					"fingerprint": res.Fingerprint,
 				})
 				if err := r.persist(); err != nil {
 					// Refusing to wait is honest: a pending approval nobody can
@@ -596,4 +660,13 @@ func diffOf(tc agent.ToolCall) (kind, content string) {
 	default:
 		return "modified", ""
 	}
+}
+
+// PendingFingerprint reports the fingerprint of the tool call behind a pending
+// request, so a client can be shown the content it is being asked to approve.
+// It returns "" for an unknown request.
+func (r *Runner) PendingFingerprint(requestID string) string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.pendingFingerprint(requestID)
 }

@@ -330,9 +330,9 @@ func (s *Server) dispatch(msg map[string]any) map[string]any {
 	case "steer":
 		return s.opSteer(str(msg, "run_id"), str(msg, "message"))
 	case "approve":
-		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "reason"), true)
+		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "fingerprint"), str(msg, "reason"), true)
 	case "deny":
-		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "reason"), false)
+		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "fingerprint"), str(msg, "reason"), false)
 	case "schedule":
 		return s.opSchedule(msg)
 	case "unschedule":
@@ -605,10 +605,17 @@ func (s *Server) opStatus(runID string) map[string]any {
 		return map[string]any{"ok": false, "error": "corrupt record " + runID}
 	}
 	pending := []string{}
+	fingerprints := map[string]any{}
 	if active && runner != nil {
 		live := runner.StateCopy()
 		rec.Phase = string(live.Phase)
 		pending = append(pending, live.PendingPerms...)
+		// The fingerprint travels with the request so an approver can quote what
+		// they were shown. Without it the answer identifies a request by id
+		// alone, which is a label, not the content (GAP-107).
+		for _, id := range live.PendingPerms {
+			fingerprints[id] = runner.PendingFingerprint(id)
+		}
 		// The record is written when a run stops. While the loop is advancing
 		// it is stale, and while the run waits it is the live state that tells
 		// a client there is something to answer.
@@ -619,7 +626,7 @@ func (s *Server) opStatus(runID string) map[string]any {
 			rec.Status = "awaiting_approval"
 		}
 	}
-	return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "stop_reason": rec.StopReason, "active": active, "pending_permissions": pending}
+	return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "stop_reason": rec.StopReason, "active": active, "pending_permissions": pending, "permission_fingerprints": fingerprints}
 }
 
 func (s *Server) opList() map[string]any {
@@ -933,12 +940,18 @@ func (s *Server) opSteer(runID, message string) map[string]any {
 // opPermission answers a pending permission request and lets the run continue.
 // Approve and deny are the same op with a different decision, so the two share
 // one code path and one set of validations.
-func (s *Server) opPermission(runID, requestID, reason string, allow bool) map[string]any {
+func (s *Server) opPermission(runID, requestID, fingerprint, reason string, allow bool) map[string]any {
 	if runID == "" {
 		return map[string]any{"ok": false, "error": "run_id required"}
 	}
 	if requestID == "" {
 		return map[string]any{"ok": false, "error": "permission request required"}
+	}
+	// The approver must quote the fingerprint it was shown. The runner recomputes
+	// it from the tool call actually pending and compares, so an approval cannot
+	// be aimed at a different call carrying the same request id (GAP-107).
+	if fingerprint == "" {
+		return map[string]any{"ok": false, "error": "fingerprint required: answer with the fingerprint from the permission_wait event"}
 	}
 	s.mu.Lock()
 	ar, ok := s.runs[runID]
@@ -954,7 +967,7 @@ func (s *Server) opPermission(runID, requestID, reason string, allow bool) map[s
 	ctx := ar.ctx
 	s.mu.Unlock()
 
-	if err := ar.runner.ResolvePermission(requestID, allow, "client", reason); err != nil {
+	if err := ar.runner.ResolvePermission(requestID, fingerprint, allow, "client", reason); err != nil {
 		s.mu.Lock()
 		ar.busy = false
 		s.mu.Unlock()
@@ -1076,13 +1089,16 @@ func (c Client) Cancel(runID string) (map[string]any, error) {
 }
 
 // Approve answers a pending permission request, letting the run continue.
-func (c Client) Approve(runID, requestID string) (map[string]any, error) {
-	return c.call(map[string]any{"op": "approve", "run_id": runID, "request_id": requestID})
+// Approve allows a pending permission request. The fingerprint is the one the
+// approver was shown; the daemon recomputes it from the pending call and
+// refuses a mismatch.
+func (c Client) Approve(runID, requestID, fingerprint string) (map[string]any, error) {
+	return c.call(map[string]any{"op": "approve", "run_id": runID, "request_id": requestID, "fingerprint": fingerprint})
 }
 
 // Deny refuses a pending permission request.
-func (c Client) Deny(runID, requestID, reason string) (map[string]any, error) {
-	return c.call(map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
+func (c Client) Deny(runID, requestID, fingerprint, reason string) (map[string]any, error) {
+	return c.call(map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "fingerprint": fingerprint, "reason": reason})
 }
 
 // Models asks a provider what it can serve.
