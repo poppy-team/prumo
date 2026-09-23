@@ -48,7 +48,7 @@ func kinds(evs []agent.ModelEvent) map[agent.ModelEventKind]int {
 func TestAnthropicTextAndUsage(t *testing.T) {
 	srv := anthropicTestServer("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":3,\"output_tokens\":0}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"hello\"}}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"usage\":{\"input_tokens\":0,\"output_tokens\":5}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n", http.StatusOK)
 	defer srv.Close()
-	p := NewAnthropic(srv.URL, "test-key", "claude-test")
+	p := NewAnthropicWithPolicy(srv.URL, "test-key", "claude-test", LocalDevelopmentDestinationPolicy())
 	if h, err := p.Health(context.Background()); err != nil || h != "healthy" {
 		t.Fatalf("health: %s %v", h, err)
 	}
@@ -69,7 +69,7 @@ func TestAnthropicToolUse(t *testing.T) {
 	body := "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu-1\",\"name\":\"fs.read\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"path\\\": \\\"a.go\\\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"}\" }}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
 	srv := anthropicTestServer(body, http.StatusOK)
 	defer srv.Close()
-	p := NewAnthropic(srv.URL, "k", "m")
+	p := NewAnthropicWithPolicy(srv.URL, "k", "m", LocalDevelopmentDestinationPolicy())
 	evs := collectAnthropic(t, p, "r-tool")
 	var tool *agent.ToolCall
 	for _, e := range evs {
@@ -91,14 +91,14 @@ func TestAnthropicToolUse(t *testing.T) {
 func TestAnthropicRetryableError(t *testing.T) {
 	srv := anthropicTestServer("", 429)
 	defer srv.Close()
-	p := NewAnthropic(srv.URL, "k", "m")
+	p := NewAnthropicWithPolicy(srv.URL, "k", "m", LocalDevelopmentDestinationPolicy())
 	evs := collectAnthropic(t, p, "r-err")
 	if len(evs) != 1 || evs[0].Kind != agent.EventError || !evs[0].Retryable {
 		t.Fatalf("expected single retryable error: %+v", evs)
 	}
 	srv2 := anthropicTestServer("event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"busy\"}}\n\n", http.StatusOK)
 	defer srv2.Close()
-	p2 := NewAnthropic(srv2.URL, "k", "m")
+	p2 := NewAnthropicWithPolicy(srv2.URL, "k", "m", LocalDevelopmentDestinationPolicy())
 	evs2 := collectAnthropic(t, p2, "r-err2")
 	found := false
 	for _, e := range evs2 {
@@ -114,7 +114,7 @@ func TestAnthropicRetryableError(t *testing.T) {
 func TestAnthropicCancel(t *testing.T) {
 	srv := anthropicTestServer("event: message_start\ndata: {\"type\":\"message_start\"}\n\n", http.StatusOK)
 	defer srv.Close()
-	p := NewAnthropic(srv.URL, "k", "m")
+	p := NewAnthropicWithPolicy(srv.URL, "k", "m", LocalDevelopmentDestinationPolicy())
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	ch, err := p.Stream(ctx, agent.ModelRequest{RequestID: "r-cancel", TurnID: "T"})
@@ -141,7 +141,7 @@ func TestAnthropicMultipartImagePayload(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewAnthropic(srv.URL, "test-key", "claude-3-5")
+	p := NewAnthropicWithPolicy(srv.URL, "test-key", "claude-3-5", LocalDevelopmentDestinationPolicy())
 	req := agent.ModelRequest{
 		RequestID: "req-img",
 		TurnID:    "T1",

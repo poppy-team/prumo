@@ -72,3 +72,29 @@ func TestOrdinaryRunIDStillRoundTrips(t *testing.T) {
 		t.Fatalf("unexpected record: %v", rec)
 	}
 }
+
+// The base URL reaches the provider factory straight from a request. With the
+// default factory the destination check now runs, so a client cannot aim the
+// daemon at the cloud metadata endpoint (GAP-111).
+
+func TestStartRunRefusesAMetadataBaseURL(t *testing.T) {
+	srv := New("test.sock", t.TempDir(), Deps{Workspace: t.TempDir()})
+	for _, baseURL := range []string{
+		"https://169.254.169.254/latest/meta-data/",
+		"https://10.0.0.5/v1",
+		"http://127.0.0.1:11434/v1",
+	} {
+		res := srv.opStart(map[string]any{
+			"op":       "run.start",
+			"goal":     "read the instance credentials",
+			"provider": "openai-compat",
+			"base_url": baseURL,
+			"api_key":  "k",
+			"model":    "m",
+		})
+		okFlag, _ := res["ok"].(bool)
+		if okFlag {
+			t.Fatalf("base URL %s must be refused by the daemon", baseURL)
+		}
+	}
+}

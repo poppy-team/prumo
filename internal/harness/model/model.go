@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
 )
@@ -145,6 +144,9 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 		if apiKey == "" {
 			apiKey = envOr("PRUMO_MODEL_API_KEY", "")
 		}
+		if err := ValidateDestinationURL(baseURL, DefaultDestinationPolicy()); err != nil {
+			return nil, err
+		}
 		return NewOpenAICompat(baseURL, apiKey, mdl), nil
 	case "opencode":
 		// A delegated turn: opencode runs it with its own tools, its own
@@ -159,6 +161,11 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 		}
 		if apiKey == "" {
 			apiKey = envOr("PRUMO_MODEL_API_KEY", "")
+		}
+		if baseURL != "" {
+			if err := ValidateDestinationURL(baseURL, DefaultDestinationPolicy()); err != nil {
+				return nil, err
+			}
 		}
 		return NewAnthropic(baseURL, apiKey, mdl), nil
 	default:
@@ -199,8 +206,29 @@ func ModelHeaders() map[string]string {
 	return m
 }
 
+// NewOpenAICompat builds a provider against any OpenAI-compatible endpoint.
+//
+// The client is destination-checked: the base URL is a request field, so
+// without this the harness would send the conversation and the API key to any
+// address the caller named, including the cloud metadata endpoint (GAP-111).
 func NewOpenAICompat(baseURL, apiKey, model string) *OpenAICompat {
-	return &OpenAICompat{BaseURL: strings.TrimRight(baseURL, "/"), APIKey: apiKey, Model: model, Client: &http.Client{Timeout: 120 * time.Second}}
+	return &OpenAICompat{
+		BaseURL: strings.TrimRight(baseURL, "/"),
+		APIKey:  apiKey,
+		Model:   model,
+		Client:  NewDestinationHTTPClient(DefaultDestinationPolicy()),
+	}
+}
+
+// NewOpenAICompatWithPolicy is the form a caller uses when it has a destination
+// policy of its own, such as a local gateway reached over loopback.
+func NewOpenAICompatWithPolicy(baseURL, apiKey, model string, policy DestinationPolicy) *OpenAICompat {
+	return &OpenAICompat{
+		BaseURL: strings.TrimRight(baseURL, "/"),
+		APIKey:  apiKey,
+		Model:   model,
+		Client:  NewDestinationHTTPClient(policy),
+	}
 }
 
 // WithHeaders sets extra headers sent on every request and returns the

@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
 )
@@ -26,12 +25,20 @@ type Anthropic struct {
 	Client  *http.Client
 }
 
+// NewAnthropic builds an Anthropic provider. The client is destination-checked
+// for the same reason as openai-compat: the base URL can come from a request
+// (GAP-111).
 func NewAnthropic(baseURL, apiKey, model string) *Anthropic {
+	return NewAnthropicWithPolicy(baseURL, apiKey, model, DefaultDestinationPolicy())
+}
+
+// NewAnthropicWithPolicy takes an explicit destination policy.
+func NewAnthropicWithPolicy(baseURL, apiKey, model string, policy DestinationPolicy) *Anthropic {
 	baseURL = strings.TrimRight(baseURL, "/")
 	if baseURL == "" {
 		baseURL = "https://api.anthropic.com"
 	}
-	return &Anthropic{BaseURL: baseURL, APIKey: apiKey, Model: model, Client: &http.Client{Timeout: 120 * time.Second}}
+	return &Anthropic{BaseURL: baseURL, APIKey: apiKey, Model: model, Client: NewDestinationHTTPClient(policy)}
 }
 
 func (a *Anthropic) Name() string { return "anthropic" }

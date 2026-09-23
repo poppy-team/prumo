@@ -37,12 +37,12 @@ func TestOpenAIDiscovery(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
-	o := NewOpenAICompat(srv.URL, "", "fallback")
+	o := NewOpenAICompatWithPolicy(srv.URL, "", "fallback", LocalDevelopmentDestinationPolicy())
 	models, err := o.Models(context.Background())
 	if err != nil || len(models) != 2 || models[0] != "m1" {
 		t.Fatalf("discovery failed: %v %v", models, err)
 	}
-	down := NewOpenAICompat("http://127.0.0.1:9", "", "fallback")
+	down := NewOpenAICompatWithPolicy("http://127.0.0.1:9", "", "fallback", LocalDevelopmentDestinationPolicy())
 	models, err = down.Models(context.Background())
 	if err != nil || len(models) != 1 || models[0] != "fallback" {
 		t.Fatalf("unreachable must fall back: %v %v", models, err)
@@ -56,7 +56,7 @@ func TestOpenAICompatSendsHeaders(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
-	o := NewOpenAICompat(srv.URL, "key", "m1").WithHeaders(map[string]string{"x-session-id": "ses-1"})
+	o := NewOpenAICompatWithPolicy(srv.URL, "key", "m1", LocalDevelopmentDestinationPolicy()).WithHeaders(map[string]string{"x-session-id": "ses-1"})
 	if _, err := o.Models(context.Background()); err != nil {
 		t.Fatal(err)
 	}

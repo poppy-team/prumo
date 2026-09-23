@@ -125,7 +125,7 @@ func TestOpenAICompatMultipartImagePayload(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAICompat(srv.URL, "test-key", "gpt-4o")
+	p := NewOpenAICompatWithPolicy(srv.URL, "test-key", "gpt-4o", LocalDevelopmentDestinationPolicy())
 	req := agent.ModelRequest{
 		RequestID: "req-img",
 		TurnID:    "T1",
