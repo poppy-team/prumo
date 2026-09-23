@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
 )
@@ -17,44 +16,143 @@ import (
 // producing N events cost O(N²) of disk work — from the synchronous stream loop
 // of a run, which is the worst place for it (GAP-153).
 
-func TestAppendingIsCheapPastTheCap(t *testing.T) {
-	// The property is about behaviour over a run, not about one call: writing
-	// three times the cap must still be a normal amount of work, and the file
-	// must stay bounded.
+// The rotation used to run on every append, and RotateLog opens and reads the
+// whole log to find out whether it needs trimming. It did that for every single
+// event, including the overwhelming majority that needed nothing (GAP-153).
+//
+// This asserts the behaviour rather than a duration: a timing bound on a shared
+// machine is a flaky test, and the property is about how often the file is
+// rewritten, which is observable without a clock.
+
+// The rotation used to run on every append, and RotateLog opens and reads the
+// whole log to find out whether it needs trimming. It did that for every single
+// event, including the overwhelming majority that needed nothing (GAP-153).
+//
+// This asserts the rate rather than a duration: a timing bound on a shared
+// machine is a flaky test, and the property is how often the file is rewritten,
+// which is observable without a clock.
+
+func TestTheLogIsRewrittenRarelyRatherThanPerEvent(t *testing.T) {
 	dir := t.TempDir()
 	srv := New("s.sock", filepath.Join(dir, "store"), Deps{Workspace: dir})
-	total := 20000
-	begin := time.Now()
-	for i := 0; i < total; i++ {
-		srv.appendEvent("R-perf", agent.AgentEvent{
-			ID: "ev-" + strconv.Itoa(i), RunID: "R-perf", Kind: "text_delta",
-			Payload: map[string]any{"text": "x"}, CreatedAt: agent.Now(),
+	path, _ := srv.eventPath("R-freq")
+
+	const appends = eventLogMax * 4
+	rewrites := 0
+	previous := ""
+	for i := 0; i < appends; i++ {
+		srv.appendEvent("R-freq", agent.AgentEvent{
+			ID: "ev-" + strconv.Itoa(i), RunID: "R-freq", Kind: "text_delta", CreatedAt: agent.Now(),
+		})
+		if i%64 != 63 {
+			// Sampling: a rewrite between samples is still counted at the next
+			// sample, which is all the rate needs.
+			continue
+		}
+		current := firstLineID(t, path)
+		if current != previous {
+			rewrites++
+			previous = current
+		}
+	}
+	// Trimming happens on the order of once per cap, so the count tracks
+	// appends/cap. Reading the log per event would rewrite or re-read it on every
+	// append instead, which is three orders of magnitude more — so any bound
+	// between the two rates catches the regression without being sensitive to
+	// the exact schedule.
+	maxRewrites := appends / 100
+	if rewrites > maxRewrites {
+		t.Fatalf("the log was rewritten %d times over %d appends; trimming should be on the order of once per cap (%d), not this often", rewrites, appends, maxRewrites)
+	}
+	if rewrites == 0 {
+		t.Fatal("the log was never trimmed, so the cap is not being enforced")
+	}
+	if lines := countLogLines(t, path); lines > eventLogMax*2 {
+		t.Fatalf("the log grew to %d lines, far past its cap of %d", lines, eventLogMax)
+	}
+}
+
+func TestAppendsAfterATrimDoNotEachTriggerAnother(t *testing.T) {
+	// The specific shape of the old bug: trim, append one event, and the very
+	// next append rewrites again. After a real trim the file holds cap/2 lines
+	// and the count matches it, so the next cap/2 appends must not rewrite.
+	dir := t.TempDir()
+	srv := New("s.sock", filepath.Join(dir, "store"), Deps{Workspace: dir})
+	path, _ := srv.eventPath("R-one")
+
+	// Append until the log has actually been trimmed.
+	before := ""
+	trimmed := false
+	for i := 0; i < eventLogMax*3 && !trimmed; i++ {
+		srv.appendEvent("R-one", agent.AgentEvent{
+			ID: "ev-" + strconv.Itoa(i), RunID: "R-one", Kind: "text_delta", CreatedAt: agent.Now(),
+		})
+		after := firstLineID(t, path)
+		if i == 0 {
+			before = after
+		} else if after != before {
+			trimmed = true
+		}
+	}
+	if !trimmed {
+		t.Fatal("the log was never trimmed, so this proves nothing about what follows")
+	}
+	settled := firstLineID(t, path)
+	linesAtTrim := countLogLines(t, path)
+	if linesAtTrim > eventLogMax {
+		t.Fatalf("a trimmed log must be well under its cap, got %d lines", linesAtTrim)
+	}
+	for i := 0; i < 10; i++ {
+		srv.appendEvent("R-one", agent.AgentEvent{
+			ID: "late-" + strconv.Itoa(i), RunID: "R-one", Kind: "text_delta", CreatedAt: agent.Now(),
 		})
 	}
-	elapsed := time.Since(begin)
-
-	path, err := srv.eventPath("R-perf")
-	if err != nil {
-		t.Fatal(err)
+	if got := firstLineID(t, path); got != settled {
+		t.Fatalf("ten appends inside the cap rewrote the log (first line moved from %q to %q)", settled, got)
 	}
+}
+
+func TestTheCounterResetsToWhatTheFileNowHolds(t *testing.T) {
+	// Resetting to the cap rather than to the half that survived is the exact
+	// mistake that makes every append rewrite: the condition is true on the next
+	// event, and on every one after it.
+	dir := t.TempDir()
+	srv := New("s.sock", filepath.Join(dir, "store"), Deps{Workspace: dir})
+	path, _ := srv.eventPath("R-reset")
+	for i := 0; i <= eventLogMax; i++ {
+		srv.appendEvent("R-reset", agent.AgentEvent{
+			ID: "ev-" + strconv.Itoa(i), RunID: "R-reset", Kind: "text_delta", CreatedAt: agent.Now(),
+		})
+	}
+	srv.eventsMu.Lock()
+	tracked := srv.eventLines[path]
+	srv.eventsMu.Unlock()
+	lines := countLogLines(t, path)
+	if tracked != lines {
+		t.Fatalf("the counter says %d but the file holds %d lines; a drifting counter either never rotates or rotates constantly", tracked, lines)
+	}
+	if tracked >= eventLogMax {
+		t.Fatalf("after a rotation the count should be the %d lines that were kept, not the cap of %d", eventLogMax/2, eventLogMax)
+	}
+}
+
+func firstLineID(t *testing.T, path string) string {
+	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Count(string(data), "\n")
-	if lines > eventLogMax {
-		t.Fatalf("the log grew to %d lines, past its cap of %d", lines, eventLogMax)
+	first := strings.SplitN(strings.TrimRight(string(data), "\n"), "\n", 2)[0]
+	return first
+}
+
+func countLogLines(t *testing.T, path string) int {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if lines == 0 {
-		t.Fatal("the log is empty; rotation lost everything")
-	}
-	// Reading the whole log on every event was measured at 12.6s for 20k
-	// appends, against 0.6s for counting, with the same output. The bound sits
-	// between them with room for a slower machine, and a log read per event
-	// cannot pass it.
-	if elapsed > 5*time.Second {
-		t.Fatalf("writing %d events took %s; the per-event log read is back", total, elapsed)
-	}
+	return strings.Count(strings.TrimRight(string(data), "\n"), "\n") + 1
 }
 
 func TestRotationKeepsTheNewestEvents(t *testing.T) {

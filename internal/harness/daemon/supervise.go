@@ -244,31 +244,35 @@ func waitForExit(record LockRecord, grace, poll time.Duration) error {
 	return fmt.Errorf("daemon (pid %d) did not exit within %s of SIGTERM; it is still running", record.PID, grace)
 }
 
-// RotateLog caps a JSONL file at maxLines, keeping the newest half.
+// RotateLog caps a JSONL file at maxLines, keeping the newest half, and reports
+// whether it trimmed anything.
 //
-// It rewrites the file, which is O(n) per call. The event path called it once
-// per event, so a run's log cost O(n²) to produce (GAP-153); the fix there is
-// to stop calling it per event. This stays a rewrite because rotating in place
-// is not something a plain append-only file can do, and capping by rewriting is
-// the honest implementation of "keep the newest half".
-func RotateLog(path string, maxLines int) error {
+// The boolean matters to a caller tracking a line count. A file at exactly the
+// cap is not over it, so nothing is written — and a caller that assumed a trim
+// had happened would believe the file now holds half the lines while it holds
+// all of them, leaving the count permanently behind the file.
+//
+// Rotating rewrites the file. That is acceptable as an occasional operation and
+// not as a per-event one, which is why the event path counts rather than calling
+// this on every append (GAP-153).
+func RotateLog(path string, maxLines int) (bool, error) {
 	if maxLines < 10 {
 		maxLines = 10
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil
+			return false, nil
 		}
-		return err
+		return false, err
 	}
 	lines := strings.Split(string(data), "\n")
 	if len(lines) > 0 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}
 	if len(lines) <= maxLines {
-		return nil
+		return false, nil
 	}
 	keep := lines[len(lines)-maxLines/2:]
-	return os.WriteFile(path, []byte(strings.Join(keep, "\n")+"\n"), 0o644)
+	return true, os.WriteFile(path, []byte(strings.Join(keep, "\n")+"\n"), 0o644)
 }

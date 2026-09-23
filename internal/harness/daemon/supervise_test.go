@@ -47,14 +47,14 @@ func TestRotateLog(t *testing.T) {
 	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := RotateLog(path, 20); err != nil {
+	if _, err := RotateLog(path, 20); err != nil {
 		t.Fatal(err)
 	}
 	data, _ := os.ReadFile(path)
 	if strings.Count(string(data), "\n") != 10 {
 		t.Fatalf("expected newest half kept, got %d lines", strings.Count(string(data), "\n"))
 	}
-	if err := RotateLog(filepath.Join(t.TempDir(), "missing.jsonl"), 20); err != nil {
+	if _, err := RotateLog(filepath.Join(t.TempDir(), "missing.jsonl"), 20); err != nil {
 		t.Fatal("missing file must be fine")
 	}
 }

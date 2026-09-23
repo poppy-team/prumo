@@ -17,9 +17,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/raillen/prumo/internal/harness/aci"
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/checkpoint"
 	"github.com/raillen/prumo/internal/harness/contextv2"
@@ -47,10 +49,24 @@ type StartRequest struct {
 // RunRecord is the persisted observable state of one run.
 type RunRecord struct {
 	RunID      string `json:"run_id"`
-	Status     string `json:"status"` // running|complete|failed|cancelled|yielded
+	Status     string `json:"status"` // running|complete|failed|cancelled|yielded|awaiting_approval|interrupted
 	Phase      string `json:"phase,omitempty"`
 	StopReason string `json:"stop_reason,omitempty"`
 	UpdatedAt  string `json:"updated_at"`
+	// PendingPermissions is what makes a run that stopped for approval still
+	// answerable after the daemon restarts. The reconnect contract says a
+	// reconnected client "still knows what to answer", which is impossible if the
+	// pending ids live only in a process that no longer exists (GAP-164).
+	PendingPermissions []string `json:"pending_permissions,omitempty"`
+	// ResumeCheckpoint names the checkpoint an interrupted run continues from.
+	// A run that was in flight when the process died is not resumed on its own:
+	// continuing it spends money nobody asked to spend. It is made resumable
+	// instead, and the client decides.
+	ResumeCheckpoint string `json:"resume_checkpoint,omitempty"`
+	// Interrupted marks a record reconciled at startup rather than written by the
+	// run that owned it. Without it a record saying "running" is indistinguishable
+	// from a live one, and a client is told a run is in flight when nothing is.
+	Interrupted bool `json:"interrupted,omitempty"`
 }
 
 // Deps injects provider construction and tool execution (no globals).
@@ -190,7 +206,7 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 		deps.PermPolicy = DefaultPermPolicy()
 	}
 	rootCtx, rootCancel := context.WithCancel(context.Background())
-	return &Server{
+	srv := &Server{
 		SocketPath:  socketPath,
 		StoreDir:    storeDir,
 		Deps:        deps,
@@ -201,6 +217,8 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 		rootCtx:     rootCtx,
 		rootCancel:  rootCancel,
 	}
+	srv.reconcileStore()
+	return srv
 }
 
 // recordPath and eventPath place a run id into a filename, so the id is
@@ -303,14 +321,23 @@ func (s *Server) noteEventWritten(path string) {
 		s.eventsMu.Unlock()
 		return
 	}
-	// Past the cap: rewrite once, then resume counting from what the file now
-	// holds. RotateLog keeps the newest half, so the count goes back to that
-	// half and the next rewrite is a full cap away. Leaving it at the cap here
-	// makes every following append rewrite too, which is the quadratic behaviour
-	// this function exists to remove — measured at 56x slower.
-	s.eventLines[path] = eventLogMax / 2
 	s.eventsMu.Unlock()
-	_ = RotateLog(path, eventLogMax)
+
+	// Rotate outside the lock: it reads and rewrites the file, and holding the
+	// counter's lock across that would serialise every run's event loop behind
+	// one file's disk work.
+	trimmed, _ := RotateLog(path, eventLogMax)
+	s.eventsMu.Lock()
+	// Only resume from half the cap if the file was actually trimmed. A file at
+	// exactly the cap is not over it, so nothing is written; assuming otherwise
+	// leaves the count permanently behind the file, and the log grows past its
+	// cap by a cap's worth before the next trim.
+	if trimmed {
+		s.eventLines[path] = eventLogMax / 2
+	} else {
+		s.eventLines[path] = eventLogMax
+	}
+	s.eventsMu.Unlock()
 }
 
 // Serve blocks until ctx is cancelled.
@@ -863,7 +890,7 @@ func (s *Server) opStatus(runID string) map[string]any {
 	if err := json.Unmarshal(data, &rec); err != nil {
 		return map[string]any{"ok": false, "error": "corrupt record " + runID}
 	}
-	pending := []string{}
+	pending := append([]string{}, rec.PendingPermissions...)
 	fingerprints := map[string]any{}
 	if active && runner != nil {
 		// A non-blocking read: a client polling status during a long model call
@@ -882,6 +909,7 @@ func (s *Server) opStatus(runID string) map[string]any {
 		for _, id := range live.PendingPerms {
 			fingerprints[id] = runner.PendingFingerprint(id)
 		}
+		rec.Status = "awaiting_approval"
 		// The record is written when a run stops. While the loop is advancing
 		// it is stale, and while the run waits it is the live state that tells
 		// a client there is something to answer.
@@ -892,7 +920,12 @@ func (s *Server) opStatus(runID string) map[string]any {
 			rec.Status = "awaiting_approval"
 		}
 	}
-	return map[string]any{"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "stop_reason": rec.StopReason, "active": active, "pending_permissions": pending, "permission_fingerprints": fingerprints}
+	return map[string]any{
+		"ok": true, "run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase,
+		"stop_reason": rec.StopReason, "active": active,
+		"pending_permissions": pending, "permission_fingerprints": fingerprints,
+		"interrupted": rec.Interrupted, "resume_checkpoint": rec.ResumeCheckpoint,
+	}
 }
 
 func (s *Server) opList() map[string]any {
@@ -934,11 +967,20 @@ func (s *Server) opList() map[string]any {
 		if err := json.Unmarshal(data, &rec); err != nil {
 			continue
 		}
-		row := map[string]any{"run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase, "pending_permissions": []string{}}
+		row := map[string]any{
+			"run_id": rec.RunID, "status": rec.Status, "phase": rec.Phase,
+			"pending_permissions": []string{}, "active": false,
+			"interrupted": rec.Interrupted, "resume_checkpoint": rec.ResumeCheckpoint,
+		}
 		if ids, ok := pending[rec.RunID]; ok {
 			row["status"] = "awaiting_approval"
 			row["pending_permissions"] = ids
 			row["permission_fingerprints"] = prints[rec.RunID]
+			row["active"] = true
+		} else if len(rec.PendingPermissions) > 0 {
+			// Recovered from a restart: waiting, answerable, but no process owns
+			// it here yet. The ids are the contract's step 6.
+			row["pending_permissions"] = rec.PendingPermissions
 		}
 		out = append(out, row)
 	}
@@ -1452,4 +1494,156 @@ func (c Client) Diff(runID, path string) (map[string]any, error) {
 // Protocol negotiates versions.
 func (c Client) Protocol() (map[string]any, error) {
 	return c.call(map[string]any{"op": "protocol"})
+}
+
+// reconcileStore brings the records left by a previous process into line with
+// what is actually true.
+//
+// A record saying "running" was written by a process that no longer exists, so
+// nothing is running. Before this the daemon started with an empty run map and
+// read those records as-is: status reported active:false while the record still
+// claimed running, and a client had no way to tell a live run from a dead one
+// except by looking for something that would never arrive (GAP-164).
+//
+// A run that stopped for approval is the case the reconnect contract calls out.
+// It is not interrupted: it is waiting, and the request it is waiting on is
+// recorded in its checkpoint. It is restored to awaiting_approval with its
+// pending ids, so a reconnected client still knows what to answer.
+func (s *Server) reconcileStore() {
+	entries, err := os.ReadDir(s.StoreDir)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if len(name) < 12 || name[:11] != "daemon-run-" || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		// The filename carries the run id behind a prefix; the id is what the
+		// checkpoint store is keyed by, and looking it up with the prefix still
+		// attached finds nothing.
+		runID := strings.TrimSuffix(name[len("daemon-run-"):], ".json")
+		s.reconcileRun(runID, filepath.Join(s.StoreDir, name))
+	}
+}
+
+func (s *Server) reconcileRun(runID, path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var rec RunRecord
+	if err := json.Unmarshal(data, &rec); err != nil {
+		return
+	}
+	// A terminal run said everything it had to say; the record is not ours to
+	// reinterpret. The reconnect contract is about replay, and replay reads the
+	// event log, not this.
+	switch rec.Status {
+	case "complete", "failed", "cancelled", "interrupted":
+		return
+	}
+
+	cp, cpErr := checkpoint.New(filepath.Join(s.StoreDir, "checkpoints")).Latest(runID)
+	pending := []string{}
+	phase := rec.Phase
+	if cpErr == nil {
+		pending = append(pending, cp.State.PendingPerms...)
+		if phase == "" {
+			phase = string(cp.State.Phase)
+		}
+	}
+	rec.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
+	rec.Interrupted = true
+
+	switch {
+	case len(pending) > 0:
+		// Waiting, not interrupted: the request is still answerable.
+		rec.Status = "awaiting_approval"
+		rec.PendingPermissions = pending
+		rec.StopReason = "daemon restarted while this run was waiting for approval"
+	case cpErr == nil:
+		// Resumable, but not resumed: continuing spends what nobody authorised.
+		rec.Status = "interrupted"
+		rec.ResumeCheckpoint = cp.ID
+		rec.StopReason = "daemon restarted while this run was in flight; resume from checkpoint " + cp.ID
+	default:
+		rec.Status = "interrupted"
+		rec.StopReason = "daemon restarted while this run was in flight; no checkpoint survived to resume from"
+	}
+	rec.Phase = phase
+
+	out, err := json.MarshalIndent(rec, "", "  ")
+	if err != nil {
+		return
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, out, 0o644); err == nil {
+		_ = os.Rename(tmp, path)
+	}
+}
+
+// restoreRun rebuilds a run's runner from its checkpoint so a run that was
+// waiting for approval can be answered after a restart.
+//
+// The contract calls a reconnected run "still answerable". A pending id without
+// a runner behind it is decoration: the approve op needs a live runner to
+// resolve against, and the permission engine needs the decisions already taken so
+// it does not ask again for something a person has already answered.
+//
+// It returns nil when there is no checkpoint to restore from. A run that cannot
+// be restored stays interrupted, which is the truth about it.
+func (s *Server) restoreRun(runID string) *harnessruntime.Runner {
+	store := checkpoint.New(filepath.Join(s.StoreDir, "checkpoints"))
+	cp, err := store.Latest(runID)
+	if err != nil {
+		return nil
+	}
+	workspace := s.Deps.Workspace
+	if workspace == "" {
+		workspace = s.StoreDir
+	}
+	providerName, providerMDL, apiKey, baseURL := s.runProviderFor(cp)
+	provider, err := s.Deps.NewProvider(providerName, baseURL, apiKey, providerMDL)
+	if err != nil {
+		return nil
+	}
+	engine := perm.New(s.policy)
+	// The decisions this run already collected, so answering a second request
+	// does not re-ask the first.
+	_ = runlayer.LoadPermissions(filepath.Join(s.StoreDir, "permissions-"+runID+".jsonl"), engine)
+
+	budgetTokens, budgetUSD, budgetTools := s.Deps.Budget.limits()
+	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
+	tools := s.Deps.Tools
+	if tools == nil {
+		tools = aci.New(workspace)
+	}
+	runner := harnessruntime.NewRunner(harnessruntime.Services{
+		Models:          provider,
+		Tools:           tools,
+		Perms:           engine,
+		Checkpoints:     store,
+		EffectJournal:   store,
+		Workspace:       workspace,
+		ReserveBudget:   tracker.Reserve,
+		BudgetExhausted: tracker.Exhausted,
+	}, runID, cp.State.SessionID)
+	runner.RestoreFrom(cp)
+	return runner
+}
+
+// runProviderFor recovers the provider a checkpointed run was using. A run that
+// cannot name one is restored with the daemon's default, which is what a fresh
+// run would use.
+func (s *Server) runProviderFor(cp agent.Checkpoint) (name, model, apiKey, baseURL string) {
+	// The route is recorded as a string; a run that named one is restored with
+	// that provider, and one that did not falls back to the default.
+	if cp.State.ModelRoute != "" {
+		name = cp.State.ModelRoute
+	}
+	if name == "" {
+		name = "fake"
+	}
+	return name, model, os.Getenv("PRUMO_MODEL_API_KEY"), os.Getenv("PRUMO_MODEL_BASE_URL")
 }

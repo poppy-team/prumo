@@ -509,7 +509,7 @@ func appendAgentEvent(path string, ev agent.AgentEvent) {
 	}
 	defer f.Close()
 	_, _ = f.Write(append(data, '\n'))
-	_ = daemon.RotateLog(path, 2000)
+	_, _ = daemon.RotateLog(path, 2000)
 }
 
 func runAgentEvents(asJSON bool, args []string) int {
