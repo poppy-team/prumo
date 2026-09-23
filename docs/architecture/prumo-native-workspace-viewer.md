@@ -57,13 +57,13 @@ Prumo Native (Rust, Freya 0.4+)
 ├── freya-elements   — parágrafo, imagem, canvas, SVG, scroll
 ├── torque           — layout engine (via Freya)
 ├── skia-safe        — rasterização (via Freya)
-├── syntect          — syntax highlighting (streaming, lazy por tab)
+├── tree-sitter       — grammars via freya-code-editor (lazy por tab)
 ├── similar          — diff engine (inline + word-level)
 ├── notify           — file watching (debounced)
 ├── tokio            — runtime async compartilhado (1 runtime, workers limitados)
 ├── serde/serde_json — config, projeções e eventos do protocol
 ├── git2 (libgit2)   — git status/diff em worker de fundo
-├── portable-pty + vt100 — terminal embutido (fase 2)
+├── portable-pty + vt100 — terminal embutido (fase 2, implementada)
 └── arboard/rfd      — clipboard e diálogos nativos
 ```
 
@@ -95,6 +95,68 @@ O Workspace Viewer não deve ser uma IDE generalista. Ele deve otimizar quatro v
 2. **entender** os arquivos e alterações;
 3. **acompanhar** a execução em tempo real;
 4. **corrigir** pequenas coisas sem mudar de aplicativo.
+
+## Direção visual: Prumo Studio
+
+A interface combina padrões de duas fontes reconhecidas com o modelo próprio do Prumo:
+
+- [Zed](https://zed.dev/features): editor dominante, baixa ornamentação, divisórias finas, alta densidade, paleta neutra e foco no código;
+- [Xcode](https://developer.apple.com/documentation/xcode/configuring-the-xcode-project-window): toolbar contextual, navigator, editor com tabs, inspector à direita, área inferior e hierarquia de informação por seção;
+- [Xcode 27](https://developer.apple.com/videos/play/wwdc2026/258/): conversa de coding agent no fluxo do editor, activities persistentes, mudanças e artefatos associados à Run.
+
+A referência é o modelo mental, não uma cópia de marca. A resultante deve parecer uma IDE profissional calma, técnica e densa, sem reproduzir a quantidade de controles do Xcode.
+
+### Grid e proporção
+
+| Região | Comportamento |
+| --- | --- |
+| Titlebar | 40 px, contexto do workspace e da Run sempre visível |
+| Activity rail | 44 px, persistente e independente da sidebar |
+| Sidebar | 240 a 360 px, com Explorer e Changes |
+| Editor | mínimo de 480 px e maior área útil da tela |
+| Right stack | 300 a 380 px, com Prumo Agent e inspector contextual |
+| Bottom dock | 30 px recolhido; 160 a 260 px expandido, com Activity, Changes e Evidence real |
+| Statusbar | 26 px, facts de conexão, Run, documento e contagens |
+
+Em viewport largo, rail, sidebar, editor, right stack e dock coexistem. Em viewport médio, o dock recolhe antes da sidebar. Em viewport estreito, a sidebar e a right stack recolhem antes de comprimir o editor.
+
+### Linguagem visual
+
+- superfícies distinguem canvas, sidebar, editor, panel e área elevada sem depender apenas de bordas;
+- texto principal, secundário e placeholder mantêm contraste suficiente nos dois temas;
+- azul é reservado para foco, ação e estado ativo; verde, amarelo e vermelho representam hechos, não decoração;
+- divisórias são suaves; cards e cantos arredondados ficam restritos a overlays e approvals;
+- ícones têm hit area mínima, label acessível e estado visível;
+- hierarquia usa posição, tamanho e peso antes de cor;
+- animações são curtas, funcionais e desativadas em reduced motion.
+
+### Navegação e inspetores
+
+- o activity rail alterna Explorer, Changes e Prumo Agent;
+- a sidebar preserva a seleção ao trocar de modo;
+- Changes lista somente arquivos presentes na projeção da Run;
+- o right stack mostra Run, phase, approvals e timeline;
+- o bottom dock apresenta Activity, Changes e Evidence apenas quando existem dados;
+- controles de debug, terminal e inspector não aparecem até possuírem operação real.
+
+### Integrações Prumo
+
+- explorer exibe `Created`, `Modified` e `Deleted` oriundos da RunProjection;
+- agent panel inicia Runs, mostra eventos e responde approvals pelo Agent Protocol;
+- diff e dirty state protegem edição humana contra alteração externa;
+- Evidence e Quality aparecem no dock quando o Core fornecer esses dados;
+- status bar mostra somente conexão, Run, documento e contagens verificáveis.
+
+### Estado implementado do shell
+
+- o editor usa o componente `CodeEditor` nativo do Freya com Rope, VirtualScrollView e Tree-sitter;
+- Rust, Go, JSON, YAML, Markdown, TOML, TypeScript e JavaScript possuem gramáticas carregadas pelo editor;
+- o Runner envia `start`, `steer`, `cancel`, `models`, `approve` e `deny` exclusivamente pelo Agent Protocol publicado;
+- o terminal inferior usa `portable-pty` + `vt100`, inicia no workspace, mantém stdin/stdout, permite restart e termina o child junto com a sessão;
+- o terminal não executa com privilégios elevados e a UI informa que herda os privilégios do usuário;
+- preferências persistidas usam `schemas/viewer-config.schema.json` em `$PRUMO_VIEWER_CONFIG` ou, por padrão, no diretório de configuração do usuário sob `prumo/viewer.json`; segredos e API keys nunca são armazenadas nesse arquivo;
+- socket e shell customizados exigem restart, enquanto provider, model, tema, whitespace e intervalo de polling entram em vigor na viewer;
+- ResizableContainer horizontal usa contexto interno do Freya, chaves estáveis e `Content::flex`; o CodeEditor precisa ocupar a área central medida por teste headless.
 
 ## Agent-aware Explorer
 

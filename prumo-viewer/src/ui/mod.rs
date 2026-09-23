@@ -1,0 +1,10 @@
+pub mod agent_panel;
+pub mod diff_view;
+pub mod editor_area;
+pub mod icons;
+pub mod quick_open;
+pub mod settings;
+pub mod sidebar;
+pub mod status_bar;
+pub mod tab_bar;
+pub mod top_bar;
