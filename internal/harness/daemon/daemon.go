@@ -720,6 +720,15 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 	dir := s.StoreDir
 	budgetTokens, budgetUSD, budgetTools := s.Deps.Budget.limits()
 	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
+	// What a previous life of this run spent is part of its budget. Without this
+	// a restart hands back a full allowance, and the cheapest way past a ceiling
+	// is to crash (GAP-001).
+	if err := runlayer.Load(filepath.Join(dir, "budget-"+runID+".json"), tracker); err != nil {
+		s.appendEvent(runID, agent.AgentEvent{
+			ID: runID + "-budget-unreadable", RunID: runID, Kind: "budget_envelope_unreadable",
+			Payload: map[string]any{"error": err.Error()}, CreatedAt: agent.Now(),
+		})
+	}
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
 	engine := perm.New(s.policy)
 	// Decisions are read back before the run starts. Without this an approval
@@ -1682,6 +1691,7 @@ func (s *Server) restoreRun(runID string) *harnessruntime.Runner {
 
 	budgetTokens, budgetUSD, budgetTools := s.Deps.Budget.limits()
 	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
+	_ = runlayer.Load(filepath.Join(s.StoreDir, "budget-"+runID+".json"), tracker)
 	tools := s.Deps.Tools
 	if tools == nil {
 		tools = aci.New(workspace)

@@ -485,3 +485,36 @@ func BridgeToObservability(path string, events []agent.AgentEvent) error {
 	}
 	return nil
 }
+
+// Load restores a persisted envelope into a tracker.
+//
+// The envelope was written on every run stop and never read back, so a run
+// resumed after a restart began with a full budget: a ceiling that resets on
+// restart is not a ceiling, and the cheapest way past one is to crash (GAP-001).
+//
+// A missing file is not an error — a run that never had a tracker has nothing to
+// restore. A corrupt file is an error, because silently starting fresh on
+// unreadable data is the same hole with an extra step.
+func Load(path string, t *Tracker) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	var envelope budget.Envelope
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return fmt.Errorf("budget envelope %s is unreadable: %w", path, err)
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if envelope.Usage == nil {
+		envelope.Usage = map[string]float64{}
+	}
+	// A restored envelope carries no reservations: none were in flight when it
+	// was written, and carrying a stale one would refuse calls that fit.
+	t.envelope = envelope
+	t.reserved = map[string]float64{}
+	return nil
+}
