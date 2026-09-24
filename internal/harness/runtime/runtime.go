@@ -573,6 +573,13 @@ func (r *Runner) Step(ctx context.Context) error {
 			}
 		}
 		r.State.ContextManifestID = id
+		if r.Svc.ContextManifest != nil {
+			// Only a configured hook produces content. The placeholder id is an
+			// identifier — delivering it would put the literal text
+			// "ctx-manifest" in front of the model as context, and would shift
+			// every message in the conversation.
+			r.deliverContextManifest(id)
+		}
 		r.State.Phase = agent.PhaseRequestModel
 	case agent.PhaseRequestModel:
 		r.maybeCompactLocked()
@@ -1082,3 +1089,35 @@ func Retryable(err error) bool {
 func (r *Runner) advanceTurn() {
 	r.State.TurnID = fmt.Sprintf("turn-%d", r.TurnsDone+1)
 }
+
+// deliverContextManifest puts the compiled context in front of the model.
+//
+// It was not delivered at all. The manifest was compiled, written to disk, and
+// its id stored in state — and then nothing read either. The model request is
+// built from the conversation, so the files the run decided were relevant, the
+// pressure level and the token estimate never reached the model that was supposed
+// to act on them. The hook returns the manifest's text; the id was never a thing
+// anyone could consume (GAP-128).
+func (r *Runner) deliverContextManifest(manifest string) {
+	manifest = strings.TrimSpace(manifest)
+	if manifest == "" {
+		return
+	}
+	// Idempotent across turns: the manifest is context for the whole run, and
+	// re-adding it each turn would grow the conversation with a copy of itself.
+	for _, message := range r.Messages {
+		if message.ID == contextManifestMessageID {
+			return
+		}
+	}
+	r.Messages = append([]agent.Message{{
+		ID:        contextManifestMessageID,
+		Role:      agent.RoleSystem,
+		Content:   manifest,
+		CreatedAt: agent.Now(),
+	}}, r.Messages...)
+}
+
+// contextManifestMessageID is where the compiled context lives in the
+// conversation.
+const contextManifestMessageID = "context-manifest"

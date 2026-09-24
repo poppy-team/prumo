@@ -1018,7 +1018,12 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 			}
 			s.appendEvent(runID, agent.AgentEvent{ID: runID + "-ctx", RunID: runID, Kind: "context.compiled",
 				Payload: map[string]any{"included": len(m.Included), "tokens": m.EstimatedTokens, "pressure": m.Pressure}, CreatedAt: agent.Now()})
-			return "ctx-" + runID, nil
+			// The manifest is returned as the text the model is given, not as an
+			// id for it. The id form meant the run compiled a context, wrote it to
+			// disk, and told nobody: the model request is built from the
+			// conversation, so the files the run judged relevant never reached the
+			// model that was supposed to act on them (GAP-128).
+			return renderContextManifest(m), nil
 		},
 		RecordDiff: func(runID, path, kind, content string) {
 			s.saveDiff(runID, path, kind, content)
@@ -2089,4 +2094,42 @@ func (s *Server) expireApprovals() {
 			item.cancel()
 		}
 	}
+}
+
+// renderContextManifest turns a compiled context into the text the model reads.
+//
+// The manifest is a selection — which documents and pointers the run decided are
+// relevant, at what level, under what pressure, at what token cost. That
+// selection is the whole value of compiling it, and a run whose model never sees
+// it is a run that re-derives the selection by guessing (GAP-128).
+func renderContextManifest(manifest contextv2.Manifest) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "# Prumo context for run %s\n\n", manifest.RunID)
+	fmt.Fprintf(&b, "Level: %s. Pressure: %s. Estimated tokens: %d.\n\n",
+		manifest.Level, manifest.Pressure, manifest.EstimatedTokens)
+	if len(manifest.Included) == 0 {
+		b.WriteString("No documents were selected. Read ENTRYPOINT.md before assuming there is nothing to read.\n")
+		return b.String()
+	}
+	b.WriteString("Read these, in order, before deciding what to do:\n\n")
+	for _, item := range manifest.Included {
+		fmt.Fprintf(&b, "- %s (%s", item.Ref, item.Authority)
+		if item.Trust != "" {
+			fmt.Fprintf(&b, ", %s", item.Trust)
+		}
+		if item.Reason != "" {
+			fmt.Fprintf(&b, " — %s", item.Reason)
+		}
+		b.WriteString(")\n")
+	}
+	if len(manifest.Excluded) > 0 {
+		names := make([]string, 0, len(manifest.Excluded))
+		for _, item := range manifest.Excluded {
+			names = append(names, item.Ref)
+		}
+		b.WriteString("\nDeliberately excluded, so you do not go looking for it: ")
+		b.WriteString(strings.Join(names, ", "))
+		b.WriteString("\n")
+	}
+	return b.String()
 }

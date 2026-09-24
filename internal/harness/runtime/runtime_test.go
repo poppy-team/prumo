@@ -587,6 +587,7 @@ type recordingRequestProvider struct {
 	steps      []agent.ModelEvent
 	requestIDs []string
 	turnIDs    []string
+	systems    []string
 	calls      int
 }
 
@@ -602,6 +603,11 @@ func (p *recordingRequestProvider) Stream(_ context.Context, req agent.ModelRequ
 	p.mu.Lock()
 	p.requestIDs = append(p.requestIDs, req.RequestID)
 	p.turnIDs = append(p.turnIDs, req.TurnID)
+	for _, m := range req.Messages {
+		if m.Role == agent.RoleSystem {
+			p.systems = append(p.systems, m.Content)
+		}
+	}
 	p.calls++
 	ch := make(chan agent.ModelEvent, 4)
 	for _, step := range p.steps {
@@ -645,5 +651,98 @@ func TestAResumedRunContinuesTheTurnSequenceRatherThanReusingIt(t *testing.T) {
 	r.advanceTurn()
 	if r.State.TurnID != "turn-7" {
 		t.Fatalf("turn = %q, want turn-7", r.State.TurnID)
+	}
+}
+
+// The run compiled a context, wrote it to disk, stored its id in state — and then
+// nothing read either. The model request is built from the conversation, so the
+// files the run judged relevant, the disclosure level and the pressure never
+// reached the model that was supposed to act on them. A run that compiles a
+// context and does not deliver it has done the work and kept the answer (GAP-128).
+
+func TestTheCompiledContextReachesTheModel(t *testing.T) {
+	recorder := &recordingRequestProvider{steps: []agent.ModelEvent{{Kind: agent.EventCompleted, Finished: true}}}
+	r := NewRunner(Services{
+		Models: recorder, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+		ContextManifest: func(context.Context, agent.NativeAgentState) (string, error) {
+			return "Read ENTRYPOINT.md, then docs/PRUMO.md.", nil
+		},
+	}, "R-ctx", "S1")
+	r.MaxTurns = 1
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "what should I do?"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(recorder.systems) == 0 {
+		t.Fatal("the model received no context at all")
+	}
+	joined := strings.Join(recorder.systems, "\n")
+	if !strings.Contains(joined, "ENTRYPOINT.md") {
+		t.Fatalf("the context did not reach the model; it saw: %q", joined)
+	}
+}
+
+func TestTheContextIsDeliveredOnceNotEveryTurn(t *testing.T) {
+	// It is context for the whole run. Re-adding it each turn would grow the
+	// conversation with a copy of itself until compaction decided to summarise it.
+	recorder := &recordingRequestProvider{steps: []agent.ModelEvent{
+		{Kind: agent.EventToolCallReady, ToolCall: &agent.ToolCall{
+			ID: "c1", TurnID: "turn-1", Name: "fs.read",
+			Arguments: map[string]any{"path": "README.md"},
+		}},
+		{Kind: agent.EventCompleted, Finished: true},
+	}}
+	r := NewRunner(Services{
+		Models: recorder, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+		ContextManifest: func(context.Context, agent.NativeAgentState) (string, error) {
+			return "read this first", nil
+		},
+	}, "R-ctx2", "S1")
+	r.MaxTurns = 3
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	_ = r.RunUntilDone(context.Background())
+
+	// The context belongs in every request — it is part of the conversation, and
+	// a model that saw it once and not on the next turn would be worse. What must
+	// not happen is a second copy accumulating each turn.
+	seenInConversation := 0
+	for _, m := range r.Messages {
+		if m.ID == contextManifestMessageID {
+			seenInConversation++
+		}
+	}
+	if seenInConversation != 1 {
+		t.Fatalf("the manifest is in the conversation %d times, want exactly 1", seenInConversation)
+	}
+	// And within any single request, at most one.
+	counted := 0
+	for _, content := range recorder.systems {
+		if strings.Count(content, "read this first") > 1 {
+			counted++
+		}
+	}
+	if counted > 0 {
+		t.Fatalf("%d request(s) carried the manifest more than once", counted)
+	}
+}
+
+func TestAnEmptyManifestAddsNothing(t *testing.T) {
+	recorder := &recordingRequestProvider{steps: []agent.ModelEvent{{Kind: agent.EventCompleted, Finished: true}}}
+	r := NewRunner(Services{
+		Models: recorder, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+		ContextManifest: func(context.Context, agent.NativeAgentState) (string, error) {
+			return "   ", nil
+		},
+	}, "R-ctx3", "S1")
+	r.MaxTurns = 1
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(recorder.systems) != 0 {
+		t.Fatalf("an empty manifest added %d system messages", len(recorder.systems))
 	}
 }
