@@ -163,6 +163,10 @@ type Server struct {
 
 	subsMu      sync.Mutex
 	subscribers map[string][]chan map[string]any
+	// subscriberDrops counts subscribers disconnected for not keeping up. A run
+	// waiting on an approval whose question was dropped waits forever otherwise
+	// (GAP-119).
+	subscriberDrops int
 }
 
 // DiffRecord records what a run changed in one file (ADR 014).
@@ -306,20 +310,41 @@ func (s *Server) appendEvent(runID string, ev agent.AgentEvent) error {
 	}
 	s.noteEventWritten(path)
 
+	// The fan-out happens under subsMu, not on a copy of the channel list.
+	// Copying first and sending after would let a subscriber that has just been
+	// disconnected have its channel closed mid-send, which is a panic rather than
+	// a lost event. The sends are non-blocking, so holding the lock across them
+	// costs nothing and makes closing and sending mutually exclusive.
 	s.subsMu.Lock()
-	chans := append([]chan map[string]any{}, s.subscribers[runID]...)
-	s.subsMu.Unlock()
-	if len(chans) > 0 {
+	if list := s.subscribers[runID]; len(list) > 0 {
 		var evMap map[string]any
 		_ = json.Unmarshal(data, &evMap)
 		push := map[string]any{"op": "event", "run_id": runID, "event": evMap}
-		for _, ch := range chans {
+		kept := make([]chan map[string]any, 0, len(list))
+		for _, ch := range list {
 			select {
 			case ch <- push:
+				kept = append(kept, ch)
 			default:
+				// A full queue means the subscriber stopped reading. Dropping the
+				// event silently is the problem: a run waiting for an approval
+				// whose question was dropped waits forever, and the client cannot
+				// tell a quiet run from a lossy one.
+				//
+				// So it is disconnected instead. The log is the record of what
+				// happened; the push is a convenience, and a convenience that fails
+				// invisibly is worse than none (GAP-119).
+				s.subscriberDrops++
+				close(ch)
 			}
 		}
+		if len(kept) == 0 {
+			delete(s.subscribers, runID)
+		} else {
+			s.subscribers[runID] = kept
+		}
 	}
+	s.subsMu.Unlock()
 	return nil
 }
 
@@ -1286,14 +1311,44 @@ func (s *Server) handleSubscribe(ctx context.Context, msg map[string]any, writeM
 		s.subsMu.Unlock()
 	}()
 
+	// The cursor is an event id, not a position.
+	//
+	// A position stops meaning the same thing the moment the log rotates: the
+	// rotation keeps the second half, so index 40 names a different event than it
+	// did a moment ago. A client reconnecting with one silently missed every event
+	// between where it left off and where the rotation cut, and re-read the ones
+	// it had already seen. When the log had shrunk past the position it was
+	// refused outright with "cursor beyond event log" — a reconnect that used to
+	// work became a hard error (GAP-119).
+	//
+	// An id survives rotation because the events it names are the ones that were
+	// kept, and an id that is not there means the event was rotated away, which is
+	// said out loud so the client re-reads the retained log rather than resuming
+	// from a position that no longer refers to it.
+	afterID := str(msg, "after_id")
 	existing := s.readRawEvents(runID)
+	start := 0
+	resumed := false
+	if afterID != "" {
+		start, resumed = positionAfterID(existing, afterID)
+	}
 	if from < 0 || from > len(existing) {
 		_ = writeMsg(map[string]any{"ok": false, "error": fmt.Sprintf("cursor beyond event log: %d > %d", from, len(existing))})
 		return
 	}
+	if from > start {
+		// A positional cursor was supplied and is still inside the retained log, so
+		// honour it — but the acknowledgement says which id it resolved to, so the
+		// client can move to the stable form.
+		start = from
+	}
 
 	// First line: subscribed acknowledgement carrying the honoured cursor.
-	if err := writeMsg(map[string]any{"op": "subscribed", "run_id": runID, "from": from}); err != nil {
+	ack := map[string]any{"op": "subscribed", "run_id": runID, "from": start, "resumed_by_id": resumed}
+	if start > 0 && start-1 < len(existing) {
+		ack["after_id"] = existing[start-1]["id"]
+	}
+	if err := writeMsg(ack); err != nil {
 		return
 	}
 
@@ -1792,4 +1847,36 @@ func (s *Server) runProviderFor(cp agent.Checkpoint) (name, model, apiKey, baseU
 		name = "fake"
 	}
 	return name, model, os.Getenv("PRUMO_MODEL_API_KEY"), os.Getenv("PRUMO_MODEL_BASE_URL")
+}
+
+// noteSubscriberDropped counts subscribers disconnected for falling behind, so a
+// client that reconnects can see that it was not merely quiet.
+func (s *Server) noteSubscriberDropped() {
+	s.subsMu.Lock()
+	s.subscriberDrops++
+	s.subsMu.Unlock()
+}
+
+// SubscriberDrops reports how many subscribers have been disconnected for falling
+// behind.
+func (s *Server) SubscriberDrops() int {
+	s.subsMu.Lock()
+	defer s.subsMu.Unlock()
+	return s.subscriberDrops
+}
+
+// positionAfterID finds where to resume in a run's event list given the last event
+// id the client saw.
+//
+// The returned bool says whether the id was found. A false is not an error: it
+// means the event was rotated away, and the recoverable answer is to re-read what
+// the log still holds rather than resume from a position that no longer refers to
+// the event the client meant.
+func positionAfterID(events []map[string]any, id string) (int, bool) {
+	for i, event := range events {
+		if named, _ := event["id"].(string); named == id {
+			return i + 1, true
+		}
+	}
+	return 0, false
 }
