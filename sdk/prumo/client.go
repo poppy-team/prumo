@@ -33,6 +33,14 @@ type Client struct {
 	RemoteAddr  string
 	RemoteToken string
 	TLSConf     *tls.Config
+	// Actor names who is using this client, and is recorded on every
+	// permission decision it makes.
+	//
+	// Without it the daemon recorded the literal actor "client" — a transport
+	// rather than a person — so the permissions trail could not say who allowed
+	// a shell command, only that something did (GAP-160). Set it to whatever
+	// identifies the operator: a user name, a service account, an agent id.
+	Actor string
 }
 
 // DialRemote builds a client for a TCP+TLS daemon endpoint.
@@ -254,14 +262,19 @@ func (c Client) Steer(ctx context.Context, runID, message string) error {
 
 // Approve answers a pending permission request, letting the run continue.
 func (c Client) Approve(ctx context.Context, runID, requestID string) error {
-	_, err := c.call(ctx, map[string]any{"op": "approve", "run_id": runID, "request_id": requestID})
+	_, err := c.call(ctx, map[string]any{
+		"op": "approve", "run_id": runID, "request_id": requestID, "actor": c.Actor,
+	})
 	return err
 }
 
 // Deny refuses a pending permission request. The run then fails the way a
 // policy denial fails; nothing executes.
 func (c Client) Deny(ctx context.Context, runID, requestID, reason string) error {
-	_, err := c.call(ctx, map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
+	_, err := c.call(ctx, map[string]any{
+		"op": "deny", "run_id": runID, "request_id": requestID,
+		"reason": reason, "actor": c.Actor,
+	})
 	return err
 }
 

@@ -837,9 +837,9 @@ func (s *Server) dispatch(msg map[string]any) map[string]any {
 	case "steer":
 		return s.opSteer(str(msg, "run_id"), str(msg, "message"))
 	case "approve":
-		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "fingerprint"), str(msg, "reason"), true)
+		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "fingerprint"), str(msg, "reason"), str(msg, "actor"), true)
 	case "deny":
-		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "fingerprint"), str(msg, "reason"), false)
+		return s.opPermission(str(msg, "run_id"), str(msg, "request_id"), str(msg, "fingerprint"), str(msg, "reason"), str(msg, "actor"), false)
 	case "schedule":
 		return s.opSchedule(msg)
 	case "unschedule":
@@ -1682,7 +1682,7 @@ func (s *Server) opSteer(runID, message string) map[string]any {
 // opPermission answers a pending permission request and lets the run continue.
 // Approve and deny are the same op with a different decision, so the two share
 // one code path and one set of validations.
-func (s *Server) opPermission(runID, requestID, fingerprint, reason string, allow bool) map[string]any {
+func (s *Server) opPermission(runID, requestID, fingerprint, reason, actor string, allow bool) map[string]any {
 	if runID == "" {
 		return map[string]any{"ok": false, "error": "run_id required"}
 	}
@@ -1709,14 +1709,14 @@ func (s *Server) opPermission(runID, requestID, fingerprint, reason string, allo
 	ctx := ar.ctx
 	s.mu.Unlock()
 
-	if err := ar.runner.ResolvePermission(requestID, fingerprint, allow, "client", reason); err != nil {
+	if err := ar.runner.ResolvePermission(requestID, fingerprint, allow, approverIdentity(actor), reason); err != nil {
 		s.mu.Lock()
 		ar.busy = false
 		s.mu.Unlock()
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
 	go s.observe(ctx, runID, ar)
-	return map[string]any{"ok": true, "run_id": runID, "request_id": requestID, "approved": allow}
+	return map[string]any{"ok": true, "run_id": runID, "request_id": requestID, "approved": allow, "actor": approverIdentity(actor)}
 }
 
 // ---- Client ----
@@ -2211,4 +2211,30 @@ func (s *Server) directiveFor(runID, goal, workspace string, hardLimitCents int)
 		HardLimitCents:   hardLimitCents,
 		Currency:         "USD",
 	})
+}
+
+// approverIdentity names who answered a permission question.
+//
+// Every approval was recorded as the actor "client", which is a transport and
+// not a person: the permissions trail said the same thing whether one operator
+// answered and five hundred clients had been offered the question, and there
+// was no way to tell afterwards who had actually allowed a shell command
+// (GAP-160).
+//
+// A caller that says who it is is believed, because the daemon has no way to
+// verify an identity it was handed and inventing one would be worse than
+// recording it. A caller that says nothing is recorded as unknown, not as
+// "client": an unattributed approval is a fact about the record; a fabricated
+// attribution is a fact about nobody.
+func approverIdentity(actor string) string {
+	actor = strings.TrimSpace(actor)
+	if actor == "" {
+		return "unknown"
+	}
+	if len(actor) > 128 {
+		// The identity is written into a JSONL trail that a human reads. An
+		// unbounded string is not an identity, it is a payload.
+		return "unknown"
+	}
+	return actor
 }

@@ -7,8 +7,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/raillen/prumo/internal/harness/agent"
 )
 
 // RetentionPolicy bounds store growth without dangling provenance
@@ -30,7 +28,14 @@ type GCReport struct {
 	ArtifactsRemoved  []string `json:"artifacts_removed,omitempty"`
 }
 
-var artifactPrefixes = []string{"events-", "obs-", "permissions-", "knowledge-", "budget-", "evidence-", "context-"}
+// artifactPrefixes names the per-run artifacts the collector owns. A run's
+// diffs and its record were missing, so both survived every GC: a diff is the
+// largest artifact a run produces and it was the one thing guaranteed never to
+// be collected (GAP-163).
+var artifactPrefixes = []string{
+	"events-", "obs-", "permissions-", "knowledge-", "budget-",
+	"evidence-", "context-", "diffs-", "daemon-run-",
+}
 
 func artifactRunID(name string) (string, bool) {
 	for _, prefix := range artifactPrefixes {
@@ -65,21 +70,31 @@ func (s *Store) GC(policy RetentionPolicy) (GCReport, error) {
 		}
 		return rep, err
 	}
-	// Live runs: any run id still owning checkpoints.
+	// Which runs are still live, according to the run's own record.
+	//
+	// It used to be "owns a checkpoint", and a completed run keeps its pruned
+	// checkpoint forever — so every run that ever finished was permanently live,
+	// and the collector collected nothing at all. Liveness is a property of the
+	// run's status, not of which files it left behind (GAP-163).
 	live := map[string]bool{}
 	for _, e := range entries {
-		name := e.Name()
-		if len(name) < 12 || name[:11] != "checkpoint-" || !strings.HasSuffix(name, ".json") {
+		runID, ok := artifactRunID(e.Name())
+		if !ok || !strings.HasPrefix(e.Name(), "daemon-run-") {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(s.Dir, name))
+		record, err := s.readRunRecord(filepath.Join(s.Dir, e.Name()))
 		if err != nil {
+			// A record that cannot be read is not evidence that the run is
+			// finished, so the run is treated as live and kept. Collecting the
+			// artifacts of a run nobody can account for is how a resumable run
+			// becomes unresumable.
+			live[runID] = true
 			continue
 		}
-		var cp agent.Checkpoint
-		if err := json.Unmarshal(data, &cp); err == nil && cp.RunID != "" {
-			live[cp.RunID] = true
+		if record == nil {
+			continue
 		}
+		live[runID] = record.Status == "" || isInFlightStatus(record.Status)
 	}
 	cutoff := time.Now().AddDate(0, 0, -policy.MaxAgeDays)
 	for _, e := range entries {
@@ -97,4 +112,37 @@ func (s *Store) GC(policy RetentionPolicy) (GCReport, error) {
 	}
 	sort.Strings(rep.ArtifactsRemoved)
 	return rep, nil
+}
+
+// runRecord is the part of a daemon run record the collector needs.
+type runRecord struct {
+	RunID  string `json:"run_id"`
+	Status string `json:"status"`
+}
+
+// readRunRecord reads one run record, returning nil when the file is not one.
+func (s *Store) readRunRecord(path string) (*runRecord, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var record runRecord
+	if err := json.Unmarshal(data, &record); err != nil {
+		return nil, err
+	}
+	if record.RunID == "" {
+		return nil, nil
+	}
+	return &record, nil
+}
+
+// isInFlightStatus reports whether a run in this state is still going to write
+// more artifacts.
+func isInFlightStatus(status string) bool {
+	switch status {
+	case "running", "awaiting_approval", "interrupted", "yielded":
+		return true
+	default:
+		return false
+	}
 }

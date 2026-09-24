@@ -334,7 +334,13 @@ func TestDaemonApprovePermission(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permission trail missing: %v", err)
 	}
-	if !strings.Contains(string(data), "approved by client") {
+	// The trail names who approved, not what transport carried the answer.
+	// "client" was a protocol, not a person, so every approval in every trail
+	// read the same (GAP-160).
+	if strings.Contains(string(data), "approved by client") {
+		t.Fatalf("the approval is still attributed to the transport rather than the actor:\n%s", data)
+	}
+	if !strings.Contains(string(data), "approved by") {
 		t.Fatalf("audit trail does not record the approval:\n%s", data)
 	}
 	if _, err := c.Events("R-approve"); err != nil {

@@ -925,6 +925,14 @@ func runAgentPermission(asJSON bool, args []string, allow bool) int {
 	// The approval is bound to the content, so the approver quotes the
 	// fingerprint `agent ps` showed them. Without it the daemon refuses, because
 	// a request id names a request rather than a specific call (GAP-107).
+	// The actor is optional but recorded when given. Without it the trail says
+	// only that "client" decided, which is a transport rather than a person, and
+	// a permissions log that cannot say who approved a shell command is not much
+	// of a log (GAP-160).
+	actor := f["actor"]
+	if actor == "" {
+		actor = currentOperator()
+	}
 	fingerprint := f["fingerprint"]
 	if fingerprint == "" {
 		return serviceError(asJSON, fmt.Errorf("%s requires --fingerprint <hash> (see `prumo agent ps`)", verb))
@@ -935,7 +943,7 @@ func runAgentPermission(asJSON bool, args []string, allow bool) int {
 	}
 	res, err := daemonClient(f).Call(map[string]any{
 		"op": op, "run_id": runID, "request_id": requestID,
-		"fingerprint": fingerprint, "reason": f["reason"],
+		"fingerprint": fingerprint, "reason": f["reason"], "actor": f["actor"],
 	})
 	if err != nil {
 		return serviceError(asJSON, err)
