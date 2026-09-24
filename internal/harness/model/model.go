@@ -166,6 +166,20 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 			return nil, err
 		}
 		return NewOpenAICompat(baseURL, apiKey, mdl), nil
+	case "gemini":
+		if apiKey == "" {
+			apiKey = envOr("GEMINI_API_KEY", "")
+		}
+		if apiKey == "" {
+			return nil, fmt.Errorf("gemini requires api-key or GEMINI_API_KEY")
+		}
+		geminiBase := envOr("PRUMO_GEMINI_BASE_URL", "")
+		if geminiBase != "" {
+			if err := ValidateDestinationURL(geminiBase, DefaultDestinationPolicy()); err != nil {
+				return nil, err
+			}
+		}
+		return NewGeminiWithPolicy(geminiBase, apiKey, mdl, DefaultDestinationPolicy()), nil
 	case "opencode":
 		// A delegated turn: opencode runs it with its own tools, its own
 		// permission policy and its own authentication (including the models it
@@ -187,7 +201,7 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 		}
 		return NewAnthropic(baseURL, apiKey, mdl), nil
 	default:
-		return nil, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", name)
+		return nil, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|gemini|opencode)", name)
 	}
 }
 
@@ -744,8 +758,10 @@ func VerifiedAgainstCatalog() error {
 			// legitimate pairing, not a missing one.
 			continue
 		}
-		if spec.NeedsBaseURL {
-			// Cannot be probed offline; ForName's own error messages cover it.
+		if spec.NeedsBaseURL || spec.NeedsAPIKey {
+			// Cannot be probed without a credential or an endpoint. ForName's own
+			// error messages cover those, and pretending otherwise would make the
+			// check report a provider missing when it is merely unconfigured.
 			continue
 		}
 		missing = append(missing, spec.Name)

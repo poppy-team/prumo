@@ -139,3 +139,25 @@ func (g *Gateway) routeFor(req agent.ModelRequest) (ModelRoute, error) {
 	}
 	return route, nil
 }
+
+// DeclaredTargets reports what the catalog knows about this gateway's pool, for
+// a caller deciding what it can ask for.
+func (g *Gateway) DeclaredTargets() []RouteTarget {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return append([]RouteTarget(nil), g.targets...)
+}
+
+// CapabilitiesFor reports what a route's provider can do.
+//
+// A route key with no provider behind it has no capabilities, which is the honest
+// answer: a route that names nothing cannot be asked to do anything.
+func (g *Gateway) CapabilitiesFor(key string) model.Capabilities {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	provider, ok := g.providers[key]
+	if !ok {
+		return model.Capabilities{}
+	}
+	return provider.Capabilities()
+}

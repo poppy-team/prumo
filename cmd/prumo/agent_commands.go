@@ -191,8 +191,24 @@ func runAgentRun(asJSON bool, args []string) int {
 			}
 		}
 		provider = model.NewAnthropicWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
+	case "gemini":
+		// The API key travels in a header, never a query parameter, so it does not
+		// end up in a URL that gets logged.
+		if apiKey == "" {
+			apiKey = os.Getenv("GEMINI_API_KEY")
+		}
+		if apiKey == "" {
+			return serviceError(asJSON, fmt.Errorf("gemini requires --api-key or GEMINI_API_KEY"))
+		}
+		baseURL = os.Getenv("PRUMO_GEMINI_BASE_URL")
+		if baseURL != "" {
+			if err := checkModelDestination(baseURL, f); err != nil {
+				return serviceError(asJSON, err)
+			}
+		}
+		provider = model.NewGeminiWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
 	default:
-		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", providerName))
+		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|gemini|opencode)", providerName))
 	}
 
 	// The gateway is what the runner calls, so routing, retry, the circuit
@@ -423,6 +439,22 @@ func runAgentResume(asJSON bool, args []string) int {
 			}
 		}
 		provider = model.NewAnthropicWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
+	case "gemini":
+		// The API key travels in a header, never a query parameter, so it does not
+		// end up in a URL that gets logged.
+		if apiKey == "" {
+			apiKey = os.Getenv("GEMINI_API_KEY")
+		}
+		if apiKey == "" {
+			return serviceError(asJSON, fmt.Errorf("gemini requires --api-key or GEMINI_API_KEY"))
+		}
+		baseURL = os.Getenv("PRUMO_GEMINI_BASE_URL")
+		if baseURL != "" {
+			if err := checkModelDestination(baseURL, f); err != nil {
+				return serviceError(asJSON, err)
+			}
+		}
+		provider = model.NewGeminiWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
 	default:
 		var factoryErr error
 		provider, factoryErr = model.ForName(providerName, baseURL, apiKey, modelName)

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -74,7 +75,52 @@ func NewProviderError(provider string, resp *http.Response, body string) *Provid
 		// signal; some compatible gateways return it that way.
 		err.Quota = err.Quota || mentionsResourceExhausted(body)
 	}
+	if err.Quota && err.RetryAfter == 0 {
+		// Some providers put the retry hint in the body rather than a header.
+		// Google does: a 429 whose details carry retryDelay, with no Retry-After
+		// at all. Ignoring that makes the router fall back to its computed backoff
+		// for a provider that said exactly when it would be ready, which is the
+		// same defect as discarding the header (GAP-108).
+		err.RetryAfter = retryDelayFromBody(body)
+	}
 	return err
+}
+
+// retryDelayFromBody reads a retry hint out of a structured error body.
+//
+// It looks for the shape Google uses — details[] entries with a retryDelay — and
+// a bare retryDelay field, rather than parsing the message, because a delay in
+// prose is not a number anybody should have to extract with a regular
+// expression.
+func retryDelayFromBody(body string) time.Duration {
+	// The details live under an "error" envelope, not at the top level, and a
+	// parser that looked only at the top would find nothing on every real
+	// response while passing against a hand-written fixture.
+	type retryDetail struct {
+		RetryDelay string `json:"retryDelay"`
+	}
+	var payload struct {
+		Details    []retryDetail `json:"details"`
+		RetryDelay string        `json:"retryDelay"`
+		Error      struct {
+			Details    []retryDetail `json:"details"`
+			RetryDelay string        `json:"retryDelay"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		return 0
+	}
+	hints := append(append(append([]retryDetail{}, payload.Details...), payload.Error.Details...), retryDetail{RetryDelay: payload.RetryDelay})
+	for _, hint := range append(hints, retryDetail{RetryDelay: payload.Error.RetryDelay}) {
+		if hint.RetryDelay == "" {
+			continue
+		}
+		// Google sends a protobuf duration string: "19s", "1.5s", "0.250s".
+		if seconds, err := strconv.ParseFloat(strings.TrimSuffix(hint.RetryDelay, "s"), 64); err == nil && seconds > 0 {
+			return time.Duration(seconds * float64(time.Second))
+		}
+	}
+	return 0
 }
 
 // ProviderErrorFrom extracts the typed failure from err, if there is one.

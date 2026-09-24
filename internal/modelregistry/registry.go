@@ -243,6 +243,8 @@ type ProviderSpec struct {
 	Privacy Privacy `json:"privacy"`
 	// NeedsBaseURL reports that the provider is useless without an endpoint.
 	NeedsBaseURL bool `json:"needs_base_url,omitempty"`
+	// NeedsAPIKey reports that the provider is useless without a credential.
+	NeedsAPIKey bool `json:"needs_api_key,omitempty"`
 	// BuildableOffline is true for the deterministic providers, which need no
 	// endpoint and no key.
 	BuildableOffline bool `json:"buildable_offline,omitempty"`
@@ -266,6 +268,7 @@ type ProviderSpec struct {
 var knownProviders = []ProviderSpec{
 	{Name: "openai-compat", Privacy: ExternalPrivacy, NeedsBaseURL: true},
 	{Name: "anthropic", Privacy: ExternalPrivacy, NeedsBaseURL: true},
+	{Name: "gemini", Privacy: ExternalPrivacy, NeedsAPIKey: true},
 	{Name: "opencode", Privacy: Local, BuildableOffline: true},
 	{Name: "fake", Privacy: Local, BuildableOffline: true},
 	{Name: "fake-tools", Privacy: Local, BuildableOffline: true},

@@ -91,6 +91,22 @@ type ToolCall struct {
 	Arguments map[string]any `json:"arguments,omitempty"`
 	// IdempotencyKey is required before any observable side effect.
 	IdempotencyKey string `json:"idempotency_key"`
+	// ProviderOpaque is adapter-private state that has to survive the round trip
+	// back to the provider that issued the call.
+	//
+	// It exists because some providers hand back an opaque token alongside a call
+	// and reject the follow-up turn if it is not echoed verbatim. Gemini's
+	// thoughtSignature is the case in hand: a functionCall part carries a few
+	// hundred bytes of base64, and a conversation that replays the call without it
+	// is refused with a 400 rather than degraded.
+	//
+	// The map is keyed by the adapter that owns the data, and the core never reads
+	// a key. Naming the field after one provider would put a vendor's protocol in
+	// the provider-neutral core, and a single field would not survive a second
+	// provider that wants its own token. Persisting it is not optional: a resumed
+	// run that lost the signature would fail on its first tool turn, which is the
+	// same failure wearing a different cause.
+	ProviderOpaque map[string]string `json:"provider_opaque,omitempty"`
 }
 
 // ToolResult is the bounded, normalized outcome of a ToolCall.
