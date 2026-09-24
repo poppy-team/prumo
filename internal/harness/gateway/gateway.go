@@ -240,11 +240,30 @@ func cooldownElapsed(until string) bool {
 	return !time.Now().UTC().Before(t)
 }
 
+// Register adds a provider under its own adapter name.
+//
+// It keys by p.Name(), so two instances of the same adapter collide: the second
+// silently replaces the first, and every route to that name then reaches the
+// survivor. That is invisible with one provider and fatal the moment a pool has
+// two of something — which is the case the gateway exists for. The opencode
+// adapter serving two models through two instances hits it directly, because both
+// are named "opencode". RegisterAs is the fix; this stays for the single-provider
+// case where the adapter name is genuinely the identity.
 func (g *Gateway) Register(p model.Provider) {
+	g.RegisterAs(p.Name(), p)
+}
+
+// RegisterAs adds a provider under an explicit routing key.
+//
+// The key is what routes refer to, so two instances of the same adapter can sit
+// in the same pool under different keys and be selected independently. The
+// adapter's own name stays as the default so nothing has to be renamed to keep
+// working.
+func (g *Gateway) RegisterAs(key string, p model.Provider) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.providers[p.Name()] = p
-	g.health[p.Name()] = &Health{Status: "healthy"}
+	g.providers[key] = p
+	g.health[key] = &Health{Status: "healthy"}
 }
 
 func (g *Gateway) recordFailure(provider string) {
@@ -330,40 +349,72 @@ func (g *Gateway) streamWithRetry(ctx context.Context, p model.Provider, name st
 			lastErr = err
 			continue
 		}
-		select {
-		case ev, ok := <-ch:
-			if !ok {
-				lastErr = &failure{err: fmt.Errorf("provider %s closed stream", name)}
-				continue
-			}
-			if ev.Kind == agent.EventError && ev.Retryable {
-				// The adapter's classification travels on the event, so the
-				// retry interval the provider asked for and whether this is a
-				// quota are both still here. Wrapping only the message is what
-				// made the gateway read prose to decide what it was looking at
-				// (GAP-108).
-				lastErr = &failure{
-					err:        fmt.Errorf("provider %s: %s", name, ev.Error),
-					quota:      ev.Quota,
-					retryAfter: ev.RetryAfter,
+		// Wait for an event that actually commits the call before choosing a
+		// route. Deciding on the first event of any kind meant a provider whose
+		// stream opens with a preamble was treated as having succeeded before it
+		// could fail: the opencode CLI emits step_start, then a 404 for a model it
+		// does not serve, so the gateway committed to a dead route and the failure
+		// arrived with no fallback left to try (GAP-171).
+		//
+		// The preamble is buffered, not dropped, so a caller sees exactly what the
+		// provider emitted before the first event that commits anything. Buffering
+		// stops at the first decisive event; the rest of the stream is forwarded
+		// unbuffered as before.
+		pending := make([]agent.ModelEvent, 0, 8)
+		var routeErr error
+		waiting := true
+		for waiting {
+			select {
+			case ev, ok := <-ch:
+				switch {
+				case !ok:
+					routeErr = &failure{err: fmt.Errorf("provider %s closed stream", name)}
+					waiting = false
+				case ev.Kind == agent.EventError && ev.Retryable:
+					// The adapter's classification travels on the event, so the retry
+					// interval the provider asked for and whether this is a quota are
+					// both still here. Wrapping only the message is what made the
+					// gateway read prose to decide what it was looking at (GAP-108).
+					routeErr = &failure{
+						err:        fmt.Errorf("provider %s: %s", name, ev.Error),
+						quota:      ev.Quota,
+						retryAfter: ev.RetryAfter,
+					}
+					waiting = false
+				case ev.Kind == agent.EventError:
+					// A terminal error is not a reason to try another provider: the
+					// request itself is the problem and the next target would reject
+					// it the same way.
+					routeErr = &failure{err: fmt.Errorf("provider %s: %s", name, ev.Error)}
+					waiting = false
+				default:
+					pending = append(pending, ev)
+					if commitsRoute(ev.Kind) {
+						waiting = false
+					}
 				}
-				continue
+			case <-ctx.Done():
+				return nil, ctx.Err()
 			}
-			g.mu.Lock()
-			g.recordSuccess(name)
-			g.mu.Unlock()
-			out := make(chan agent.ModelEvent, 64)
-			out <- ev
-			go func() {
-				defer close(out)
-				for e := range ch {
-					out <- e
-				}
-			}()
-			return out, nil
-		case <-ctx.Done():
-			return nil, ctx.Err()
 		}
+		if routeErr != nil {
+			lastErr = routeErr
+			continue
+		}
+		g.mu.Lock()
+		g.recordSuccess(name)
+		g.mu.Unlock()
+		out := make(chan agent.ModelEvent, 64)
+		go func() {
+			defer close(out)
+			for _, ev := range pending {
+				out <- ev
+			}
+			for e := range ch {
+				out <- e
+			}
+		}()
+		return out, nil
 	}
 	g.mu.Lock()
 	g.recordFailure(name)
@@ -520,4 +571,20 @@ func isServerError(err error) bool {
 		}
 	}
 	return false
+}
+
+// commitsRoute reports whether an event commits the call to this provider.
+//
+// Anything before content, a tool call, usage or completion is preamble: a
+// provider saying it has started is not a provider saying it will succeed. A
+// stream that opens with a preamble and then fails is the case that made this
+// necessary — deciding early meant the failure arrived after the gateway had
+// already committed, with no other route to try.
+func commitsRoute(kind agent.ModelEventKind) bool {
+	switch kind {
+	case agent.EventTextDelta, agent.EventToolCallReady, agent.EventUsageUpdated, agent.EventCompleted:
+		return true
+	default:
+		return false
+	}
 }

@@ -262,3 +262,91 @@ func (f *quotaProvider) Stream(_ context.Context, req agent.ModelRequest) (<-cha
 	close(ch)
 	return ch, nil
 }
+
+// Register keys by the adapter's own name, so a pool with two instances of the
+// same adapter silently collapsed to one: the second overwrote the first and
+// every route to that name reached the survivor. With one provider it is
+// invisible; with a pool of two it defeats the reason the gateway exists.
+//
+// This is not hypothetical. The opencode adapter serves many models through one
+// implementation, so a pool of two models through it is two instances named
+// "opencode".
+
+func TestTwoInstancesOfTheSameAdapterCoexistUnderDifferentKeys(t *testing.T) {
+	g := New()
+	first := &alwaysFailProvider{name: "shared-adapter", errorText: "first instance"}
+	second := &alwaysFailProvider{name: "shared-adapter", errorText: "second instance"}
+	g.RegisterAs("route-first", first)
+	g.RegisterAs("route-second", second)
+
+	g.mu.Lock()
+	if len(g.providers) != 2 {
+		t.Fatalf("the pool has %d providers; the second registration overwrote the first", len(g.providers))
+	}
+	if g.providers["route-first"] != model.Provider(first) {
+		t.Error("route-first must still resolve to the instance registered under it")
+	}
+	if g.providers["route-second"] != model.Provider(second) {
+		t.Error("route-second must still resolve to the instance registered under it")
+	}
+}
+
+func TestTwoRoutesReachTwoDifferentInstancesOfTheSameAdapter(t *testing.T) {
+	g := New()
+	primary := &recordingNameProvider{name: "shared-adapter", answer: "from the first"}
+	backup := &recordingNameProvider{name: "shared-adapter", answer: "from the second"}
+	g.RegisterAs("route-first", primary)
+	g.RegisterAs("route-second", backup)
+	g.DeclareTarget(RouteTarget{Provider: "route-first", Model: "m1"})
+	g.DeclareTarget(RouteTarget{Provider: "route-second", Model: "m1"})
+	g.Retry = RetryPolicy{Attempts: 1}
+
+	route := g.Select([]RouteTarget{{Provider: "route-first"}, {Provider: "route-second"}})
+	if route.Primary.Provider != "route-first" {
+		t.Fatalf("selection is deterministic by name, so route-first comes first: %+v", route)
+	}
+	ch, err := g.Stream(context.Background(), agent.ModelRequest{Model: "m1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var text string
+	for ev := range ch {
+		if ev.Kind == agent.EventTextDelta {
+			text += ev.Text
+		}
+	}
+	if primary.calls != 1 {
+		t.Errorf("the primary instance was called %d times, want 1", primary.calls)
+	}
+	if backup.calls != 0 {
+		t.Errorf("the backup was called %d times; only the selected route should be called", backup.calls)
+	}
+	if text == "" {
+		t.Error("the selected instance produced nothing")
+	}
+}
+
+// recordingNameProvider answers with a fixed string and counts its calls. It
+// reports the same adapter name for two instances, which is the collision.
+type recordingNameProvider struct {
+	name   string
+	answer string
+	calls  int
+}
+
+func (p *recordingNameProvider) Name() string { return p.name }
+func (p *recordingNameProvider) Capabilities() model.Capabilities {
+	return model.Capabilities{Streaming: true}
+}
+func (p *recordingNameProvider) Models(context.Context) ([]string, error) {
+	return []string{"m1"}, nil
+}
+func (p *recordingNameProvider) Health(context.Context) (string, error) { return "healthy", nil }
+func (p *recordingNameProvider) Stream(_ context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
+	p.calls++
+	ch := make(chan agent.ModelEvent, 2)
+	ch <- agent.ModelEvent{Kind: agent.EventTextDelta, Text: p.answer, RequestID: req.RequestID}
+	ch <- agent.ModelEvent{Kind: agent.EventCompleted, Finished: true, RequestID: req.RequestID}
+	close(ch)
+	return ch, nil
+}
