@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
+	prumo "github.com/raillen/prumo"
 	"github.com/raillen/prumo/internal/cliops"
 	"github.com/raillen/prumo/internal/harness/guitest"
 	"github.com/raillen/prumo/internal/project"
 	"github.com/raillen/prumo/internal/protocol"
+	"github.com/raillen/prumo/internal/resources"
 )
 
 const (
@@ -49,13 +50,11 @@ func repoRoot() string {
 			candidate = parent
 		}
 	}
-	if home, err := os.UserHomeDir(); err == nil {
-		devPath := filepath.Join(home, "Documentos", "Projetos", "prumo")
-		if exists(devPath, "go.mod") && exists(devPath, "schemas") {
-			return devPath
-		}
-	}
-	return "."
+	// Nothing above found a checkout. Returning "." would make the binary read
+	// resources from wherever it happened to be run, which is how an unrelated
+	// directory can satisfy a schema check. An empty root says "there is no
+	// checkout", and the embedded assets answer instead.
+	return ""
 }
 
 func dirName(path string) string {
@@ -142,6 +141,34 @@ func hasFlag(args []string, name string) bool {
 
 func main() {
 	os.Exit(run(os.Args[1:]))
+}
+
+// init points the resource readers at the assets compiled into this binary.
+//
+// It is an init and not a line in main because every entry point needs it: the
+// real binary, and the tests that call run() directly. Wiring it in main meant
+// anything that did not go through main read from disk, which is the bug this
+// exists to remove.
+//
+// installEmbeddedResources points the resource readers at the assets compiled
+// into this binary.
+//
+// They were embedded and never wired: resources.DefaultFS stayed nil, so every
+// read went to disk under a repository root that had to be found by walking up
+// from the executable and then from the working directory. An installed binary
+// found neither, fell through to a path hard-coded to one developer's home
+// directory, and ended at "." — the caller's current directory. So an installed
+// Prumo read whatever schemas happened to sit next to whoever ran it, and a
+// `schemas/version.json` check could be satisfied by an unrelated checkout
+// (GAP-140).
+//
+// The embedded assets are authoritative. A checkout on disk is still preferred
+// when PRUMO_REPO_ROOT names one, because someone developing Prumo should edit
+// the file they are working on rather than the one frozen into the binary.
+func init() {
+	resources.DefaultFS = prumo.EmbeddedAll()
+	resources.AdaptersFS = prumo.EmbeddedAdapters()
+	resources.WorkforceFS = prumo.EmbeddedWorkforce()
 }
 
 func run(args []string) int {
