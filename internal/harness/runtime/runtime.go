@@ -874,6 +874,13 @@ func (r *Runner) Step(ctx context.Context) error {
 		r.State.Phase = agent.PhaseEvaluateStop
 	case agent.PhaseEvaluateStop:
 		r.TurnsDone++
+		// The turn is over, so its identity is spent. TurnID was set once when the
+		// runner was built and never moved, which meant every model request in a
+		// run carried the same turn and the same request id — and since a tool
+		// call's idempotency key is derived from the request id, two different
+		// turns calling the same tool collided on it. Observations were equally
+		// untraceable, since they all carried one turn (GAP-117).
+		r.advanceTurn()
 		if r.TurnsDone >= r.MaxTurns {
 			if r.QualityGate != nil {
 				if err := r.QualityGate(); err != nil {
@@ -1064,4 +1071,14 @@ func (e *retryableModelError) Retryable() bool { return true }
 func Retryable(err error) bool {
 	r, ok := err.(interface{ Retryable() bool })
 	return ok && r.Retryable()
+}
+
+// advanceTurn moves the run to the next turn.
+//
+// The number comes from TurnsDone rather than from parsing the current id, so a
+// resumed run continues the sequence instead of reusing an identifier a previous
+// life already spent — which is the same collision the advance exists to
+// prevent. A restored run with TurnsDone=5 goes on to turn-6.
+func (r *Runner) advanceTurn() {
+	r.State.TurnID = fmt.Sprintf("turn-%d", r.TurnsDone+1)
 }

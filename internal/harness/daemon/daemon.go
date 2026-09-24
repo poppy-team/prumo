@@ -657,6 +657,18 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	if providerName == "" {
 		providerName = "fake"
 	}
+	// The workspace is resolved before the provider is built, because the provider
+	// is told where to work. It used to be told the daemon's workspace, and the
+	// request's own workspace was only read afterwards — so a run naming a
+	// different tree got tools rooted there and a provider rooted somewhere else,
+	// and a delegated provider edits whichever it was given (GAP-125).
+	workspace := str(msg, "workspace")
+	if workspace == "" {
+		workspace = s.Deps.Workspace
+	}
+	if workspace == "" {
+		workspace = s.StoreDir
+	}
 	provider, err := s.Deps.NewProvider(providerName, str(msg, "base_url"), str(msg, "api_key"), str(msg, "model"))
 	if err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
@@ -666,7 +678,7 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	// builds a provider from a name, a URL and a key — none of which is a
 	// workspace — so it is handed over here, and only to providers that ask.
 	if aware, ok := provider.(interface{ SetWorkspace(string) }); ok {
-		aware.SetWorkspace(s.Deps.Workspace)
+		aware.SetWorkspace(workspace)
 	}
 	maxTurns := 5
 	if v, ok := msg["max_turns"].(float64); ok && v > 0 {
@@ -682,13 +694,6 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 		// Rejected here so the caller learns why, rather than getting a run that
 		// starts and then silently records nothing.
 		return map[string]any{"ok": false, "error": err.Error()}
-	}
-	workspace := str(msg, "workspace")
-	if workspace == "" {
-		workspace = s.Deps.Workspace
-	}
-	if workspace == "" {
-		workspace = s.StoreDir
 	}
 	tools := s.Deps.Tools
 	if tools == nil {

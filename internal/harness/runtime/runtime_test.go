@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -533,4 +534,116 @@ func (p *recordingProvider) Stream(_ context.Context, req agent.ModelRequest) (<
 	}
 	close(ch)
 	return ch, nil
+}
+
+// Every model request in a run carried the same turn and the same request id,
+// because TurnID was set once when the runner was built and never moved. Since a
+// tool call's idempotency key is derived from the request id, two different turns
+// calling the same tool collided on it, and every observation in the run carried
+// the same turn, so nothing could say which turn produced what (GAP-117).
+
+func TestEachTurnGetsItsOwnIdentity(t *testing.T) {
+	// Observed at the provider rather than through a runtime event, because the
+	// request id is what the provider sees and that is what has to be distinct.
+	recorder := &recordingRequestProvider{steps: []agent.ModelEvent{
+		{Kind: agent.EventToolCallReady, ToolCall: &agent.ToolCall{
+			ID: "c1", TurnID: "turn-1", Name: "fs.read",
+			Arguments: map[string]any{"path": "README.md"},
+		}},
+		{Kind: agent.EventCompleted, Finished: true},
+	}}
+	r := NewRunner(Services{
+		Models: recorder, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-turns", "S1")
+	r.MaxTurns = 3
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	_ = r.RunUntilDone(context.Background())
+
+	if r.TurnsDone < 2 {
+		t.Fatalf("the run took %d turn(s); this test needs at least two to observe a repeated id", r.TurnsDone)
+	}
+	if len(recorder.requestIDs) < 2 {
+		t.Fatalf("saw %d model requests, want at least 2: %v", len(recorder.requestIDs), recorder.requestIDs)
+	}
+	seen := map[string]bool{}
+	for i, id := range recorder.requestIDs {
+		if seen[id] {
+			t.Fatalf("request id %q was reused on turn %d: %v", id, i+1, recorder.requestIDs)
+		}
+		seen[id] = true
+	}
+	for i, turn := range recorder.turnIDs {
+		if seen[turn] {
+			t.Fatalf("turn id %q was reused on request %d: %v", turn, i+1, recorder.turnIDs)
+		}
+		seen[turn] = true
+	}
+}
+
+// recordingRequestProvider records the identity of every request it is handed.
+type recordingRequestProvider struct {
+	mu         sync.Mutex
+	steps      []agent.ModelEvent
+	requestIDs []string
+	turnIDs    []string
+	calls      int
+}
+
+func (p *recordingRequestProvider) Name() string { return "recorder" }
+func (p *recordingRequestProvider) Capabilities() model.Capabilities {
+	return model.Capabilities{Streaming: true, ToolCalls: true, Usage: true}
+}
+func (p *recordingRequestProvider) Models(context.Context) ([]string, error) {
+	return []string{"m"}, nil
+}
+func (p *recordingRequestProvider) Health(context.Context) (string, error) { return "healthy", nil }
+func (p *recordingRequestProvider) Stream(_ context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
+	p.mu.Lock()
+	p.requestIDs = append(p.requestIDs, req.RequestID)
+	p.turnIDs = append(p.turnIDs, req.TurnID)
+	p.calls++
+	ch := make(chan agent.ModelEvent, 4)
+	for _, step := range p.steps {
+		step.RequestID = req.RequestID
+		ch <- step
+	}
+	close(ch)
+	p.mu.Unlock()
+	return ch, nil
+}
+
+func TestTheTurnAdvancesWhenATurnCompletes(t *testing.T) {
+	r := NewRunner(Services{
+		Models: model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "complete"}}}),
+		Tools:  &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-adv", "S1")
+	if r.State.TurnID != "turn-1" {
+		t.Fatalf("a new run starts at turn-1, got %q", r.State.TurnID)
+	}
+	r.TurnsDone = 1
+	r.advanceTurn()
+	if r.State.TurnID != "turn-2" {
+		t.Fatalf("turn = %q, want turn-2", r.State.TurnID)
+	}
+}
+
+func TestAResumedRunContinuesTheTurnSequenceRatherThanReusingIt(t *testing.T) {
+	// A resumed run with five turns already done goes on to turn six. Reusing an
+	// identifier a previous life spent is the collision the advance prevents.
+	r := NewRunner(Services{
+		Models: model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "complete"}}}),
+		Tools:  &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-res", "S1")
+	r.RestoreFrom(agent.Checkpoint{
+		State:     agent.NativeAgentState{RunID: "R-res", TurnID: "turn-5", Revision: 5},
+		TurnsDone: 5,
+	})
+	r.TurnsDone++
+	r.advanceTurn()
+	if r.State.TurnID != "turn-7" {
+		t.Fatalf("turn = %q, want turn-7", r.State.TurnID)
+	}
 }
