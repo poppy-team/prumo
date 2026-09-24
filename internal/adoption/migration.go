@@ -162,13 +162,52 @@ func GenerateMigrationProposals(report AdoptionReport) []AdoptionMigrationPropos
 			capList = append(capList, c.Capability)
 		}
 
+		// The manifest used to be six keys at version 1, none of which the
+		// project's own schema accepts: it requires ten fields, and `version`
+		// has a minimum of 2. So adoption wrote a prumo.json that failed Prumo's
+		// own validation, and every gate that ran afterwards was reporting on a
+		// file the framework had just promised was valid (GAP-150).
+		//
+		// `ai.preferred_models` is a sentinel rather than a roster on purpose. The
+		// adoption scan does not know which models this project uses, and a
+		// framework that fills in a default model list is the one thing the
+		// provider-neutral rule exists to prevent. A visible placeholder fails
+		// loudly at the first run; an invented preference would not.
 		manifestData := map[string]interface{}{
-			"version":      1,
-			"profile":      profileName,
-			"app_types":    report.Classification.AppTypes,
-			"languages":    report.Classification.Languages,
-			"frameworks":   report.Classification.Frameworks,
-			"capabilities": capList,
+			"version": 3,
+			"protocol": map[string]any{
+				"version": 3, "compatible": ">=3 <4",
+			},
+			"framework": map[string]any{
+				"name": "prumo", "version": frameworkVersion,
+			},
+			"project": map[string]any{
+				"name": projectName(report.Repository.Root),
+				"type": nonEmptyStrings(report.Classification.AppTypes, "unspecified"),
+			},
+			"stack": map[string]any{
+				"languages":  report.Classification.Languages,
+				"frameworks": report.Classification.Frameworks,
+			},
+			"features": capList,
+			"documentation": map[string]any{
+				"entrypoint":       "ENTRYPOINT.md",
+				"canonical_format": "markdown",
+				"site":             map[string]any{"enabled": true, "source": "docs", "generated": true},
+				"audiences":        []string{"user", "developer", "agent"},
+			},
+			"context":       adoptionContextPolicy(),
+			"intelligence":  map[string]any{"enabled": true, "path": ".prumo/history/project-intelligence.json"},
+			"orchestration": map[string]any{"protocol": "POP", "orchestrator": "none"},
+			"goals":         map[string]any{"active_phase": "P00"},
+			"ai": map[string]any{
+				"preferred_models": []string{"<configure:ai.preferred_models>"},
+			},
+			// The adoption findings, kept where the schema already has a home for
+			// them rather than at the top level where nothing reads them.
+			"adoption": map[string]any{
+				"profile": profileName,
+			},
 		}
 		contentBytes, _ := json.MarshalIndent(manifestData, "", "  ")
 
@@ -398,4 +437,73 @@ func Apply(repoRoot string, proposal AdoptionMigrationProposal) (ApplyResult, er
 		Success:      true,
 		JournalEntry: journal,
 	}, nil
+}
+
+// frameworkVersion is the version written into a generated prumo.json. It is a
+// literal rather than a read of the binary's version because the adoption
+// package does not import the CLI, and a manifest that records a version nobody
+// can verify is worse than one that records the protocol it speaks.
+const frameworkVersion = "0.6"
+
+// adoptionContextPolicy is the lean-progressive-context policy block.
+//
+// It is spelled out rather than shared with cliops because the two packages
+// have no dependency on each other, and the alternative — a manifest that fails
+// the project's own schema — is not a cheaper kind of duplication.
+func adoptionContextPolicy() map[string]any {
+	profiles := map[string]any{}
+	for _, v := range []struct {
+		name                                      string
+		target, hard, out, outHard, rounds, depth int
+	}{
+		{"small", 3000, 6000, 500, 1000, 1, 0},
+		{"medium", 8000, 16000, 1500, 3000, 2, 1},
+		{"large", 16000, 32000, 3000, 6000, 3, 1},
+	} {
+		profiles[v.name] = map[string]any{
+			"context_target_tokens": v.target, "context_hard_tokens": v.hard,
+			"output_target_tokens": v.out, "output_hard_tokens": v.outHard,
+			"max_expansion_rounds": v.rounds, "max_delegation_depth": v.depth,
+		}
+	}
+	return map[string]any{
+		"methodology":    "lean-progressive-context",
+		"mode":           "progressive",
+		"budget_profile": "medium",
+		"profiles":       profiles,
+		"deep_recursion": map[string]any{"enabled": false, "experimental": true},
+		"runtime":        map[string]any{"database": ".prumo/runtime/prumo.db"},
+	}
+}
+
+// nonEmptyStrings keeps a list non-empty, because the schema requires it and an
+// empty array is a manifest the framework will reject on first read.
+func nonEmptyStrings(values []string, fallback string) []string {
+	kept := make([]string, 0, len(values))
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			kept = append(kept, v)
+		}
+	}
+	if len(kept) == 0 {
+		return []string{fallback}
+	}
+	return kept
+}
+
+// projectName is the directory name, falling back to something schema-valid
+// when the root cannot be resolved. The schema requires a non-empty name, and a
+// manifest written with an empty project name is one the project cannot open.
+func projectName(repoRoot string) string {
+	abs, err := filepath.Abs(repoRoot)
+	if err != nil {
+		if name := filepath.Base(repoRoot); name != "" && name != "." && name != string(filepath.Separator) {
+			return name
+		}
+		return "project"
+	}
+	if name := filepath.Base(abs); name != "" && name != "." && name != string(filepath.Separator) {
+		return name
+	}
+	return "project"
 }

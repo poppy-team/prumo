@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -115,11 +116,26 @@ func validateNode(instance any, schema map[string]any, registry Registry, path s
 	if constValue, ok := schema["const"]; ok && !jsonEqual(instance, constValue) {
 		errors = append(errors, fmt.Sprintf("%s: must equal %v", path, constValue))
 	}
-	if enumValues, ok := schema["enum"].([]any); ok && !containsJSON(enumValues, instance) {
+	if enumValues, ok := enumList(schema["enum"]); ok && !containsJSON(enumValues, instance) {
 		errors = append(errors, fmt.Sprintf("%s: must be one of enum values", path))
 	}
-	if types, ok := schema["type"].(string); ok && !matchesType(instance, types) {
-		return append(errors, fmt.Sprintf("%s: expected type %s", path, types))
+	// `type` is a string or an array of strings. Reading only the string form
+	// meant "type": ["boolean", "string"] — used all over the schemas to say "a
+	// flag may be a bool or a path to a value that overrides it" — was silently
+	// not checked at all (GAP-151).
+	switch types := schema["type"].(type) {
+	case string:
+		if !matchesType(instance, types) {
+			return append(errors, fmt.Sprintf("%s: expected type %s", path, types))
+		}
+	case []any:
+		for _, candidate := range types {
+			name, isString := candidate.(string)
+			if isString && matchesType(instance, name) {
+				return validateRemaining(instance, schema, registry, path, errors)
+			}
+		}
+		return append(errors, fmt.Sprintf("%s: expected one of the declared types", path))
 	}
 	if minLength, ok := numberValue(schema["minLength"]); ok {
 		if value, ok := instance.(string); ok && float64(len([]rune(value))) < minLength {
@@ -257,14 +273,29 @@ func validateAdditionalProperties(instance any, schema map[string]any, registry 
 	return nil
 }
 
+// matchesType reports whether value has the JSON type expected.
+//
+// Arrays and objects are matched by reflection rather than by a type assertion.
+// The assertion version accepted only []any and map[string]any, so validating a
+// Go value that had not been through a JSON round trip — a struct built in
+// memory, a []string literal — failed on every array and object in it. The
+// tempting response to that failure is to loosen the schema, which converts a
+// validator bug into a contract that no longer means anything (GAP-151).
 func matchesType(value any, expected string) bool {
 	switch expected {
 	case "object":
-		_, ok := value.(map[string]any)
-		return ok
+		if _, ok := value.(map[string]any); ok {
+			return true
+		}
+		rv := reflect.ValueOf(value)
+		return rv.IsValid() && rv.Kind() == reflect.Map &&
+			rv.Type().Key().Kind() == reflect.String
 	case "array":
-		_, ok := value.([]any)
-		return ok
+		if _, ok := value.([]any); ok {
+			return true
+		}
+		rv := reflect.ValueOf(value)
+		return rv.IsValid() && (rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array)
 	case "string":
 		_, ok := value.(string)
 		return ok
@@ -319,4 +350,38 @@ func containsJSON(values []any, value any) bool {
 
 func isJSONDocument(path string) bool {
 	return strings.EqualFold(filepath.Ext(path), ".json")
+}
+
+// enumList reads an enum as a list whether it arrived as []any (from JSON) or as
+// a Go slice built in memory. Only the first form was recognised, so a schema
+// checked against a value that had not been through JSON enforced nothing.
+func enumList(value any) ([]any, bool) {
+	switch values := value.(type) {
+	case []any:
+		return values, true
+	case []string:
+		out := make([]any, 0, len(values))
+		for _, v := range values {
+			out = append(out, v)
+		}
+		return out, true
+	default:
+		return nil, false
+	}
+}
+
+// validateRemaining continues a node after the type check accepted a union. The
+// union short-circuits the scalar checks below, so they are re-run here rather
+// than skipped.
+func validateRemaining(instance any, schema map[string]any, registry Registry, path string, errors []string) []string {
+	rest := map[string]any{}
+	for k, v := range schema {
+		switch k {
+		case "type", "enum", "const":
+			continue
+		default:
+			rest[k] = v
+		}
+	}
+	return append(errors, validateNode(instance, rest, registry, path)...)
 }

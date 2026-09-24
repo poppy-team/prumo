@@ -185,16 +185,28 @@ func buildTasks(input GoalPlanInput) []map[string]any {
 		if previous != "" {
 			deps = append(deps, previous)
 		}
+		// A task with three keys is not a task the schema accepts. It was
+		// missing goal_id, plan_id, title, objective, role and status, and it
+		// called its title "label" — so a generated plan failed the project's own
+		// validation and the DAG that passed CheckDAGCycles was not a task graph
+		// the framework could load (GAP-150).
 		tasks = append(tasks, map[string]any{
-			"id": id, "label": strings.Join(steps, ", "), "dependencies": deps,
+			"id": id, "goal_id": input.Scope, "plan_id": planID(input.Scope),
+			"title":        strings.Join(steps, ", "),
+			"objective":    fmt.Sprintf("Verify that %s is covered and report the delta.", contract),
+			"label":        strings.Join(steps, ", "),
+			"dependencies": deps, "role": "reviewer", "status": "PLANNED",
 		})
 		previous = id
 	}
 	if len(tasks) > 0 {
 		last := taskID("review", len(tasks))
 		tasks = append(tasks, map[string]any{
-			"id": last, "label": "governance review and documentation delta",
-			"dependencies": []string{previous},
+			"id": last, "goal_id": input.Scope, "plan_id": planID(input.Scope),
+			"title":        "governance review and documentation delta",
+			"label":        "governance review and documentation delta",
+			"objective":    "Review the documentation delta left by the verification tasks above.",
+			"dependencies": []string{previous}, "role": "reviewer", "status": "PLANNED",
 		})
 	}
 	return tasks
@@ -217,4 +229,14 @@ func scopeSlug(scope string) string {
 func toAny(values []string) []string {
 	sort.Strings(values)
 	return values
+}
+
+// planID names the plan a task belongs to. The scope is the stable input the
+// task DAG was built from, so the same scope always produces the same plan id
+// and a task's plan_id means something a reader can check.
+func planID(scope string) string {
+	if scope == "" {
+		return "plan-unscoped"
+	}
+	return "plan-" + scope
 }
