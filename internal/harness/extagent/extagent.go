@@ -290,6 +290,16 @@ func (o *OpenCodeServer) Close(ctx context.Context, sessionID string) error {
 	return nil
 }
 
+// errUnsupported says an adapter cannot do what was asked, and names the
+// capability.
+//
+// A nil from a method that did nothing is read as success, which is how an
+// adapter that cannot cancel a session tells a caller it cancelled one
+// (GAP-142).
+func errUnsupported(provider, capability string) error {
+	return fmt.Errorf("extagent: %s does not implement %q", provider, capability)
+}
+
 // SessionLifecycle is the optional rich contract beyond Provider: session
 // resume verification and usage accounting. OpenCodeServer implements it
 // against live state; adapters without server-side sessions do not.
@@ -371,8 +381,16 @@ func NewCodexCLI(bin string) *CodexCLI {
 
 func (c *CodexCLI) Name() string { return "codex" }
 
+// Capabilities declares what this adapter can actually do.
+//
+// It declared six — session, events, permissions, usage, cancel, resume — and
+// implemented one. `usage` and `resume` had no method at all; `events` emitted
+// a single synthetic event and closed; `permissions` and `cancel` returned nil
+// from a body that did nothing. A capability list is a contract a caller plans
+// against: a run told it can resume a Codex session will try, and get a nil
+// that reads as "it worked" (GAP-142).
 func (c *CodexCLI) Capabilities(_ context.Context) ([]string, error) {
-	return []string{"session", "events", "permissions", "usage", "cancel", "resume"}, nil
+	return []string{"session"}, nil
 }
 
 func (c *CodexCLI) CreateSession(_ context.Context, runID string) (Session, error) {
@@ -388,18 +406,26 @@ func (c *CodexCLI) Send(ctx context.Context, sessionID, message string) error {
 	return nil
 }
 
-func (c *CodexCLI) Events(_ context.Context, sessionID string) (<-chan agent.AgentEvent, error) {
-	ch := make(chan agent.AgentEvent, 8)
-	go func() {
-		defer close(ch)
-		ch <- agent.AgentEvent{ID: "ev-1", RunID: sessionID, Kind: "external.session.open", CreatedAt: time.Now().UTC().Format(time.RFC3339Nano)}
-	}()
-	return ch, nil
+// Events reports that this adapter has no event stream.
+//
+// It used to manufacture one: a single "session open" event, then a closed
+// channel. A caller reading that channel sees a stream that begins and ends,
+// and a run waiting for a tool result waits forever (GAP-142).
+func (c *CodexCLI) Events(_ context.Context, _ string) (<-chan agent.AgentEvent, error) {
+	return nil, errUnsupported("codex", "events")
 }
 
-func (c *CodexCLI) Approve(_ context.Context, _, _ string, _ bool) error { return nil }
-func (c *CodexCLI) Cancel(_ context.Context, _ string) error             { return nil }
-func (c *CodexCLI) Close(_ context.Context, _ string) error              { return nil }
+// The methods below return an explicit refusal rather than nil.
+//
+// A nil here is read as "done". The caller closes a session, gets no error,
+// and believes it — and the process it meant to stop is still running.
+func (c *CodexCLI) Approve(_ context.Context, _, _ string, _ bool) error {
+	return errUnsupported("codex", "permissions")
+}
+func (c *CodexCLI) Cancel(_ context.Context, _ string) error {
+	return errUnsupported("codex", "cancel")
+}
+func (c *CodexCLI) Close(_ context.Context, _ string) error { return errUnsupported("codex", "close") }
 
 // ---- Cursor CLI adapter (print mode) ----
 
