@@ -149,18 +149,35 @@ func runUninstall(asJSON bool, explicitHome string, args []string) int {
 	removed := []string{}
 	leftovers := []string{}
 	if hasFlag(args, "--connectors") {
-		for connector := range manifest.Connectors {
-			cleanupPath := install.CleanupPath(home, connector)
-			cleanupData, readErr := os.ReadFile(cleanupPath)
+		// The index, not the manifest.
+		//
+		// There was one cleanup file per connector, so a connector installed in
+		// three projects had one record — the last install — and uninstalling all
+		// connectors cleaned up one project and left two projects' files behind
+		// with nothing pointing at them (GAP-137).
+		index, indexErr := install.LoadCleanupIndex(home)
+		if indexErr != nil {
+			return serviceError(asJSON, indexErr)
+		}
+		for _, entry := range index.Entries {
+			cleanupData, readErr := os.ReadFile(entry.Path)
 			if readErr != nil {
+				// A record that cannot be read is reported, not skipped: a
+				// connector whose files we cannot account for is a connector
+				// whose files are still there after an uninstall that said it
+				// removed them.
+				leftovers = append(leftovers, entry.Connector+": "+readErr.Error())
 				continue
 			}
 			var cleanup install.CleanupManifest
-			if json.Unmarshal(cleanupData, &cleanup) == nil {
-				gone, remaining := install.RemoveManagedPaths(home, cleanup.CreatedPaths)
-				removed = append(removed, gone...)
-				leftovers = append(leftovers, remaining...)
+			if json.Unmarshal(cleanupData, &cleanup) != nil {
+				leftovers = append(leftovers, entry.Connector+": cleanup record is unreadable")
+				continue
 			}
+			gone, remaining := install.RemoveManagedPaths(home, cleanup.CreatedPaths)
+			removed = append(removed, gone...)
+			leftovers = append(leftovers, remaining...)
+			_ = os.Remove(entry.Path)
 		}
 		manifest.Connectors = map[string]string{}
 	}

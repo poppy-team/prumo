@@ -124,7 +124,7 @@ func TestConnectorInstallHonorsHomeFlag(t *testing.T) {
 		t.Fatalf("install connector with an explicit home expected %d, got %d", exitOK, code)
 	}
 
-	if _, err := os.Stat(install.CleanupPath(home, "opencode")); err != nil {
+	if _, err := os.Stat(install.CleanupPath(home, "opencode", project)); err != nil {
 		t.Fatalf("connector bookkeeping must land in the requested home %s: %v", home, err)
 	}
 	if _, err := os.Stat(filepath.Join(project, ".opencode")); err != nil {

@@ -92,7 +92,7 @@ func VerifyIdempotentInstall(t *testing.T, c connectors.Connector, home, project
 		t.Fatalf("expected status installed, got %s", res1.Status)
 	}
 
-	cleanupPath := install.CleanupPath(home, c.ID())
+	cleanupPath := install.CleanupPath(home, c.ID(), projectRoot)
 	if _, err := os.Stat(cleanupPath); err != nil {
 		t.Fatalf("cleanup manifest missing at %s: %v", cleanupPath, err)
 	}
@@ -132,7 +132,7 @@ func VerifySafeUninstall(t *testing.T, c connectors.Connector, home, projectRoot
 	}
 
 	// Verify cleanup manifest was removed
-	cleanupPath := install.CleanupPath(home, c.ID())
+	cleanupPath := install.CleanupPath(home, c.ID(), projectRoot)
 	if _, err := os.Stat(cleanupPath); !os.IsNotExist(err) {
 		t.Fatalf("cleanup manifest still exists after uninstall: %s", cleanupPath)
 	}

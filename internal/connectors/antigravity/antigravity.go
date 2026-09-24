@@ -285,7 +285,7 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 		Scope:        "project",
 		CreatedPaths: res.CreatedPaths,
 	}
-	if err := connectors.SaveCleanup(home, "antigravity", cleanup); err != nil {
+	if err := connectors.SaveCleanup(home, "antigravity", projectRoot, cleanup); err != nil {
 		return nil, err
 	}
 
@@ -308,7 +308,7 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 		Scope:          "project",
 		CreatedPaths:   res.CreatedPaths,
 		PreservedPaths: res.PreservedPaths,
-		CleanupPath:    install.CleanupPath(home, "antigravity"),
+		CleanupPath:    install.CleanupPath(home, "antigravity", projectRoot),
 		Contract:       c.Contract(),
 	}, nil
 }

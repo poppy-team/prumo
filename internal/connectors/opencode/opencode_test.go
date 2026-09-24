@@ -155,7 +155,7 @@ func TestOpenCodeInstallAndUninstall(t *testing.T) {
 	}
 
 	// Verify cleanup manifest exists
-	cleanupPath := install.CleanupPath(home, "opencode")
+	cleanupPath := install.CleanupPath(home, "opencode", projectRoot)
 	if _, err := os.Stat(cleanupPath); err != nil {
 		t.Fatalf("cleanup manifest not created at %s: %v", cleanupPath, err)
 	}

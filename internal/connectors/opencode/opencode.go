@@ -390,7 +390,7 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 		ManagedFragments: []string{},
 		Backups:          []string{},
 	}
-	cleanupPath := install.CleanupPath(home, "opencode")
+	cleanupPath := install.CleanupPath(home, "opencode", projectRoot)
 	if err := os.MkdirAll(filepath.Dir(cleanupPath), 0755); err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (c *Connector) Uninstall(home string, projectRoot string, opts connectors.U
 		home = h
 	}
 
-	cleanupPath := install.CleanupPath(home, "opencode")
+	cleanupPath := install.CleanupPath(home, "opencode", projectRoot)
 	data, err := os.ReadFile(cleanupPath)
 	if err != nil {
 		return nil, fmt.Errorf("no cleanup manifest found for opencode: %w", err)
