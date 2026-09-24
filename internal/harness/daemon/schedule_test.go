@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -515,5 +516,169 @@ func TestRotationKeepsTheIdsTheCursorResolves(t *testing.T) {
 	// An id from before the rotation that was kept still resolves.
 	if _, resumed := positionAfterID(kept, kept[0]["id"].(string)); !resumed {
 		t.Fatal("a kept id must still resolve after rotation")
+	}
+}
+
+// The daemon had no ceiling on any resource a caller controls: a connection that
+// never returns, a run with no deadline, a subscriber that never reads, a run
+// waiting on an approval nobody will ever give. Each is a way to take the daemon
+// down, and none requires malice — an approver who closes the laptop is enough
+// (GAP-122).
+
+func TestTheDefaultLimitsAreBounded(t *testing.T) {
+	limits := DefaultLimits()
+	for name, value := range map[string]int{
+		"MaxConnections": limits.MaxConnections, "MaxConcurrentRuns": limits.MaxConcurrentRuns,
+		"MaxSubscribers": limits.MaxSubscribers,
+	} {
+		if value <= 0 {
+			t.Errorf("%s = %d; zero here means unbounded, which is the failure this removes", name, value)
+		}
+	}
+	if limits.ConnectionDeadline <= 0 || limits.ApprovalTimeout <= 0 {
+		t.Error("a connection and an approval that may wait forever are the two unbounded waits")
+	}
+}
+
+func TestSettingOneLimitDoesNotSilentlyDropTheOthers(t *testing.T) {
+	// A caller that sets one ceiling and gets unbounded everything else has
+	// traded a visible limit for an invisible one.
+	configured := Limits{MaxConcurrentRuns: 2}.withDefaults()
+	if configured.MaxConnections != DefaultLimits().MaxConnections {
+		t.Error("setting one limit reset the others to zero")
+	}
+	if configured.MaxSubscribers != DefaultLimits().MaxSubscribers {
+		t.Error("setting one limit reset the subscriber ceiling")
+	}
+}
+
+func TestTheConnectionCeilingRefusesTheConnectionBeyondIt(t *testing.T) {
+	s := newScheduleServer(t)
+	for i := 0; i < s.limits.MaxConnections; i++ {
+		if !s.admitConnection() {
+			t.Fatalf("connection %d was refused below the ceiling", i+1)
+		}
+	}
+	if s.admitConnection() {
+		t.Fatal("a connection past the ceiling must be refused; an unbounded listener exhausts the machine")
+	}
+	s.releaseConnection()
+	if !s.admitConnection() {
+		t.Fatal("releasing a slot must make room for another connection")
+	}
+}
+
+func TestRunSlotsAreRefusedWhenFull(t *testing.T) {
+	s := newScheduleServer(t)
+	s.limits.MaxConcurrentRuns = 1
+	for i := 0; i < s.limits.MaxConcurrentRuns; i++ {
+		ctx, cancel := context.WithCancel(s.rootCtx)
+		s.mu.Lock()
+		s.runs["R-a"] = &activeRun{cancel: cancel, ctx: ctx}
+		s.mu.Unlock()
+	}
+	s.Deps = Deps{
+		Tools: &countingToolExecutor{},
+		NewProvider: func(string, string, string, string) (model.Provider, error) {
+			return model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "complete"}}}), nil
+		},
+	}
+	result := s.opStart(map[string]any{
+		"protocol_version": harnessprotocol.Version,
+		"op":               "start", "goal": "x", "provider": "fake", "run_id": "R-b",
+	})
+	if result["ok"] == true {
+		t.Fatalf("a run past the run ceiling must be refused: %v", result)
+	}
+}
+
+func TestAConnectionThatSaysNothingIsClosed(t *testing.T) {
+	// A client that connects and says nothing used to hold a goroutine and a
+	// descriptor for good. The first version of the limit set a context that
+	// nothing watched while the handler sat in Scan, so the limit was declared and
+	// did nothing — this test is why that is not the same as having a limit.
+	s := New(filepath.Join(t.TempDir(), "d.sock"), t.TempDir(), Deps{
+		Limits: Limits{ConnectionDeadline: 150 * time.Millisecond},
+		Tools:  &countingToolExecutor{},
+	})
+	defer s.rootCancel()
+	_ = os.Remove(s.SocketPath)
+	if err := os.MkdirAll(filepath.Dir(s.SocketPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Serve blocks until its context ends, and on the way out it drains runs in
+	// flight — so the test has to let it finish rather than abandon it, or the
+	// go test timeout kills a goroutine that is merely waiting.
+	serveCtx, stopServe := context.WithCancel(context.Background())
+	serveDone := make(chan error, 1)
+	go func() { serveDone <- s.Serve(serveCtx) }()
+	var conn net.Conn
+	var err error
+	for attempt := 0; attempt < 50; attempt++ {
+		conn, err = net.Dial("unix", s.SocketPath)
+		if err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	// Send nothing. The daemon must give up on us rather than hold the slot.
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	if _, err := conn.Read(make([]byte, 1)); err == nil {
+		t.Fatal("expected the daemon to close a connection that says nothing")
+	}
+	conn.Close()
+	stopServe()
+	select {
+	case <-serveDone:
+	case <-time.After(30 * time.Second):
+		t.Fatal("Serve did not return after its context was cancelled")
+	}
+}
+
+func TestAnUnansweredApprovalExpires(t *testing.T) {
+	// A run waiting for an answer holds its workspace, its budget and a slot. The
+	// failure is recorded as an approval timeout, because a run that stops waiting
+	// without saying why looks the same as one still working.
+	s := newScheduleServer(t)
+	ctx, cancel := context.WithCancel(s.rootCtx)
+	s.mu.Lock()
+	s.runs["R-p"] = &activeRun{cancel: cancel, ctx: ctx, approvalDeadline: time.Now().Add(-time.Second)}
+	s.mu.Unlock()
+
+	s.expireApprovals()
+
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("an approval past its deadline must end the wait")
+	}
+	events := s.readRawEvents("R-p")
+	found := false
+	for _, ev := range events {
+		if kind, _ := ev["kind"].(string); kind == "approval_timeout" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("an expired approval must be recorded, not merely cancelled")
+	}
+}
+
+func TestAnAnsweredApprovalIsNotExpired(t *testing.T) {
+	s := newScheduleServer(t)
+	ctx, cancel := context.WithCancel(s.rootCtx)
+	defer cancel()
+	s.mu.Lock()
+	s.runs["R-q"] = &activeRun{cancel: cancel, ctx: ctx}
+	s.mu.Unlock()
+	s.expireApprovals()
+	select {
+	case <-ctx.Done():
+		t.Fatal("a run with no pending approval must not be cancelled")
+	default:
 	}
 }

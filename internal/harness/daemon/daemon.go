@@ -76,6 +76,7 @@ type Deps struct {
 	// Workspace is the default context/tool root for runs that do not
 	// carry their own (CLI serve sets it to the project root).
 	Workspace string
+
 	// PermPolicy decides tool permissions. The zero value means "the default
 	// policy" (allow, ask for destructive), so leaving it unset does not
 	// silently turn every tool call into an approval request.
@@ -85,6 +86,72 @@ type Deps struct {
 	// this field exists to remove (GAP-098): the daemon used to build every
 	// tracker with three zeroes, and zero means unlimited in the envelope.
 	Budget Budget
+	// Limits bounds the daemon's own resources. The zero value means
+	// DefaultLimits, because an unbounded listener is a daemon that can be made to
+	// exhaust the machine it runs on (GAP-122).
+	Limits Limits
+}
+
+// Limits bounds what one daemon can be made to consume.
+//
+// These are not tuning. A connection handler that never returns holds a
+// goroutine forever; a client that opens thousands of connections holds file
+// descriptors; a run with no deadline holds its model connection for as long as
+// the provider feels like; a subscriber that never reads holds a buffer. Each of
+// those is a resource a caller controls, and without a ceiling any of them is a
+// way to take the daemon down.
+type Limits struct {
+	// MaxConnections is how many client connections may be open at once.
+	MaxConnections int
+	// ConnectionDeadline bounds one request/response exchange. A client that
+	// connects and says nothing is closed rather than held.
+	ConnectionDeadline time.Duration
+	// MaxConcurrentRuns is how many runs may be advancing at once.
+	MaxConcurrentRuns int
+	// RunDeadline bounds one run. Zero means no deadline, which is only
+	// appropriate for a run a human is watching.
+	RunDeadline time.Duration
+	// MaxSubscribers is how many push subscribers one run may have.
+	MaxSubscribers int
+	// ApprovalTimeout bounds how long a run waits for an answer to a permission
+	// question. Without it a run can sit in approval indefinitely, holding its
+	// workspace, its budget and a slot.
+	ApprovalTimeout time.Duration
+}
+
+// DefaultLimits is what a daemon runs with when nothing is configured.
+func DefaultLimits() Limits {
+	return Limits{
+		MaxConnections:     64,
+		ConnectionDeadline: 5 * time.Minute,
+		MaxConcurrentRuns:  8,
+		RunDeadline:        2 * time.Hour,
+		MaxSubscribers:     16,
+		ApprovalTimeout:    30 * time.Minute,
+	}
+}
+
+// withDefaults fills the unset fields, so a caller setting one limit does not
+// silently lose the rest.
+func (l Limits) withDefaults() Limits {
+	defaults := DefaultLimits()
+	if l.MaxConnections <= 0 {
+		l.MaxConnections = defaults.MaxConnections
+	}
+	if l.ConnectionDeadline <= 0 {
+		l.ConnectionDeadline = defaults.ConnectionDeadline
+	}
+	if l.MaxConcurrentRuns <= 0 {
+		l.MaxConcurrentRuns = defaults.MaxConcurrentRuns
+	}
+	if l.MaxSubscribers <= 0 {
+		l.MaxSubscribers = defaults.MaxSubscribers
+	}
+	if l.ApprovalTimeout <= 0 {
+		l.ApprovalTimeout = defaults.ApprovalTimeout
+	}
+	// RunDeadline is left at zero when unset, and zero means no deadline.
+	return l
 }
 
 // Budget is a per-run ceiling in the three dimensions the envelope tracks.
@@ -161,6 +228,12 @@ type Server struct {
 	// with a silent hole reads as complete, which is worse than no log (GAP-120).
 	eventWriteFailures int
 
+	// limits bounds the daemon's own resources (GAP-122).
+	limits Limits
+	// connMu guards the open-connection count.
+	connMu    sync.Mutex
+	openConns int
+
 	subsMu      sync.Mutex
 	subscribers map[string][]chan map[string]any
 	// subscriberDrops counts subscribers disconnected for not keeping up. A run
@@ -195,6 +268,9 @@ type activeRun struct {
 	// the persistence step reads it.
 	mu       sync.Mutex
 	timeline []agent.AgentEvent
+	// approvalDeadline is when a pending permission question stops being
+	// answerable and the run is failed instead.
+	approvalDeadline time.Time
 
 	// busy is true while the run loop is advancing, so an approval cannot
 	// start a second loop over the same state. Guarded by Server.mu.
@@ -219,6 +295,7 @@ func New(socketPath, storeDir string, deps Deps) *Server {
 		StoreDir:    storeDir,
 		Deps:        deps,
 		policy:      deps.PermPolicy,
+		limits:      deps.Limits.withDefaults(),
 		runs:        map[string]*activeRun{},
 		subscribers: map[string][]chan map[string]any{},
 		eventLines:  map[string]int{},
@@ -436,6 +513,7 @@ func (s *Server) Serve(ctx context.Context) error {
 				return
 			case <-ticker.C:
 				s.tickJobs()
+				s.expireApprovals()
 			}
 		}
 	}()
@@ -454,8 +532,37 @@ func (s *Server) Serve(ctx context.Context) error {
 				continue
 			}
 		}
-		go s.handle(conn)
+		// A connection is admitted only if there is room. An unbounded listener
+		// lets a caller open as many as the process can hold file descriptors for,
+		// and each one costs a goroutine too (GAP-122).
+		if !s.admitConnection() {
+			_ = conn.Close()
+			continue
+		}
+		go func() {
+			defer s.releaseConnection()
+			s.handle(conn)
+		}()
 	}
+}
+
+// admitConnection takes a slot if one is free, reporting whether it got one.
+func (s *Server) admitConnection() bool {
+	s.connMu.Lock()
+	defer s.connMu.Unlock()
+	if s.openConns >= s.limits.MaxConnections {
+		return false
+	}
+	s.openConns++
+	return true
+}
+
+func (s *Server) releaseConnection() {
+	s.connMu.Lock()
+	if s.openConns > 0 {
+		s.openConns--
+	}
+	s.connMu.Unlock()
 }
 
 // drainGrace is how long runs in flight are given to reach a stopping point on
@@ -620,11 +727,29 @@ func (s *Server) handle(conn net.Conn) {
 	// loop is the shape a static check reads as a leak, so the replacement signal
 	// is a channel instead: closing it ends that subscription, and the
 	// connection context is what guarantees the last one ends too.
-	connCtx, connCancel := context.WithCancel(context.Background())
+	// Every exchange on this connection is bounded. A client that connects and
+	// then says nothing held a goroutine and a file descriptor forever, which is
+	// the cheapest way there is to take a daemon down (GAP-122).
+	connCtx, connCancel := context.WithTimeout(context.Background(), s.limits.ConnectionDeadline)
+	defer connCancel()
 	defer connCancel()
 	var replaced chan struct{}
 
-	for sc.Scan() {
+	// The read deadline is set on the socket, not merely on a context. The context
+	// existed and nothing watched it while the handler sat in Scan, so a client
+	// that connected and said nothing still held a goroutine and a descriptor for
+	// good — the limit was declared and did nothing (GAP-122).
+	//
+	// It is refreshed per read rather than set once for the connection, because it
+	// bounds waiting for a request, not the life of a connection. A subscriber that
+	// keeps talking is not cut off; one that stops talking is.
+	for {
+		if s.limits.ConnectionDeadline > 0 {
+			_ = conn.SetReadDeadline(time.Now().Add(s.limits.ConnectionDeadline))
+		}
+		if !sc.Scan() {
+			break
+		}
 		var msg map[string]any
 		if err := json.Unmarshal(sc.Bytes(), &msg); err != nil {
 			_ = safeWrite(map[string]any{"ok": false, "error": "invalid json"})
@@ -778,6 +903,35 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 		cancel()
 		return map[string]any{"ok": false, "error": "run already active: " + runID}
 	}
+	// A run occupies a slot, and a run with no slot is refused. Unbounded runs mean
+	// unbounded model connections, checkpoints and workspace locks, and the
+	// resource is the caller's to spend deliberately (GAP-122).
+	active := 0
+	for _, existing := range s.runs {
+		if existing != nil {
+			active++
+		}
+	}
+	if active >= s.limits.MaxConcurrentRuns {
+		s.mu.Unlock()
+		cancel()
+		return map[string]any{
+			"ok":    false,
+			"error": fmt.Sprintf("daemon is at its run limit (%d); no slot for %s", s.limits.MaxConcurrentRuns, runID),
+		}
+	}
+	if s.limits.RunDeadline > 0 {
+		// The original cancel is captured first. Reassigning `cancel` and then
+		// calling it from the replacement would recurse forever, because the name
+		// inside the closure resolves to the closure.
+		baseCancel := cancel
+		var stopDeadline context.CancelFunc
+		runCtx, stopDeadline = context.WithTimeout(runCtx, s.limits.RunDeadline)
+		cancel = func() {
+			stopDeadline()
+			baseCancel()
+		}
+	}
 	ar := &activeRun{cancel: cancel, ctx: runCtx, busy: true, goal: goal}
 	s.runs[runID] = ar
 	s.mu.Unlock()
@@ -848,6 +1002,13 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 			s.appendEvent(runID, ev)
 			ar.mu.Lock()
 			ar.timeline = append(ar.timeline, ev)
+			if ev.Kind == "permission_wait" {
+				// A run waiting for an answer holds its workspace, its budget and a
+				// slot. Without a deadline the wait is unbounded, and nobody has to
+				// be malicious to cause it — an approver who closes the laptop
+				// is enough (GAP-122).
+				ar.approvalDeadline = time.Now().Add(s.limits.ApprovalTimeout)
+			}
 			ar.mu.Unlock()
 		},
 		ContextManifest: func(_ context.Context, _ agent.NativeAgentState) (string, error) {
@@ -1296,6 +1457,14 @@ func (s *Server) handleSubscribe(ctx context.Context, msg map[string]any, writeM
 	// Register subscriber first so no live events emitted during catch-up are dropped.
 	subCh := make(chan map[string]any, 128)
 	s.subsMu.Lock()
+	if len(s.subscribers[runID]) >= s.limits.MaxSubscribers {
+		s.subsMu.Unlock()
+		_ = writeMsg(map[string]any{
+			"ok":    false,
+			"error": fmt.Sprintf("run already has %d subscribers", s.limits.MaxSubscribers),
+		})
+		return
+	}
 	s.subscribers[runID] = append(s.subscribers[runID], subCh)
 	s.subsMu.Unlock()
 
@@ -1879,4 +2048,45 @@ func positionAfterID(events []map[string]any, id string) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+// expireApprovals fails runs whose permission question went unanswered.
+//
+// The failure is recorded as such rather than left hanging, because a run that
+// stops waiting without saying why looks the same to an operator as a run that is
+// still working.
+func (s *Server) expireApprovals() {
+	if s.limits.ApprovalTimeout <= 0 {
+		return
+	}
+	now := time.Now()
+	type expired struct {
+		runID  string
+		cancel context.CancelFunc
+	}
+	var due []expired
+	s.mu.Lock()
+	for runID, ar := range s.runs {
+		if ar == nil {
+			continue
+		}
+		ar.mu.Lock()
+		deadline := ar.approvalDeadline
+		if !deadline.IsZero() && now.After(deadline) {
+			ar.approvalDeadline = time.Time{}
+			due = append(due, expired{runID: runID, cancel: ar.cancel})
+		}
+		ar.mu.Unlock()
+	}
+	s.mu.Unlock()
+
+	for _, item := range due {
+		s.appendEvent(item.runID, agent.AgentEvent{
+			ID: item.runID + "-approval-timeout", RunID: item.runID, Kind: "approval_timeout",
+			Payload: map[string]any{"after": s.limits.ApprovalTimeout.String()}, CreatedAt: agent.Now(),
+		})
+		if item.cancel != nil {
+			item.cancel()
+		}
+	}
 }
