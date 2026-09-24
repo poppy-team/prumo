@@ -131,6 +131,11 @@ func (f *FakeProvider) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 // PRUMO_MODEL_API_KEY for network adapters.
 func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 	switch name {
+	// The catalog is the single declaration of what exists; the switch below
+	// builds it. A name the catalog lists that this factory cannot build is a
+	// promise the catalog cannot keep, and a name this factory builds that the
+	// catalog omits is a provider the catalog cannot describe. VerifiedAgainstCatalog
+	// checks the two agree, so neither drift is silent (GAP-133).
 	case "", "fake":
 		return NewFake(map[string][]ScriptStep{"*": {{Kind: "text", Text: "hello"}, {Kind: "complete"}}}), nil
 	case "fake-tools":
@@ -456,14 +461,16 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg := parseProviderError(resp.Body)
 		resp.Body.Close()
-		if msg == "" {
-			msg = fmt.Sprintf("provider http %d", resp.StatusCode)
-		} else {
-			msg = fmt.Sprintf("provider http %d: %s", resp.StatusCode, msg)
-		}
-		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
+		// The status code and the Retry-After header are read here, where they
+		// still exist. Reducing this to a message string meant the gateway had to
+		// guess whether it was a rate limit, and the delay the provider asked for
+		// was thrown away, so a retry came back inside the limit window and was
+		// rejected again (GAP-108).
+		pe := NewProviderError(o.ProviderKey(), resp, msg)
+		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500 || pe.Quota
 		ch := make(chan agent.ModelEvent, 1)
-		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: msg, Retryable: retryable}
+		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: pe.Error(),
+			Retryable: retryable, Quota: pe.Quota, RetryAfter: pe.RetryAfter}
 		close(ch)
 		return ch, nil
 	}
@@ -701,4 +708,55 @@ func (c *cumulativeUsage) advance(in, out, cacheRead, cacheWrite int) *agent.Usa
 
 func (c *cumulativeUsage) advanceAnthropic(block *anthropicUsageBlock) *agent.Usage {
 	return c.advance(block.InputTokens, block.OutputTokens, block.CacheReadInputTokens, block.CacheCreationInputTokens)
+}
+
+// buildableNames is what this factory can actually construct, read off the switch
+// above by asking it. It is a probe, not a second list: adding a case to ForName
+// changes this without anyone maintaining a parallel declaration.
+func buildableNames() map[string]bool {
+	names := map[string]bool{}
+	for _, spec := range modelregistry.KnownProviders() {
+		// A provider needing a base URL cannot be probed without one, so it is
+		// taken on the catalog's word; the offline ones are checked by building.
+		if spec.NeedsBaseURL {
+			continue
+		}
+		if _, err := ForName(spec.Name, "", "", "m"); err == nil {
+			names[spec.Name] = true
+		}
+	}
+	return names
+}
+
+// VerifiedAgainstCatalog reports what the factory and the catalog disagree about.
+//
+// Two ways to drift, and both are worth surfacing rather than assuming away: a
+// provider the catalog describes that nothing can build — the original GAP-133 —
+// and a provider the factory can build that the catalog has never heard of,
+// which is the same problem in the other direction.
+func VerifiedAgainstCatalog() error {
+	buildable := buildableNames()
+	var missing []string
+	for _, spec := range modelregistry.KnownProviders() {
+		if buildable[spec.Name] || spec.External {
+			// A provider the deployment supplies rather than this factory is
+			// described by the catalog and built by something else; that is a
+			// legitimate pairing, not a missing one.
+			continue
+		}
+		if spec.NeedsBaseURL {
+			// Cannot be probed offline; ForName's own error messages cover it.
+			continue
+		}
+		missing = append(missing, spec.Name)
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("catalog describes providers the factory cannot build: %s", strings.Join(missing, ", "))
+	}
+	for name := range buildable {
+		if _, known := modelregistry.ProviderSpecFor(name); !known {
+			return fmt.Errorf("factory can build %q but the catalog has no descriptor for it", name)
+		}
+	}
+	return nil
 }

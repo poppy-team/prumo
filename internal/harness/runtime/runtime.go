@@ -589,6 +589,13 @@ func (r *Runner) Step(ctx context.Context) error {
 			RunID:     r.State.RunID, TurnID: r.State.TurnID,
 			Messages: append([]agent.Message{}, r.Messages...),
 			Tools:    specs,
+			// Once the run has applied an observable effect, a provider that
+			// fails mid-stream cannot be swapped for another: the next one has
+			// not seen the tool results and would re-plan from a different
+			// state. The run has to hand off explicitly. A routing layer that
+			// could not see this would eventually retry the call on another
+			// provider and duplicate the effect (GAP-102).
+			NoTransparentFallback: r.AfterSideEffects,
 		}
 		// Budget preflight, before the call. Usage arrives afterwards, so
 		// checking there bounds nothing: the last turn of a run is the one that

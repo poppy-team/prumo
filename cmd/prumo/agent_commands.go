@@ -16,6 +16,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -29,6 +31,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/contextv2"
 	"github.com/raillen/prumo/internal/harness/daemon"
 	"github.com/raillen/prumo/internal/harness/extagent"
+	"github.com/raillen/prumo/internal/harness/gateway"
 	"github.com/raillen/prumo/internal/harness/handoff"
 	"github.com/raillen/prumo/internal/harness/knowledge"
 	"github.com/raillen/prumo/internal/harness/mcp"
@@ -191,6 +194,11 @@ func runAgentRun(asJSON bool, args []string) int {
 	default:
 		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", providerName))
 	}
+
+	// The gateway is what the runner calls, so routing, retry, the circuit
+	// breaker and the quota filter are in the path rather than built and
+	// unreachable (GAP-102).
+	provider = routeThroughGateway(provider, modelName, baseURL)
 
 	dir := filepath.Join(root, ".prumo", "runtime", "harness")
 	eventLog := filepath.Join(dir, "events-"+runID+".jsonl")
@@ -425,6 +433,10 @@ func runAgentResume(asJSON bool, args []string) int {
 	if aware, ok := provider.(interface{ SetWorkspace(string) }); ok {
 		aware.SetWorkspace(root)
 	}
+	// Routed for the same reason as the first call site: the gateway is the
+	// runner's provider, and a raw adapter means none of its routing runs
+	// (GAP-102).
+	provider = routeThroughGateway(provider, modelName, baseURL)
 
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
 		Models: provider, Tools: aci.New(root),
@@ -1172,4 +1184,52 @@ func runAgentDiff(asJSON bool, args []string) int {
 		fmt.Printf("[%s] %s\n", res["kind"], res["path"])
 	}
 	return exitOK
+}
+
+// routeThroughGateway puts the model gateway in front of a provider.
+//
+// This is the caller the gateway never had. It was built with selection,
+// fallback, retry, a circuit breaker and a quota filter, and the runner was
+// handed the raw adapter, so a run reached exactly one provider and none of that
+// machinery ever executed (GAP-102). Wrapping here rather than inside the runtime
+// keeps routing a property of how the process is wired: a caller that wants a
+// bare adapter can still pass one, and a caller that wants routing asks for it.
+//
+// The target's privacy class is derived from where the data would actually go,
+// not from the provider's name: the same adapter reaches a loopback endpoint in
+// development and a vendor's datacenter in production, and a firewall that keyed
+// on the adapter would call one of those safe and the other safe too.
+func routeThroughGateway(provider model.Provider, modelName, baseURL string) model.Provider {
+	g := gateway.New()
+	g.Register(provider)
+	g.DeclareTarget(gateway.RouteTarget{
+		Provider: provider.Name(),
+		Model:    modelName,
+		Tools:    true,
+		Privacy:  privacyClassFor(baseURL),
+	})
+	return g
+}
+
+// privacyClassFor classifies a destination for the gateway's LocalOnly filter.
+//
+// A loopback or private address is local. Anything else is external, because
+// "we could not classify it" has to resolve to the answer that does not send
+// restricted data somewhere nobody approved.
+func privacyClassFor(baseURL string) string {
+	if baseURL == "" {
+		return "external"
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return "external"
+	}
+	host := parsed.Hostname()
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return "local"
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return "local"
+	}
+	return "external"
 }

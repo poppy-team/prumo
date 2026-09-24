@@ -8,6 +8,7 @@ import (
 
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/checkpoint"
+	"github.com/raillen/prumo/internal/harness/gateway"
 	"github.com/raillen/prumo/internal/harness/model"
 	"github.com/raillen/prumo/internal/harness/perm"
 )
@@ -421,4 +422,115 @@ func TestAPartialReplyIsNotKeptAsThoughItWereTheAnswer(t *testing.T) {
 			t.Error("a failed turn's partial text must not be recorded as a finished agent reply")
 		}
 	}
+}
+
+// The gateway was built with selection, fallback, retry, a circuit breaker and a
+// quota filter, and the runner was handed the raw adapter — so a run reached
+// exactly one provider and none of that machinery ever executed. Every fix to it
+// was a fix to code no run touched (GAP-102).
+
+func TestTheRunnerRoutesThroughTheGatewayWhenGivenOne(t *testing.T) {
+	// Selection is deterministic by provider name, so the provider that fails is
+	// named to come first: this test is about the fallback happening, not about
+	// the order.
+	g := gateway.New()
+	primary := &recordingProvider{name: "a-failing", events: []agent.ModelEvent{
+		{Kind: agent.EventError, Error: "rate limited", Retryable: true, Quota: true},
+	}}
+	backup := &recordingProvider{name: "b-working", events: []agent.ModelEvent{
+		{Kind: agent.EventTextDelta, Text: "answered by the backup"},
+		{Kind: agent.EventCompleted, Finished: true},
+	}}
+	g.Register(primary)
+	g.Register(backup)
+	g.DeclareTarget(gateway.RouteTarget{Provider: "a-failing", Model: "m1", Privacy: "external"})
+	g.DeclareTarget(gateway.RouteTarget{Provider: "b-working", Model: "m1", Privacy: "external"})
+	g.Retry = gateway.RetryPolicy{Attempts: 1}
+
+	r := NewRunner(Services{
+		Models: g, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-route", "S1")
+	r.MaxTurns = 1
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	if err := r.RunUntilDone(context.Background()); err != nil {
+		t.Fatalf("the run must recover by routing to the backup: %v", err)
+	}
+	if primary.calls == 0 {
+		t.Error("the primary was never called: the runner bypassed the gateway")
+	}
+	if backup.calls == 0 {
+		t.Error("the backup was never called: no fallback happened")
+	}
+}
+
+func TestTheRunnerRefusesTransparentFallbackAfterASideEffect(t *testing.T) {
+	// Swapping providers mid-run after an observable effect is not a retry: the
+	// next provider has not seen the tool results and re-plans from a different
+	// state. The run has to hand off, so the call fails loudly instead.
+	g := gateway.New()
+	primary := &recordingProvider{name: "a-failing", events: []agent.ModelEvent{
+		{Kind: agent.EventError, Error: "boom", Retryable: true},
+	}}
+	backup := &recordingProvider{name: "b-working", events: []agent.ModelEvent{
+		{Kind: agent.EventCompleted, Finished: true},
+	}}
+	g.Register(primary)
+	g.Register(backup)
+	g.DeclareTarget(gateway.RouteTarget{Provider: "a-failing", Model: "m1", Privacy: "external"})
+	g.DeclareTarget(gateway.RouteTarget{Provider: "b-working", Model: "m1", Privacy: "external"})
+	g.Retry = gateway.RetryPolicy{Attempts: 1}
+
+	r := NewRunner(Services{
+		Models: g, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-effect", "S1")
+	r.MaxTurns = 2
+	r.AfterSideEffects = true
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	err := r.RunUntilDone(context.Background())
+	if err == nil {
+		t.Fatal("a failed call after a side effect must not be silently routed elsewhere")
+	}
+	if backup.calls != 0 {
+		t.Error("the backup was called after the run had already had an observable effect")
+	}
+}
+
+func TestAGatewayWithNothingRegisteredFailsRatherThanSilentlySucceeding(t *testing.T) {
+	g := gateway.New()
+	r := NewRunner(Services{
+		Models: g, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-empty", "S1")
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	if err := r.RunUntilDone(context.Background()); err == nil {
+		t.Fatal("a gateway with no provider must fail the run, not report an empty answer as success")
+	}
+}
+
+// recordingProvider replays fixed events and counts its calls.
+type recordingProvider struct {
+	name   string
+	events []agent.ModelEvent
+	calls  int
+}
+
+func (p *recordingProvider) Name() string { return p.name }
+func (p *recordingProvider) Capabilities() model.Capabilities {
+	return model.Capabilities{Streaming: true}
+}
+func (p *recordingProvider) Models(context.Context) ([]string, error) {
+	return []string{"m1"}, nil
+}
+func (p *recordingProvider) Health(context.Context) (string, error) { return "healthy", nil }
+func (p *recordingProvider) Stream(_ context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
+	p.calls++
+	ch := make(chan agent.ModelEvent, len(p.events))
+	for _, ev := range p.events {
+		ev.RequestID = req.RequestID
+		ch <- ev
+	}
+	close(ch)
+	return ch, nil
 }

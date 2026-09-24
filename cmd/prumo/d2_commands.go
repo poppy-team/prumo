@@ -65,38 +65,31 @@ func analysisDescriptors() []toolgateway.Descriptor {
 	}
 }
 
+// defaultModelRegistry is the built-in catalog.
+//
+// Its providers are names the factory can build or that a deployment can supply.
+// They used to be "local", "trusted-cloud" and "external-cloud", which were
+// invented here and appear in no factory and no deployment, so the catalog
+// described three providers that could not be constructed and nothing noticed
+// until a run tried to route to one (GAP-133). Register now refuses an unknown
+// provider, so a name like that cannot be reintroduced quietly.
 func defaultModelRegistry() *modelregistry.Registry {
 	r := modelregistry.NewRegistry()
-	r.Register(modelregistry.Descriptor{
-		ID:               "local-default",
-		Version:          1,
-		Provider:         "local",
-		Privacy:          modelregistry.Local,
-		ContextTokens:    8192,
-		StructuredOutput: true,
-		ToolUse:          true,
-		LatencyClass:     "fast",
-	})
-	r.Register(modelregistry.Descriptor{
-		ID:               "cloud-standard",
-		Version:          1,
-		Provider:         "trusted-cloud",
-		Privacy:          modelregistry.Trusted,
-		ContextTokens:    32768,
-		StructuredOutput: true,
-		ToolUse:          true,
-		LatencyClass:     "standard",
-	})
-	r.Register(modelregistry.Descriptor{
-		ID:               "cloud-deep",
-		Version:          1,
-		Provider:         "external-cloud",
-		Privacy:          modelregistry.External,
-		ContextTokens:    65536,
-		StructuredOutput: true,
-		ToolUse:          true,
-		LatencyClass:     "deep",
-	})
+	for _, d := range []modelregistry.Descriptor{
+		{ID: "local-default", Version: 1, Provider: "opencode", Privacy: modelregistry.Local,
+			ContextTokens: 8192, StructuredOutput: true, ToolUse: true, LatencyClass: "fast"},
+		{ID: "cloud-standard", Version: 1, Provider: "openai-compat", Privacy: modelregistry.Trusted,
+			ContextTokens: 32768, StructuredOutput: true, ToolUse: true, LatencyClass: "standard"},
+		{ID: "cloud-deep", Version: 1, Provider: "anthropic", Privacy: modelregistry.ExternalPrivacy,
+			ContextTokens: 65536, StructuredOutput: true, ToolUse: true, LatencyClass: "deep"},
+	} {
+		if err := r.Register(d); err != nil {
+			// A built-in catalog that does not validate is a build error, not a
+			// runtime surprise, and this is a package initialiser with nowhere to
+			// return one.
+			panic("prumo: built-in model registry is invalid: " + err.Error())
+		}
+	}
 	return r
 }
 

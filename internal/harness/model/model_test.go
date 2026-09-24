@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/modelregistry"
 )
 
 // runConformance executes the shared contract suite against any Provider.
@@ -167,5 +168,27 @@ func TestOpenAICompatMultipartImagePayload(t *testing.T) {
 	imgURL, ok := p1["image_url"].(map[string]any)
 	if !ok || imgURL["url"] != "data:image/png;base64,iVBORw0KGgoAAA==" {
 		t.Errorf("part 1 url mismatch: %v", imgURL)
+	}
+}
+
+// The catalog and the factory are two declarations of the same thing. They used
+// to disagree with nothing noticing: the catalog named providers the factory
+// could not build, and the factory built providers the catalog had never heard
+// of (GAP-133).
+
+func TestTheFactoryAndTheCatalogAgreeAboutWhatExists(t *testing.T) {
+	if err := VerifiedAgainstCatalog(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTheFactoriesOfflineProvidersAreAllInTheCatalog(t *testing.T) {
+	// A provider the factory builds that the catalog omits is the same problem as
+	// the reverse: a run could construct it and nothing could describe or price
+	// it.
+	for name := range buildableNames() {
+		if _, known := modelregistry.ProviderSpecFor(name); !known {
+			t.Errorf("the factory builds %q but the catalog does not describe it", name)
+		}
 	}
 }

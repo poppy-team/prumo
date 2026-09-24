@@ -221,10 +221,16 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body := parseProviderError(resp.Body)
 		resp.Body.Close()
-		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
+		// Read the status and Retry-After here rather than reducing them to a
+		// message, so the gateway can tell a quota from a fault and wait the
+		// interval the provider asked for (GAP-108).
+		pe := NewProviderError(a.ProviderKey(), resp, body)
+		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500 || pe.Quota
 		ch := make(chan agent.ModelEvent, 1)
-		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: fmt.Sprintf("provider http %d", resp.StatusCode), Retryable: retryable}
+		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: pe.Error(),
+			Retryable: retryable, Quota: pe.Quota, RetryAfter: pe.RetryAfter}
 		close(ch)
 		return ch, nil
 	}

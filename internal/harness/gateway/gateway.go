@@ -5,7 +5,9 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -64,7 +66,11 @@ func (g *Gateway) SelectWithPolicy(targets []RouteTarget, p Policy) ModelRoute {
 		if p.RequireStructured && !t.Structured {
 			continue
 		}
-		if p.LocalOnly && t.Privacy != "" && t.Privacy != "local" {
+		// LocalOnly is a firewall, so it fails closed. A target whose privacy is
+		// unknown is not evidence that it is local: `t.Privacy != ""` let an empty
+		// value through, which meant the one case where nobody had classified the
+		// target was the one case allowed to receive restricted data (GAP-156).
+		if p.LocalOnly && t.Privacy != "local" {
 			continue
 		}
 		if g.quotaExhausted(t.Provider) {
@@ -77,9 +83,23 @@ func (g *Gateway) SelectWithPolicy(targets []RouteTarget, p Policy) ModelRoute {
 	healthy, degraded := []RouteTarget{}, []RouteTarget{}
 	for _, t := range kept {
 		h := g.health[t.Provider]
-		if h == nil || h.Status == "healthy" {
+		if h == nil {
 			healthy = append(healthy, t)
-		} else if h.Status == "degraded" {
+			continue
+		}
+		// An open circuit whose cooldown has passed is tried again, as a
+		// half-open probe. The cooldown used to be written and never read, so a
+		// provider that failed three times was excluded from every route for the
+		// life of the process — the breaker opened and could never close, and the
+		// recovery it existed to enable was unreachable (GAP-103).
+		if h.Status == "open" && cooldownElapsed(h.CooldownUntil) {
+			h.Status = "degraded"
+			h.CooldownUntil = ""
+		}
+		switch h.Status {
+		case "healthy":
+			healthy = append(healthy, t)
+		case "degraded":
 			degraded = append(degraded, t)
 		}
 	}
@@ -153,13 +173,20 @@ type Gateway struct {
 	providers map[string]model.Provider
 	health    map[string]*Health
 	quotas    map[string]QuotaState
-	Retry     RetryPolicy
+	// targets are the declared provider+model pairs selection filters over.
+	targets []RouteTarget
+	Retry   RetryPolicy
 	// AfterSideEffects=false allows transparent fallback; once a Run has
 	// observable effects, callers must use explicit Handoff instead.
 }
 
 func New() *Gateway {
-	return &Gateway{providers: map[string]model.Provider{}, health: map[string]*Health{}, quotas: map[string]QuotaState{}, Retry: DefaultRetryPolicy()}
+	return &Gateway{
+		providers: map[string]model.Provider{},
+		health:    map[string]*Health{},
+		quotas:    map[string]QuotaState{},
+		Retry:     DefaultRetryPolicy(),
+	}
 }
 
 // SetQuota records remaining quota (negative = unlimited).
@@ -169,7 +196,18 @@ func (g *Gateway) SetQuota(provider string, remaining float64, resetsAt string) 
 	g.quotas[provider] = QuotaState{Remaining: remaining, ResetsAt: resetsAt}
 }
 
+// quotaExhausted reports whether a provider is known to be out of quota.
+//
+// It takes the lock. It used to read the map unguarded while SetQuota and the
+// rate-limit path in streamWithRetry wrote it under the lock, so a concurrent
+// selection and a quota update raced on the same map (GAP-103).
+//
+// An unparseable reset time is treated as exhausted rather than as unlimited:
+// "we could not tell when this clears" is not a reason to send more traffic at a
+// provider that has already said it is full.
 func (g *Gateway) quotaExhausted(provider string) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	q, ok := g.quotas[provider]
 	if !ok || q.Remaining != 0 {
 		return false
@@ -186,6 +224,20 @@ func (g *Gateway) quotaExhausted(provider string) bool {
 		}
 	}
 	return time.Now().UTC().Before(t)
+}
+
+// cooldownElapsed reports whether a cooldown has run out. An absent or
+// unparseable cooldown is treated as elapsed: a circuit that says "wait until
+// some time nobody can read" must not hold a provider out of routing forever.
+func cooldownElapsed(until string) bool {
+	if until == "" {
+		return true
+	}
+	t, err := time.Parse(time.RFC3339Nano, until)
+	if err != nil {
+		return true
+	}
+	return !time.Now().UTC().Before(t)
 }
 
 func (g *Gateway) Register(p model.Provider) {
@@ -217,6 +269,10 @@ func (g *Gateway) recordSuccess(provider string) {
 	}
 	h.Failures = 0
 	h.Status = "healthy"
+	// The cooldown is cleared with the status. Leaving it behind would mean a
+	// later failure set a fresh one, but a stale past timestamp left in place
+	// reads as "still cooling" to anything that consults it directly.
+	h.CooldownUntil = ""
 }
 
 // StreamWithFallback tries primary then fallbacks on retryable errors.
@@ -277,11 +333,20 @@ func (g *Gateway) streamWithRetry(ctx context.Context, p model.Provider, name st
 		select {
 		case ev, ok := <-ch:
 			if !ok {
-				lastErr = fmt.Errorf("provider %s closed stream", name)
+				lastErr = &failure{err: fmt.Errorf("provider %s closed stream", name)}
 				continue
 			}
 			if ev.Kind == agent.EventError && ev.Retryable {
-				lastErr = fmt.Errorf("provider %s: %s", name, ev.Error)
+				// The adapter's classification travels on the event, so the
+				// retry interval the provider asked for and whether this is a
+				// quota are both still here. Wrapping only the message is what
+				// made the gateway read prose to decide what it was looking at
+				// (GAP-108).
+				lastErr = &failure{
+					err:        fmt.Errorf("provider %s: %s", name, ev.Error),
+					quota:      ev.Quota,
+					retryAfter: ev.RetryAfter,
+				}
 				continue
 			}
 			g.mu.Lock()
@@ -304,7 +369,17 @@ func (g *Gateway) streamWithRetry(ctx context.Context, p model.Provider, name st
 	g.recordFailure(name)
 	if isRateLimit(lastErr) {
 		// Rate-limited providers cool down; selection skips them until reset.
-		g.quotas[name] = QuotaState{Remaining: 0, ResetsAt: time.Now().UTC().Add(30 * time.Second).Format(time.RFC3339Nano)}
+		// The provider's own Retry-After is the reset point when it gave one, so
+		// the gateway stops sending at the time the limit actually lifts rather
+		// than at a fixed guess (GAP-108).
+		cooldown := 30 * time.Second
+		if requested := retryAfterFrom(lastErr); requested > 0 {
+			cooldown = requested
+		}
+		g.quotas[name] = QuotaState{
+			Remaining: 0,
+			ResetsAt:  time.Now().UTC().Add(cooldown).Format(time.RFC3339Nano),
+		}
 	}
 	g.mu.Unlock()
 	if lastErr == nil {
@@ -313,14 +388,79 @@ func (g *Gateway) streamWithRetry(ctx context.Context, p model.Provider, name st
 	return nil, lastErr
 }
 
+// failure is what a provider call left behind: the error, plus the two facts
+// that decide how to retry it. It is carried as its own type because a bare error
+// cannot hold them, and putting them in the message is what this whole change
+// removes.
+type failure struct {
+	err        error
+	quota      bool
+	retryAfter time.Duration
+}
+
+func (f *failure) Error() string {
+	if f == nil || f.err == nil {
+		return ""
+	}
+	return f.err.Error()
+}
+
+func (f *failure) Unwrap() error {
+	if f == nil {
+		return nil
+	}
+	return f.err
+}
+
 // isRateLimit recognizes quota/rate signals across provider dialects.
+//
+// A typed provider failure is authoritative: it carries the classification the
+// adapter made from the status code and the payload. Substring matching is the
+// fallback for an error that never went through an adapter, and is deliberately
+// never consulted first, because matching prose is how a vendor that says
+// "RESOURCE_EXHAUSTED" gets treated as an ordinary fault and retried straight
+// back into the limit (GAP-108).
 func isRateLimit(err error) bool {
 	if err == nil {
 		return false
 	}
-	s := strings.ToLower(err.Error())
-	for _, sig := range []string{"429", "rate_limit", "rate limit", "ratelimit", "overload", "quota"} {
-		if strings.Contains(s, sig) {
+	var f *failure
+	if errors.As(err, &f) {
+		if f.quota {
+			return true
+		}
+		if f.retryAfter > 0 {
+			// A provider that asked us to wait is telling us it is busy, whether
+			// or not it labelled the failure a quota.
+			return true
+		}
+		// The adapter did not classify this one, so the message is all there is.
+		// A provider built outside this package — a test double, or a plugin —
+		// never sets Quota, and dropping the text signals for it would make a
+		// rate-limited provider look like an ordinary fault.
+		return containsRateSignal(f.Error())
+	}
+	if pe, ok := model.ProviderErrorFrom(err); ok {
+		if pe.Quota {
+			return true
+		}
+		if pe.RetryAfter > 0 {
+			return true
+		}
+		return pe.StatusCode == http.StatusTooManyRequests
+	}
+	return containsRateSignal(err.Error())
+}
+
+// containsRateSignal is the text fallback for failures that were never
+// classified by an adapter.
+func containsRateSignal(message string) bool {
+	lowered := strings.ToLower(message)
+	for _, signal := range []string{
+		"429", "rate_limit", "rate limit", "ratelimit", "overload", "quota",
+		"resource_exhausted", "resource exhausted", "quota_exceeded", "too many requests",
+	} {
+		if strings.Contains(lowered, signal) {
 			return true
 		}
 	}
@@ -328,18 +468,45 @@ func isRateLimit(err error) bool {
 }
 
 // backoffFor computes the pre-attempt delay (attempt starts at 1).
+//
+// The delay is exponential, because linear backoff retries a struggling
+// provider at nearly the same rate it just failed at. A provider under load
+// needs less traffic, not the same traffic sooner. The exponent is capped so a
+// generous policy cannot produce a delay longer than a run is willing to wait.
+//
+// Retry-After overrides the computed delay when the provider sent one: it is the
+// provider saying when it will be ready, and guessing a shorter wait than the one
+// asked for means the retry is rejected for the same reason (GAP-108).
 func backoffFor(p RetryPolicy, attempt int, err error) time.Duration {
-	mult := 1
+	mult := 1.0
 	if isRateLimit(err) {
 		mult = 5
 	} else if isServerError(err) {
 		mult = 2
 	}
-	d := time.Duration(attempt*mult) * p.Backoff
+	// 2^(attempt-1), capped, so attempt 1 waits 1x, attempt 2 waits 2x, and the
+	// growth stops somewhere a caller can still reason about.
+	factor := 1 << min(attempt-1, 6)
+	d := time.Duration(float64(p.Backoff) * float64(factor) * mult)
+	if requested := retryAfterFrom(err); requested > d {
+		d = requested
+	}
 	if p.Jitter && d > 0 {
 		d += time.Duration((attempt*37)%100) * p.Backoff / 100
 	}
 	return d
+}
+
+// retryAfterFrom reads the delay the provider asked for out of a typed failure.
+func retryAfterFrom(err error) time.Duration {
+	var f *failure
+	if errors.As(err, &f) {
+		return f.retryAfter
+	}
+	if pe, ok := model.ProviderErrorFrom(err); ok {
+		return pe.RetryAfter
+	}
+	return 0
 }
 
 func isServerError(err error) bool {

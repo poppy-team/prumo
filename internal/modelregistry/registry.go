@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -89,8 +90,29 @@ func NewRegistry() *Registry {
 	}
 }
 
-func (r *Registry) Register(d Descriptor) {
+// Register adds a descriptor, refusing one that describes something the factory
+// cannot build.
+//
+// It used to accept anything, so the registry could name providers that exist in
+// no factory — "local", "trusted-cloud", "external-cloud" were all registered and
+// none was constructible. The failure surfaced as a routing error at run time,
+// with the descriptor that caused it sitting in a file nobody had connected to
+// anything (GAP-133). A catalog is a promise; an entry that cannot be delivered
+// is rejected where it is written, not discovered where it is used.
+func (r *Registry) Register(d Descriptor) error {
+	if d.ID == "" {
+		return fmt.Errorf("model descriptor has no id")
+	}
+	if _, buildable := ProviderSpecFor(d.Provider); !buildable {
+		known := make([]string, 0, 5)
+		for _, spec := range KnownProviders() {
+			known = append(known, spec.Name)
+		}
+		return fmt.Errorf("model %q names provider %q, which the factory cannot build (known: %s)",
+			d.ID, d.Provider, strings.Join(known, ", "))
+	}
 	r.models[d.ID] = d
+	return nil
 }
 
 func (r *Registry) Get(id string) (Descriptor, bool) {
@@ -200,4 +222,79 @@ func EvaluateDrift(modelID string, baseline, current, tolerance float64) CanaryE
 		DriftDetected: drift,
 		EvaluatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}
+}
+
+// ProviderSpec is what the factory knows how to build, and it lives here rather
+// than in the adapters because this package is the leaf everything else imports.
+// The adapters read it to decide what they can build, which makes the catalog the
+// single place a provider is declared — the arrangement GAP-133 asked for and did
+// not have.
+//
+// The registry used to name providers of its own invention — "local",
+// "trusted-cloud", "external-cloud" — that appear in no factory anywhere, so a
+// descriptor could describe a provider that could not be constructed and nothing
+// noticed until a run tried to route to it.
+type ProviderSpec struct {
+	// Name is what the provider factory accepts.
+	Name string `json:"name"`
+	// Privacy is where a request's data goes when this provider is used. Both the
+	// data-class firewall and the gateway's LocalOnly filter read it, so it is
+	// declared once here instead of restated per descriptor.
+	Privacy Privacy `json:"privacy"`
+	// NeedsBaseURL reports that the provider is useless without an endpoint.
+	NeedsBaseURL bool `json:"needs_base_url,omitempty"`
+	// BuildableOffline is true for the deterministic providers, which need no
+	// endpoint and no key.
+	BuildableOffline bool `json:"buildable_offline,omitempty"`
+	// External marks a provider the catalog may describe but Prumo does not
+	// construct: a model served by something else in the deployment, reached
+	// through a proxy or a local runtime.
+	//
+	// It exists because "Prumo can build this" and "this is a real provider" are
+	// different questions. The catalog legitimately describes a model this
+	// process cannot dial — that is what a local ollama or an openai-compatible
+	// proxy is. What it may not describe is a provider that exists in no factory
+	// and no deployment, which is what the invented "local", "trusted-cloud" and
+	// "external-cloud" entries were.
+	External bool `json:"external,omitempty"`
+}
+
+// knownProviders is the single declaration of what can be built. The adapter
+// factory mirrors it; a name added there and not here is a provider the catalog
+// cannot describe, and a name here the factory cannot build is a provider the
+// catalog promised and cannot deliver.
+var knownProviders = []ProviderSpec{
+	{Name: "openai-compat", Privacy: ExternalPrivacy, NeedsBaseURL: true},
+	{Name: "anthropic", Privacy: ExternalPrivacy, NeedsBaseURL: true},
+	{Name: "opencode", Privacy: Local, BuildableOffline: true},
+	{Name: "fake", Privacy: Local, BuildableOffline: true},
+	{Name: "fake-tools", Privacy: Local, BuildableOffline: true},
+	// Provided by the deployment rather than constructed here. Naming them is
+	// what makes a typo in a model descriptor visible; leaving the set open would
+	// make every misspelling look like one of these.
+	{Name: "openai", Privacy: ExternalPrivacy, External: true},
+	{Name: "ollama", Privacy: Local, External: true},
+	{Name: "openrouter", Privacy: ExternalPrivacy, External: true},
+}
+
+// ExternalPrivacy is the privacy class for data that leaves the machine. It is
+// named apart from the ProviderSpec.External field so the two, which mean
+// unrelated things, are not confused when read together.
+const ExternalPrivacy Privacy = "external"
+
+// KnownProviders lists the providers the catalog can describe.
+func KnownProviders() []ProviderSpec {
+	out := make([]ProviderSpec, len(knownProviders))
+	copy(out, knownProviders)
+	return out
+}
+
+// ProviderSpecFor returns what is known about a provider name.
+func ProviderSpecFor(name string) (ProviderSpec, bool) {
+	for _, spec := range knownProviders {
+		if spec.Name == name {
+			return spec, true
+		}
+	}
+	return ProviderSpec{}, false
 }

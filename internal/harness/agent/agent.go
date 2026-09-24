@@ -197,6 +197,21 @@ type ModelRequest struct {
 	MaxTokens      int            `json:"max_tokens,omitempty"`
 	Temperature    float64        `json:"temperature,omitempty"`
 	Metadata       map[string]any `json:"metadata,omitempty"`
+	// NoTransparentFallback stops a gateway from silently moving this call to
+	// another provider.
+	//
+	// It is set once the run has applied an observable effect. A provider that
+	// fails mid-stream after the run has written a file or called an API cannot
+	// be swapped out transparently: the next provider has not seen the tool
+	// results and would re-plan from a different state. The run has to hand off
+	// explicitly instead, and a provider that has to guess whether swapping is
+	// safe will eventually get it wrong in the direction that duplicates an
+	// effect.
+	//
+	// It lives on the request because that is the contract between the runner
+	// and whatever answers it, and a gateway that could not see it would have to
+	// guess.
+	NoTransparentFallback bool `json:"no_transparent_fallback,omitempty"`
 }
 
 // ToolSpec advertises one callable tool to the model.
@@ -230,7 +245,18 @@ type ModelEvent struct {
 	Usage     *Usage         `json:"usage,omitempty"`
 	Error     string         `json:"error,omitempty"`
 	Retryable bool           `json:"retryable,omitempty"`
-	Finished  bool           `json:"finished,omitempty"`
+	// Quota marks a failure that is a quota or rate limit rather than a fault,
+	// and RetryAfter is the delay the provider asked for.
+	//
+	// These travel on the event because the adapter is where the status code and
+	// the headers still exist, and by the time a caller sees the failure it has
+	// only the message. Reducing the response to a string is what forced the
+	// gateway to guess the meaning from prose and discard the provider's own
+	// retry interval (GAP-108). The fields are plain so this package keeps not
+	// importing the adapters that fill them.
+	Quota      bool          `json:"quota,omitempty"`
+	RetryAfter time.Duration `json:"retry_after,omitempty"`
+	Finished   bool          `json:"finished,omitempty"`
 }
 
 // Usage normalizes token/cost telemetry.
