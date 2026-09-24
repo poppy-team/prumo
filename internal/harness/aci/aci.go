@@ -3,12 +3,15 @@
 package aci
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/raillen/prumo/internal/egress"
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -47,6 +50,26 @@ func stringProp(desc string) map[string]any {
 // The schemas here are the same contract the handlers implement. A tool whose
 // handler reads an argument has it in the schema; a tool that requires an
 // argument lists it as required.
+// KindTimeoutMS is how long one call to a tool of this kind may take.
+//
+// It lives with the tools rather than in the CLI registry because a timeout
+// declared only in the registry is metadata: it is displayed and enforced
+// nowhere. The execution path had no timeout at all — a `process.exec` that hung
+// held the run for as long as the process lived — and a number the registry
+// carried made the path look bounded (GAP-169). Both the descriptor and the
+// executor now read this, so the advertised number and the enforced number
+// cannot drift.
+func KindTimeoutMS(kind string) int {
+	switch kind {
+	case "destructive":
+		return 10_000
+	case "side-effecting":
+		return 60_000
+	default:
+		return 15_000
+	}
+}
+
 func Catalog() []Tool {
 	return []Tool{
 		{
@@ -232,6 +255,46 @@ func (e *Executor) cleanPath(p string, mustExist bool) (string, error) {
 	return safepath.Resolve(e.Root, p, mustExist)
 }
 
+// cappedBuffer keeps at most max bytes and counts everything written past it.
+//
+// A bytes.Buffer completes the whole stream first and is truncated afterwards, so
+// the cap bounded what the model saw and not what the process held. A command
+// that printed ten gigabytes exhausted memory before `bound` ever ran, and the
+// code read as though the request were bounded (GAP-170).
+type cappedBuffer struct {
+	kept      bytes.Buffer
+	max       int
+	discarded int64
+}
+
+func (c *cappedBuffer) Write(p []byte) (int, error) {
+	// Always report the full length written: the process is not being told its
+	// output was cut, because it is not — what is cut is what we keep. Returning
+	// a short count would make most writers fail the command with EPIPE and turn
+	// a truncation into a crash.
+	if room := c.max - c.kept.Len(); room > 0 {
+		if len(p) <= room {
+			c.kept.Write(p)
+		} else {
+			c.kept.Write(p[:room])
+			c.discarded += int64(len(p) - room)
+		}
+	} else {
+		c.discarded += int64(len(p))
+	}
+	return len(p), nil
+}
+
+func (c *cappedBuffer) truncated() bool { return c.discarded > 0 }
+
+func (c *cappedBuffer) finished() (string, bool) {
+	return c.kept.String(), c.discarded > 0
+}
+
+// Bytes returns the kept prefix. A non-empty discarded count means output was
+// dropped, which callers report rather than silently absorb.
+func (c *cappedBuffer) Bytes() []byte { return c.kept.Bytes() }
+
 func bound(s string, max int) (string, bool) {
 	if len(s) <= max {
 		return s, false
@@ -241,6 +304,14 @@ func bound(s string, max int) (string, bool) {
 
 // Execute runs one normalized ToolCall.
 func (e *Executor) Execute(ctx context.Context, call agent.ToolCall) (agent.ToolResult, error) {
+	// A tool gets its own deadline, derived from the run's context, so one tool
+	// that hangs cannot consume the whole run budget and no timeout needs wiring
+	// between the registry and the executor (GAP-169).
+	if bound, ok := toolTimeout(call.Name); ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, bound)
+		defer cancel()
+	}
 	res, err := e.execute(ctx, call)
 	if e.Redact != nil {
 		res.Output = e.Redact.Redact(res.Output)
@@ -262,46 +333,54 @@ func (e *Executor) Execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 // reported as 127, the conventional shell code for "not found", and a context
 // cancellation is 130, matching the shell's convention for SIGINT. Both are
 // failures; neither is silently success.
-func (e *Executor) runCommand(ctx context.Context, name string, args ...string) (output string, exitCode int) {
+func (e *Executor) runCommand(ctx context.Context, name string, args ...string) (output string, exitCode int, truncated bool) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = e.Root
-	data, err := cmd.CombinedOutput()
+	out := &cappedBuffer{max: e.OutputMax}
+	cmd.Stdout = out
+	cmd.Stderr = out
+	err := cmd.Run()
+	data, trunc := out.finished()
 	if err == nil {
-		return string(data), 0
+		return data, 0, trunc
 	}
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		return string(data), exitErr.ExitCode()
+		return data, exitErr.ExitCode(), trunc
 	}
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return string(data), 124
+		return data, 124, trunc
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
-		return string(data), 130
+		return data, 130, trunc
 	}
-	return string(data), 127
+	return data, 127, trunc
 }
 
 // runShell executes a shell command in the workspace root and reports the real
 // exit status, with the same contract as runCommand.
-func (e *Executor) runShell(ctx context.Context, script string) (output string, exitCode int) {
+func (e *Executor) runShell(ctx context.Context, script string) (output string, exitCode int, truncated bool) {
 	cmd := exec.CommandContext(ctx, "sh", "-c", script)
 	cmd.Dir = e.Root
-	data, err := cmd.CombinedOutput()
+	out := &cappedBuffer{max: e.OutputMax}
+	cmd.Stdout = out
+	cmd.Stderr = out
+	err := cmd.Run()
+	data, trunc := out.finished()
 	if err == nil {
-		return string(data), 0
+		return data, 0, trunc
 	}
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		return string(data), exitErr.ExitCode()
+		return data, exitErr.ExitCode(), trunc
 	}
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return string(data), 124
+		return data, 124, trunc
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
-		return string(data), 130
+		return data, 130, trunc
 	}
-	return string(data), 127
+	return data, 127, trunc
 }
 
 func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.ToolResult, error) {
@@ -318,7 +397,16 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 		if err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}
-		data, err := os.ReadFile(p)
+		// Read at most the cap plus one byte. os.ReadFile loaded the whole file
+		// into memory and the truncation happened afterwards, so the cap bounded
+		// what the model saw and not what the process held (GAP-170).
+		file, err := os.Open(p)
+		if err != nil {
+			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
+		}
+		defer file.Close()
+		reader := io.LimitReader(file, int64(e.OutputMax)+1)
+		data, err := io.ReadAll(reader)
 		if err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}
@@ -347,12 +435,14 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 		out, trunc := e.searchText(pattern)
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 0, Output: out, Truncated: trunc}, nil
 	case "git.status":
-		data, code := e.runCommand(ctx, "git", "status", "--short")
-		out, trunc := bound(data, e.OutputMax)
+		data, code, capped := e.runCommand(ctx, "git", "status", "--short")
+		out, tooLong := bound(data, e.OutputMax)
+		trunc := capped || tooLong
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "git.diff":
-		data, code := e.runCommand(ctx, "git", "diff", "--stat", "--", ".")
-		out, trunc := bound(data, e.OutputMax)
+		data, code, capped := e.runCommand(ctx, "git", "diff", "--stat", "--", ".")
+		out, tooLong := bound(data, e.OutputMax)
+		trunc := capped || tooLong
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "test.run", "process.exec":
 		bin := arg("command")
@@ -369,12 +459,14 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 		if err := CheckEgress(e.Egress, bin); err != nil {
 			return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: err.Error()}, nil
 		}
-		data, code := e.runShell(ctx, bin)
-		out, trunc := bound(data, e.OutputMax)
+		data, code, capped := e.runShell(ctx, bin)
+		out, tooLong := bound(data, e.OutputMax)
+		trunc := capped || tooLong
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "code.diagnostics":
-		data, code := e.runCommand(ctx, "go", "vet", "./...")
-		out, trunc := bound(data, e.OutputMax)
+		data, code, capped := e.runCommand(ctx, "go", "vet", "./...")
+		out, tooLong := bound(data, e.OutputMax)
+		trunc := capped || tooLong
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: code, Output: out, Truncated: trunc}, nil
 	case "edit.patch":
 		return e.editPatch(call, arg), nil
@@ -394,4 +486,16 @@ func (e *Executor) execute(ctx context.Context, call agent.ToolCall) (agent.Tool
 	default:
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: "unknown tool " + call.Name}, nil
 	}
+}
+
+// toolTimeout looks up the execution bound for a tool name from the catalogue.
+// The catalogue is the same source the gateway descriptors are derived from, so
+// the number a caller reads and the number that is enforced cannot drift.
+var toolTimeout = func(name string) (time.Duration, bool) {
+	for _, tool := range Catalog() {
+		if tool.Name == name {
+			return time.Duration(KindTimeoutMS(tool.Kind)) * time.Millisecond, true
+		}
+	}
+	return 0, false
 }

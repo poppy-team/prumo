@@ -62,15 +62,10 @@ func RegisterACI(r *Registry) {
 	}
 }
 
+// timeoutFor reads the same function the executor enforces, so the advertised
+// bound and the enforced bound are one number (GAP-169).
 func timeoutFor(tool aci.Tool) int {
-	switch tool.Kind {
-	case "destructive":
-		return 10000
-	case "side-effecting":
-		return 60000
-	default:
-		return 15000
-	}
+	return aci.KindTimeoutMS(tool.Kind)
 }
 
 func outputLimitFor(tool aci.Tool) int {

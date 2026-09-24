@@ -5,7 +5,6 @@
 package aci
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -42,6 +41,9 @@ type CLIRunner struct {
 	// ExtraArgs inject runtime flags after "run" (e.g. --runtime=runsc
 	// for gVisor-backed execution where the daemon offers it).
 	ExtraArgs []string
+	// OutputMax bounds what a container may print before it is discarded. Zero
+	// uses defaultContainerOutputMax.
+	OutputMax int
 }
 
 func (r CLIRunner) Available() bool {
@@ -106,6 +108,10 @@ func containerArgs(runtime, root string, spec ContainerSpec) []string {
 	return args
 }
 
+// defaultContainerOutputMax is the ceiling for a container whose runner was
+// constructed without one.
+const defaultContainerOutputMax = 204_800
+
 func (r CLIRunner) Run(ctx context.Context, root string, spec ContainerSpec) ([]byte, int, error) {
 	if !r.Available() {
 		return nil, 1, fmt.Errorf("container runtime %q unavailable", r.Runtime)
@@ -113,18 +119,26 @@ func (r CLIRunner) Run(ctx context.Context, root string, spec ContainerSpec) ([]
 	spec.RuntimeArgs = append(append([]string{}, r.ExtraArgs...), spec.RuntimeArgs...)
 	args := containerArgs(r.Runtime, root, spec)
 	cmd := exec.CommandContext(ctx, r.Runtime, args...)
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
+	// The container's own stdout is bounded while it streams. A buffer that
+	// completed first was truncated afterwards, so a container printing
+	// gigabytes exhausted the host before the cap did anything (GAP-170).
+	limit := r.OutputMax
+	if limit <= 0 {
+		limit = defaultContainerOutputMax
+	}
+	out := &cappedBuffer{max: limit}
+	cmd.Stdout = out
+	cmd.Stderr = out
 	err := cmd.Run()
+	data := out.Bytes()
 	exit := 0
 	if err != nil {
 		exit = 1
 		if ctx.Err() != nil {
-			return buf.Bytes(), exit, ctx.Err()
+			return data, exit, ctx.Err()
 		}
 	}
-	return buf.Bytes(), exit, nil
+	return data, exit, nil
 }
 
 // FakeRunner records specs for deterministic tests.

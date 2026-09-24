@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -210,4 +211,97 @@ func (c *capturingModel) Stream(ctx context.Context, req agent.ModelRequest) (<-
 	ch <- agent.ModelEvent{Kind: agent.EventCompleted, RequestID: req.RequestID, Finished: true}
 	close(ch)
 	return ch, nil
+}
+
+// The reference was joined to the workspace with filepath.Join and whatever came
+// out was read. "@../../etc/passwd" is a legal image reference by the old rules,
+// and joining it lands outside the workspace — so a run could be made to read
+// anything the agent can reach and inline it into a model request. Absolute
+// paths were accepted outright (GAP-113).
+
+func TestAnImageReferenceCannotEscapeTheWorkspace(t *testing.T) {
+	for _, ref := range []string{
+		"../outside.png",
+		"../../outside.png",
+		"a/../../outside.png",
+		"..%2Foutside.png",
+	} {
+		t.Run(ref, func(t *testing.T) {
+			ws := t.TempDir()
+			// The target exists just outside the workspace, so the only thing
+			// stopping it is containment — not a missing file.
+			outside := filepath.Join(filepath.Dir(ws), "outside.png")
+			if err := os.WriteFile(outside, []byte("not really a png"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Remove(outside)
+			sub := filepath.Join(ws, "sub")
+			if err := os.MkdirAll(sub, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(sub, "ok.png"), []byte("png"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			m := agent.Message{ID: "m1", Role: agent.RoleUser, Content: "look at @" + ref + " and @sub/ok.png"}
+			out, err := ResolveReferences([]agent.Message{m}, ws, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, got := range out {
+				for _, part := range got.Parts {
+					if strings.Contains(part.Path, "outside") || filepath.IsAbs(part.Path) && !strings.HasPrefix(part.Path, ws) {
+						t.Fatalf("a reference outside the workspace was attached: %+v", part)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestAnAbsoluteImageReferenceIsNotAttached(t *testing.T) {
+	ws := t.TempDir()
+	secret := filepath.Join(t.TempDir(), "secret.png")
+	if err := os.WriteFile(secret, []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := agent.Message{ID: "m1", Role: agent.RoleUser, Content: "look at @" + secret}
+	out, err := ResolveReferences([]agent.Message{m}, ws, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, got := range out {
+		for _, part := range got.Parts {
+			if part.Type == "image" || part.Path == secret {
+				t.Fatalf("an absolute path outside the workspace was attached: %+v", part)
+			}
+		}
+	}
+}
+
+func TestThePerImageLimitIsNotTheRequestLimit(t *testing.T) {
+	// The cap that existed bounded one image, so four images under it were four
+	// times the budget — while the code read as though the request was bounded.
+	ws := t.TempDir()
+	// One megabyte each, and the aggregate is 32MB: write enough of them to cross
+	// the aggregate while none crosses the per-image cap.
+	var content strings.Builder
+	content.WriteString("x")
+	content.WriteString(strings.Repeat("x", 1<<20))
+	var refs []string
+	for i := range 40 {
+		name := fmt.Sprintf("img%02d.png", i)
+		if err := os.WriteFile(filepath.Join(ws, name), []byte(content.String()), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		refs = append(refs, name)
+	}
+	var text strings.Builder
+	text.WriteString("look at ")
+	for _, r := range refs {
+		text.WriteString("@" + r + " ")
+	}
+	m := agent.Message{ID: "m1", Role: agent.RoleUser, Content: text.String()}
+	if _, err := ResolveReferences([]agent.Message{m}, ws, true); err == nil {
+		t.Fatal("40 images of 1MB each were accepted; the per-image cap was acting as a request cap")
+	}
 }
