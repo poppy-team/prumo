@@ -33,9 +33,7 @@ func (c *Connector) Contract() connectors.Contract {
 		Version:       protocol.CLIVersion,
 		ProtocolRange: ">=0.5.0 <0.6.0",
 		Capabilities: []string{
-			connectors.CapAdvise,
-			connectors.CapCommands,
-			connectors.CapRestrictTools,
+			connectors.CapIsolateSubagents,
 			connectors.CapSubagents,
 		},
 		Enforcement: connectors.EnforcementStandard,
@@ -138,6 +136,10 @@ This project uses Prumo v0.5.
 		CreatedPaths:   created,
 		PreservedPaths: preserved,
 		ManifestPath:   configPath,
+		// Derived from the files just written and the config just built, so the
+		// declaration in Contract() is checkable against what this compile
+		// actually delivered (GAP-142).
+		Implemented: connectors.DeriveImplemented(config, created),
 	}, nil
 }
 

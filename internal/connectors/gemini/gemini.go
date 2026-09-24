@@ -32,16 +32,14 @@ func (c *Connector) Contract() connectors.Contract {
 		Version:       protocol.CLIVersion,
 		ProtocolRange: ">=0.5.0 <0.6.0",
 		Capabilities: []string{
-			connectors.CapAdvise,
 			connectors.CapCommands,
-			connectors.CapSessionHooks,
 			connectors.CapIsolateSubagents,
+			connectors.CapSubagents,
 		},
 		Enforcement: connectors.EnforcementStandard,
-		Hooks: []string{
-			connectors.HookSessionStart,
-			connectors.HookSessionEnd,
-		},
+		// No hooks are written, so none are declared. They used to declare
+		// session hooks that no generated file contained (GAP-142).
+		Hooks: []string{},
 		Install: map[string]any{
 			"directory": ".gemini",
 			"config":    ".gemini/config.json",
@@ -142,6 +140,10 @@ Do not scan the whole codebase unless explicitly requested.
 		Target:       "gemini",
 		CreatedPaths: created,
 		ManifestPath: configPath,
+		// Derived from the files just written and the config just built, so the
+		// declaration in Contract() is checkable against what this compile
+		// actually delivered (GAP-142).
+		Implemented: connectors.DeriveImplemented(config, created),
 	}, nil
 }
 

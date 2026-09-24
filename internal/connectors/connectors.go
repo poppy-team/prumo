@@ -17,6 +17,9 @@ const (
 	CapNativePlugin     = "native_plugin"
 	CapCommands         = "commands"
 	CapSubagents        = "subagents"
+	// CapSkills is present when the connector wrote skill files into the
+	// target's own skills directory.
+	CapSkills = "skills"
 )
 
 // Standard enforcement levels.
@@ -75,9 +78,23 @@ type CompileResult struct {
 	// untouched. Reported rather than silently dropped, for the same reason as on
 	// InstallResult: an install that quietly skipped your AGENTS.md looks
 	// identical to one that wrote it (GAP-141).
-	PreservedPaths []string       `json:"preserved_paths,omitempty"`
-	ManifestPath   string         `json:"manifest_path"`
-	Metadata       map[string]any `json:"metadata,omitempty"`
+	PreservedPaths []string `json:"preserved_paths,omitempty"`
+	ManifestPath   string   `json:"manifest_path"`
+	// Implemented is what this compilation actually wrote, derived from the
+	// artifacts rather than copied from Contract().Capabilities.
+	//
+	// A connector's capability list is what a caller plans against, and a list
+	// hand-maintained next to the code that generates the artifacts drifts the
+	// first time someone adds a feature and forgets the declaration. Reporting
+	// what was generated makes the two comparable, and a test can require that
+	// they are the same (GAP-142).
+	Implemented []string `json:"implemented,omitempty"`
+	// ImplementedHooks is what this compilation wired up, derived from the hooks
+	// file it wrote. It is the same check as Implemented, for the same reason: a
+	// hook declared in a contract and a hook present in the generated config are
+	// two claims, and only one of them runs (GAP-142).
+	ImplementedHooks []string       `json:"implemented_hooks,omitempty"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
 }
 
 // InstallOptions configures installation.

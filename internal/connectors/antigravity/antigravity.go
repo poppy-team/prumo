@@ -34,12 +34,9 @@ func (c *Connector) Contract() connectors.Contract {
 		Version:       protocol.CLIVersion,
 		ProtocolRange: ">=0.5.0 <0.6.0",
 		Capabilities: []string{
-			connectors.CapAdvise,
-			connectors.CapCommands,
-			connectors.CapSessionHooks,
 			connectors.CapIsolateSubagents,
 			connectors.CapSubagents,
-			connectors.CapRestrictTools,
+			connectors.CapSkills,
 		},
 		Enforcement: connectors.EnforcementStandard,
 		Hooks: []string{
@@ -252,6 +249,11 @@ Verify outputs against quality checklists before declaring completion.
 		CreatedPaths:   created,
 		PreservedPaths: preserved,
 		ManifestPath:   configPath,
+		// Derived from the files just written and the config just built, so the
+		// declaration in Contract() is checkable against what this compile
+		// actually delivered (GAP-142).
+		Implemented:      connectors.DeriveImplemented(config, created),
+		ImplementedHooks: connectors.DeriveImplementedHooks(hooks),
 		Metadata: map[string]any{
 			"rules_count":  len(rules),
 			"skills_count": len(skills),

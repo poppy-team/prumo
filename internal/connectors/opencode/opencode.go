@@ -44,6 +44,7 @@ func (c *Connector) Contract() connectors.Contract {
 			connectors.CapNativePlugin,
 			connectors.CapCommands,
 			connectors.CapSubagents,
+			connectors.CapSkills,
 		},
 		Enforcement: connectors.EnforcementStrict,
 		Hooks: []string{
@@ -352,6 +353,13 @@ Risk Level: low
 		Target:       "opencode",
 		CreatedPaths: created,
 		ManifestPath: configPath,
+		// Derived from what was just written, not copied from the declaration.
+		// The config carries the hook map, the plugin exists, the guard policy
+		// exists, subagents and skills were written, and the commands file was
+		// written — so those are the capabilities this compile actually
+		// delivered (GAP-142).
+		Implemented:      connectors.DeriveImplemented(opencodeConfig, created),
+		ImplementedHooks: connectors.DeriveImplementedHooksFromConfig(opencodeConfig),
 		Metadata: map[string]any{
 			"primary_agent": prumoAgentPath,
 			"plugin":        pluginPath,
