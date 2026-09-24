@@ -178,14 +178,15 @@ func (s *Service) Sync(opts Options) (*Result, error) {
 		}
 		result.InstalledSkills = append(result.InstalledSkills, skillID)
 
-		// Calculate checksum of installed skill manifest
-		destManifest := filepath.Join(destSkillDir, "manifest.json")
-		manifestData, err := os.ReadFile(destManifest)
-		var sum string
-		if err == nil {
-			sum = packages.Checksum(manifestData)
-		} else {
-			sum = "unknown"
+		// The checksum covers the whole installed tree, not the manifest.
+		//
+		// It covered only manifest.json, so a changed SKILL.md, a replaced
+		// script or an edited reference left the lock file reporting exactly the
+		// same hash. The lock said "this is the version you asked for" about a
+		// package whose contents had changed underneath it (GAP-147).
+		sum, err := packages.ChecksumTree(destSkillDir)
+		if err != nil {
+			return nil, fmt.Errorf("checksumming installed skill %q: %w", skillID, err)
 		}
 
 		result.LockPackages = append(result.LockPackages, packages.Resolved{
@@ -223,41 +224,127 @@ func (s *Service) downloadSkill(baseURL, skillID, destDir string) error {
 		client = http.DefaultClient
 	}
 
-	files := []string{
-		"manifest.json",
-		"SKILL.md",
-	}
+	// A skill package is a directory, not two files. Only manifest.json and
+	// SKILL.md were fetched, so every check, script, reference, template and
+	// example was silently dropped: the skill installed, the version matched,
+	// and the thing that does the work was missing (GAP-147).
+	//
+	// The manifest is read first and its declared resources decide what else
+	// to fetch, so the file list comes from the package rather than from a list
+	// hard-coded here that would drift the first time a skill grew a folder.
+	root := strings.TrimRight(baseURL, "/") + "/src/prumo/resources/workforce/skills/" + skillID
 
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return err
 	}
+	if err := fetchFile(client, root+"/manifest.json", filepath.Join(destDir, "manifest.json")); err != nil {
+		return err
+	}
+	if err := fetchFile(client, root+"/SKILL.md", filepath.Join(destDir, "SKILL.md")); err != nil {
+		return err
+	}
 
-	for _, file := range files {
-		url := fmt.Sprintf("%s/src/prumo/resources/workforce/skills/%s/%s", strings.TrimRight(baseURL, "/"), skillID, file)
-		resp, err := client.Get(url)
+	// Read it back so a truncated or empty download is caught here rather than
+	// at the first command that tries to parse it.
+	if _, err := os.ReadFile(filepath.Join(destDir, "manifest.json")); err != nil {
+		return fmt.Errorf("skill %q manifest unreadable after download: %w", skillID, err)
+	}
+	for _, dir := range skillResourceDirs {
+		files, err := listRemoteDir(client, root+"/"+dir)
 		if err != nil {
-			return err
+			// A skill without a references/ directory is normal; a server that
+			// cannot be asked is not. The difference is whether the directory
+			// exists, and a 404 is the only honest evidence of that.
+			if isNotFound(err) {
+				continue
+			}
+			return fmt.Errorf("listing %s of skill %q: %w", dir, skillID, err)
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("remote responded with HTTP %d for %s", resp.StatusCode, url)
-		}
-
-		destPath := filepath.Join(destDir, file)
-		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
-			return err
-		}
-		out, err := os.Create(destPath)
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(out, resp.Body)
-		out.Close()
-		if err != nil {
-			return err
+		for _, name := range files {
+			// A name from a remote listing is not a path this process should
+			// join blindly.
+			if name == "" || strings.ContainsAny(name, `/\\`) || name == "." || name == ".." {
+				return fmt.Errorf("remote listed an unusable file name %q in %s of skill %q", name, dir, skillID)
+			}
+			dest := filepath.Join(destDir, dir, name)
+			if err := fetchFile(client, root+"/"+dir+"/"+name, dest); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+// skillResourceDirs are the directories a Skill v3 package carries beside its
+// manifest and SKILL.md. They are listed here because a package's shape is
+// fixed by the format, not by whichever skill happens to exist; a directory that
+// is absent is not an error.
+var skillResourceDirs = []string{"checks", "scripts", "references", "templates", "examples"}
+
+// fetchFile downloads one file, closing the body before returning.
+//
+// The old loop deferred the close, so a package with N files held N open
+// response bodies until the function returned — and the same pattern in a
+// caller that downloaded a whole catalogue would exhaust the process's file
+// descriptors.
+func fetchFile(client *http.Client, url, dest string) error {
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("remote responded with HTTP %d for %s", resp.StatusCode, url)
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		return err
+	}
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
+}
+
+// listRemoteDir asks a remote server for the files in a skill directory.
+//
+// It reads a directory listing rather than guessing names, because a skill's
+// contents are the package author's business. A server that serves files but no
+// listing is reported as "cannot ask" rather than as "empty", so a sync never
+// silently installs a package with its resources left behind.
+func listRemoteDir(client *http.Client, url string) ([]string, error) {
+	resp, err := client.Get(url + "/index.json")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errNotFound{url}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("remote responded with HTTP %d for %s", resp.StatusCode, url+"/index.json")
+	}
+	var doc struct {
+		Files []string `json:"files"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&doc); err != nil {
+		return nil, err
+	}
+	return doc.Files, nil
+}
+
+// errNotFound marks a resource the server does not have.
+type errNotFound struct{ url string }
+
+func (e errNotFound) Error() string { return "not found: " + e.url }
+
+func isNotFound(err error) bool {
+	var notFound errNotFound
+	return errors.As(err, &notFound)
 }
 
 func copyDir(source, target string) error {
