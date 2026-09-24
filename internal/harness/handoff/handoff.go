@@ -1,5 +1,21 @@
 // Package handoff implements typed pointer-first Handoff v2: refs, not
 // transcripts. Cross-provider continuation never depends on transcripts.
+//
+// # What a Bundle is today
+//
+// A serialisation format. Build assembles one from canonical state, Validate
+// checks that it carries the four required refs, and `prumo agent handoff`
+// prints it and discards it. There is no LoadBundle and no ParseBundle anywhere
+// in the repository: nothing reads a bundle back. It is write-only (GAP-135).
+//
+// What a protocol would add is dispatch — resolving `to` to a running agent and
+// delivering the bundle — and continuation — the receiving side resuming the run.
+// Neither exists, and `agent.Handoff`'s HandoffTransferred status, which a
+// dispatch would set, is assigned by no code.
+//
+// That is a decision, not an oversight. It is recorded here because the package
+// name and the type name both read like a live protocol, and a reader should
+// not need a grep to find out.
 package handoff
 
 import (
@@ -11,6 +27,8 @@ import (
 )
 
 // Bundle is the canonical handoff unit.
+//
+// It is a format, not a message in flight. Nothing consumes one (GAP-135).
 type Bundle struct {
 	Handoff agent.Handoff `json:"handoff"`
 	// Required refs: run, checkpoint, context manifest, workspace rev.
