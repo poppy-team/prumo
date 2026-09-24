@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -358,5 +359,87 @@ func TestReasoningTokensAreVisibleButNotCountedTwice(t *testing.T) {
 	// so the cost is the whole call and not the call plus 400 tokens again.
 	if diff := usage.CostUSD - 0.0075; diff > 0.000001 || diff < -0.000001 {
 		t.Errorf("cost = %g, want 0.0075: reasoning was billed twice", usage.CostUSD)
+	}
+}
+
+// A stream that stops early is not a stream that finished. Both endpoints
+// signal completion explicitly — [DONE] and message_stop — and the loop simply
+// ending means the connection was cut, the read failed, or a line exceeded the
+// scanner's buffer. Reporting completion in that case records a truncated answer
+// as a finished run, with nothing anywhere saying the tail is missing (GAP-131).
+
+// truncatedServer sends a partial stream and promises more bytes than it sends,
+// so the client reads an unexpected EOF partway through.
+func truncatedServer(t *testing.T, prefix, tail string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		body := prefix + tail
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)+512))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(prefix))
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		if hj, ok := w.(http.Hijacker); ok {
+			conn, _, err := hj.Hijack()
+			if err == nil {
+				_ = conn.Close()
+			}
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestATruncatedOpenAIStreamIsAnErrorNotACompletion(t *testing.T) {
+	srv := truncatedServer(t,
+		`data: {"choices":[{"delta":{"content":"partial answer"}}]}`+"\n\n",
+		"data: [DONE]\n\n")
+
+	p := NewOpenAICompatWithPolicy(srv.URL, "k", "gpt-4o", LocalDevelopmentDestinationPolicy())
+	ch, err := p.Stream(context.Background(), agent.ModelRequest{
+		RequestID: "r1",
+		Messages:  []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertNoCompletion(t, ch)
+}
+
+func TestATruncatedAnthropicStreamIsAnErrorNotACompletion(t *testing.T) {
+	srv := truncatedServer(t,
+		"event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n"+
+			"event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"partial\"}}\n\n",
+		"event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+
+	p := NewAnthropicWithPolicy(srv.URL, "k", "claude-3-5-sonnet", LocalDevelopmentDestinationPolicy())
+	ch, err := p.Stream(context.Background(), agent.ModelRequest{
+		RequestID: "r1",
+		Messages:  []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertNoCompletion(t, ch)
+}
+
+func assertNoCompletion(t *testing.T, ch <-chan agent.ModelEvent) {
+	t.Helper()
+	var sawError, sawCompletion bool
+	for ev := range ch {
+		switch ev.Kind {
+		case agent.EventError:
+			sawError = true
+		case agent.EventCompleted:
+			sawCompletion = true
+		}
+	}
+	if sawCompletion {
+		t.Error("a cut stream must not be reported as a completed run")
+	}
+	if !sawError {
+		t.Error("a cut stream must report why it ended; silence is how a partial answer becomes a finished one")
 	}
 }

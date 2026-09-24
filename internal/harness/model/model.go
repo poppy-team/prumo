@@ -565,7 +565,19 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 				}
 			}
 		}
-		ch <- agent.ModelEvent{Kind: agent.EventCompleted, RequestID: req.RequestID, Finished: true}
+		// Reaching here without having seen [DONE] means the stream was cut: a
+		// connection that dropped, a read that failed, or a line past the
+		// scanner's buffer. The loop ending is not the provider saying it
+		// finished — only [DONE] is — so reporting completion here would record a
+		// truncated answer as a finished run, with no indication that the tail is
+		// missing (GAP-131).
+		if err := sc.Err(); err != nil {
+			ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+				Error: "provider stream ended before completion: " + err.Error(), Retryable: true}
+			return
+		}
+		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+			Error: "provider stream ended without a completion marker", Retryable: true}
 	}()
 	return ch, nil
 }

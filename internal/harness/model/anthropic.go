@@ -401,7 +401,17 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, mode
 	for idx := range tools {
 		flush(idx)
 	}
-	ch <- agent.ModelEvent{Kind: agent.EventCompleted, RequestID: req.RequestID, Finished: true}
+	// Reaching here without message_stop means the stream was cut. This endpoint
+	// signals completion explicitly, so the loop simply ending is not the provider
+	// saying it finished, and reporting completion would record a truncated answer
+	// as a finished run (GAP-131).
+	if err := sc.Err(); err != nil {
+		emit(agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+			Error: "provider stream ended before completion: " + err.Error(), Retryable: true})
+		return
+	}
+	emit(agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+		Error: "provider stream ended without a completion marker", Retryable: true})
 }
 
 // anthropicUsageBlock is the usage report this endpoint returns, named so the

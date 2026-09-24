@@ -666,13 +666,27 @@ func (r *Runner) Step(ctx context.Context) error {
 				// while the reservation was held at full size (GAP-130).
 				settle(float64(ev.Usage.TotalTokens()), ev.Usage.CostUSD)
 			}
-			if ev.Kind == agent.EventError && !ev.Retryable {
+			if ev.Kind == agent.EventError {
+				// Any error ends the turn, retryable or not.
+				//
+				// A retryable error is one the gateway would normally retry, but
+				// the gateway is not in this path yet (GAP-102), so the runtime is
+				// handed the raw provider. Falling through on a retryable error
+				// therefore meant a 429, a 500 or a stream cut mid-answer was
+				// swallowed: the loop advanced as though the model had finished,
+				// leaving a partial reply in the transcript and a run recorded as
+				// successful. The flag is kept on the error so the layer that does
+				// retry can still tell the two apart (GAP-131).
+				//
 				// A failed call spent nothing that will be reported, so the
 				// reservation is released rather than left held against a limit
 				// that was never crossed.
 				settle(0, 0)
 				r.State.Phase = agent.PhaseFailed
 				r.State.StopReason = ev.Error
+				if ev.Retryable {
+					return &retryableModelError{cause: fmt.Errorf("model error: %s", ev.Error)}
+				}
 				return fmt.Errorf("model error: %s", ev.Error)
 			}
 		}
@@ -1006,4 +1020,25 @@ func toolObservation(turnID string, call agent.ToolCall, res agent.ToolResult) a
 		obs.Error = reason
 	}
 	return obs
+}
+
+// retryableModelError marks a model failure an upper layer may retry. The
+// runtime ends the turn either way — it has no retry policy of its own and
+// continuing past a failed call is what turns a partial answer into a successful
+// run — but it says which failures were the provider's fault and which were not,
+// so the caller does not have to parse the message.
+type retryableModelError struct {
+	cause error
+}
+
+func (e *retryableModelError) Error() string { return e.cause.Error() }
+func (e *retryableModelError) Unwrap() error { return e.cause }
+
+// Retryable reports whether the model failure may be retried.
+func (e *retryableModelError) Retryable() bool { return true }
+
+// Retryable reports whether err is a model failure worth retrying.
+func Retryable(err error) bool {
+	r, ok := err.(interface{ Retryable() bool })
+	return ok && r.Retryable()
 }

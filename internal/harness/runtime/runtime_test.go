@@ -348,3 +348,77 @@ func TestCheckpointResume(t *testing.T) {
 		t.Fatalf("resumed state should be terminal-ish, got %s", r2.State.Phase)
 	}
 }
+
+// A provider failure that the runtime swallows is worse than one it reports: the
+// loop advances as though the model finished, so a partial reply stays in the
+// transcript and the run is recorded as a success. The runtime used to fail only
+// on non-retryable errors, on the assumption that something above would retry the
+// rest — but the gateway is not in this path (GAP-102), so a 429, a 500 or a
+// stream cut mid-answer was swallowed whole (GAP-131).
+
+func TestARetryableProviderErrorFailsTheTurnInsteadOfBeingSwallowed(t *testing.T) {
+	fake := model.NewFake(map[string][]model.ScriptStep{"*": {
+		{Kind: "text", Text: "half an answer"},
+		{Kind: "error", Error: "overloaded", Retryable: true},
+	}})
+	r := NewRunner(Services{
+		Models: fake, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-err", "S1")
+	r.MaxTurns = 2
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	err := r.RunUntilDone(context.Background())
+	if err == nil {
+		t.Fatal("a run whose model call failed must not finish as a success")
+	}
+	if r.State.Phase != agent.PhaseFailed {
+		t.Fatalf("phase = %s, want failed", r.State.Phase)
+	}
+	if !Retryable(err) {
+		t.Errorf("the error must still be marked retryable so a caller can tell the provider's fault from ours: %v", err)
+	}
+	if !strings.Contains(err.Error(), "overloaded") {
+		t.Errorf("the failure must name what the provider said, got %v", err)
+	}
+}
+
+func TestANonRetryableProviderErrorIsNotMarkedRetryable(t *testing.T) {
+	fake := model.NewFake(map[string][]model.ScriptStep{"*": {
+		{Kind: "error", Error: "invalid tool call", Retryable: false},
+	}})
+	r := NewRunner(Services{
+		Models: fake, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-err2", "S1")
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	err := r.RunUntilDone(context.Background())
+	if err == nil {
+		t.Fatal("a failed model call must fail the run")
+	}
+	if Retryable(err) {
+		t.Errorf("a provider error that is not retryable must not claim to be: %v", err)
+	}
+}
+
+func TestAPartialReplyIsNotKeptAsThoughItWereTheAnswer(t *testing.T) {
+	// The turn failed, so the half-answer must not be sitting in the transcript
+	// labelled as the model's completed reply. Anything that reads the messages
+	// later would otherwise present it as the result.
+	fake := model.NewFake(map[string][]model.ScriptStep{"*": {
+		{Kind: "text", Text: "half an answer"},
+		{Kind: "error", Error: "overloaded", Retryable: true},
+	}})
+	r := NewRunner(Services{
+		Models: fake, Tools: &stubTools{}, Perms: perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints: checkpoint.New(t.TempDir()),
+	}, "R-err3", "S1")
+	r.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "x"}}
+	if err := r.RunUntilDone(context.Background()); err == nil {
+		t.Fatal("the run must fail")
+	}
+	for _, m := range r.Messages {
+		if m.Role == agent.RoleAgent && m.Content == "half an answer" {
+			t.Error("a failed turn's partial text must not be recorded as a finished agent reply")
+		}
+	}
+}
