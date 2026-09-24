@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sync"
 )
 
 // RemoteConfig enables the TCP+TLS listener. Empty ListenAddr disables it.
@@ -80,24 +81,53 @@ func (s *Server) handleRemote(conn net.Conn, token string) {
 	sc := bufio.NewScanner(conn)
 	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
 	w := bufio.NewWriter(conn)
+	// The request loop and the subscription goroutine both write to this
+	// connection. The local handler serialises them; a remote one that did not
+	// would interleave two writers into one bufio.Writer (GAP-166).
+	var writeMu sync.Mutex
+	safeWrite := func(v map[string]any) error {
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		return writeMsg(w, v)
+	}
 	authed := false
+	var stop replacedSubscription
+	// The stream outlives the request loop, so it needs a context of its own
+	// that a closed connection cancels.
+	remoteCtx, cancelRemote := context.WithCancel(s.rootCtx)
+	defer cancelRemote()
+	defer func() {
+		if stop != nil {
+			stop()
+		}
+	}()
 	for sc.Scan() {
 		var msg map[string]any
 		if err := json.Unmarshal(sc.Bytes(), &msg); err != nil {
-			writeMsg(w, map[string]any{"ok": false, "error": "invalid json"})
+			_ = safeWrite(map[string]any{"ok": false, "error": "invalid json"})
 			continue
 		}
 		if !authed {
 			got, _ := msg["auth"].(string)
 			if subtleCompare(got, token) {
 				authed = true
-				writeMsg(w, map[string]any{"ok": true, "authed": true})
+				_ = safeWrite(map[string]any{"ok": true, "authed": true})
 				continue
 			}
-			writeMsg(w, map[string]any{"ok": false, "error": "unauthorized"})
+			_ = safeWrite(map[string]any{"ok": false, "error": "unauthorized"})
 			return
 		}
-		writeMsg(w, s.dispatch(msg))
+		if str(msg, "op") == "subscribe" {
+			// A subscription is a stream, not a reply. Dispatching it answered
+			// the request with one result and closed the connection, so a client
+			// that subscribed over TCP got a single event and then silence
+			// (GAP-166).
+			stop.replace(s, remoteCtx, msg, safeWrite)
+			continue
+		}
+		if err := safeWrite(s.dispatch(msg)); err != nil {
+			return
+		}
 	}
 }
 

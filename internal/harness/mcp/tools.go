@@ -18,6 +18,21 @@ type Adapter struct {
 	Server   toolgateway.MCPServerDescriptor
 	ReadOnly []string // tool names safe to mark read-only
 	SafeMode bool
+	// Destructive names tools that must be vetoed rather than gated, for
+	// operators whose server does not declare annotations. It is not the
+	// default because a name typed into a config file is a weaker claim than
+	// one the server makes about itself.
+	Destructive []string
+}
+
+// isDestructive reports whether the operator named this tool destructive.
+func (a Adapter) isDestructive(name string) bool {
+	for _, n := range a.Destructive {
+		if n == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (a Adapter) isReadOnly(name string) bool {
@@ -29,10 +44,24 @@ func (a Adapter) isReadOnly(name string) bool {
 	return false
 }
 
-func (a Adapter) descriptorFor(name, desc string) toolgateway.Descriptor {
+// descriptorFor classifies one server tool.
+//
+// The classification is the server's, not a guess. A tool that declares itself
+// read-only is read-only; a tool that declares itself destructive is
+// destructive, which is the kind the gateway vetoes. Neither hint is taken on
+// faith in the permissive direction: a server that claims read-only on a tool
+// that writes is the server's problem to detect, not ours to prevent, but a tool
+// with no hint at all is treated as side-effecting rather than as safe
+// (GAP-157).
+func (a Adapter) descriptorFor(name, desc string, annotations *ToolAnnotations) toolgateway.Descriptor {
 	kind := toolgateway.SideEffecting
-	if a.isReadOnly(name) {
+	switch {
+	case a.isDestructive(name), annotations != nil && annotations.DestructiveHint:
+		kind = toolgateway.Destructive
+	case a.isReadOnly(name), annotations != nil && annotations.ReadOnlyHint:
 		kind = toolgateway.ReadOnly
+	case annotations != nil && annotations.IdempotentHint:
+		kind = toolgateway.Idempotent
 	}
 	return toolgateway.Descriptor{ID: name, Version: 1, Description: desc, Kind: kind, Trust: "untrusted"}
 }
@@ -63,8 +92,36 @@ func allowedName(list []string, name string) bool {
 }
 
 // KindOf implements ToolExecutor introspection.
+//
+// It asks the server what the tool is, because the allowlist cannot answer:
+// a destructive tool the operator never allowlisted was SideEffecting, and the
+// veto the gateway performs on destructive tools had no input that could reach
+// it (GAP-157). A server that cannot be asked falls back to the allowlist, and
+// the fallback is SideEffecting — not ReadOnly, which would be the permissive
+// direction to fail in.
 func (a Adapter) KindOf(name string) string {
-	return string(a.descriptorFor(name, "").Kind)
+	return string(a.descriptorFor(name, "", a.annotationsFor(name)).Kind)
+}
+
+// annotationsFor asks the server what it declared about one tool.
+//
+// The list is fetched per call rather than cached: an Adapter is a value, and
+// caching would need shared state and a way to invalidate it. tools/list is
+// cheap next to a tool call, and a wrong answer here is a wrong veto.
+func (a Adapter) annotationsFor(name string) *ToolAnnotations {
+	if a.Client == nil {
+		return nil
+	}
+	tools, err := a.Client.List(context.Background())
+	if err != nil {
+		return nil
+	}
+	for i := range tools {
+		if tools[i].Name == name {
+			return tools[i].Annotations
+		}
+	}
+	return nil
 }
 
 // OperationOf reports no file change.
@@ -148,7 +205,7 @@ func (a Adapter) Execute(ctx context.Context, call agent.ToolCall) (agent.ToolRe
 			break
 		}
 	}
-	dec := toolgateway.EvaluateMCP(a.Server, a.descriptorFor(name, ""), target, a.SafeMode)
+	dec := toolgateway.EvaluateMCP(a.Server, a.descriptorFor(name, "", a.annotationsFor(name)), target, a.SafeMode)
 	if !dec.Allowed {
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: "mcp policy denied: " + dec.Reason}, nil
 	}

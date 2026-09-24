@@ -258,7 +258,7 @@ var commandRegistry = map[string]CommandInfo{
 		Description: "Compiles canonical project state, workforce skills, instructions, and\n" +
 			"rules into target-specific AI coding harness configurations.",
 		Flags: []string{
-			"--target <name>        Harness target: antigravity, opencode, codex, claudecode, claude, gemini, generic, traycer, chatgpt, kimi",
+			"--target <name>        Harness target: antigravity, opencode, codex, claude-code, claude, gemini, generic, traycer, chatgpt, kimi",
 			"--path <dir>           Project directory (default: .)",
 			"--json                 Output compilation summary as JSON",
 		},
@@ -296,22 +296,32 @@ var commandRegistry = map[string]CommandInfo{
 		Name:     "adopt",
 		Category: "Adoption & Migration",
 		Summary:  "Brownfield project scanner and adoption engine",
-		Usage:    "prumo adopt <subcommand> [path]",
+		Usage:    "prumo adopt [flags]",
 		Description: "Scans non-Prumo codebases, discovers technical facts, classifies tech stacks,\n" +
 			"and generates a non-destructive migration ledger and candidate Prumo configuration.",
+		// The help listed four subcommands — scan, facts, classify, scaffold —
+		// and none of them existed. `adopt` takes flags, not a subcommand, so
+		// every example in the help was a command that printed a usage error
+		// (GAP-152).
 		Subcommands: []string{
-			"scan [path]        Scan directory tree and index project artifacts",
-			"facts [path]       Extract observed facts (languages, frameworks, build systems)",
-			"classify [path]    Classify project architecture and capability profile",
-			"scaffold [path]    Generate candidate prumo.json without overwriting user files",
+			"propose            Print candidate migration proposals without applying them",
 		},
 		Flags: []string{
-			"--json             Output scan results as JSON envelope",
+			"--path <dir>       Repository to audit (default: current directory)",
+			"--json             Output the result as a JSON envelope",
+			"--audit-only       Audit and report; apply nothing",
+			"--strict           Fail when the audit finds a contradiction or an unconfirmed inference",
+			"--dry-run          Show what each migration would do, without doing it",
+			"--propose-migration Print the migration proposals as a proposal",
+			"--apply            Apply the migration proposals",
+			"--interactive      Ask about uncertain inferences instead of assuming",
+			"--non-interactive  Never ask; take each default (for CI)",
 		},
 		Examples: []string{
-			"prumo adopt scan ./legacy-app",
-			"prumo adopt facts ./legacy-app --json",
-			"prumo adopt classify ./legacy-app",
+			"prumo adopt --path ./legacy-app",
+			"prumo adopt --path ./legacy-app --json",
+			"prumo adopt --path ./legacy-app --strict",
+			"prumo adopt --path ./legacy-app --propose-migration",
 		},
 	},
 	"report": {

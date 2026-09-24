@@ -29,7 +29,7 @@ func TestJobRetryDeadLetters(t *testing.T) {
 		t.Fatalf("exhausted job must dead-letter, got %+v", jobs)
 	}
 	// No run records leaked from failed starts.
-	if list := srv.opList()["runs"].([]any); len(list) != 0 {
+	if list := srv.opList("", 0)["runs"].([]any); len(list) != 0 {
 		t.Fatalf("failed starts must not pollute runs: %v", list)
 	}
 }

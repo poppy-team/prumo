@@ -335,6 +335,25 @@ type Tool struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description,omitempty"`
 	Schema      map[string]any `json:"inputSchema,omitempty"`
+	// Annotations are the server's own declarations about what a tool does.
+	//
+	// They are read because they are the only place a server can say what it
+	// means. The adapter used to classify by allowlist: a name on the read-only
+	// list was ReadOnly and everything else was SideEffecting, so Destructive —
+	// the kind the gateway actually vetoes — was never emitted by anything, and
+	// the veto was a branch no input could reach (GAP-157).
+	Annotations *ToolAnnotations `json:"annotations,omitempty"`
+}
+
+// ToolAnnotations are a server's declared behaviour for one tool.
+type ToolAnnotations struct {
+	// ReadOnlyHint says the tool does not modify anything.
+	ReadOnlyHint bool `json:"readOnlyHint,omitempty"`
+	// DestructiveHint says the tool may destroy something. It is the hint that
+	// matters here: a tool marked destructive is vetoed rather than gated.
+	DestructiveHint bool `json:"destructiveHint,omitempty"`
+	// IdempotentHint says repeating the call has the same effect as one.
+	IdempotentHint bool `json:"idempotentHint,omitempty"`
 }
 
 func (c *Client) timeout() time.Duration {

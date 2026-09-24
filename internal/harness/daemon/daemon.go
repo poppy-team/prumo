@@ -746,7 +746,15 @@ func (s *Server) handle(conn net.Conn) {
 	connCtx, connCancel := context.WithTimeout(context.Background(), s.limits.ConnectionDeadline)
 	defer connCancel()
 	defer connCancel()
-	var replaced chan struct{}
+	var stop replacedSubscription
+	defer func() {
+		// The connection closing must take its subscription with it. Without
+		// this, a stream goroutine keeps running against a socket nobody reads
+		// (GAP-119).
+		if stop != nil {
+			stop()
+		}
+	}()
 
 	// The read deadline is set on the socket, not merely on a context. The context
 	// existed and nothing watched it while the handler sat in Scan, so a client
@@ -769,17 +777,7 @@ func (s *Server) handle(conn net.Conn) {
 			continue
 		}
 		if str(msg, "op") == "subscribe" {
-			if replaced != nil {
-				close(replaced)
-			}
-			done := make(chan struct{})
-			replaced = done
-			ctx, stop := context.WithCancel(connCtx)
-			go func() {
-				defer stop()
-				defer close(done)
-				s.handleSubscribe(ctx, msg, safeWrite)
-			}()
+			stop.replace(s, connCtx, msg, safeWrite)
 			continue
 		}
 		_ = safeWrite(s.dispatch(msg))
@@ -829,9 +827,9 @@ func (s *Server) dispatch(msg map[string]any) map[string]any {
 	case "status":
 		return s.opStatus(str(msg, "run_id"))
 	case "list":
-		return s.opList()
+		return s.opList(str(msg, "after_id"), intFromMsg(msg, "limit"))
 	case "events":
-		return s.opEvents(str(msg, "run_id"))
+		return s.opEvents(str(msg, "run_id"), str(msg, "after_id"), intFromMsg(msg, "limit"))
 	case "cancel":
 		return s.opCancel(str(msg, "run_id"))
 	case "steer":
@@ -1252,7 +1250,35 @@ func (s *Server) opStatus(runID string) map[string]any {
 	}
 }
 
-func (s *Server) opList() map[string]any {
+// defaultPageLimit is how many rows a paged op returns when the caller does not
+// say. A client that cannot page still gets a bounded answer.
+const defaultPageLimit = 100
+
+// maxPageLimit caps what a caller may ask for, so "limit: 1000000" is not a way
+// to make the daemon read everything anyway.
+const maxPageLimit = 1000
+
+// pageBounds turns a caller's limit into a usable one.
+func pageBounds(requested int) int {
+	if requested <= 0 {
+		return defaultPageLimit
+	}
+	if requested > maxPageLimit {
+		return maxPageLimit
+	}
+	return requested
+}
+
+// intFromMsg reads an optional integer field, returning zero when it is absent
+// or not a number.
+func intFromMsg(msg map[string]any, key string) int {
+	if v, ok := msg[key].(float64); ok && v > 0 {
+		return int(v)
+	}
+	return 0
+}
+
+func (s *Server) opList(afterID string, limit int) map[string]any {
 	entries, err := os.ReadDir(s.StoreDir)
 	if err != nil {
 		return map[string]any{"ok": true, "runs": []any{}}
@@ -1315,10 +1341,59 @@ func (s *Server) opList() map[string]any {
 		rb, _ := b["run_id"].(string)
 		return ra < rb
 	})
-	return map[string]any{"ok": true, "runs": out}
+
+	// The listing used to read every record and return every record. The read
+	// was unavoidable, but the return was not: a daemon that has run for a
+	// month sends a month of runs to a client that wanted the next twenty, over
+	// a socket, on every poll (GAP-162).
+	page, cursor, more := pageRunRows(out, afterID, pageBounds(limit))
+	result := map[string]any{"ok": true, "runs": page, "has_more": more}
+	if more {
+		// The cursor is the last id returned, so the next page starts after it
+		// and a client that re-requests the same cursor gets the same page.
+		result["next_after_id"] = cursor
+	}
+	return result
 }
 
-func (s *Server) opEvents(runID string) map[string]any {
+// pageRunRows takes the window of run rows after a cursor.
+func pageRunRows(rows []any, afterID string, limit int) ([]any, string, bool) {
+	start := 0
+	if afterID != "" {
+		found := false
+		for i, row := range rows {
+			m, _ := row.(map[string]any)
+			id, _ := m["run_id"].(string)
+			if id == afterID {
+				start, found = i+1, true
+				break
+			}
+		}
+		if !found {
+			// An unknown cursor is not an error and not a silent restart from
+			// the beginning: restarting would replay rows the client already
+			// saw and call them new. Starting at the end says the cursor is
+			// ahead of the data, which is what it is.
+			return []any{}, "", false
+		}
+	}
+	end := start + limit
+	if end >= len(rows) {
+		return rows[start:], lastRunID(rows, start), false
+	}
+	return rows[start:end], lastRunID(rows, end-1), true
+}
+
+func lastRunID(rows []any, index int) string {
+	if index < 0 || index >= len(rows) {
+		return ""
+	}
+	m, _ := rows[index].(map[string]any)
+	id, _ := m["run_id"].(string)
+	return id
+}
+
+func (s *Server) opEvents(runID, afterID string, limit int) map[string]any {
 	if runID == "" {
 		return map[string]any{"ok": false, "error": "run_id required"}
 	}
@@ -1326,33 +1401,98 @@ func (s *Server) opEvents(runID string) map[string]any {
 	if err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
-	data, err := os.ReadFile(path)
+	evs, cursor, more, err := s.readEventPage(path, afterID, pageBounds(limit))
 	if err != nil {
 		return map[string]any{"ok": false, "error": "no events for run " + runID}
 	}
-	evs := []any{}
-	start := 0
-	flush := func(end int) {
-		if line := data[start:end]; len(line) > 0 {
-			var m map[string]any
-			if err := json.Unmarshal(line, &m); err == nil {
-				evs = append(evs, m)
+	result := map[string]any{"ok": true, "run_id": runID, "events": evs, "has_more": more}
+	if more {
+		result["next_after_id"] = cursor
+	}
+	return result
+}
+
+// readEventPage reads one page of an event log.
+//
+// It seeks to the cursor and reads forward, rather than reading the whole file
+// and keeping the last 500. A run with 200k events spent the memory to return
+// a window, and a client could not ask for anything else (GAP-162).
+func (s *Server) readEventPage(path, afterID string, limit int) ([]any, string, bool, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, "", false, err
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	if afterID != "" {
+		if err := seekPastEvent(reader, afterID); err != nil {
+			// A cursor that is not in the log is a cursor the client made up or
+			// one from a log that was rotated. Both mean "the data I asked for
+			// is not here", and returning an empty page with has_more false says
+			// that without pretending the run has no events.
+			return []any{}, "", false, nil
+		}
+	}
+
+	events := []any{}
+	cursor := ""
+	for len(events) <= limit {
+		line, readErr := reader.ReadBytes('\n')
+		if len(bytes.TrimSpace(line)) == 0 {
+			if readErr != nil {
+				break
+			}
+			continue
+		}
+		var event map[string]any
+		if json.Unmarshal(bytes.TrimSpace(line), &event) == nil {
+			events = append(events, event)
+			if id, _ := event["id"].(string); id != "" {
+				cursor = id
 			}
 		}
-	}
-	for i, b := range data {
-		if b == '\n' {
-			flush(i)
-			start = i + 1
+		if readErr != nil {
+			break
 		}
 	}
-	if start < len(data) {
-		flush(len(data))
+	// One event past the limit was read to learn whether more exist; it is not
+	// returned, and the cursor points at the last returned event so the next
+	// page starts where this one ended.
+	more := len(events) > limit
+	if more {
+		events = events[:limit]
+		cursor = lastEventID(events)
 	}
-	if len(evs) > 500 {
-		evs = evs[len(evs)-500:]
+	return events, cursor, more, nil
+}
+
+// seekPastEvent reads until it has seen the event with the given id.
+func seekPastEvent(reader *bufio.Reader, afterID string) error {
+	for {
+		line, err := reader.ReadBytes('\n')
+		trimmed := bytes.TrimSpace(line)
+		if len(trimmed) > 0 {
+			var event map[string]any
+			if json.Unmarshal(trimmed, &event) == nil {
+				if id, _ := event["id"].(string); id == afterID {
+					return nil
+				}
+			}
+		}
+		if err != nil {
+			return err
+		}
 	}
-	return map[string]any{"ok": true, "run_id": runID, "events": evs}
+}
+
+func lastEventID(events []any) string {
+	if len(events) == 0 {
+		return ""
+	}
+	m, _ := events[len(events)-1].(map[string]any)
+	id, _ := m["id"].(string)
+	return id
 }
 
 // diffPath names a run's diff store. The run id is validated because it becomes
@@ -2237,4 +2377,39 @@ func approverIdentity(actor string) string {
 		return "unknown"
 	}
 	return actor
+}
+
+// replacedSubscription cancels the subscription currently occupying a
+// connection, if any.
+//
+// A second subscribe on the same connection replaces the first: the client
+// changed its mind, and leaving the old stream running would interleave two
+// event sources into one reader.
+type replacedSubscription func()
+
+// replace starts a subscription on this connection, cancelling whatever was
+// there before.
+//
+// The local and remote handlers used to implement this separately, and the
+// remote one did not: every request was dispatched and answered, so a subscribe
+// got a single result and the connection closed. The SDK announced Subscribe,
+// a client called it against a TCP endpoint, and got one event and the end of
+// the stream (GAP-166).
+func (r *replacedSubscription) replace(s *Server, connCtx context.Context, msg map[string]any, write func(map[string]any) error) {
+	if *r != nil {
+		(*r)()
+	}
+	done := make(chan struct{})
+	var cancel context.CancelFunc
+	*r = func() {
+		cancel()
+		<-done
+	}
+	ctx, stop := context.WithCancel(connCtx)
+	cancel = stop
+	go func() {
+		defer stop()
+		defer close(done)
+		s.handleSubscribe(ctx, msg, write)
+	}()
 }
