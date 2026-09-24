@@ -147,7 +147,10 @@ func runAgentRun(asJSON bool, args []string) int {
 	}
 	runID := f["run"]
 	if runID == "" {
-		runID = "R-agent-1"
+		// It was the constant "R-agent-1", so every run that did not name itself
+		// was the same run: the second one overwrote the first's checkpoint, log
+		// and permission trail (GAP-136).
+		runID = agent.NewRunID("agent")
 	}
 
 	var provider model.Provider

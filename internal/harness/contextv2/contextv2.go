@@ -49,7 +49,13 @@ type Manifest struct {
 	Excluded        []Exclusion `json:"excluded,omitempty"`
 	EstimatedTokens int         `json:"estimated_tokens"`
 	Pressure        string      `json:"pressure"`
-	Level           Level       `json:"level"` // L0..L4 disclosure
+	// DependencyCycles names the references whose DependsOn edges form a loop.
+	//
+	// A cycle is reported rather than silently broken: the expansion stops
+	// walking the back edge, and a caller that cannot see the cycle cannot tell
+	// that a document it expected in the context was left out (GAP-149).
+	DependencyCycles []string `json:"dependency_cycles,omitempty"`
+	Level            Level    `json:"level"` // L0..L4 disclosure
 	// InstructionTokens is the share of the budget spent on agent instruction
 	// surfaces, reported separately so instruction overhead is measurable
 	// instead of hidden inside the total (W4.10).
@@ -174,11 +180,29 @@ func CompileWithPolicy(runID string, candidates []Item, policy CompilePolicy) Ma
 	excluded := append([]Exclusion{}, dedupExcluded...)
 	used := 0
 	inSet := map[string]bool{}
+	// visiting is the set of references currently being expanded.
+	//
+	// inSet only learned a reference after its dependencies were expanded, so
+	// two items that depend on each other sent the expansion into a loop: A
+	// marks nothing, asks for B, B asks for A, and A is still unmarked. A
+	// dependency cycle in a repository's own documentation — a pointer in a
+	// doc pointing at the doc that points back — took the compiler down with a
+	// stack overflow rather than a cycle report (GAP-149).
+	visiting := map[string]bool{}
+	cycles := []string{}
 	var add func(it Item)
 	add = func(it Item) {
 		if inSet[it.Ref] {
 			return
 		}
+		if visiting[it.Ref] {
+			// A back edge. Expanding it again is what does not terminate, so the
+			// edge is recorded and the walk stops here.
+			cycleNote(&cycles, it.Ref)
+			return
+		}
+		visiting[it.Ref] = true
+		defer delete(visiting, it.Ref)
 		for _, d := range it.DependsOn {
 			if dep, ok := byRef[d]; ok {
 				add(dep)
@@ -215,6 +239,7 @@ func CompileWithPolicy(runID string, candidates []Item, policy CompilePolicy) Ma
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 		Included:  included, Excluded: excluded, EstimatedTokens: used, Pressure: pressure,
 		Level: level, InstructionTokens: policy.InstructionTokens, Policy: policy.Policy,
+		DependencyCycles: dedupeStrings(cycles),
 	}
 }
 
@@ -244,4 +269,27 @@ func Fresh(freshness string, maxAge time.Duration) bool {
 		return !strings.Contains(freshness, "stale")
 	}
 	return time.Since(t) <= maxAge
+}
+
+// cycleNote records that a reference was reached while already being expanded.
+func cycleNote(cycles *[]string, ref string) {
+	for _, seen := range *cycles {
+		if seen == ref {
+			return
+		}
+	}
+	*cycles = append(*cycles, ref)
+}
+
+func dedupeStrings(values []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		if v == "" || seen[v] {
+			continue
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	return out
 }

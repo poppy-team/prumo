@@ -895,8 +895,10 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	runID := str(msg, "run_id")
 	if runID == "" {
 		s.mu.Lock()
+		// A counter from zero collides with the last daemon's runs, which are
+		// still on disk under exactly these names (GAP-136).
 		s.seq++
-		runID = fmt.Sprintf("R-daemon-%d", s.seq)
+		runID = agent.NewRunID("daemon")
 		s.mu.Unlock()
 	} else if err := safepath.ValidateID("run_id", runID); err != nil {
 		// Rejected here so the caller learns why, rather than getting a run that
