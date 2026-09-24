@@ -47,7 +47,7 @@ func TestRunnerWithDirective_ScopeFirewallBlock(t *testing.T) {
 		Tools: exec,
 	}
 
-	runner := NewRunnerWithDirective(svc, dir, "sess-1")
+	runner := NewRunnerWithDirective(svc, dir, "R-1", "sess-1")
 	if len(runner.Messages) == 0 || !strings.Contains(runner.Messages[0].Content, "=== 1. HARD POLICIES ===") {
 		t.Errorf("expected initial message seeded with prompt projection, got: %#v", runner.Messages)
 	}
@@ -75,7 +75,7 @@ func TestRunnerWithDirective_ScopeFirewallBlock(t *testing.T) {
 	}
 
 	// Now try an allowed path
-	runnerAllowed := NewRunnerWithDirective(svc, dir, "sess-2")
+	runnerAllowed := NewRunnerWithDirective(svc, dir, "R-2", "sess-2")
 	runnerAllowed.ToolQ = []agent.ToolCall{
 		{
 			ID:        "call-good",

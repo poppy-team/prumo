@@ -292,7 +292,7 @@ func (d *DirectiveIR) Validate() error {
 // under a forbidden directory that share its name, and for an allowlist it
 // admits them.
 func (d *DirectiveIR) CanMutatePath(relPath string) bool {
-	norm, ok := workspaceRelative(relPath)
+	norm, ok := d.normalizeTarget(relPath)
 	if !ok {
 		return false
 	}
@@ -315,6 +315,43 @@ func (d *DirectiveIR) CanMutatePath(relPath string) bool {
 		return false
 	}
 	return true
+}
+
+// normalizeTarget turns a tool call's path into a workspace-relative one.
+//
+// It accepts a path that is already relative, and a path that is absolute and
+// inside the workspace. It refuses an absolute path elsewhere, and any path
+// that climbs out.
+//
+// The absolute-inside case is not a convenience: the tools this firewall
+// guards are called with the workspace resolved, so a run that passed its own
+// workspace path had every call rejected. A firewall that refuses the paths its
+// own tools produce is a firewall nobody can run behind, which is why the
+// runner had no production caller (GAP-127).
+func (d *DirectiveIR) normalizeTarget(target string) (string, bool) {
+	if target == "" {
+		return "", false
+	}
+	if !filepath.IsAbs(target) {
+		return workspaceRelative(target)
+	}
+	if d.WorkspaceRoot == "" {
+		// No root to be inside of. An absolute path cannot be shown to be
+		// inside something the directive does not name.
+		return "", false
+	}
+	root, err := filepath.Abs(d.WorkspaceRoot)
+	if err != nil {
+		return "", false
+	}
+	clean := filepath.Clean(target)
+	rel, err := filepath.Rel(root, clean)
+	if err != nil {
+		return "", false
+	}
+	// filepath.Rel escapes the root as a leading ".."; the relative check then
+	// rejects it along with any genuine traversal.
+	return workspaceRelative(rel)
 }
 
 // workspaceRelative normalises relPath and reports whether it is a relative

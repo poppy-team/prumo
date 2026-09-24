@@ -115,9 +115,16 @@ func NewRunner(svc Services, runID, sessionID string) *Runner {
 	}
 }
 
-// NewRunnerWithDirective initializes a Run session governed by a compiled DirectiveIR.
-func NewRunnerWithDirective(svc Services, dir *directive.DirectiveIR, sessionID string) *Runner {
-	r := NewRunner(svc, dir.TaskID, sessionID)
+// NewRunnerWithDirective initializes a Run session governed by a compiled
+// DirectiveIR.
+//
+// The run id is a parameter because it is not the task id. A directive describes
+// a task, and a run may execute several of them under one id the caller chose;
+// taking the id from the directive meant a caller that passed its own run id
+// still got a runner reporting a different one, and every event it emitted
+// belonged to a run the caller was not watching (GAP-127).
+func NewRunnerWithDirective(svc Services, dir *directive.DirectiveIR, runID, sessionID string) *Runner {
+	r := NewRunner(svc, runID, sessionID)
 	r.Directive = dir
 	// Seed prompt projection as initial system directive
 	r.Messages = []agent.Message{

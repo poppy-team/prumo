@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -25,6 +26,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/checkpoint"
 	"github.com/raillen/prumo/internal/harness/contextv2"
+	harnessdirective "github.com/raillen/prumo/internal/harness/directive"
 	"github.com/raillen/prumo/internal/harness/knowledge"
 	"github.com/raillen/prumo/internal/harness/model"
 	"github.com/raillen/prumo/internal/harness/perm"
@@ -117,6 +119,13 @@ type Limits struct {
 	// question. Without it a run can sit in approval indefinitely, holding its
 	// workspace, its budget and a slot.
 	ApprovalTimeout time.Duration
+	// RunBudgetCents is the hard cost ceiling for one run, in cents.
+	//
+	// The tracker had a default, but the directive compiler refused a budget of
+	// zero — correctly, since a run whose ceiling is "when the money runs out"
+	// has no ceiling. So the limit has to be a real number a caller can see and
+	// change, not a constant buried in the tracker.
+	RunBudgetCents int
 }
 
 // DefaultLimits is what a daemon runs with when nothing is configured.
@@ -128,6 +137,7 @@ func DefaultLimits() Limits {
 		RunDeadline:        2 * time.Hour,
 		MaxSubscribers:     16,
 		ApprovalTimeout:    30 * time.Minute,
+		RunBudgetCents:     500,
 	}
 }
 
@@ -149,6 +159,9 @@ func (l Limits) withDefaults() Limits {
 	}
 	if l.ApprovalTimeout <= 0 {
 		l.ApprovalTimeout = defaults.ApprovalTimeout
+	}
+	if l.RunBudgetCents <= 0 {
+		l.RunBudgetCents = defaults.RunBudgetCents
 	}
 	// RunDeadline is left at zero when unset, and zero means no deadline.
 	return l
@@ -990,7 +1003,21 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 			hasVision = caps.Vision
 		}
 	}
-	runner := harnessruntime.NewRunner(harnessruntime.Services{
+	// The run is governed by a compiled directive. It was not: the daemon built
+	// every run with NewRunner, so the scope firewall that guards tool calls was
+	// exercised only by a test. A production run had no scope at all — the model
+	// could reach anything the tools could reach, and the only limit was the
+	// permission engine, which asks a human rather than enforcing anything
+	// (GAP-127).
+	dirIR, err := s.directiveFor(runID, goal, workspace, s.limits.RunBudgetCents)
+	if err != nil {
+		s.appendEvent(runID, agent.AgentEvent{
+			ID: runID + "-directive-failed", RunID: runID, Kind: "directive.compile_failed",
+			Payload: map[string]any{"error": err.Error()}, CreatedAt: agent.Now(),
+		})
+		return
+	}
+	runner := harnessruntime.NewRunnerWithDirective(harnessruntime.Services{
 		Models:        provider,
 		Tools:         counting,
 		Perms:         engine,
@@ -1028,7 +1055,7 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 		RecordDiff: func(runID, path, kind, content string) {
 			s.saveDiff(runID, path, kind, content)
 		},
-	}, runID, "S-daemon")
+	}, dirIR, runID, "S-daemon")
 	runner.MaxTurns = maxTurns
 	// Preflight: a run stops before making a call it cannot afford, and
 	// reserves what the call may cost so the ceiling binds the last turn too
@@ -2132,4 +2159,56 @@ func renderContextManifest(manifest contextv2.Manifest) string {
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// directiveFor compiles the scope a daemon run is allowed to act in.
+//
+// The daemon runs one goal at a time against one workspace, so the honest scope
+// is the workspace itself: everything under it is in scope for reading, and a
+// mutation outside it is refused. Paths the caller named as approval-gated are
+// forbidden outright, because "ask a human first" is a weaker guarantee than
+// "do not do this in a run that nobody is watching" and a run is unattended by
+// definition (GAP-127).
+func (s *Server) directiveFor(runID, goal, workspace string, hardLimitCents int) (*harnessdirective.DirectiveIR, error) {
+	if workspace == "" {
+		// No workspace means no scope to enforce. Refusing is the safe reading:
+		// a run with no boundary is a run with every boundary removed.
+		return nil, errors.New("no workspace to scope the run to")
+	}
+	abs, err := filepath.Abs(workspace)
+	if err != nil {
+		return nil, fmt.Errorf("workspace %q cannot be resolved: %w", workspace, err)
+	}
+	if hardLimitCents <= 0 {
+		// A run with no cost ceiling is a run whose stop condition is "when the
+		// money runs out", which is not a stop condition. The server default is
+		// finite; zero here means a caller passed a limit that was never set, and
+		// guessing a number for it would be inventing a budget nobody approved.
+		return nil, errors.New("no cost ceiling configured for the run")
+	}
+	return harnessdirective.CompileDirective(harnessdirective.CompilerInput{
+		ProjectID:          filepath.Base(abs),
+		WorkspaceRoot:      abs,
+		RepositoryRevision: "live",
+		GoalID:             runID,
+		TaskID:             runID + ":task",
+		UserIntent:         goal,
+		TaskIntent:         goal,
+		InScope:            []string{abs},
+		// Mutation boundaries are workspace-relative: a caller comparing them
+		// against a target path that has been made relative. An absolute
+		// boundary here never matches, which reads as "the firewall refuses
+		// everything" rather than "the boundary is in the wrong coordinate
+		// system".
+		AllowedPaths: []string{"."},
+		// Approval-gated work is out of scope for an unattended run. If the
+		// caller wants it, the run has to be supervised, and saying so beats
+		// quietly widening the firewall.
+		ForbiddenActions: []string{"approve-gated-change"},
+		QualityGates:     []string{"workspace-change-is-inside-the-workspace"},
+		StopConditions:   []string{"scope-violation", "run-deadline", "budget-exhausted"},
+		RequiredEvidence: []string{"tool-journal"},
+		HardLimitCents:   hardLimitCents,
+		Currency:         "USD",
+	})
 }
