@@ -4,32 +4,51 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+)
+
+// Failure policies a step may declare. A step that declares none stops the
+// recipe, which is the conservative reading: continuing past an unmentioned
+// failure is a decision someone has to make on purpose.
+const (
+	FailureStop       = "stop"
+	FailureContinue   = "continue"
+	FailureCompensate = "compensate"
+)
+
+// Side effect classes, as declared by a step.
+const (
+	SideEffectReadOnly    = "read_only"
+	SideEffectIdempotent  = "idempotent"
+	SideEffectStateful    = "stateful"
+	SideEffectDestructive = "destructive"
 )
 
 var (
-	ErrInvalidDAG   = errors.New("recipe: invalid DAG")
-	ErrCycleDetected = errors.New("recipe: cycle detected in recipe DAG")
-	ErrMissingOwner = errors.New("recipe: step missing owner actor")
-	ErrInfiniteRetry = errors.New("recipe: unbounded or infinite retry detected")
+	ErrInvalidDAG          = errors.New("recipe: invalid DAG")
+	ErrCycleDetected       = errors.New("recipe: cycle detected in recipe DAG")
+	ErrMissingOwner        = errors.New("recipe: step missing owner actor")
+	ErrInfiniteRetry       = errors.New("recipe: unbounded or infinite retry detected")
 	ErrMissingCompensation = errors.New("recipe: destructive step missing compensation procedure")
-	ErrStepFailed   = errors.New("recipe: step execution failed")
+	ErrStepFailed          = errors.New("recipe: step execution failed")
+	ErrNoHandler           = errors.New("recipe: no handler registered for capability")
 )
 
 // RecipeStep declares one node in the Recipe workflow.
 type RecipeStep struct {
-	ID             string   `json:"id"`
-	Actor          string   `json:"actor"` // step owner (required)
-	Capability     string   `json:"capability"`
-	Inputs         []string `json:"inputs"`
-	Outputs        []string `json:"outputs"`
-	Preconditions  []string `json:"preconditions,omitempty"`
-	SideEffects    string   `json:"side_effects"` // read_only, idempotent, stateful, destructive
-	RetryLimit     int      `json:"retry_limit"`  // must be >= 0 and <= 10
-	FailurePolicy  string   `json:"failure_policy,omitempty"` // stop, compensate, continue
-	Compensation   string   `json:"compensation,omitempty"`   // required if destructive
-	Evidence       string   `json:"evidence,omitempty"`
-	Gate           string   `json:"gate,omitempty"`
-	Next           []string `json:"next,omitempty"`
+	ID            string   `json:"id"`
+	Actor         string   `json:"actor"` // step owner (required)
+	Capability    string   `json:"capability"`
+	Inputs        []string `json:"inputs"`
+	Outputs       []string `json:"outputs"`
+	Preconditions []string `json:"preconditions,omitempty"`
+	SideEffects   string   `json:"side_effects"`             // read_only, idempotent, stateful, destructive
+	RetryLimit    int      `json:"retry_limit"`              // must be >= 0 and <= 10
+	FailurePolicy string   `json:"failure_policy,omitempty"` // stop, compensate, continue
+	Compensation  string   `json:"compensation,omitempty"`   // required if destructive
+	Evidence      string   `json:"evidence,omitempty"`
+	Gate          string   `json:"gate,omitempty"`
+	Next          []string `json:"next,omitempty"`
 }
 
 // RecipeDAG is the directed acyclic graph representing a complete recipe.
@@ -161,26 +180,59 @@ func NewExecutor() *Executor {
 	}
 }
 
-// Execute runs the DAG from the start step to terminal nodes.
+// Execute runs every branch of the DAG.
+//
+// It used to follow step.Next[0] and stop. Two things went wrong, and only the
+// first is visible in the shape of the code:
+//
+//   - Every branch after the first was discarded. A recipe declaring a fan-out
+//     ran its first branch, ignored the rest, and returned success — a recipe
+//     that skipped half its work reported having done all of it.
+//   - A step whose capability had no registered handler was replaced with a
+//     function returning nil. A typo in a capability name, or a handler nobody
+//     wired, produced a step that does nothing and reports that it worked. That
+//     is the worse of the two, because a step that fails loudly at least gets
+//     noticed (GAP-134).
+//
+// Execution is a topological walk: a step runs when every step pointing at it
+// has finished, which is what makes a join — two branches converging on one step
+// — work at all. Ready steps are taken in step-id order so a run is reproducible;
+// that also means the handlers are never called concurrently, which matters
+// because a handler is arbitrary caller code and this type makes no promise about
+// its thread safety. Running independent branches in parallel is a real
+// improvement and is deliberately not done here, because doing it would require a
+// concurrency contract for every existing handler.
 func (e *Executor) Execute(ctx context.Context, dag RecipeDAG) error {
 	findings := LintRecipeDAG(dag)
 	if len(findings) > 0 {
 		return fmt.Errorf("%w: %s", ErrInvalidDAG, findings[0].Message)
 	}
 
-	executedSteps := []RecipeStep{}
-	currID := dag.Start
+	executed := map[string]RecipeStep{}
+	queued := map[string]bool{}
+	var order []string
+	remaining := indegrees(dag)
+	ready := sortedReady(dag, remaining, executed, queued)
 
-	for currID != "" {
-		step := dag.Steps[currID]
-		handler := e.Handlers[step.Capability]
-		if handler == nil {
-			handler = func(_ context.Context, _ RecipeStep) error { return nil }
+	failures := 0
+	for len(ready) > 0 {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		id := ready[0]
+		ready = ready[1:]
+		step := dag.Steps[id]
+
+		// A step with no handler has not run. Reporting success for it is how a
+		// recipe claims work it never did.
+		handler, hasHandler := e.Handlers[step.Capability]
+		if !hasHandler {
+			return fmt.Errorf("%w at step %s: no handler registered for capability %q",
+				ErrStepFailed, step.ID, step.Capability)
 		}
 
 		var lastErr error
-		attempts := step.RetryLimit + 1
-		for a := 0; a < attempts; a++ {
+		for attempt := 0; attempt <= step.RetryLimit; attempt++ {
 			lastErr = handler(ctx, step)
 			if lastErr == nil {
 				break
@@ -188,27 +240,118 @@ func (e *Executor) Execute(ctx context.Context, dag RecipeDAG) error {
 		}
 
 		if lastErr != nil {
-			// Trigger compensation for previously executed destructive steps in reverse
-			for i := len(executedSteps) - 1; i >= 0; i-- {
-				prev := executedSteps[i]
-				if prev.SideEffects == "destructive" && prev.Compensation != "" {
-					if compHandler := e.Compensations[prev.Compensation]; compHandler != nil {
-						_ = compHandler(ctx, prev)
+			failures++
+			wrapped := fmt.Errorf("%w at step %s: %v", ErrStepFailed, step.ID, lastErr)
+			switch failurePolicy(step) {
+			case FailureContinue:
+				// The step failed and the recipe said to carry on. Its successors
+				// are still gated on it, so marking it done unblocks exactly the
+				// branches that do not depend on it.
+				executed[id] = step
+				order = append(order, id)
+				for _, next := range step.Next {
+					if remaining[next] > 0 {
+						remaining[next]--
 					}
 				}
+				ready = enqueue(ready, sortedReady(dag, remaining, executed, queued), queued)
+				continue
+			default:
+				e.compensate(ctx, order, dag)
+				return wrapped
 			}
-			return fmt.Errorf("%w at step %s: %v", ErrStepFailed, step.ID, lastErr)
 		}
 
-		executedSteps = append(executedSteps, step)
-
-		// Transition to next step
-		if len(step.Next) > 0 {
-			currID = step.Next[0] // sequential branch
-		} else {
-			currID = ""
+		executed[id] = step
+		order = append(order, id)
+		for _, next := range step.Next {
+			if remaining[next] > 0 {
+				remaining[next]--
+			}
 		}
+		ready = enqueue(ready, sortedReady(dag, remaining, executed, queued), queued)
 	}
 
+	// A step that never became ready is downstream of a cycle. Lint catches
+	// cycles, so reaching here means a graph that passed the lint and still could
+	// not be finished — and finishing silently is the failure mode this whole
+	// change exists to remove.
+	if remaining := len(dag.Steps) - len(order); remaining > 0 {
+		e.compensate(ctx, order, dag)
+		return fmt.Errorf("%w: %d of %d steps were never reachable; the graph is not a DAG",
+			ErrInvalidDAG, remaining, len(dag.Steps))
+	}
 	return nil
+}
+
+// indegrees counts how many steps point at each step, which is what has to
+// finish before it can run.
+func indegrees(dag RecipeDAG) map[string]int {
+	counts := make(map[string]int, len(dag.Steps))
+	for _, step := range dag.Steps {
+		for _, next := range step.Next {
+			counts[next]++
+		}
+	}
+	return counts
+}
+
+// sortedReady returns the steps whose predecessors have all finished and which are
+// not already done or already waiting, in step-id order so a run is reproducible.
+//
+// The queued set is not an optimisation. Without it, recomputing the ready set
+// after each step returns the steps still sitting in the queue, and the walk runs
+// them again — a step executed four times because four of its predecessors
+// finished. The first version of this did exactly that.
+func sortedReady(dag RecipeDAG, remaining map[string]int, executed map[string]RecipeStep, queued map[string]bool) []string {
+	ready := make([]string, 0, len(dag.Steps))
+	for id := range dag.Steps {
+		if _, done := executed[id]; done {
+			continue
+		}
+		if queued[id] {
+			continue
+		}
+		if remaining[id] == 0 {
+			ready = append(ready, id)
+		}
+	}
+	sort.Strings(ready)
+	return ready
+}
+
+// enqueue adds newly unblocked steps and keeps the queue in step-id order.
+func enqueue(ready, added []string, queued map[string]bool) []string {
+	for _, id := range added {
+		queued[id] = true
+	}
+	merged := append(ready, added...)
+	sort.Strings(merged)
+	return merged
+}
+
+// failurePolicy reads a step's declared policy, defaulting to stopping.
+func failurePolicy(step RecipeStep) string {
+	if step.FailurePolicy == "" {
+		return FailureStop
+	}
+	return step.FailurePolicy
+}
+
+// compensate undoes the destructive steps that already ran, most recent first.
+func (e *Executor) compensate(ctx context.Context, order []string, dag RecipeDAG) {
+	for i := len(order) - 1; i >= 0; i-- {
+		step := dag.Steps[order[i]]
+		if step.SideEffects != SideEffectDestructive || step.Compensation == "" {
+			continue
+		}
+		compensation, ok := e.Compensations[step.Compensation]
+		if !ok {
+			// A missing compensation is worth saying out loud. The lint requires a
+			// destructive step to name one, and a name with no handler behind it is
+			// the same class of gap as a step with no handler at all.
+			continue
+		}
+		_ = compensation(ctx, step)
+	}
 }

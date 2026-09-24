@@ -39,11 +39,11 @@ func TestLintRecipeDAG_MissingOwnerAndInfiniteRetry(t *testing.T) {
 		Start: "step-1",
 		Steps: map[string]RecipeStep{
 			"step-1": {
-				ID:          "step-1",
-				Actor:       "", // Missing owner!
-				Capability:  "build",
-				RetryLimit:  99, // Infinite / unbounded retry!
-				SideEffects: "destructive",
+				ID:           "step-1",
+				Actor:        "", // Missing owner!
+				Capability:   "build",
+				RetryLimit:   99, // Infinite / unbounded retry!
+				SideEffects:  "destructive",
 				Compensation: "", // Missing compensation!
 			},
 		},
