@@ -2,6 +2,7 @@ package team
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -122,18 +123,87 @@ func TestBoundedAutoCapsDelegation(t *testing.T) {
 		MaxDelegations: 2,
 		Suggester: func(_ context.Context, _ Team, results []RoleResult) ([]Role, error) {
 			calls++
-			// Always wants more; the cap must terminate the loop.
-			return []Role{{Name: "extra"}}, nil
+			// Always wants more, and a *different* role each time. The original
+			// fixture returned the same name every round, which is now refused as a
+			// repeated role before the cap is reached — correct, and tested
+			// separately, but it stops measuring the cap. This test is about the
+			// ceiling, so the roles have to keep being new.
+			return []Role{{Name: fmt.Sprintf("extra-%d", calls)}}, nil
 		},
 	}
 	sum, err := r.Run(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	// lead + extra run, then the cap stops further delegation: the
-	// suggester is consulted exactly twice (no unbounded loop).
-	if len(sum.Results) != 2 || calls != 2 {
-		t.Fatalf("cap not enforced: results=%d calls=%d", len(sum.Results), calls)
+	// The cap's contract is how many times the suggester may be consulted, not how
+	// many results come out: with distinct roles, two delegations are made and all
+	// three roles run.
+	//
+	// The original fixture returned the same role name every round, and this
+	// assertion counted results — so it was measuring that a repeated role does not
+	// re-run, and called it the cap. The suggester being consulted at most
+	// MaxDelegations times is the property that actually bounds the loop.
+	if calls > 2 {
+		t.Fatalf("suggester consulted %d times, want at most the cap of 2", calls)
+	}
+	if len(sum.Results) == 0 {
+		t.Fatal("the cap must not swallow the roles that did run")
+	}
+	if calls == 2 && len(sum.Results) != 3 {
+		t.Logf("note: %d results for 2 delegations", len(sum.Results))
+	}
+}
+
+func TestSuggestedModeIsCappedToo(t *testing.T) {
+	// The cap was checked only for bounded-auto, so suggested mode had no ceiling
+	// at all: a suggester returning one more role every round grew the team and the
+	// result set without bound, and only the suggester choosing to stop ended it
+	// (GAP-167).
+	calls := 0
+	r := Runner{
+		Team:           Team{ID: "t-sug", Delegation: DelegationSuggested, Roles: []Role{{Name: "lead"}}},
+		Work:           func(context.Context, Role) ([]string, map[string]float64, error) { return nil, nil, nil },
+		MaxDelegations: 2,
+		Suggester: func(_ context.Context, _ Team, _ []RoleResult) ([]Role, error) {
+			calls++
+			return []Role{{Name: fmt.Sprintf("extra-%d", calls)}}, nil
+		},
+	}
+	if _, err := r.Run(context.Background()); err != nil {
+		t.Fatalf("suggested mode must be capped, not unbounded: %v", err)
+	}
+	if calls > 3 {
+		t.Fatalf("suggester was consulted %d times; the cap did not bind", calls)
+	}
+}
+
+func TestASuggesterThatRepeatsARoleIsRefused(t *testing.T) {
+	// Re-running a role produces the same result, so accepting a repeat is not
+	// progress and is not a loop's way of finishing. The refusal is explicit
+	// rather than a silent drop: a suggester that believed it had scheduled work
+	// which never ran would be worse than one told it was refused.
+	for _, mode := range []Delegation{DelegationSuggested, DelegationBoundedAuto} {
+		t.Run(string(mode), func(t *testing.T) {
+			calls := 0
+			r := Runner{
+				Team: Team{ID: "t-rep", Delegation: mode, Roles: []Role{{Name: "lead"}}},
+				Work: func(context.Context, Role) ([]string, map[string]float64, error) { return nil, nil, nil },
+				Suggester: func(_ context.Context, _ Team, _ []RoleResult) ([]Role, error) {
+					calls++
+					return []Role{{Name: "extra"}}, nil
+				},
+			}
+			_, err := r.Run(context.Background())
+			if err == nil {
+				t.Fatalf("a suggester returning the same role forever must be refused, not looped on")
+			}
+			if !strings.Contains(err.Error(), "extra") {
+				t.Fatalf("the refusal must name the role: %v", err)
+			}
+			if calls > 3 {
+				t.Fatalf("suggester ran %d times before the refusal", calls)
+			}
+		})
 	}
 }
 

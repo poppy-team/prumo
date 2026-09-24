@@ -85,6 +85,13 @@ func (r Runner) Run(ctx context.Context) (Summary, error) {
 	var results []RoleResult
 	before := map[string]map[string]string{}
 	delegations := 0
+	// seenRoles records every role spawned in this run, in any round. A suggester
+	// that returns a role already spawned is not making progress: re-running it
+	// produces the same result and the loop never terminates (GAP-167).
+	seenRoles := map[string]bool{}
+	for _, role := range r.Team.Roles {
+		seenRoles[role.Name] = true
+	}
 	for {
 		batch := pendingRoles(roles, r.ReviewerRole, results)
 		for _, role := range batch {
@@ -101,7 +108,12 @@ func (r Runner) Run(ctx context.Context) (Summary, error) {
 			roles = nil
 			break
 		}
-		if r.Team.Delegation == DelegationBoundedAuto && delegations >= maxDel {
+		// The cap applies to suggested mode too. It used to be checked only for
+		// bounded-auto, which left the suggested loop with no ceiling at all: a
+		// suggester that always returned one more role grew the team and the result
+		// set without bound, and the only thing that stopped it was the suggester
+		// choosing to stop (GAP-167).
+		if delegations >= maxDel {
 			break
 		}
 		extra, err := r.Suggester(ctx, r.Team, results)
@@ -111,8 +123,18 @@ func (r Runner) Run(ctx context.Context) (Summary, error) {
 		if len(extra) == 0 {
 			break
 		}
-		delegations += len(extra)
-		roles = append(roles, extra...)
+		repeated, fresh := partitionNewRoles(extra, seenRoles)
+		if len(repeated) > 0 {
+			// Refusing is the honest response. Silently dropping the repetition
+			// would let a suggester believe it had scheduled work that never ran,
+			// and nothing in the summary would say the request was rejected.
+			return Summary{}, fmt.Errorf("suggester returned role(s) already delegated: %s", strings.Join(repeated, ", "))
+		}
+		for _, role := range fresh {
+			seenRoles[role.Name] = true
+		}
+		delegations += len(fresh)
+		roles = append(roles, fresh...)
 		grown := Team{ID: r.Team.ID, Roles: roles}
 		if err := grown.Validate(); err != nil {
 			return Summary{}, err
@@ -303,4 +325,21 @@ func isText(data []byte) bool {
 		}
 	}
 	return true
+}
+
+// partitionNewRoles splits suggested roles into ones already spawned and ones that
+// are new.
+//
+// The distinction is the whole bound. Counting a repeat toward the cap would let
+// a suggester look busy while making no progress, and accepting one would run the
+// same work twice under two names.
+func partitionNewRoles(roles []Role, seen map[string]bool) (repeated []string, fresh []Role) {
+	for _, role := range roles {
+		if seen[role.Name] {
+			repeated = append(repeated, role.Name)
+			continue
+		}
+		fresh = append(fresh, role)
+	}
+	return repeated, fresh
 }

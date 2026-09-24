@@ -30,6 +30,17 @@ type RunnerDeps struct {
 	MaxTurns int
 	// Strict requires a passing test.run for child completion.
 	Strict bool
+	// Isolation is what contains the child run's tool calls. Nil means none, and
+	// that is the default on purpose: a delegated run executing a command has
+	// only its root directory unless somebody says otherwise, and the field
+	// existing at all is what lets a caller be explicit about the difference
+	// (GAP-168).
+	Isolation aci.SandboxProvider
+	// RequireIsolation refuses to start a child run with no declared boundary
+	// when it is set. It is opt-in because a missing boundary is a fact to
+	// record, not automatically an error — but a deployment that believes its
+	// child runs are sandboxed needs the refusal to be told otherwise.
+	RequireIsolation bool
 }
 
 // RunWork returns a Work that nests a full agent run per role.
@@ -42,11 +53,21 @@ func RunWork(deps RunnerDeps) Work {
 		if role.Workspace == "" {
 			return nil, nil, fmt.Errorf("role %s has no workspace: nested runs require explicit ownership", role.Name)
 		}
+		if deps.RequireIsolation && deps.Isolation == nil {
+			return nil, nil, fmt.Errorf("role %s: no sandbox provider declared, so this child run would execute tools with no containment beyond its directory", role.Name)
+		}
+		isolation := deps.Isolation
 		provider, err := deps.NewProvider(ctx, role)
 		if err != nil {
 			return nil, nil, err
 		}
-		tools := aci.New(role.Workspace)
+		// The child run's containment is named, not implied. A delegated run
+		// executing a tool call has whatever its root directory gives it and
+		// nothing more, and the worktree provider — which describes itself as
+		// "git isolation only" — was never consulted here at all. Silently
+		// building the same executor as an in-process run made a delegated run
+		// look as contained as the parent while being no more contained (GAP-168).
+		tools := aci.NewWithIsolation(role.Workspace, isolation)
 		store := checkpoint.New(filepath.Join(role.Workspace, ".prumo", "runs"))
 		tracker := runlayer.NewTracker(budgetOf(role, "tokens"), budgetOf(role, "cost_usd"), budgetOf(role, "tool_calls"))
 		counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}

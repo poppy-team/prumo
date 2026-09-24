@@ -15,6 +15,13 @@ import (
 type SandboxKind string
 
 const (
+	// SandboxNone is the absence of a boundary, stated rather than implied.
+	//
+	// It is the default because it is what an executor built from a path alone
+	// has. Naming it keeps "I did not check" distinct from "I checked and it is
+	// local-trusted", which are different facts about the same run and were
+	// indistinguishable (GAP-168).
+	SandboxNone         SandboxKind = "none"
 	SandboxLocalTrusted SandboxKind = "local-trusted"
 	SandboxWorktree     SandboxKind = "worktree"
 	SandboxContainer    SandboxKind = "container"

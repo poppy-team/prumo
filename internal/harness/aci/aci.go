@@ -159,11 +159,41 @@ type Executor struct {
 	// Egress gates network-capable tools. Nil preserves the legacy
 	// unrestricted posture (documented); set for fail-closed operation.
 	Egress *EgressPolicy
+	// Isolation records what actually contains this executor's tool calls.
+	//
+	// It exists because nothing else said. A caller that handed a worktree to a
+	// child run had no way to tell, later, whether the child ran inside a
+	// container or directly in the worktree, and the worktree provider described
+	// itself as "git isolation only" while never being consulted at all. A
+	// recorded value cannot be mistaken for a boundary nobody checked (GAP-168).
+	Isolation SandboxKind
 }
 
+// New builds an executor rooted at root with no isolation beyond the root path.
+//
+// The default is SandboxNone rather than something reassuring. This constructor
+// takes only a path, so a caller cannot have chosen containment here, and an
+// executor that reported "local-trusted" or "worktree" would be asserting a
+// boundary that does not exist. A root directory is a scoping convenience: it
+// decides which files a relative path resolves inside, and nothing about what
+// happens when a tool runs a command (GAP-168).
 func New(root string) *Executor {
 	abs, _ := filepath.Abs(root)
-	return &Executor{Root: abs, OutputMax: 32 * 1024, Redact: egress.MustNewRedactor()}
+	return &Executor{Root: abs, OutputMax: 32 * 1024, Redact: egress.MustNewRedactor(), Isolation: SandboxNone}
+}
+
+// NewWithIsolation builds an executor and records what actually contains it.
+//
+// The kind is the provider's own claim, read from the provider rather than passed
+// in separately: a caller naming "container" for a local provider would be able to
+// record a boundary it does not have, and a recorded boundary is exactly what a
+// later reader trusts.
+func NewWithIsolation(root string, provider SandboxProvider) *Executor {
+	executor := New(root)
+	if provider != nil {
+		executor.Isolation = provider.Kind()
+	}
+	return executor
 }
 
 // OperationOf reports the file change a tool makes, if it makes one.
