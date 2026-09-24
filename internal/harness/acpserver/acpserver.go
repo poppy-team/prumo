@@ -120,18 +120,48 @@ func (s *Server) Serve(ctx context.Context) error {
 }
 
 func (s *Server) serveConn(ctx context.Context, in *bufio.Reader, out *bufio.Writer) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	// The read happens on its own goroutine so a cancelled ctx can end the
+	// session between frames.
+	//
+	// It used to be read inline with a ctx check before each frame, so the
+	// check only ran once a frame had already arrived: a server whose peer went
+	// quiet sat in readFrame forever, and the context that was supposed to end
+	// it could not. The goroutine below the select is the part that stays blocked
+	// after a cancel — an io.Reader with no Close cannot be woken — and it ends
+	// on the next frame or on stdin closing, which is the only handle this
+	// signature has (GAP-159).
+	type frame struct {
+		body []byte
+		err  error
+	}
+	frames := make(chan frame, 1)
 	go func() {
-		<-ctx.Done()
+		defer close(frames)
+		for {
+			body, err := readFrame(in)
+			select {
+			case frames <- frame{body: body, err: err}:
+			case <-ctx.Done():
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
 	}()
+
 	for {
+		var next frame
 		select {
 		case <-ctx.Done():
 			return nil
-		default:
+		case got, ok := <-frames:
+			if !ok {
+				return nil
+			}
+			next = got
 		}
-		body, err := readFrame(in)
+		body, err := next.body, next.err
 		if err != nil {
 			return nil // EOF closes the session host-side
 		}

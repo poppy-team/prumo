@@ -854,7 +854,7 @@ func runAgentSteer(asJSON bool, args []string) int {
 	if message == "" {
 		return serviceError(asJSON, fmt.Errorf("steer requires --message <text>"))
 	}
-	res, err := daemonClient(f).Call(map[string]any{"op": "steer", "run_id": runID, "message": message})
+	res, err := daemonClient(f).CallContext(commandContext(), map[string]any{"op": "steer", "run_id": runID, "message": message})
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
@@ -944,7 +944,7 @@ func runAgentPermission(asJSON bool, args []string, allow bool) int {
 	if allow {
 		op = "approve"
 	}
-	res, err := daemonClient(f).Call(map[string]any{
+	res, err := daemonClient(f).CallContext(commandContext(), map[string]any{
 		"op": op, "run_id": runID, "request_id": requestID,
 		"fingerprint": fingerprint, "reason": f["reason"], "actor": f["actor"],
 	})
@@ -992,7 +992,7 @@ func runAgentSchedule(asJSON bool, args []string) int {
 	if v, ok := f["every"]; ok {
 		fmt.Sscanf(v, "%f", &every)
 	}
-	res, err := daemonClient(f).Call(map[string]any{
+	res, err := daemonClient(f).CallContext(commandContext(), map[string]any{
 		"op": "schedule", "goal": goal, "provider": f["provider"],
 		"every_secs": every, "job_id": f["job"],
 	})
@@ -1014,7 +1014,7 @@ func runAgentUnschedule(asJSON bool, args []string) int {
 	if f["job"] == "" {
 		return serviceError(asJSON, fmt.Errorf("unschedule requires --job <id>"))
 	}
-	res, err := daemonClient(f).Call(map[string]any{"op": "unschedule", "job_id": f["job"]})
+	res, err := daemonClient(f).CallContext(commandContext(), map[string]any{"op": "unschedule", "job_id": f["job"]})
 	if err != nil {
 		return serviceError(asJSON, err)
 	}

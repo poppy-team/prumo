@@ -27,8 +27,10 @@ type Bridge struct {
 
 // NewSession starts a backing run titled for editors.
 func (b Bridge) NewSession(ctx context.Context, goal string) (Session, error) {
-	_ = ctx
-	res, err := b.Daemon.Call(map[string]any{"op": "start", "goal": goal, "provider": "fake", "max_turns": 10})
+	// The context was discarded here, so an editor that closed a session could
+	// not stop the call it had already made and the run it started outlived the
+	// request that asked for it (GAP-159).
+	res, err := b.Daemon.CallContext(ctx, map[string]any{"op": "start", "goal": goal, "provider": "fake", "max_turns": 10})
 	if err != nil {
 		return Session{}, err
 	}
@@ -42,8 +44,7 @@ func (b Bridge) NewSession(ctx context.Context, goal string) (Session, error) {
 // Prompt steers a live session; finished/unknown sessions start a fresh run
 // carrying the prompt (editors never lose input to a dead session).
 func (b Bridge) Prompt(ctx context.Context, sessionID, message string) (Session, error) {
-	_ = ctx
-	res, err := b.Daemon.Call(map[string]any{"op": "steer", "run_id": sessionID, "message": message})
+	res, err := b.Daemon.CallContext(ctx, map[string]any{"op": "steer", "run_id": sessionID, "message": message})
 	if err != nil {
 		return Session{}, err
 	}

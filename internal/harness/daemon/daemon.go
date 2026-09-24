@@ -1874,21 +1874,44 @@ type Client struct {
 }
 
 func (c Client) call(msg map[string]any) (map[string]any, error) {
-	// Every request declares the protocol it speaks, because the daemon now
-	// refuses the ones that do not. Setting it here means no caller can forget.
+	return c.CallContext(context.Background(), msg)
+}
+
+// CallContext sends one op and stops when ctx is done.
+//
+// The call took no context at all, so a caller that had one — an editor closing
+// a session, an ACP connection going away, a CLI handling Ctrl-C — could not
+// interrupt a request that was waiting on a daemon. The dial, the write and the
+// read all observe ctx, and a cancelled call reports the cancellation rather
+// than "no response from daemon", which is what a caller would otherwise have
+// to guess at (GAP-159).
+func (c Client) CallContext(ctx context.Context, msg map[string]any) (map[string]any, error) {
+	// Every request declares the protocol it speaks, because the daemon refuses
+	// the ones that do not. Setting it here means no caller can forget.
 	msg["protocol_version"] = harnessprotocol.Version
-	conn, err := c.dial()
+	conn, err := c.dialContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	// Cancelling ctx closes the socket, which unblocks a write or a read that is
+	// already waiting. A deadline on the connection itself would have been
+	// enough for the timeout case and not enough for the cancellation case.
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stop()
 	defer conn.Close()
 	data, _ := json.Marshal(msg)
 	if _, err := conn.Write(append(data, '\n')); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
 		return nil, err
 	}
 	sc := bufio.NewScanner(conn)
 	sc.Buffer(make([]byte, 4*1024*1024), 4*1024*1024)
 	if !sc.Scan() {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
 		return nil, fmt.Errorf("no response from daemon")
 	}
 	var out map[string]any
@@ -1905,8 +1928,29 @@ func (c Client) Call(msg map[string]any) (map[string]any, error) {
 
 // dial opens the socket, or a token-authenticated TLS connection.
 func (c Client) dial() (net.Conn, error) {
+	return c.dialContext(context.Background())
+}
+
+// dialContext opens the connection, observing ctx.
+//
+// net.Dial has no context form, and tls.Dial neither, so a cancelled ctx during
+// a handshake left the goroutine inside the TLS stack until the OS timed the
+// socket out. The deadline is set first, which is what the handshake can
+// actually observe, and the connection is closed if ctx is already done.
+func (c Client) dialContext(ctx context.Context) (net.Conn, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if c.RemoteAddr == "" {
-		return net.Dial("unix", c.SocketPath)
+		dialer := net.Dialer{}
+		if deadline, ok := ctx.Deadline(); ok {
+			dialer.Deadline = deadline
+		}
+		conn, err := dialer.DialContext(ctx, "unix", c.SocketPath)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
 	}
 	if c.Token == "" {
 		return nil, fmt.Errorf("remote %s requires a token (--token/--token-file/PRUMO_DAEMON_TOKEN)", c.RemoteAddr)
@@ -1923,9 +1967,29 @@ func (c Client) dial() (net.Conn, error) {
 		}
 		tlsConf.RootCAs = pool
 	}
-	conn, err := tls.Dial("tcp", c.RemoteAddr, tlsConf)
+	// tls.Dial has no context form either, so the handshake runs under a
+	// deadline derived from ctx and the socket is closed if ctx is cancelled
+	// underneath it.
+	dialer := &net.Dialer{}
+	if deadline, ok := ctx.Deadline(); ok {
+		dialer.Deadline = deadline
+	}
+	raw, err := dialer.DialContext(ctx, "tcp", c.RemoteAddr)
 	if err != nil {
 		return nil, err
+	}
+	conn := tls.Client(raw, tlsConf)
+	handshake := make(chan error, 1)
+	go func() { handshake <- conn.Handshake() }()
+	select {
+	case err := <-handshake:
+		if err != nil {
+			_ = raw.Close()
+			return nil, err
+		}
+	case <-ctx.Done():
+		_ = raw.Close()
+		return nil, ctx.Err()
 	}
 	auth, _ := json.Marshal(map[string]any{"auth": c.Token})
 	if _, err := conn.Write(append(auth, '\n')); err != nil {

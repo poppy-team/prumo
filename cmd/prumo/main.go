@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	prumo "github.com/raillen/prumo"
 	"github.com/raillen/prumo/internal/cliops"
@@ -140,6 +142,10 @@ func hasFlag(args []string, name string) bool {
 }
 
 func main() {
+	// Ctrl-C ends the command, and with it every daemon call it is waiting on.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	commandContext = func() context.Context { return ctx }
 	os.Exit(run(os.Args[1:]))
 }
 
@@ -827,3 +833,14 @@ func runExplain(svc *cliops.Service, asJSON bool, args []string) int {
 		return exitUsage
 	}
 }
+
+// commandContext is the context every CLI operation runs under.
+//
+// The CLI passed context.Background() to the daemon, so Ctrl-C during a call
+// that was waiting on a daemon did nothing: the process kept waiting for a
+// response that a stopped daemon would never send, and the operator's only way
+// out was a second signal (GAP-159).
+//
+// It is a function rather than a package variable so that each call gets the
+// context its own command is running under, and so a test can install one.
+var commandContext = func() context.Context { return context.Background() }
