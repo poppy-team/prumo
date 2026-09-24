@@ -21,8 +21,25 @@ func TestHTTPTransportSession(t *testing.T) {
 		gotSession = r.Header.Get("Mcp-Session-Id")
 		w.Header().Set("Mcp-Session-Id", "sess-1")
 		w.Header().Set("Content-Type", "application/json")
-		resp, _ := json.Marshal(Response{JSONRPC: "2.0", ID: req.ID,
-			Result: map[string]any{"tools": []any{map[string]any{"name": "t"}}}})
+		// A notification is answered with no body. Replying to one would leave
+		// an unread response in the transport's pending queue, and the next real
+		// request would read it instead of its own.
+		if req.ID == 0 {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		var result map[string]any
+		switch req.Method {
+		case "initialize":
+			result = map[string]any{
+				"protocolVersion": protocolVersion,
+				"capabilities":    map[string]any{"tools": map[string]any{}},
+				"serverInfo":      map[string]any{"name": "fake", "version": "1"},
+			}
+		default:
+			result = map[string]any{"tools": []any{map[string]any{"name": "t"}}}
+		}
+		resp, _ := json.Marshal(Response{JSONRPC: "2.0", ID: req.ID, Result: result})
 		_, _ = w.Write(resp)
 	}))
 	defer srv.Close()

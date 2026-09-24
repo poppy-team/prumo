@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -50,17 +51,39 @@ type Transport interface {
 	Close() error
 }
 
+// Notifier is implemented by transports that can deliver a JSON-RPC
+// notification without a reply.
+//
+// It exists because Send/Receive queue pairs a request with its response, and a
+// notification is half of neither: queueing one means the next Receive posts the
+// notification instead of the request that was actually made, and the caller
+// reads the notification's empty response as if it were its own. The client
+// falls back to Send when a transport cannot notify separately, which is correct
+// for a stream transport where the server is reading messages in order.
+type Notifier interface {
+	Notify(ctx context.Context, data []byte) error
+}
+
 // PipeTransport connects client and fake server over channels.
 type PipeTransport struct {
 	toServer  chan []byte
 	toClient  chan []byte
 	closed    int32
 	closeOnce sync.Once
+	// done is closed by Close and observed by every blocked Send and Receive.
+	//
+	// Close used to set a flag that only stopped new sends: a reader already
+	// blocked on the channel stayed blocked forever, so closing a transport while
+	// a round trip was in flight leaked the goroutine. The channel itself cannot
+	// be closed instead, because a concurrent Send would panic on a closed
+	// channel — a flag that leaks a goroutine beats a flag that crashes the
+	// process.
+	done chan struct{}
 }
 
 func NewPipe() (*PipeTransport, *PipeTransport) {
-	a := &PipeTransport{toServer: make(chan []byte, 64), toClient: make(chan []byte, 64)}
-	b := &PipeTransport{toServer: a.toClient, toClient: a.toServer}
+	a := &PipeTransport{toServer: make(chan []byte, 64), toClient: make(chan []byte, 64), done: make(chan struct{})}
+	b := &PipeTransport{toServer: a.toClient, toClient: a.toServer, done: make(chan struct{})}
 	return a, b
 }
 
@@ -70,6 +93,8 @@ func (p *PipeTransport) Send(_ context.Context, data []byte) error {
 	}
 	cp := append([]byte{}, data...)
 	select {
+	case <-p.done:
+		return fmt.Errorf("transport closed")
 	case p.toServer <- cp:
 		return nil
 	default:
@@ -81,16 +106,20 @@ func (p *PipeTransport) Receive(ctx context.Context) ([]byte, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case data, ok := <-p.toClient:
-		if !ok {
-			return nil, fmt.Errorf("transport closed")
-		}
+	case <-p.done:
+		// A close is reported as io.EOF: the peer is gone, which is not a
+		// failure of the caller's context and must not be mistaken for one.
+		return nil, io.EOF
+	case data := <-p.toClient:
 		return data, nil
 	}
 }
 
 func (p *PipeTransport) Close() error {
-	p.closeOnce.Do(func() { atomic.StoreInt32(&p.closed, 1) })
+	p.closeOnce.Do(func() {
+		atomic.StoreInt32(&p.closed, 1)
+		close(p.done)
+	})
 	return nil
 }
 
@@ -120,6 +149,51 @@ func (h *HTTPTransport) Send(_ context.Context, data []byte) error {
 	defer h.mu.Unlock()
 	h.pending = append(h.pending, append([]byte{}, data...))
 	return nil
+}
+
+// Notify posts a notification and throws the reply away.
+//
+// It cannot go through the pending queue: a queued notification is dequeued in
+// place of the next real request, and the caller then reads the notification's
+// response as its own. That is the failure the queue cannot express.
+func (h *HTTPTransport) Notify(ctx context.Context, data []byte) error {
+	h.mu.Lock()
+	session := h.session
+	client := h.httpClient()
+	h.mu.Unlock()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, h.URL, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	if session != "" {
+		req.Header.Set("Mcp-Session-Id", session)
+	}
+	for k, v := range h.Headers {
+		req.Header.Set(k, v)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("mcp notification rejected: %s", resp.Status)
+	}
+	return nil
+}
+
+// httpClient returns a usable client. A zero HTTPTransport had none, and every
+// call on it panicked at the first request rather than reporting that it was
+// not configured.
+func (h *HTTPTransport) httpClient() *http.Client {
+	if h.Client != nil {
+		return h.Client
+	}
+	return http.DefaultClient
 }
 
 func (h *HTTPTransport) Receive(ctx context.Context) ([]byte, error) {
@@ -243,7 +317,18 @@ type Client struct {
 	Transport Transport
 	Timeout   time.Duration
 	next      int64
+
+	// initOnce runs the MCP handshake exactly once. `tools/list` was sent as the
+	// first message on the wire, and a server that follows the protocol has no
+	// session to answer it: initialization is the first exchange, and tools/list
+	// before it is an error or an empty result depending on how forgiving the
+	// server is (GAP-143).
+	initOnce sync.Once
+	initErr  error
 }
+
+// protocolVersion is the MCP revision this client speaks.
+const protocolVersion = "2025-06-18"
 
 // Tool describes one server tool.
 type Tool struct {
@@ -288,7 +373,55 @@ func (c *Client) roundTrip(ctx context.Context, method string, params any) (any,
 }
 
 // List returns server tools.
+// initialize performs the MCP handshake: the initialize request, then the
+// initialized notification the protocol requires before the client may use any
+// other method.
+//
+// It is run once per client and its result is remembered, including its failure.
+// A handshake that failed is not retried on every tools/list, because the second
+// failure is the same failure and the server may be wedged rather than slow.
+func (c *Client) initialize(ctx context.Context) error {
+	c.initOnce.Do(func() {
+		if c.Transport == nil {
+			c.initErr = errors.New("mcp: no transport")
+			return
+		}
+		raw, err := c.roundTrip(ctx, "initialize", map[string]any{
+			"protocolVersion": protocolVersion,
+			"capabilities":    map[string]any{},
+			"clientInfo":      map[string]any{"name": "prumo", "version": "0.6"},
+		})
+		if err != nil {
+			c.initErr = fmt.Errorf("mcp initialize: %w", err)
+			return
+		}
+		// The server's own version is informational; a mismatch is the server's
+		// call to make. The notification is what it is waiting for.
+		_ = raw
+		if err := c.notify(ctx, "notifications/initialized", map[string]any{}); err != nil {
+			c.initErr = fmt.Errorf("mcp initialized: %w", err)
+		}
+	})
+	return c.initErr
+}
+
+// notify sends a JSON-RPC notification: a message with no id, to which the
+// server sends no reply.
+func (c *Client) notify(ctx context.Context, method string, params any) error {
+	data, err := json.Marshal(Request{JSONRPC: "2.0", Method: method, Params: params})
+	if err != nil {
+		return err
+	}
+	if notifier, ok := c.Transport.(Notifier); ok {
+		return notifier.Notify(ctx, data)
+	}
+	return c.Transport.Send(ctx, data)
+}
+
 func (c *Client) List(ctx context.Context) ([]Tool, error) {
+	if err := c.initialize(ctx); err != nil {
+		return nil, err
+	}
 	raw, err := c.roundTrip(ctx, "tools/list", map[string]any{})
 	if err != nil {
 		return nil, err
@@ -305,6 +438,9 @@ func (c *Client) List(ctx context.Context) ([]Tool, error) {
 
 // Call invokes one tool; result content blocks are concatenated as text.
 func (c *Client) Call(ctx context.Context, name string, args map[string]any) (string, error) {
+	if err := c.initialize(ctx); err != nil {
+		return "", err
+	}
 	raw, err := c.roundTrip(ctx, "tools/call", map[string]any{"name": name, "arguments": args})
 	if err != nil {
 		return "", err

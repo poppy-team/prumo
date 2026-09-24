@@ -17,14 +17,30 @@ func fakeServer(t *testing.T, server *PipeTransport) {
 			if err != nil {
 				return
 			}
+			_ = raw
 			var req Request
 			if err := json.Unmarshal(raw, &req); err != nil {
 				return
+			}
+			// A notification has no id and gets no reply. The client sends
+			// notifications/initialized as part of the MCP handshake, and a fake
+			// server that answered it would be desynchronising the client's
+			// request/response pairing.
+			if req.ID == 0 && req.Method != "" {
+				continue
 			}
 			var resp Response
 			resp.JSONRPC = "2.0"
 			resp.ID = req.ID
 			switch req.Method {
+			case "initialize":
+				resp.Result = map[string]any{
+					"protocolVersion": protocolVersion,
+					"capabilities":    map[string]any{"tools": map[string]any{}},
+					"serverInfo":      map[string]any{"name": "fake", "version": "1"},
+				}
+			case "notifications/initialized":
+				continue
 			case "tools/list":
 				resp.Result = map[string]any{"tools": []any{map[string]any{"name": "echo", "description": "echoes"}}}
 			case "tools/call":
