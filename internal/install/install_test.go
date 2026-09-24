@@ -41,7 +41,7 @@ func TestRemoveManagedPathsDoesNotTouchUnmanagedProject(t *testing.T) {
 	if err := os.WriteFile(managed, []byte("cache"), 0644); err != nil {
 		t.Fatalf("write managed: %v", err)
 	}
-	removed, leftovers := RemoveManagedPaths([]string{managed})
+	removed, leftovers := RemoveManagedPaths(home, []string{managed})
 	if len(removed) != 1 || len(leftovers) != 0 {
 		t.Fatalf("remove result: %v %v", removed, leftovers)
 	}

@@ -341,7 +341,7 @@ Risk Level: low
 		"created_paths":   created,
 	}
 	ownershipPath := filepath.Join(opencodeDir, ".prumo-generated.json")
-	if err := writeJSON(ownershipPath, ownership); err != nil {
+	if err := writeRecordJSON(ownershipPath, ownership); err != nil {
 		return nil, fmt.Errorf("failed to write ownership marker: %w", err)
 	}
 	created = append(created, ownershipPath)
@@ -447,7 +447,7 @@ func (c *Connector) Uninstall(home string, projectRoot string, opts connectors.U
 		return nil, fmt.Errorf("corrupt cleanup manifest: %w", err)
 	}
 
-	removed, leftovers := install.RemoveManagedPaths(cleanup.CreatedPaths)
+	removed, leftovers := install.RemoveManagedPaths(home, cleanup.CreatedPaths)
 
 	// Clean up .opencode dir if empty
 	if projectRoot != "" {
@@ -538,11 +538,27 @@ func (c *Connector) Validate(projectRoot string) (*connectors.ValidationResult, 
 }
 
 // Helper write utilities
+// writeText writes generated content unless doing so would destroy a file this
+// framework did not write.
+//
+// Every connector carried its own copy of this, each of which clobbered whatever
+// was at the path. For a file inside the connector's own dot-directory that is a
+// nuisance; for AGENTS.md, CLAUDE.md and GEMINI.md it destroyed the user's
+// instructions, and the path then went into the created list, so the uninstall
+// deleted the file outright (GAP-141).
+//
+// A refusal is reported as install.ErrFileBelongsToSomeoneElse so the caller can
+// carry on without claiming ownership, rather than as a failure — the write did
+// not fail, it was declined.
 func writeText(path, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	result, err := install.WriteManaged(path, install.Marked(content))
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(content), 0644)
+	if result.Skipped != nil {
+		return install.ErrFileBelongsToSomeoneElse
+	}
+	return nil
 }
 
 func writeJSON(path string, val any) error {
@@ -553,6 +569,23 @@ func writeJSON(path string, val any) error {
 	return writeText(path, string(data)+"\n")
 }
 
+// writeRecordJSON writes a file that records this framework's own ownership.
+//
+// It is the one write path allowed to replace its content unconditionally, because
+// the ownership manifest's content changes by design — it lists what this run
+// created, so the first run and the second produce different documents. Applying
+// the general rule to it made the second install refuse to update the record of
+// its own work (GAP-141).
+func writeRecordJSON(path string, val any) error {
+	data, err := json.MarshalIndent(val, "", "  ")
+	if err != nil {
+		return err
+	}
+	if _, err := install.WriteRecord(path, string(data)+"\n"); err != nil {
+		return err
+	}
+	return nil
+}
 func fileHash(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

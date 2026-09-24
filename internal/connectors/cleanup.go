@@ -43,7 +43,7 @@ func ExecuteCleanup(home, connectorID string, projectRoot string, pruneDirs ...s
 		return nil, err
 	}
 
-	removed, leftovers := install.RemoveManagedPaths(manifest.CreatedPaths)
+	removed, leftovers := install.RemoveManagedPaths(home, manifest.CreatedPaths)
 
 	// Prune directories if they become empty
 	for _, dir := range pruneDirs {

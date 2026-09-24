@@ -2,6 +2,7 @@ package claudecode
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -65,6 +66,7 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	claudeDir := filepath.Join(projectRoot, ".claude")
 	created := []string{}
+	preserved := []string{}
 
 	// 1. CLAUDE.md entrypoint in project root
 	claudeMD := `# CLAUDE.md
@@ -77,10 +79,20 @@ This project uses Prumo v0.5.
 - Stop when verification evidence is sufficient.
 `
 	claudeMDPath := filepath.Join(projectRoot, "CLAUDE.md")
+	// This file belongs to the user first. It is a convention an agent reads, so
+	// overwriting it destroys their project instructions, and listing it as
+	// created meant the uninstall removed it outright — a loss with no way back
+	// (GAP-141). A pre-existing file is left exactly as it is and the connector
+	// carries on without claiming it.
 	if err := writeText(claudeMDPath, claudeMD); err != nil {
-		return nil, err
+		if errors.Is(err, install.ErrFileBelongsToSomeoneElse) {
+			preserved = append(preserved, claudeMDPath)
+		} else {
+			return nil, err
+		}
+	} else {
+		created = append(created, claudeMDPath)
 	}
-	created = append(created, claudeMDPath)
 
 	// 2. Settings
 	settings := map[string]any{
@@ -132,16 +144,17 @@ This project uses Prumo v0.5.
 		"created_paths":   created,
 	}
 	markerPath := filepath.Join(claudeDir, ".prumo-generated.json")
-	if err := writeJSON(markerPath, ownership); err != nil {
+	if err := writeRecordJSON(markerPath, ownership); err != nil {
 		return nil, err
 	}
 	created = append(created, markerPath)
 
 	sort.Strings(created)
 	return &connectors.CompileResult{
-		Target:       "claude-code",
-		CreatedPaths: created,
-		ManifestPath: settingsPath,
+		Target:         "claude-code",
+		CreatedPaths:   created,
+		PreservedPaths: preserved,
+		ManifestPath:   settingsPath,
 	}, nil
 }
 
@@ -189,12 +202,13 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	return &connectors.InstallResult{
-		Connector:    "claude-code",
-		Status:       "installed",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
-		CleanupPath:  install.CleanupPath(home, "claude-code"),
-		Contract:     c.Contract(),
+		Connector:      "claude-code",
+		Status:         "installed",
+		Scope:          "project",
+		CreatedPaths:   res.CreatedPaths,
+		PreservedPaths: res.PreservedPaths,
+		CleanupPath:    install.CleanupPath(home, "claude-code"),
+		Contract:       c.Contract(),
 	}, nil
 }
 
@@ -234,11 +248,27 @@ func (c *Connector) Validate(projectRoot string) (*connectors.ValidationResult, 
 	return res, nil
 }
 
+// writeText writes generated content unless doing so would destroy a file this
+// framework did not write.
+//
+// Every connector carried its own copy of this, each of which clobbered whatever
+// was at the path. For a file inside the connector's own dot-directory that is a
+// nuisance; for AGENTS.md, CLAUDE.md and GEMINI.md it destroyed the user's
+// instructions, and the path then went into the created list, so the uninstall
+// deleted the file outright (GAP-141).
+//
+// A refusal is reported as install.ErrFileBelongsToSomeoneElse so the caller can
+// carry on without claiming ownership, rather than as a failure — the write did
+// not fail, it was declined.
 func writeText(path, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	result, err := install.WriteManaged(path, install.Marked(content))
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(content), 0644)
+	if result.Skipped != nil {
+		return install.ErrFileBelongsToSomeoneElse
+	}
+	return nil
 }
 
 func writeJSON(path string, val any) error {
@@ -247,4 +277,22 @@ func writeJSON(path string, val any) error {
 		return err
 	}
 	return writeText(path, string(data)+"\n")
+}
+
+// writeRecordJSON writes a file that records this framework's own ownership.
+//
+// It is the one write path allowed to replace its content unconditionally, because
+// the ownership manifest's content changes by design — it lists what this run
+// created, so the first run and the second produce different documents. Applying
+// the general rule to it made the second install refuse to update the record of
+// its own work (GAP-141).
+func writeRecordJSON(path string, val any) error {
+	data, err := json.MarshalIndent(val, "", "  ")
+	if err != nil {
+		return err
+	}
+	if _, err := install.WriteRecord(path, string(data)+"\n"); err != nil {
+		return err
+	}
+	return nil
 }

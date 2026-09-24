@@ -157,7 +157,7 @@ func runUninstall(asJSON bool, explicitHome string, args []string) int {
 			}
 			var cleanup install.CleanupManifest
 			if json.Unmarshal(cleanupData, &cleanup) == nil {
-				gone, remaining := install.RemoveManagedPaths(cleanup.CreatedPaths)
+				gone, remaining := install.RemoveManagedPaths(home, cleanup.CreatedPaths)
 				removed = append(removed, gone...)
 				leftovers = append(leftovers, remaining...)
 			}

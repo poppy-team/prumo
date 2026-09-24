@@ -106,29 +106,6 @@ func sortedUnique(values []string) []string {
 	return out
 }
 
-func RemoveManagedPaths(paths []string) (removed []string, leftovers []string) {
-	for _, path := range paths {
-		info, err := os.Lstat(path)
-		if err != nil {
-			continue
-		}
-		if info.IsDir() {
-			if err := os.Remove(path); err != nil {
-				leftovers = append(leftovers, path)
-				continue
-			}
-			removed = append(removed, path)
-			continue
-		}
-		if err := os.Remove(path); err != nil {
-			leftovers = append(leftovers, path)
-			continue
-		}
-		removed = append(removed, path)
-	}
-	return removed, leftovers
-}
-
 func PurgeDirectory(path string) error {
 	entries, err := os.ReadDir(path)
 	if err != nil {
