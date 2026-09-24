@@ -207,3 +207,91 @@ func writeTestFileForCLI(t *testing.T, root, rel, content string) {
 		t.Fatal(err)
 	}
 }
+
+// `--audit-only` was parsed into a variable and then discarded
+// (`_ = auditOnly`), so the flag that promises to change nothing applied
+// migrations anyway — the same command as --apply, with a reassuring name. The
+// approval record was worse: every proposal was stamped approved by the actor
+// "operator" at the time "now", neither of which names a person or a moment
+// (GAP-145).
+
+func TestAuditOnlyWritesNothing(t *testing.T) {
+	root := t.TempDir()
+	writeTestFileForCLI(t, root, "go.mod", "module example.com/clitest\n\ngo 1.22\n")
+	writeTestFileForCLI(t, root, "cmd/tool/main.go", "package main\n\nfunc main() {}\n")
+	writeTestFileForCLI(t, root, "README.md", "# Tool\n\nA CLI demonstration.\n")
+
+	before := treeSnapshot(t, root)
+	code, out := captureOutput(func() int {
+		return run([]string{"adopt", "--path", root, "--audit-only"})
+	})
+	if code != exitOK {
+		t.Fatalf("exit %d, want %d; output:\n%s", code, exitOK, out)
+	}
+	after := treeSnapshot(t, root)
+
+	// The whole tree, not just the obvious file: an audit that writes a report
+	// somewhere unexpected is still an audit that wrote.
+	for path, content := range after {
+		if before[path] != content {
+			t.Fatalf("--audit-only modified or created %s\nbefore: %q\nafter:  %q", path, before[path], content)
+		}
+	}
+	for path := range before {
+		if _, ok := after[path]; !ok {
+			t.Fatalf("--audit-only removed %s", path)
+		}
+	}
+}
+
+// treeSnapshot reads every file under root, keyed by relative path.
+func treeSnapshot(t *testing.T, root string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return relErr
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		out[rel] = string(data)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestAuditOnlyAndApplyTogetherAreRefused(t *testing.T) {
+	root := t.TempDir()
+	writeTestFileForCLI(t, root, "go.mod", "module example.com/clitest\n\ngo 1.22\n")
+	writeTestFileForCLI(t, root, "README.md", "# Tool\n\nA CLI demonstration.\n")
+
+	// Contradictory flags are a caller mistake, not a silent preference for the
+	// destructive one.
+	code, _ := captureOutput(func() int {
+		return run([]string{"adopt", "--path", root, "--audit-only", "--apply"})
+	})
+	if code == exitOK {
+		t.Fatal("--audit-only --apply was accepted; one of the two promises is a lie")
+	}
+}
+
+func TestAnApprovalNamesSomebody(t *testing.T) {
+	who := currentOperator()
+	// The literal "operator" was a role, and every migration in the history was
+	// approved by the same nobody.
+	if who == "operator" {
+		t.Fatal("the approver is still the role rather than the account")
+	}
+	if strings.TrimSpace(who) == "" {
+		t.Fatal("an approval was recorded with no approver at all")
+	}
+}

@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
+	"time"
 
 	"github.com/raillen/prumo/internal/adoption"
 	"github.com/raillen/prumo/internal/protocol"
@@ -50,8 +52,6 @@ func runAdopt(asJSON bool, args []string) int {
 			}
 		}
 	}
-
-	_ = auditOnly
 
 	opts := adoption.ScanOptions{
 		Budget:         adoption.DefaultBudget(),
@@ -161,16 +161,39 @@ func runAdopt(asJSON bool, args []string) int {
 		return exitOK
 	}
 
+	// --audit-only was parsed and discarded, so the flag that promises to change
+	// nothing was a no-op: the command applied migrations anyway. It is the same
+	// command without --apply, and saying so is the point of having it (GAP-145).
+	//
+	// It does not return here. The report is what an audit is for, and returning
+	// early would replace the report with a line of confirmation.
+	if auditOnly && apply {
+		return envelopeError("invalid_flags", "--audit-only and --apply contradict each other")
+	}
+	if auditOnly {
+		apply = false
+	}
+
 	if apply {
 		proposals := adoption.GenerateMigrationProposals(report)
-		type ApplySummary struct {
-			Applied []adoption.ApplyResult `json:"applied"`
-		}
 		var applied []adoption.ApplyResult
 		for _, p := range proposals {
+			// --apply is the operator authorizing, so the approval is real. What
+			// was fabricated was its record: the actor "operator" is a role, not
+			// a person, and "now" is not a moment, so every migration in the
+			// history was approved by the same nobody at an unrepeatable instant
+			// that no one could check (GAP-145).
+			//
+			// Proposals are not held back because they say review is required:
+			// every generated proposal does, which would make --apply a command
+			// that can never do anything. The flag is the authorization, and the
+			// record now says who gave it and when.
 			p.Status = adoption.ProposalStatusApproved
-			p.ApprovedBy = "operator"
-			p.ApprovedAt = "now"
+			p.ApprovedBy = currentOperator()
+			p.ApprovedAt = time.Now().UTC().Format(time.RFC3339)
+			if p.ReviewNotes == "" {
+				p.ReviewNotes = "approved by --apply on the command line"
+			}
 			res, err := adoption.Apply(path, p)
 			if err != nil {
 				if asJSON {
@@ -182,7 +205,7 @@ func runAdopt(asJSON bool, args []string) int {
 			applied = append(applied, res)
 		}
 		if asJSON {
-			return printEnvelope(protocol.OkEnvelope(ApplySummary{Applied: applied}))
+			return printEnvelope(protocol.OkEnvelope(map[string]any{"applied": applied}))
 		}
 		fmt.Printf("=== ADOPTION MIGRATION APPLIED (%d proposal(s)) ===\n\n", len(applied))
 		for _, app := range applied {
@@ -215,4 +238,27 @@ func runAdopt(asJSON bool, args []string) int {
 
 	fmt.Print(adoption.RenderHumanReport(report))
 	return exitOK
+}
+
+// currentOperator names the account that authorized an apply.
+//
+// The approval record used to say "operator", which is a role rather than a
+// person: every migration in the history was approved by the same nobody, and
+// the timestamp was the literal string "now" (GAP-145). An approval trail that
+// cannot say who approved what, or when, is not a trail.
+func currentOperator() string {
+	if u, err := user.Current(); err == nil && u.Username != "" {
+		return u.Username
+	}
+	if u, err := user.Current(); err == nil {
+		return u.Uid
+	}
+	env := os.Getenv("USER")
+	if env == "" {
+		env = os.Getenv("LOGNAME")
+	}
+	if env != "" {
+		return env
+	}
+	return "unknown"
 }

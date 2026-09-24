@@ -254,23 +254,35 @@ func (s *Service) migrateV2(root string, dryRun bool) (map[string]any, error) {
 	}
 	changes := []string{}
 	version, _ := data["version"].(float64)
-	if version < 3 || data["protocol"] == nil {
+	needsMigration := version < 3 || data["protocol"] == nil
+	report := map[string]any{"from_version": 2, "to_version": 3, "dry_run": dryRun, "changes": changes, "snapshot": nil}
+
+	// The snapshot is taken before anything is written, because its whole purpose
+	// is to be the state the migration started from. Taken afterwards it is a
+	// snapshot of the migration's own result: rolling back restores the migrated
+	// file, and the version that caused the migration is gone (GAP-145).
+	var snapshot string
+	if !dryRun && needsMigration {
+		snapshot = filepath.Join(root, ".prumo", "snapshots", fmt.Sprintf("pre_migration_v03_%s.zip", time.Now().UTC().Format("20060102150405")))
+		if err := s.Snapshot(root, snapshot); err != nil {
+			// A migration that cannot be snapshotted is not started. Reporting
+			// the error here, before the write, is the difference between a
+			// reversible migration and an irreversible one.
+			return nil, err
+		}
+		report["snapshot"] = snapshot
+	}
+
+	if needsMigration {
 		data["version"] = 3
 		data["protocol"] = map[string]any{"version": 3, "compatible": ">=3 <4"}
 		changes = append(changes, "Updated prumo.json to version 3 with protocol metadata")
+		report["changes"] = changes
 		if !dryRun {
 			if err := writeJSON(path, data); err != nil {
 				return nil, err
 			}
 		}
-	}
-	report := map[string]any{"from_version": 2, "to_version": 3, "dry_run": dryRun, "changes": changes, "snapshot": nil}
-	if !dryRun {
-		snapshot := filepath.Join(root, ".prumo", "snapshots", fmt.Sprintf("pre_migration_v03_%s.zip", time.Now().UTC().Format("20060102150405")))
-		if err := s.Snapshot(root, snapshot); err != nil {
-			return nil, err
-		}
-		report["snapshot"] = snapshot
 	}
 	return report, nil
 }
