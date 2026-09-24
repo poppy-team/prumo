@@ -315,11 +315,30 @@ func (g *Gateway) StreamWithFallback(ctx context.Context, route ModelRoute, req 
 			r.Model = t.Model
 		}
 		ch, err := g.streamWithRetry(ctx, p, t.Provider, r)
-		if err != nil {
-			lastErr = err
-			continue
+		if err == nil {
+			return ch, t.Provider, nil
 		}
-		return ch, t.Provider, nil
+		// A provider that does not serve tool calls owns its own loop: it ran its
+		// own tools and can have changed the world at any point after it started.
+		// Handing the turn to another provider then gives it a conversation with
+		// no record of what the first one did, and it re-plans — which is how a
+		// delegated run's work gets silently repeated by a provider that never saw
+		// it.
+		//
+		// The caller's afterSideEffects flag cannot cover this. It reports Prumo's
+		// own effects, and Prumo executed no tools here, so for a delegate it is
+		// always false — the one case that most needs the guard was the case the
+		// guard was blind to (GAP-173).
+		//
+		// So the guard is derived from what the provider told us about itself, and
+		// from whether it had started. A delegate that failed before emitting
+		// anything cannot have had effects, and refusing to fall back there would
+		// let one unreachable provider take the whole run down.
+		if errors.Is(err, errDelegateStartedWork) {
+			return nil, "", err
+		}
+		lastErr = err
+		continue
 	}
 	if lastErr == nil {
 		lastErr = fmt.Errorf("no route targets")
@@ -360,6 +379,10 @@ func (g *Gateway) streamWithRetry(ctx context.Context, p model.Provider, name st
 		// provider emitted before the first event that commits anything. Buffering
 		// stops at the first decisive event; the rest of the stream is forwarded
 		// unbuffered as before.
+		// A delegate is a provider that does not serve tool calls: it runs its own
+		// loop, so anything it does from the moment it starts is invisible to
+		// Prumo's effect journal.
+		delegate := !p.Capabilities().ToolCalls
 		pending := make([]agent.ModelEvent, 0, 8)
 		var routeErr error
 		waiting := true
@@ -398,6 +421,12 @@ func (g *Gateway) streamWithRetry(ctx context.Context, p model.Provider, name st
 			}
 		}
 		if routeErr != nil {
+			// The delegate had already emitted something, so it had already
+			// started working. The failure is terminal for this route and the turn
+			// cannot be handed on: the run has to decide, not the router.
+			if delegate && len(pending) > 0 {
+				return nil, errDelegateStartedWork
+			}
 			lastErr = routeErr
 			continue
 		}
@@ -588,3 +617,17 @@ func commitsRoute(kind agent.ModelEventKind) bool {
 		return false
 	}
 }
+
+// errDelegateStartedWork says a provider that owns its own loop failed after
+// beginning, so the turn cannot be moved to another provider.
+//
+// It is distinct from an ordinary failure on purpose. An ordinary failure means
+// "try the next target"; this one means "something outside this router has to
+// decide", because a delegate's work cannot be replayed, attributed or undone
+// from here. Collapsing the two would be how a delegated run's side effects get
+// repeated by a provider that never saw them.
+var errDelegateStartedWork = errors.New("gateway: provider runs its own tools and failed after starting; its work cannot be transferred to another provider")
+
+// DelegateWorkInFlight reports whether err is the delegate-started-work failure,
+// so a caller can react to it without matching on message text.
+func DelegateWorkInFlight(err error) bool { return errors.Is(err, errDelegateStartedWork) }

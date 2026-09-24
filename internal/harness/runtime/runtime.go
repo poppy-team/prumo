@@ -13,6 +13,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/checkpoint"
 	"github.com/raillen/prumo/internal/harness/directive"
+	"github.com/raillen/prumo/internal/harness/gateway"
 	"github.com/raillen/prumo/internal/harness/model"
 	"github.com/raillen/prumo/internal/harness/perm"
 )
@@ -615,6 +616,21 @@ func (r *Runner) Step(ctx context.Context) error {
 			release(0, 0)
 			r.State.Phase = agent.PhaseFailed
 			r.State.StopReason = err.Error()
+			// A provider that runs its own tools failed after beginning, and the
+			// router refused to move the turn. The run is not in the state where a
+			// retry or a resume makes sense: the delegate already did work that
+			// this run cannot see, attribute or undo. Marking it explicitly is what
+			// stops a resume from quietly re-running a delegation whose effects
+			// are still there (GAP-173).
+			// The phase stays failed: the turn did fail, and there is no phase for
+			// "failed with unaccounted side effects" — inventing one would put a
+			// state the machine has no transition out of. What makes this different
+			// from an ordinary model failure is carried by the typed error and said
+			// plainly in the stop reason, so a resume does not read it as "the call
+			// failed, try again" when the work already happened.
+			if gateway.DelegateWorkInFlight(err) {
+				r.State.StopReason = "delegated run failed after starting; work it did is not accounted for by this run and must be inspected before resuming: " + err.Error()
+			}
 			return err
 		}
 		// The stream reports the real cost once its usage event arrives; until

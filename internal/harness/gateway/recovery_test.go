@@ -350,3 +350,145 @@ func (p *recordingNameProvider) Stream(_ context.Context, req agent.ModelRequest
 	close(ch)
 	return ch, nil
 }
+
+// A provider that reports ToolCalls: false is not a provider Prumo drives — it
+// owns its own loop, runs its own tools, and can change the world at any moment
+// after it starts. Swapping it for another provider mid-run hands the turn to
+// something that has not seen what the first one did, and the second re-plans
+// from a conversation with no record of it.
+//
+// The gateway read afterSideEffects from the caller, which is Prumo's own effect
+// flag. For a delegate that flag is always false, because Prumo executed no tools
+// — so the one case that most needs the guard was the case the guard could not
+// see. The live opencode test is what made it concrete (GAP-173).
+
+func TestAFailureInsideADelegatingProviderIsNotSilentlyRoutedElsewhere(t *testing.T) {
+	g := New()
+	delegate := &failingDelegate{name: "delegate", started: true}
+	other := &recordingNameProvider{name: "other", answer: "started over"}
+	g.RegisterAs("delegate", delegate)
+	g.RegisterAs("other", other)
+	g.DeclareTarget(RouteTarget{Provider: "delegate", Model: "m1"})
+	g.DeclareTarget(RouteTarget{Provider: "other", Model: "m1"})
+	g.Retry = RetryPolicy{Attempts: 1}
+
+	// The delegate emits a preamble and then fails, which is what a real
+	// delegated run does when its own provider goes away mid-work.
+	_, _, err := g.StreamWithFallback(context.Background(),
+		ModelRoute{Primary: RouteTarget{Provider: "delegate", Model: "m1"},
+			Fallbacks: []RouteTarget{{Provider: "other", Model: "m1"}}},
+		agent.ModelRequest{RequestID: "r"}, false)
+	if err == nil {
+		t.Fatal("a delegate that failed after doing work must not have the turn handed to another provider")
+	}
+	if other.calls != 0 {
+		t.Error("the second provider was called; it would re-plan from a conversation that never saw the delegate's work")
+	}
+}
+
+func TestADelegateThatFailedBeforeDoingAnythingMayStillFallBack(t *testing.T) {
+	// A delegate that never started cannot have had effects, so falling back is
+	// safe. Refusing here would make a provider that is simply unreachable take
+	// the whole run down with it.
+	g := New()
+	delegate := &failingDelegate{name: "delegate", started: false}
+	other := &recordingNameProvider{name: "other", answer: "answered here"}
+	g.RegisterAs("delegate", delegate)
+	g.RegisterAs("other", other)
+	g.DeclareTarget(RouteTarget{Provider: "delegate", Model: "m1"})
+	g.DeclareTarget(RouteTarget{Provider: "other", Model: "m1"})
+	g.Retry = RetryPolicy{Attempts: 1}
+
+	ch, _, err := g.StreamWithFallback(context.Background(),
+		ModelRoute{Primary: RouteTarget{Provider: "delegate", Model: "m1"},
+			Fallbacks: []RouteTarget{{Provider: "other", Model: "m1"}}},
+		agent.ModelRequest{RequestID: "r"}, false)
+	if err != nil {
+		t.Fatalf("a delegate that never started must not block the fallback: %v", err)
+	}
+	var text string
+	for ev := range ch {
+		if ev.Kind == agent.EventTextDelta {
+			text += ev.Text
+		}
+	}
+	if text == "" {
+		t.Fatal("the fallback produced nothing")
+	}
+}
+
+func TestAToolServingProviderStillFallsBackAfterAPartialAnswer(t *testing.T) {
+	// The guard must not disable the fallback the gateway exists to provide. A
+	// tool-serving provider has run no tools of its own, so handing the turn to
+	// another one loses nothing.
+	g := New()
+	primary := &failingToolProvider{name: "primary"}
+	backup := &recordingNameProvider{name: "backup", answer: "the backup answered"}
+	g.RegisterAs("primary", primary)
+	g.RegisterAs("backup", backup)
+	g.DeclareTarget(RouteTarget{Provider: "primary", Model: "m1"})
+	g.DeclareTarget(RouteTarget{Provider: "backup", Model: "m1"})
+	g.Retry = RetryPolicy{Attempts: 1}
+
+	ch, _, err := g.StreamWithFallback(context.Background(),
+		ModelRoute{Primary: RouteTarget{Provider: "primary", Model: "m1"},
+			Fallbacks: []RouteTarget{{Provider: "backup", Model: "m1"}}},
+		agent.ModelRequest{RequestID: "r"}, false)
+	if err != nil {
+		t.Fatalf("a tool-serving provider must still fall back: %v", err)
+	}
+	var text string
+	for ev := range ch {
+		if ev.Kind == agent.EventTextDelta {
+			text += ev.Text
+		}
+	}
+	if text == "" {
+		t.Fatal("the fallback produced nothing")
+	}
+}
+
+// failingDelegate reports ToolCalls:false — it owns its own loop.
+type failingDelegate struct {
+	name    string
+	started bool
+}
+
+func (f *failingDelegate) Name() string { return f.name }
+func (f *failingDelegate) Capabilities() model.Capabilities {
+	return model.Capabilities{Streaming: true, ToolCalls: false, Usage: true}
+}
+func (f *failingDelegate) Models(context.Context) ([]string, error) { return []string{"m1"}, nil }
+func (f *failingDelegate) Health(context.Context) (string, error)   { return "healthy", nil }
+func (f *failingDelegate) Stream(_ context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
+	ch := make(chan agent.ModelEvent, 2)
+	if f.started {
+		// Preamble, then a failure: the shape a delegated run takes when its own
+		// provider disappears after it has already done work.
+		ch <- agent.ModelEvent{Kind: agent.ModelEventKind("step_start"), RequestID: req.RequestID}
+	}
+	ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+		Error: "upstream went away", Retryable: true}
+	close(ch)
+	return ch, nil
+}
+
+// failingToolProvider reports ToolCalls:true — Prumo drives the loop.
+type failingToolProvider struct{ name string }
+
+func (f *failingToolProvider) Name() string { return f.name }
+func (f *failingToolProvider) Capabilities() model.Capabilities {
+	return model.Capabilities{Streaming: true, ToolCalls: true, Usage: true}
+}
+func (f *failingToolProvider) Models(context.Context) ([]string, error) {
+	return []string{"m1"}, nil
+}
+func (f *failingToolProvider) Health(context.Context) (string, error) { return "healthy", nil }
+func (f *failingToolProvider) Stream(_ context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
+	ch := make(chan agent.ModelEvent, 2)
+	ch <- agent.ModelEvent{Kind: agent.EventTextDelta, Text: "partial", RequestID: req.RequestID}
+	ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+		Error: "boom", Retryable: true}
+	close(ch)
+	return ch, nil
+}
