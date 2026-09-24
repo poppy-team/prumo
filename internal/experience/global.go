@@ -53,19 +53,19 @@ const (
 
 // GlobalPattern represents an aggregated cross-project or project-level pattern.
 type GlobalPattern struct {
-	ID             string       `json:"id"`
-	Type           PatternType  `json:"type"`
-	Scope          PatternScope `json:"scope"`
-	Title          string       `json:"title"`
-	Description    string       `json:"description"`
-	Confidence     float64      `json:"confidence"`
-	ProjectCount   int          `json:"project_count"`
-	Occurrences    int          `json:"occurrences"`
-	Sources        []string     `json:"sources"` // Project IDs or Session IDs
-	ReviewStatus   ReviewStatus `json:"review_status"`
-	PromotionTarget string      `json:"promotion_target,omitempty"` // e.g. "skill:code-audit", "recipe:ci-setup"
-	CreatedAt      string       `json:"created_at"`
-	UpdatedAt      string       `json:"updated_at"`
+	ID              string       `json:"id"`
+	Type            PatternType  `json:"type"`
+	Scope           PatternScope `json:"scope"`
+	Title           string       `json:"title"`
+	Description     string       `json:"description"`
+	Confidence      float64      `json:"confidence"`
+	ProjectCount    int          `json:"project_count"`
+	Occurrences     int          `json:"occurrences"`
+	Sources         []string     `json:"sources"` // Project IDs or Session IDs
+	ReviewStatus    ReviewStatus `json:"review_status"`
+	PromotionTarget string       `json:"promotion_target,omitempty"` // e.g. "skill:code-audit", "recipe:ci-setup"
+	CreatedAt       string       `json:"created_at"`
+	UpdatedAt       string       `json:"updated_at"`
 }
 
 // GlobalLearningRegistry manages observations and aggregates candidate patterns.

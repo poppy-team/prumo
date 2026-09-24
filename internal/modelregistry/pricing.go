@@ -201,3 +201,70 @@ func DefaultPricing() PricingTable {
 		},
 	}
 }
+
+// StaleAfter is how long a pricing entry is trusted before it is called out.
+//
+// It is a date, not a network call, for two reasons: a CI run must be
+// deterministic, and a check that reaches a provider's API every time is a check
+// that fails for reasons unrelated to this repository. The cost of a stale rate
+// is a wrong number in a report, which is worth detecting and not worth breaking
+// a build over (GAP-155).
+const StaleAfter = 90 * 24 * time.Hour
+
+// StaleEntry is one pricing entry that has aged past what is trusted.
+type StaleEntry struct {
+	Provider      string `json:"provider"`
+	Model         string `json:"model"`
+	EffectiveFrom string `json:"effective_from"`
+	AgeDays       int    `json:"age_days"`
+}
+
+// Stale reports the entries whose effective date has aged past StaleAfter, as of
+// now.
+//
+// An entry with an unparseable date is reported rather than skipped: Validate
+// catches it, and a check that quietly ignores what it cannot read is how a bad
+// date becomes a permanent one.
+func (t PricingTable) Stale(now time.Time) []StaleEntry {
+	out := []StaleEntry{}
+	for _, key := range t.Keys() {
+		entry, ok := t.Entries[key]
+		if !ok {
+			continue
+		}
+		effective, err := time.Parse("2006-01-02", entry.EffectiveFrom)
+		if err != nil {
+			out = append(out, StaleEntry{
+				Provider: entry.Provider, Model: entry.Model,
+				EffectiveFrom: entry.EffectiveFrom, AgeDays: -1,
+			})
+			continue
+		}
+		age := now.Sub(effective)
+		if age > StaleAfter {
+			out = append(out, StaleEntry{
+				Provider: entry.Provider, Model: entry.Model,
+				EffectiveFrom: entry.EffectiveFrom, AgeDays: int(age.Hours() / 24),
+			})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Provider != out[j].Provider {
+			return out[i].Provider < out[j].Provider
+		}
+		return out[i].Model < out[j].Model
+	})
+	return out
+}
+
+// Keys lists every priced key, sorted. A caller that iterates the table directly
+// gets a different order every run, which makes a report that quotes it
+// unreproducible.
+func (t PricingTable) Keys() []string {
+	keys := make([]string, 0, len(t.Entries))
+	for key := range t.Entries {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}

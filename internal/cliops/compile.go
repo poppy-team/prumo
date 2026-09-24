@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/raillen/prumo/internal/connectors"
 	"github.com/raillen/prumo/internal/connectors/antigravity"
 	"github.com/raillen/prumo/internal/connectors/gemini"
 	"github.com/raillen/prumo/internal/connectors/opencode"
+	"github.com/raillen/prumo/internal/modelregistry"
 	"github.com/raillen/prumo/internal/protocol"
 	"github.com/raillen/prumo/internal/protocol/goals"
 	"github.com/raillen/prumo/internal/protocol/plans"
@@ -455,6 +457,23 @@ func (s *Service) Doctor(root string) ([]map[string]any, error) {
 	}
 	for _, message := range s.Validate(root) {
 		findings = append(findings, map[string]any{"category": "schema/structure", "severity": "ERROR", "message": message, "target": root})
+	}
+	// Pricing ages. The table is versioned and dated, but a rate nobody has
+	// revisited produces a wrong number in a cost report, and nothing said so
+	// (GAP-155). It is a WARNING rather than an ERROR: a stale rate is worth
+	// knowing about and is not a broken project.
+	for _, entry := range modelregistry.DefaultPricing().Stale(time.Now()) {
+		age := fmt.Sprintf("%d days", entry.AgeDays)
+		if entry.AgeDays < 0 {
+			age = "an unreadable date"
+		}
+		findings = append(findings, map[string]any{
+			"category": "pricing", "severity": "WARNING",
+			"message": fmt.Sprintf(
+				"Pricing for %s/%s is effective from %s (%s old); verify it against the provider",
+				entry.Provider, entry.Model, entry.EffectiveFrom, age),
+			"target": "modelregistry/pricing",
+		})
 	}
 	prumo, err := readJSON(filepath.Join(root, "prumo.json"))
 	if err == nil {
