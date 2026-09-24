@@ -162,17 +162,9 @@ func validateNode(instance any, schema map[string]any, registry Registry, path s
 				}
 				errors = append(errors, validateNode(value, childSchema, registry, path+"."+name)...)
 			}
-			if additional, exists := schema["additionalProperties"]; exists {
-				if allowed, isBool := additional.(bool); isBool && !allowed {
-					for name := range object {
-						if _, defined := properties[name]; !defined {
-							errors = append(errors, fmt.Sprintf("%s: additional property %q is not allowed", path, name))
-						}
-					}
-				}
-			}
 		}
 	}
+	errors = append(errors, validateAdditionalProperties(instance, schema, registry, path)...)
 	if items, ok := schema["items"].(map[string]any); ok {
 		if values, ok := instance.([]any); ok {
 			for index, value := range values {
@@ -214,6 +206,55 @@ func validateNode(instance any, schema map[string]any, registry Registry, path s
 		}
 	}
 	return errors
+}
+
+// validateAdditionalProperties applies the additionalProperties keyword to an
+// object instance.
+//
+// It is read outside the named-properties block on purpose: a schema that
+// constrains a map's values frequently declares no named properties at all, and
+// handling it inside that block meant such a schema was never reached — the
+// constraint looked written and did nothing.
+//
+// A schema-valued additionalProperties is how JSON Schema constrains every value
+// of a map — the only way to say "every role must be one of these two shapes", or
+// "every entry of profiles must name a provider and a model". It used to be read
+// as a bool, found not to be one, and skipped, so a contract written that way
+// passed every instance it was given. A contract that looks enforced and enforces
+// nothing is worse than one never written (GAP-151).
+func validateAdditionalProperties(instance any, schema map[string]any, registry Registry, path string) []string {
+	additional, exists := schema["additionalProperties"]
+	if !exists {
+		return nil
+	}
+	object, isObject := instance.(map[string]any)
+	if !isObject {
+		return nil
+	}
+	named, _ := schema["properties"].(map[string]any)
+	switch typed := additional.(type) {
+	case bool:
+		if typed {
+			return nil
+		}
+		var errors []string
+		for name := range object {
+			if _, defined := named[name]; !defined {
+				errors = append(errors, fmt.Sprintf("%s: additional property %q is not allowed", path, name))
+			}
+		}
+		return errors
+	case map[string]any:
+		var errors []string
+		for name, value := range object {
+			if _, defined := named[name]; defined {
+				continue
+			}
+			errors = append(errors, validateNode(value, typed, registry, path+"."+name)...)
+		}
+		return errors
+	}
+	return nil
 }
 
 func matchesType(value any, expected string) bool {

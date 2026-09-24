@@ -89,3 +89,95 @@ func TestValidateWithNestedRef(t *testing.T) {
 		t.Fatalf("expected empty plan to fail")
 	}
 }
+
+// A schema-valued additionalProperties is the only way JSON Schema can say
+// "every value in this map must look like this". It used to be read as a bool,
+// found not to be one, and skipped — so a contract written that way passed every
+// instance it was given. A constraint that looks written and enforces nothing is
+// worse than one never written, because it is read as coverage (GAP-151).
+
+func TestASchemaValuedAdditionalPropertiesConstrainsEveryValue(t *testing.T) {
+	schema := mustSchema(t, `{
+		"type": "object",
+		"properties": {
+			"roles": {
+				"type": "object",
+				"additionalProperties": {
+					"oneOf": [
+						{"type": "string", "minLength": 1},
+						{"type": "object", "properties": {"preferred": {"type": "array", "items": {"type": "string"}}}}
+					]
+				}
+			}
+		}
+	}`)
+	if got := ValidateSchema(mustInstance(t, `{"roles":{"architect":42}}`), schema, Registry{}); len(got) == 0 {
+		t.Fatal("a numeric role value must not satisfy a oneOf that admits only a string or an object")
+	}
+}
+
+func TestAValueThatSatisfiesTheConstraintPasses(t *testing.T) {
+	schema := mustSchema(t, `{
+		"type": "object",
+		"properties": {
+			"roles": {
+				"type": "object",
+				"additionalProperties": {"oneOf": [{"type": "string"}, {"type": "object"}]}
+			}
+		}
+	}`)
+	for _, instance := range []string{
+		`{"roles":{"architect":"fast"}}`,
+		`{"roles":{"architect":{"preferred":["m1"]}}}`,
+		`{"roles":{"a":"x","b":"y","c":{"preferred":[]}}}`,
+	} {
+		if got := ValidateSchema(mustInstance(t, instance), schema, Registry{}); len(got) != 0 {
+			t.Errorf("%s must pass, got %v", instance, got)
+		}
+	}
+}
+
+func TestTheConstraintIsNotSkippedWhenNoNamedPropertiesAreDeclared(t *testing.T) {
+	// The handling used to live inside the named-properties block, so a schema
+	// with only additionalProperties — which is the normal way to constrain a
+	// map's values — was never reached at all.
+	schema := mustSchema(t, `{
+		"type": "object",
+		"additionalProperties": {"type": "string"}
+	}`)
+	if got := ValidateSchema(mustInstance(t, `{"anything":42}`), schema, Registry{}); len(got) == 0 {
+		t.Fatal("a map with no named properties must still have its values constrained")
+	}
+}
+
+func TestABooleanAdditionalPropertiesStillForbidsExtras(t *testing.T) {
+	schema := mustSchema(t, `{
+		"type": "object",
+		"properties": {"known": {"type": "string"}},
+		"additionalProperties": false
+	}`)
+	if got := ValidateSchema(mustInstance(t, `{"known":"x","extra":1}`), schema, Registry{}); len(got) == 0 {
+		t.Fatal("additionalProperties:false must still reject an undeclared property")
+	}
+	if got := ValidateSchema(mustInstance(t, `{"known":"x"}`), schema, Registry{}); len(got) != 0 {
+		t.Fatalf("a declared property must pass, got %v", got)
+	}
+}
+
+func mustSchema(t *testing.T, raw string) map[string]any {
+	t.Helper()
+	var schema map[string]any
+	if err := json.Unmarshal([]byte(raw), &schema); err != nil {
+		t.Fatal(err)
+	}
+	return schema
+}
+
+func mustInstance(t *testing.T, raw string) any {
+	t.Helper()
+	var instance any
+	if err := json.Unmarshal([]byte(raw), &instance); err != nil {
+		t.Fatal(err)
+	}
+	return instance
+}

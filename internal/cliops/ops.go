@@ -86,11 +86,35 @@ func (s *Service) ModelPolicy(profile resolver.Profile) (map[string]any, error) 
 		ids = append(ids, id)
 		roster = append(roster, map[string]any{"id": id, "provider": provider, "enabled": true})
 	}
-	roles := map[string]any{}
-	for _, role := range []string{"architect", "debugger", "documentation-maintainer", "implementer", "release-verifier", "reviewer", "security-reviewer", "tester", "ux-reviewer"} {
-		roles[role] = map[string]any{"preferred": append([]string{}, ids...), "fallback": []string{}}
+	// The role shape is built through the same parser the doctor reads it with,
+	// so the generated file is checked by the same rules a hand-written one is.
+	// They used to disagree: this wrote a list of model ids and the doctor
+	// expected a profile name, so the doctor's role check silently passed over
+	// every role generated here (GAP-132).
+	roleNames := []string{"architect", "debugger", "documentation-maintainer", "implementer", "release-verifier", "reviewer", "security-reviewer", "tester", "ux-reviewer"}
+	roles := make(map[string]any, len(roleNames))
+	for _, role := range roleNames {
+		rendered, err := renderRolePolicy(RolePolicy{Preferred: append([]string{}, ids...)})
+		if err != nil {
+			return nil, err
+		}
+		roles[role] = rendered
 	}
-	return map[string]any{"version": 2, "selection_rule": "cheapest-reliable-model-that-passes-gates", "cross_provider_review": true, "context_aware_routing": true, "roster": roster, "roles": roles}, nil
+	policy := map[string]any{"version": 2, "selection_rule": "cheapest-reliable-model-that-passes-gates", "cross_provider_review": true, "context_aware_routing": true, "roster": roster, "roles": roles}
+	// A generated policy that its own doctor rejects is a bug worth surfacing
+	// here rather than at the next compile, so the shape is checked on the way
+	// out too.
+	//
+	// The check runs on the marshalled form, not on this in-memory value. The
+	// parser reads decoded JSON, where a list is []any, while the value built
+	// here holds []string; checking the Go value would be checking a
+	// representation the doctor never sees, and making the parser accept both
+	// would let a second shape in through the back door. What gets validated is
+	// the bytes that land on disk.
+	if err := validateRenderedModelPolicy(policy); err != nil {
+		return nil, err
+	}
+	return policy, nil
 }
 func contextPolicy() map[string]any {
 	profiles := map[string]any{}

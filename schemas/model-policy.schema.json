@@ -10,33 +10,162 @@
     "roles"
   ],
   "properties": {
-    "version": { "type": "integer", "minimum": 1 },
-    "selection_rule": { "type": "string" },
-    "cross_provider_review": { "type": ["boolean", "string"] },
-    "context_aware_routing": { "type": ["boolean", "string"] },
-    "roster": { "type": "array", "minItems": 1 },
-    "profiles": {
-      "type": "object",
-      "additionalProperties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "selection_rule": {
+      "type": "string"
+    },
+    "cross_provider_review": {
+      "type": [
+        "boolean",
+        "string"
+      ]
+    },
+    "context_aware_routing": {
+      "type": [
+        "boolean",
+        "string"
+      ]
+    },
+    "roster": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
         "type": "object",
-        "required": ["provider", "model"],
+        "required": [
+          "id"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "provider": { "type": "string" },
-          "model": { "type": "string" },
-          "capabilities": { "type": "array", "items": { "type": "string" } },
-          "context_window": { "type": "integer", "minimum": 1 },
-          "strengths": { "type": "array", "items": { "type": "string" } },
-          "weaknesses": { "type": "array", "items": { "type": "string" } },
-          "cost_class": { "enum": ["free", "low", "medium", "high", "custom"] }
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The id roles reference to select this model. Unique within the roster."
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
         },
         "additionalProperties": true
       }
     },
-    "roles": { "type": "object" },
-    "quality_policy": { "type": "object" },
-    "cost_policy": { "type": "object" },
-    "fallback_policy": { "type": "object" }
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "provider",
+          "model"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "context_window": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "strengths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "weaknesses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cost_class": {
+            "enum": [
+              "free",
+              "low",
+              "medium",
+              "high",
+              "custom"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "roles": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "A role either names a profile or lists the roster model ids it prefers. Both forms are accepted; the doctor understands both and checks both.",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "description": "The name of an entry in this policy's profiles."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "preferred": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Roster model ids, most preferred first."
+              },
+              "fallback": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Roster model ids to try when none preferred works."
+              }
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "preferred"
+                ]
+              },
+              {
+                "required": [
+                  "fallback"
+                ]
+              }
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "quality_policy": {
+      "type": "object"
+    },
+    "cost_policy": {
+      "type": "object"
+    },
+    "fallback_policy": {
+      "type": "object"
+    }
   },
   "additionalProperties": true
 }
