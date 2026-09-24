@@ -15,7 +15,20 @@ import (
 	"strings"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/modelregistry"
 )
+
+// priceUsage fills in a cost the endpoint did not report.
+//
+// The provider name is what the pricing table is keyed by, and the model is the
+// one actually requested — not the provider's configured default — because a
+// request that names a different model is billed at that model's rate.
+func priceUsage(table modelregistry.PricingTable, provider, model string, usage *agent.Usage) {
+	if table.Version == "" {
+		return
+	}
+	modelregistry.Price(table, provider, model, usage)
+}
 
 // Capabilities advertises what an adapter can do.
 type Capabilities struct {
@@ -183,6 +196,13 @@ type OpenAICompat struct {
 	// ExtraHeaders are sent on every request (e.g. x-session-id on gateways
 	// whose free tier only serves requests tied to an account session).
 	ExtraHeaders map[string]string
+	// Provider is the vendor whose published prices apply, for the many
+	// compatible endpoints that are not OpenAI.
+	Provider string
+	// Pricing prices this provider's usage. The zero value has no rates, so a
+	// provider built without one reports no cost — which is honest, and loud
+	// through modelregistry.Pricable, rather than a silent zero.
+	Pricing modelregistry.PricingTable
 }
 
 func envOr(key, def string) string {
@@ -212,12 +232,7 @@ func ModelHeaders() map[string]string {
 // without this the harness would send the conversation and the API key to any
 // address the caller named, including the cloud metadata endpoint (GAP-111).
 func NewOpenAICompat(baseURL, apiKey, model string) *OpenAICompat {
-	return &OpenAICompat{
-		BaseURL: strings.TrimRight(baseURL, "/"),
-		APIKey:  apiKey,
-		Model:   model,
-		Client:  NewDestinationHTTPClient(DefaultDestinationPolicy()),
-	}
+	return NewOpenAICompatWithPolicy(baseURL, apiKey, model, DefaultDestinationPolicy())
 }
 
 // NewOpenAICompatWithPolicy is the form a caller uses when it has a destination
@@ -228,6 +243,10 @@ func NewOpenAICompatWithPolicy(baseURL, apiKey, model string, policy Destination
 		APIKey:  apiKey,
 		Model:   model,
 		Client:  NewDestinationHTTPClient(policy),
+		// Priced by default. This endpoint returns tokens and no cost, so a
+		// provider built without a table reports a cost of zero for every call and
+		// a US dollar budget never moves (GAP-129).
+		Pricing: modelregistry.DefaultPricing(),
 	}
 }
 
@@ -245,6 +264,22 @@ func (o *OpenAICompat) applyHeaders(req *http.Request) {
 }
 
 func (o *OpenAICompat) Name() string { return "openai-compat" }
+
+// ProviderKey is the vendor whose published prices apply. The adapter is a
+// protocol, not a vendor: the same client talks to OpenAI, OpenRouter and
+// anything else compatible, and their rates differ. A caller that knows the
+// vendor sets it.
+//
+// It defaults to OpenAI because that is the vendor the built-in table is keyed
+// by. Defaulting to the adapter's own name instead looked right and priced
+// nothing at all: "openai-compat/gpt-4o" is not in the table, so every lookup
+// missed and every call reported a cost of zero.
+func (o *OpenAICompat) ProviderKey() string {
+	if o.Provider != "" {
+		return o.Provider
+	}
+	return "openai"
+}
 
 func (o *OpenAICompat) Capabilities() Capabilities {
 	return Capabilities{Streaming: true, ToolCalls: true, StructuredOutput: true, Usage: true, Cancel: true, Health: true, ModelDiscovery: false}
@@ -436,6 +471,10 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 	go func() {
 		defer close(ch)
 		defer resp.Body.Close()
+		// Usage is priced against the model this request named, not the
+		// adapter's configured default, and accumulates across chunks so the
+		// last event is the call's total.
+		seen := newCumulativeUsage(o.Pricing, o.ProviderKey(), model)
 		sc := bufio.NewScanner(resp.Body)
 		sc.Buffer(make([]byte, 1024*1024), 1024*1024)
 		for sc.Scan() {
@@ -486,15 +525,16 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 				continue
 			}
 			if chunk.Usage != nil {
-				usage := &agent.Usage{InputTokens: chunk.Usage.PromptTokens, OutputTokens: chunk.Usage.CompletionTokens}
+				// A cached token is counted inside the prompt and reported here
+				// too, so it is moved rather than added: a total that counted it
+				// twice would overstate the run.
+				cacheRead := 0
 				if chunk.Usage.PromptTokensDetails != nil {
-					// The provider counts a cached token inside the prompt and
-					// reports it here too, so it is moved rather than added: a
-					// total that counted it twice would overstate the run.
-					usage.CacheReadTokens = chunk.Usage.PromptTokensDetails.CachedTokens
-					usage.InputTokens -= usage.CacheReadTokens
+					cacheRead = chunk.Usage.PromptTokensDetails.CachedTokens
 				}
-				ch <- agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: usage}
+				input := chunk.Usage.PromptTokens - cacheRead
+				ch <- agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
+					Usage: seen.advance(input, chunk.Usage.CompletionTokens, cacheRead, 0)}
 				continue
 			}
 			for _, c := range chunk.Choices {
@@ -588,4 +628,54 @@ func toolResultContent(m agent.Message) string {
 		return fmt.Sprintf("tool failed: %s\npartial output: %s", reason, m.Content)
 	}
 	return fmt.Sprintf("tool failed: %s", reason)
+}
+
+// cumulativeUsage turns a provider's split usage reports into totals.
+//
+// Anthropic announces the input cost at message_start and the output cost at
+// message_delta, as two separate events. Forwarding each as it arrives means the
+// last event is the output alone: a run that spent 1000 input and 500 output
+// tokens reads as having spent 500, and every cost, budget and report derived
+// from that last event understates the call by the input that was already paid
+// for.
+//
+// Each dimension therefore keeps its high-water mark and every event reports the
+// total so far. The figures are cumulative per message, so a later event carries
+// a larger or equal value, never a smaller one; a provider that corrected a
+// figure downward would be ignored, which is preferable to double-counting a
+// bill.
+type cumulativeUsage struct {
+	table    modelregistry.PricingTable
+	provider string
+	model    string
+	last     agent.Usage
+}
+
+func newCumulativeUsage(table modelregistry.PricingTable, provider, model string) *cumulativeUsage {
+	return &cumulativeUsage{table: table, provider: provider, model: model}
+}
+
+func (c *cumulativeUsage) advance(in, out, cacheRead, cacheWrite int) *agent.Usage {
+	if in > c.last.InputTokens {
+		c.last.InputTokens = in
+	}
+	if out > c.last.OutputTokens {
+		c.last.OutputTokens = out
+	}
+	if cacheRead > c.last.CacheReadTokens {
+		c.last.CacheReadTokens = cacheRead
+	}
+	if cacheWrite > c.last.CacheWriteTokens {
+		c.last.CacheWriteTokens = cacheWrite
+	}
+	usage := c.last
+	// The cost is derived from the pricing table (GAP-129): these endpoints report
+	// tokens and no cost, so without it a US dollar budget compares a fixed zero
+	// against a limit and never moves.
+	priceUsage(c.table, c.provider, c.model, &usage)
+	return &usage
+}
+
+func (c *cumulativeUsage) advanceAnthropic(block *anthropicUsageBlock) *agent.Usage {
+	return c.advance(block.InputTokens, block.OutputTokens, block.CacheReadInputTokens, block.CacheCreationInputTokens)
 }

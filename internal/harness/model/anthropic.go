@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/modelregistry"
 )
 
 // Anthropic calls {BaseURL}/v1/messages with stream=true.
@@ -23,6 +24,22 @@ type Anthropic struct {
 	APIKey  string
 	Model   string
 	Client  *http.Client
+	// Provider names the vendor whose published prices apply.
+	Provider string
+	// Pricing prices this provider's usage. The endpoint returns tokens and no
+	// cost, so without it a US dollar budget compares a fixed zero against a
+	// limit and never moves (GAP-129).
+	Pricing modelregistry.PricingTable
+}
+
+// ProviderKey is the vendor whose published prices apply. The endpoint can be
+// pointed at a compatible gateway whose rates differ, so it is set explicitly
+// rather than assumed from the base URL.
+func (a *Anthropic) ProviderKey() string {
+	if a.Provider != "" {
+		return a.Provider
+	}
+	return "anthropic"
 }
 
 // NewAnthropic builds an Anthropic provider. The client is destination-checked
@@ -38,7 +55,12 @@ func NewAnthropicWithPolicy(baseURL, apiKey, model string, policy DestinationPol
 	if baseURL == "" {
 		baseURL = "https://api.anthropic.com"
 	}
-	return &Anthropic{BaseURL: baseURL, APIKey: apiKey, Model: model, Client: NewDestinationHTTPClient(policy)}
+	return &Anthropic{
+		BaseURL: baseURL, APIKey: apiKey, Model: model,
+		Client: NewDestinationHTTPClient(policy),
+		// Priced by default: this endpoint returns tokens and no cost (GAP-129).
+		Pricing: modelregistry.DefaultPricing(),
+	}
 }
 
 func (a *Anthropic) Name() string { return "anthropic" }
@@ -210,7 +232,7 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 	go func() {
 		defer close(ch)
 		defer resp.Body.Close()
-		a.consumeSSE(ctx, req, resp, ch)
+		a.consumeSSE(ctx, req, modelName, resp, ch)
 	}()
 	return ch, nil
 }
@@ -221,7 +243,12 @@ type anthropicToolBuf struct {
 	json strings.Builder
 }
 
-func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp *http.Response, ch chan<- agent.ModelEvent) {
+// consumeSSE reads the stream. It takes the resolved model name because the
+// stream is a separate function and the cost is priced per model — pricing under
+// the adapter's configured default would charge a request for one model at
+// another's rate.
+func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, modelName string, resp *http.Response, ch chan<- agent.ModelEvent) {
+	seen := newCumulativeUsage(a.Pricing, a.ProviderKey(), modelName)
 	sc := bufio.NewScanner(resp.Body)
 	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
 	eventName := ""
@@ -286,19 +313,9 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 				ID   string `json:"id"`
 				Name string `json:"name"`
 			} `json:"content_block"`
-			Usage *struct {
-				InputTokens              int `json:"input_tokens"`
-				OutputTokens             int `json:"output_tokens"`
-				CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
-				CacheReadInputTokens     int `json:"cache_read_input_tokens"`
-			} `json:"usage"`
+			Usage   *anthropicUsageBlock `json:"usage"`
 			Message *struct {
-				Usage *struct {
-					InputTokens              int `json:"input_tokens"`
-					OutputTokens             int `json:"output_tokens"`
-					CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
-					CacheReadInputTokens     int `json:"cache_read_input_tokens"`
-				} `json:"usage"`
+				Usage *anthropicUsageBlock `json:"usage"`
 			} `json:"message"`
 			Error *struct {
 				Type    string `json:"type"`
@@ -327,24 +344,12 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 			continue
 		}
 		if payload.Usage != nil {
-			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-				Usage: &agent.Usage{
-					InputTokens:      payload.Usage.InputTokens,
-					OutputTokens:     payload.Usage.OutputTokens,
-					CacheReadTokens:  payload.Usage.CacheReadInputTokens,
-					CacheWriteTokens: payload.Usage.CacheCreationInputTokens,
-				}}) {
+			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: seen.advanceAnthropic(payload.Usage)}) {
 				return
 			}
 		}
 		if payload.Message != nil && payload.Message.Usage != nil {
-			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-				Usage: &agent.Usage{
-					InputTokens:      payload.Message.Usage.InputTokens,
-					OutputTokens:     payload.Message.Usage.OutputTokens,
-					CacheReadTokens:  payload.Message.Usage.CacheReadInputTokens,
-					CacheWriteTokens: payload.Message.Usage.CacheCreationInputTokens,
-				}}) {
+			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: seen.advanceAnthropic(payload.Message.Usage)}) {
 				return
 			}
 		}
@@ -397,4 +402,24 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 		flush(idx)
 	}
 	ch <- agent.ModelEvent{Kind: agent.EventCompleted, RequestID: req.RequestID, Finished: true}
+}
+
+// anthropicUsageBlock is the usage report this endpoint returns, named so the
+// mapping onto ours is written once. The same four numbers arrive on two
+// different events, and duplicating the mapping is how one of them drifts.
+type anthropicUsageBlock struct {
+	InputTokens              int `json:"input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+}
+
+// anthropicUsage maps a provider usage report onto ours.
+func anthropicUsage(u *anthropicUsageBlock) *agent.Usage {
+	return &agent.Usage{
+		InputTokens:      u.InputTokens,
+		OutputTokens:     u.OutputTokens,
+		CacheReadTokens:  u.CacheReadInputTokens,
+		CacheWriteTokens: u.CacheCreationInputTokens,
+	}
 }
