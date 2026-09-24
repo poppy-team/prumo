@@ -1,10 +1,15 @@
 package daemon
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/harness/model"
+	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 )
 
 // The schedule lived in one file read and written whole, with no lock, and every
@@ -13,9 +18,12 @@ import (
 // faster one's changes; and a full disk or an unwritable directory made every
 // operation report success while nothing was stored (GAP-120, GAP-121).
 
+// newScheduleServer builds a server through the real constructor, because the maps
+// it initialises are the ones the code under test writes to — a Server literal
+// leaves them nil and every write panics before the behaviour is reached.
 func newScheduleServer(t *testing.T) *Server {
 	t.Helper()
-	return &Server{StoreDir: t.TempDir()}
+	return New(filepath.Join(t.TempDir(), "d.sock"), t.TempDir(), Deps{})
 }
 
 func TestAConcurrentScheduleAndTickDoNotLoseEachOther(t *testing.T) {
@@ -221,3 +229,99 @@ func TestTheScheduleFileIsOnlyReplacedAtomically(t *testing.T) {
 		}
 	}
 }
+
+// saveRecord and appendEvent discarded every error, so a run executed with no
+// record and an audit trail that stopped mid-run with nothing saying so. A run
+// nobody can query and an audit log with a silent hole are both worse than
+// nothing, because both read as complete (GAP-120).
+
+func TestARunWhoseRecordCannotBeWrittenIsRefusedRatherThanStarted(t *testing.T) {
+	// The record is what makes a run queryable. Losing it means no status, no
+	// phase, no stop reason — and a run nobody can query is indistinguishable from
+	// one that never happened.
+	// The real constructor, because the maps it initialises are what a run is
+	// registered in — a Server literal leaves them nil and the test would panic
+	// before reaching the thing it is checking.
+	s := New(filepath.Join(t.TempDir(), "d.sock"), t.TempDir(), Deps{
+		Tools: &countingToolExecutor{},
+		NewProvider: func(string, string, string, string) (model.Provider, error) {
+			return model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "complete"}}}), nil
+		},
+	})
+	defer s.rootCancel()
+	// Make the record path a directory so the rename cannot land.
+	if err := os.MkdirAll(mustRecordPath(t, s, "R-x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	result := s.opStart(map[string]any{
+		"protocol_version": harnessprotocol.Version,
+		"op":               "start", "goal": "x", "provider": "fake", "run_id": "R-x",
+	})
+	if result["ok"] == true {
+		t.Fatalf("a run whose record cannot be persisted must not start: %v", result)
+	}
+	s.mu.Lock()
+	_, stillThere := s.runs["R-x"]
+	s.mu.Unlock()
+	if stillThere {
+		t.Error("the run was left registered even though it refused to start")
+	}
+}
+
+func TestAWriteFailureInTheEventLogIsCounted(t *testing.T) {
+	// An audit log with a silent hole reads as complete, which is worse than no
+	// log. The thing that can notice has to remember.
+	s := newScheduleServer(t)
+	if err := os.MkdirAll(mustEventPath(t, s, "R-y"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	before := s.EventWriteFailures()
+	if err := s.appendEvent("R-y", agent.AgentEvent{ID: "e1", RunID: "R-y", Kind: "test"}); err == nil {
+		t.Fatal("expected the append to fail against a directory")
+	}
+	if s.EventWriteFailures() != before+1 {
+		t.Fatalf("failures = %d, want %d", s.EventWriteFailures(), before+1)
+	}
+}
+
+func TestASuccessfulAppendIsNotCountedAsAFailure(t *testing.T) {
+	s := newScheduleServer(t)
+	before := s.EventWriteFailures()
+	if err := s.appendEvent("R-ok", agent.AgentEvent{ID: "e1", RunID: "R-ok", Kind: "test"}); err != nil {
+		t.Fatal(err)
+	}
+	if s.EventWriteFailures() != before {
+		t.Fatalf("a successful append was counted as a failure: %d", s.EventWriteFailures())
+	}
+}
+
+// mustRecordPath and mustEventPath resolve the paths the daemon will use, so the
+// tests make the real one unwritable rather than a guess at its layout.
+func mustRecordPath(t *testing.T, s *Server, runID string) string {
+	t.Helper()
+	path, err := s.recordPath(runID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func mustEventPath(t *testing.T, s *Server, runID string) string {
+	t.Helper()
+	path, err := s.eventPath(runID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// countingToolExecutor satisfies the tool port without doing anything.
+type countingToolExecutor struct{}
+
+func (*countingToolExecutor) Execute(context.Context, agent.ToolCall) (agent.ToolResult, error) {
+	return agent.ToolResult{}, nil
+}
+func (*countingToolExecutor) KindOf(string) string      { return "read-only" }
+func (*countingToolExecutor) OperationOf(string) string { return "" }
+func (*countingToolExecutor) Specs() []agent.ToolSpec   { return nil }

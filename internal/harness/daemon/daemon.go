@@ -157,6 +157,10 @@ type Server struct {
 	rootCtx    context.Context
 	rootCancel context.CancelFunc
 
+	// eventWriteFailures counts events that could not be persisted. An audit log
+	// with a silent hole reads as complete, which is worse than no log (GAP-120).
+	eventWriteFailures int
+
 	subsMu      sync.Mutex
 	subscribers map[string][]chan map[string]any
 }
@@ -241,40 +245,64 @@ func (s *Server) eventPath(runID string) (string, error) {
 
 // saveRecord writes the run record, or does nothing if the id is unusable. A
 // record that cannot be named safely is not written somewhere unsafe.
-func (s *Server) saveRecord(r RunRecord) {
+// saveRecord persists a run's record, reporting whether it landed.
+//
+// It discarded every error, so a full disk or an unwritable store left a run
+// executing with no record: status, stop reason and phase all unreadable, and
+// nothing anywhere said so. A run nobody can query is indistinguishable from a
+// run that never happened (GAP-120).
+func (s *Server) saveRecord(r RunRecord) error {
 	path, err := s.recordPath(r.RunID)
 	if err != nil {
-		return
+		return err
 	}
 	r.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
-	data, _ := json.MarshalIndent(r, "", "  ")
-	_ = os.MkdirAll(s.StoreDir, 0o755)
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(s.StoreDir, 0o755); err != nil {
+		return err
+	}
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return
+		return err
 	}
-	_ = os.Rename(tmp, path)
+	return os.Rename(tmp, path)
 }
 
 // appendEvent appends one event, or drops it if the id is unusable.
-func (s *Server) appendEvent(runID string, ev agent.AgentEvent) {
+// appendEvent writes one event to the run's log, reporting whether it landed.
+//
+// It discarded every error, so a run's audit trail could stop mid-run with nothing
+// saying so — and an audit log with a silent hole is worse than no log, because
+// it reads as complete. The failure is returned and counted so it is visible to
+// whoever asks rather than to nobody (GAP-120).
+func (s *Server) appendEvent(runID string, ev agent.AgentEvent) error {
 	path, err := s.eventPath(runID)
 	if err != nil {
-		return
+		s.noteEventWriteFailed()
+		return err
 	}
 	data, err := json.Marshal(ev)
 	if err != nil {
-		return
+		s.noteEventWriteFailed()
+		return err
 	}
-	_ = os.MkdirAll(s.StoreDir, 0o755)
+	if err := os.MkdirAll(s.StoreDir, 0o755); err != nil {
+		s.noteEventWriteFailed()
+		return err
+	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return
+		s.noteEventWriteFailed()
+		return err
 	}
 	_, writeErr := f.Write(append(data, '\n'))
 	_ = f.Close()
 	if writeErr != nil {
-		return
+		s.noteEventWriteFailed()
+		return writeErr
 	}
 	s.noteEventWritten(path)
 
@@ -292,6 +320,7 @@ func (s *Server) appendEvent(runID string, ev agent.AgentEvent) {
 			}
 		}
 	}
+	return nil
 }
 
 // eventLogMax is the line count at which a run's event log is trimmed.
@@ -313,6 +342,24 @@ const eventLogMax = 2000
 // appends, and the count is reset to the half that was kept, which is exactly
 // what the file then holds. Resetting it to the cap instead makes every
 // following append rewrite too, which is the behaviour this removes.
+// noteEventWriteFailed records that an event could not be persisted.
+//
+// The count is what makes a hole in the audit log findable: the log itself cannot
+// say what it is missing, so the thing that can has to remember.
+func (s *Server) noteEventWriteFailed() {
+	s.eventsMu.Lock()
+	s.eventWriteFailures++
+	s.eventsMu.Unlock()
+}
+
+// EventWriteFailures reports how many events could not be written since start.
+// A non-zero count means at least one run's audit trail has a hole in it.
+func (s *Server) EventWriteFailures() int {
+	s.eventsMu.Lock()
+	defer s.eventsMu.Unlock()
+	return s.eventWriteFailures
+}
+
 func (s *Server) noteEventWritten(path string) {
 	s.eventsMu.Lock()
 	count := s.eventLines[path] + 1
@@ -711,7 +758,17 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	s.mu.Unlock()
 
 	modelName := str(msg, "model")
-	s.saveRecord(RunRecord{RunID: runID, Status: "running"})
+	// A run whose record cannot be written is a run the daemon cannot manage: there
+	// is no status, no phase and no stop reason to read back, and a run nobody can
+	// query is indistinguishable from one that never happened. Refusing to start is
+	// the honest response (GAP-120).
+	if err := s.saveRecord(RunRecord{RunID: runID, Status: "running"}); err != nil {
+		s.mu.Lock()
+		delete(s.runs, runID)
+		s.mu.Unlock()
+		cancel()
+		return map[string]any{"ok": false, "error": "cannot persist run record: " + err.Error()}
+	}
 	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-started", RunID: runID, Kind: "run.started", Payload: map[string]any{"goal": goal, "provider": providerName}, CreatedAt: agent.Now()})
 
 	go s.execute(runCtx, runID, goal, modelName, provider, tools, workspace, maxTurns, ar)
@@ -852,7 +909,14 @@ func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
 		s.appendEvent(runID, agent.AgentEvent{ID: runID + "-paused", RunID: runID, Kind: "run.paused",
 			Payload: map[string]any{"status": status, "phase": string(phase)}, CreatedAt: agent.Now()})
 	}
-	s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(phase), StopReason: runner.State.StopReason})
+	if err := s.saveRecord(RunRecord{RunID: runID, Status: status, Phase: string(phase), StopReason: runner.State.StopReason}); err != nil {
+		// The run has finished but its final state did not land. The run is
+		// reported as failed rather than complete, because a run whose outcome is
+		// unrecorded cannot be told apart from one still in flight (GAP-120).
+		s.appendEvent(runID, agent.AgentEvent{ID: runID + "-record-failed", RunID: runID,
+			Kind: "run.record_failed", Payload: map[string]any{"error": err.Error()}, CreatedAt: agent.Now()})
+		status = "failed"
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
