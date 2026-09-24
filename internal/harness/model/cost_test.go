@@ -320,3 +320,43 @@ func TestACachedTokenIsCountedOnce(t *testing.T) {
 			usage.InputTokens+usage.CacheReadTokens)
 	}
 }
+
+func TestReasoningTokensAreVisibleButNotCountedTwice(t *testing.T) {
+	// A provider reports reasoning inside the completion count. Carrying it as
+	// its own field is what makes "this run was mostly thinking" visible; adding
+	// it to any total would bill the same token twice.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte(
+			`data: {"choices":[{"delta":{}}],"usage":{"prompt_tokens":1000,"completion_tokens":500,"completion_tokens_details":{"reasoning_tokens":400}}}` + "\n\n" +
+				"data: [DONE]\n\n"))
+	}))
+	defer srv.Close()
+
+	p := NewOpenAICompatWithPolicy(srv.URL, "k", "gpt-4o", LocalDevelopmentDestinationPolicy())
+	ch, err := p.Stream(context.Background(), agent.ModelRequest{
+		RequestID: "r1",
+		Messages:  []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: "hi"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	usage := usageOf(t, ch)
+	if usage == nil {
+		t.Fatal("no usage was reported")
+	}
+	if usage.ReasoningTokens != 400 {
+		t.Errorf("reasoning = %d, want 400: it is the difference between a thinking run and a talking one", usage.ReasoningTokens)
+	}
+	if usage.OutputTokens != 500 {
+		t.Errorf("output = %d, want the provider's 500 with reasoning already inside it", usage.OutputTokens)
+	}
+	if got, want := usage.TotalTokens(), 1500; got != want {
+		t.Errorf("total = %d, want %d: reasoning is a breakdown, not a fifth dimension", got, want)
+	}
+	// 1000 input at $2.50/M plus 500 output at $10/M. Reasoning is inside the 500,
+	// so the cost is the whole call and not the call plus 400 tokens again.
+	if diff := usage.CostUSD - 0.0075; diff > 0.000001 || diff < -0.000001 {
+		t.Errorf("cost = %g, want 0.0075: reasoning was billed twice", usage.CostUSD)
+	}
+}

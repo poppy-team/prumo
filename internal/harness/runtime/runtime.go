@@ -661,7 +661,10 @@ func (r *Runner) Step(ctx context.Context) error {
 				})
 				// The call is accounted for: the reservation becomes the real
 				// cost, so the next turn's preflight sees the truth.
-				settle(float64(ev.Usage.InputTokens+ev.Usage.OutputTokens), ev.Usage.CostUSD)
+				// The real usage settles the reservation. It counts every token the provider
+				// processed, so a cached run cannot settle below the capacity it used
+				// while the reservation was held at full size (GAP-130).
+				settle(float64(ev.Usage.TotalTokens()), ev.Usage.CostUSD)
 			}
 			if ev.Kind == agent.EventError && !ev.Retryable {
 				// A failed call spent nothing that will be reported, so the

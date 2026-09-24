@@ -96,3 +96,44 @@ func TestBridge(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCachedTokensCountAgainstTheTokenCeiling(t *testing.T) {
+	// The token meter counted only input and output, so a run whose entire prompt
+	// was cached reported a token total near zero and walked through a token
+	// ceiling it had in fact filled. The provider served every one of those
+	// tokens; whether it was cheap in money is the cost meter's business, and
+	// conflating the two made the capacity limit decorative (GAP-130).
+	tr := NewTracker(1000, 0, 0)
+	if err := tr.ConsumeUsage(agent.Usage{InputTokens: 10, OutputTokens: 10}); err != nil {
+		t.Fatal(err)
+	}
+	// 900 cache reads plus 81 cache writes: 981 tokens of provider work, on top
+	// of the 20 already counted, so the run crosses a 1000-token ceiling.
+	err := tr.ConsumeUsage(agent.Usage{CacheReadTokens: 900, CacheWriteTokens: 81})
+	if err == nil {
+		t.Fatal("a fully cached run must still count against the token ceiling")
+	}
+}
+
+func TestACachedRunCanExhaustTheTokenCeilingOnItsOwn(t *testing.T) {
+	tr := NewTracker(1000, 0, 0)
+	if err := tr.ConsumeUsage(agent.Usage{CacheReadTokens: 1000}); err != nil {
+		t.Fatalf("a run that is exactly at the limit must be allowed: %v", err)
+	}
+	if err := tr.ConsumeUsage(agent.Usage{CacheReadTokens: 1}); err == nil {
+		t.Fatal("the token past the ceiling must be refused")
+	}
+}
+
+func TestTotalTokensCountsEveryDimensionExactlyOnce(t *testing.T) {
+	u := agent.Usage{InputTokens: 10, OutputTokens: 20, CacheReadTokens: 30, CacheWriteTokens: 40}
+	if got, want := u.TotalTokens(), 100; got != want {
+		t.Fatalf("total = %d, want %d", got, want)
+	}
+	// Reasoning is a breakdown of output, not a fifth dimension: counting it
+	// again is how the same token ends up billed twice.
+	u.ReasoningTokens = 15
+	if got, want := u.TotalTokens(), 100; got != want {
+		t.Fatalf("reasoning changed the total to %d; it must stay %d", got, want)
+	}
+}

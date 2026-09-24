@@ -519,6 +519,14 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 					PromptTokensDetails *struct {
 						CachedTokens int `json:"cached_tokens"`
 					} `json:"prompt_tokens_details"`
+					// Reasoning tokens arrive as a breakdown of the completion
+					// count. They are read so a run can show that its cost was
+					// mostly thinking rather than answering, and are deliberately
+					// not added to any total: the provider already includes them
+					// in CompletionTokens (GAP-130).
+					CompletionTokensDetails *struct {
+						ReasoningTokens int `json:"reasoning_tokens"`
+					} `json:"completion_tokens_details"`
 				} `json:"usage"`
 			}
 			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
@@ -533,8 +541,11 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 					cacheRead = chunk.Usage.PromptTokensDetails.CachedTokens
 				}
 				input := chunk.Usage.PromptTokens - cacheRead
-				ch <- agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-					Usage: seen.advance(input, chunk.Usage.CompletionTokens, cacheRead, 0)}
+				usage := seen.advance(input, chunk.Usage.CompletionTokens, cacheRead, 0)
+				if chunk.Usage.CompletionTokensDetails != nil {
+					usage.ReasoningTokens = chunk.Usage.CompletionTokensDetails.ReasoningTokens
+				}
+				ch <- agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: usage}
 				continue
 			}
 			for _, c := range chunk.Choices {

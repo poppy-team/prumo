@@ -145,8 +145,14 @@ func (t *Tracker) LimitsCopy() map[string]float64 {
 func (t *Tracker) ConsumeUsage(u agent.Usage) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	// Every token the provider processed counts against the token ceiling, not
+	// only input and output. A cached read and a cache write are both capacity
+	// the provider spent, so leaving them out let a fully cached run report a
+	// token total near zero and pass through a limit it had actually filled
+	// (GAP-130). The cost meter is exact per dimension, so the two dimensions of
+	// the budget stay independent: tokens bound capacity, dollars bound money.
 	next, err := t.envelope.Consume(map[string]float64{
-		"tokens":   float64(u.InputTokens + u.OutputTokens),
+		"tokens":   float64(u.TotalTokens()),
 		"cost_usd": u.CostUSD,
 	})
 	if err != nil {

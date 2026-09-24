@@ -241,9 +241,31 @@ type Usage struct {
 	// prefix, and they are not part of the two counts above: a metered input
 	// token and a token read from cache cost differently, so a client that
 	// summed them could not say what a run actually spent.
-	CacheReadTokens  int     `json:"cache_read_tokens,omitempty"`
-	CacheWriteTokens int     `json:"cache_write_tokens,omitempty"`
-	CostUSD          float64 `json:"cost_usd,omitempty"`
+	CacheReadTokens  int `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens int `json:"cache_write_tokens,omitempty"`
+	// ReasoningTokens are the tokens a model spent thinking, reported as a
+	// breakdown of OutputTokens rather than beside them. A provider includes them
+	// in the completion count, so adding them anywhere would bill the same token
+	// twice; they are carried because a run whose cost is mostly reasoning is a
+	// different thing from one that is mostly answering, and that is worth being
+	// able to see.
+	ReasoningTokens int `json:"reasoning_tokens,omitempty"`
+	// CostUSD is the derived cost at the pricing table named by the run. It is
+	// filled in by the provider adapter: the endpoints report tokens and no cost
+	// (GAP-129).
+	CostUSD float64 `json:"cost_usd,omitempty"`
+}
+
+// TotalTokens is every token the provider processed, in all four dimensions.
+//
+// A cached read is a token the provider still had to serve, and a cache write is
+// a token it had to store; neither is free in capacity even where it is cheap in
+// money. Summing only input and output lets a run whose entire prompt is cached
+// report a token total near zero and walk through a token ceiling it has in fact
+// filled — the same hole a cost meter would have if it only counted one
+// dimension (GAP-130).
+func (u Usage) TotalTokens() int {
+	return u.InputTokens + u.OutputTokens + u.CacheReadTokens + u.CacheWriteTokens
 }
 
 // NativeAgentState is the canonical resumable state. Provider-private
