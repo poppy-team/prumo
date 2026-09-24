@@ -139,6 +139,14 @@ func CheckVersionPolicy(root string) (VersionPolicyReport, error) {
 			Detail: fmt.Sprintf("policy says the current version is %s but the release is %s", policy.Current, protocol.CLIVersion)})
 	}
 
+	// The surfaces that decide what a user actually gets, and whether a release
+	// publishes at all, are checked against the build. They were not, which is
+	// how the installers came to pin v0.5.0 while the tree builds 0.6.0 and the
+	// release workflow triggered on v0.5.* — so tagging the current version
+	// published nothing and a `curl | sh` installed a two-minor-old binary, with
+	// every existing gate reporting green (GAP-138).
+	report.Findings = append(report.Findings, checkReleaseSurfaces(root)...)
+
 	removed := map[string]bool{}
 	for _, version := range policy.Removed {
 		removed[minorOf(version)] = true
@@ -216,4 +224,69 @@ func repositoryDocuments(root string) ([]string, error) {
 func isHistorical(root, rel string) bool {
 	role, ok := docengine.RoleOf(root, rel)
 	return ok && role == docengine.RoleHistorical
+}
+
+// releaseSurface is one place that names a version and therefore has to agree
+// with the build.
+type releaseSurface struct {
+	// rel is the file, repository-relative.
+	rel string
+	// want is the minor line the file has to name.
+	want string
+	// pattern extracts the version the file actually commits to, capturing the
+	// `vX.Y` it names.
+	pattern *regexp.Regexp
+}
+
+// releaseSurfaces are the files whose version decides what a user receives.
+//
+// The installers are here because they are what a person runs, and the release
+// workflow because it is what makes a tag mean anything. Both sit outside the
+// documentation tree, which is why the documentation version policy never looked
+// at them: a gate that only reads docs/ cannot notice that the thing users curl
+// is two minors behind.
+//
+// Each entry matches the place the version is actually committed to rather than
+// searching the file for the string. The first version searched, and a comment
+// mentioning the right version satisfied it — so the release workflow passed the
+// gate while still triggering on the wrong tag, which is the failure this exists
+// to catch.
+func releaseSurfaces() []releaseSurface {
+	minor := "v" + minorOf(protocol.CLIVersion)
+	return []releaseSurface{
+		{rel: "scripts/install.sh", want: minor, pattern: regexp.MustCompile(`v\d+\.\d+\.\d+`)},
+		{rel: "scripts/install.ps1", want: minor, pattern: regexp.MustCompile(`v\d+\.\d+\.\d+`)},
+		{rel: ".github/workflows/release.yml", want: minor, pattern: regexp.MustCompile(`"v\d+\.\d+\.\*"`)},
+	}
+}
+
+// checkReleaseSurfaces reports any surface that does not name the built version.
+func checkReleaseSurfaces(root string) []Finding {
+	var findings []Finding
+	for _, surface := range releaseSurfaces() {
+		data, err := os.ReadFile(filepath.Join(root, surface.rel))
+		if err != nil {
+			// A missing surface is not a version finding; something else owns
+			// whether that file should exist.
+			continue
+		}
+		match := surface.pattern.FindString(string(data))
+		if match == "" {
+			findings = append(findings, Finding{
+				Kind:   "release-surface-unreadable",
+				Target: surface.rel,
+				Detail: "no version could be read from it, so whether it ships the built version is unknown",
+			})
+			continue
+		}
+		named := minorOf(strings.Trim(match, `"`))
+		if named != strings.TrimPrefix(surface.want, "v") {
+			findings = append(findings, Finding{
+				Kind:   "release-surface-drift",
+				Target: surface.rel,
+				Detail: fmt.Sprintf("commits to %s but the tree builds %s; users would receive a different release than the code", named, surface.want),
+			})
+		}
+	}
+	return findings
 }

@@ -4,7 +4,7 @@
 [CmdletBinding()]
 param(
     [string]$Repository = $(if ($env:PRUMO_REPOSITORY) { $env:PRUMO_REPOSITORY } else { "raillen/prumo" }),
-    [string]$Version = $(if ($env:PRUMO_VERSION) { $env:PRUMO_VERSION } else { "v0.5.0" }),
+    [string]$Version = $(if ($env:PRUMO_VERSION) { $env:PRUMO_VERSION } else { "v0.6.0" }),
     [string]$InstallDir = $(if ($env:PRUMO_INSTALL_DIR) { $env:PRUMO_INSTALL_DIR } else { "$env:LOCALAPPDATA\Programs\prumo" })
 )
 

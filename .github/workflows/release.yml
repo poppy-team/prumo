@@ -2,8 +2,10 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v0.5.*"
+    # docs/governance/release-policy.md states the trigger as v0.6.*. This
+    # workflow said v0.5.*, so tagging the current version published nothing,
+    # and the drift was invisible because no gate looked here (GAP-138).
+      - "v0.6.*"
 
 permissions:
   contents: write

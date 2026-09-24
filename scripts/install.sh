@@ -2,7 +2,7 @@
 set -eu
 
 REPOSITORY="${PRUMO_REPOSITORY:-raillen/prumo}"
-VERSION="${PRUMO_VERSION:-v0.5.0}"
+VERSION="${PRUMO_VERSION:-v0.6.0}"
 INSTALL_DIR="${PRUMO_INSTALL_DIR:-${HOME}/.local/bin}"
 PRUMO_HOME_VALUE="${PRUMO_HOME:-${HOME}/.prumo}"
 BASE_URL="https://github.com/${REPOSITORY}/releases/download/${VERSION}"
