@@ -4,7 +4,7 @@
 [![Go Version](https://img.shields.io/badge/go-1.22+-blue.svg)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Workforce](https://img.shields.io/badge/workforce-189%20skills%20%7C%2039%20agents%20%7C%2016%20recipes-blueviolet)](docs/workforce/index.md)
-[![Docs](https://img.shields.io/badge/docs-online-06b6d4.svg)](https://prumo.vercel.app)
+[![Docs](https://img.shields.io/badge/docs-online-06b6d4.svg)](https://prumo-framework.vercel.app)
 
 **Prumo** is a Git-native protocol and engineering harness for software projects built collaboratively by human developers and autonomous AI agents.
 
@@ -14,7 +14,7 @@ The repository is the durable source of truth. Prumo stores canonical project st
 
 ## Documentation Website
 
-The full documentation website, inspired by modern developer documentation portals, is available at **[prumo.vercel.app](https://prumo.vercel.app)** (or browseable locally via `pnpm` docs server).
+The full documentation website, inspired by modern developer documentation portals, is available at **[prumo-framework.vercel.app](https://prumo-framework.vercel.app)** (or browseable locally via `pnpm` docs server).
 
 ---
 
@@ -197,7 +197,7 @@ pnpm run docs:preview
 
 ## Documentation Map
 
-- **[Documentation Site](https://prumo.vercel.app)**
+- **[Documentation Site](https://prumo-framework.vercel.app)**
 - **User Manuals**:
   - [Installation Manual](docs/manual/installation.md)
   - [Uninstallation Manual](docs/manual/uninstallation.md)
