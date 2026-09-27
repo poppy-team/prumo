@@ -1,0 +1,70 @@
+{
+  "id": "security-agent-mcp",
+  "name": "Agentic Security & MCP Tool Sandboxing",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Audit coding agents, MCP tool manifests, prompt injection vectors, permission drift, and tool shadowing.",
+  "risk_level": "critical",
+  "modes": [
+    "audit",
+    "review",
+    "testing"
+  ],
+  "inputs": [
+    "MCP server configurations",
+    "Agent system instructions",
+    "Skill manifests"
+  ],
+  "outputs": [
+    "Agent security scorecard",
+    "MCP sandbox policy manifest"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/security-agent-mcp-guide.md"
+  ],
+  "templates": [
+    "templates/security-agent-mcp-spec.md"
+  ],
+  "checks": [
+    "checks/security-agent-mcp-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/security-agent-mcp-example.json"
+  ],
+  "required_evidence": [
+    "review",
+    "test"
+  ],
+  "stop_conditions": [
+    "All Agentic Security & MCP Tool Sandboxing invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "features_any": [
+      "mcp",
+      "ai-assisted-development",
+      "orchestration"
+    ],
+    "risk_any": [
+      "security"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

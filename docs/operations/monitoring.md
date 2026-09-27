@@ -5,8 +5,8 @@ Monitor the Go CLI through deterministic health checks, exit codes, JSON envelop
 ## Framework health
 
 ```bash
-prumo framework-check
-prumo --json framework-check
+prumo-agent framework-check
+prumo-agent --json framework-check
 ```
 
 The command validates canonical adapters, schemas, catalog references, and workforce packages.
@@ -14,9 +14,9 @@ The command validates canonical adapters, schemas, catalog references, and workf
 ## Project health
 
 ```bash
-prumo validate ./project
-prumo doctor ./project
-prumo --json doctor ./project
+prumo-agent validate ./project
+prumo-agent doctor ./project
+prumo-agent --json doctor ./project
 ```
 
 Run after Goal transitions, migrations, compiler changes, and before release. Treat `ERROR` findings as blockers. Warnings require review according to the project risk policy.
@@ -26,9 +26,9 @@ Run after Goal transitions, migrations, compiler changes, and before release. Tr
 JSON output is stable for automation:
 
 ```bash
-prumo --json version
-prumo --json validate ./project
-prumo --json doctor ./project > doctor.json
+prumo-agent --json version
+prumo-agent --json validate ./project
+prumo-agent --json doctor ./project > doctor.json
 ```
 
 Use stderr for operational diagnostics and preserve stdout when consuming JSON.
@@ -37,7 +37,7 @@ Use stderr for operational diagnostics and preserve stdout when consuming JSON.
 
 ```bash
 for target in generic chatgpt claude kimi codex claude-code traycer; do
-  prumo compile --target "$target" --path ./project
+  prumo-agent compile --target "$target" --path ./project
   echo "$target: $?"
 done
 ```

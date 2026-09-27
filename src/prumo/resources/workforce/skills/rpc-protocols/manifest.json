@@ -1,22 +1,26 @@
 {
   "id": "rpc-protocols",
   "name": "RPC & Message Protocols",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Design versioned binary/JSON RPC protocols and packet schemas.",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design, version, and verify RPC and message protocols with IDLs: Protobuf proto3 modeling, Cap'n Proto schemas, buf breaking-change gates, gRPC error/deadline semantics, streaming patterns, and wire-compatibility proof.",
   "risk_level": "medium",
   "modes": [
     "implementation",
-    "design"
+    "design",
+    "review",
+    "testing"
   ],
   "inputs": [
-    "Task requirements",
-    "System architecture",
-    "Relevant source files"
+    "Service inventory with methods, message types, and deployed client versions",
+    "IDL toolchain pins: buf, protoc, grpcurl, capnp versions",
+    "Compatibility budget: forbidden changes, payload ceiling, p99 latency target",
+    "Error taxonomy mapping business failures to gRPC status codes with retryability"
   ],
   "outputs": [
-    "Implementation / verification output",
-    "Evidence record"
+    "Versioned IDL package with generated stubs and migration notes",
+    "Documented error taxonomy with retryability labels per method",
+    "Compatibility and performance evidence clearing the merge gate"
   ],
   "requires": [],
   "conflicts": [],
@@ -25,16 +29,25 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
-  "checks": [],
-  "scripts": [],
+  "references": [
+    "references/rpc-protocols-guide.md"
+  ],
+  "templates": [
+    "templates/rpc-protocols-spec.md"
+  ],
+  "checks": [
+    "checks/rpc-protocols-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
   "examples": [],
   "required_evidence": [
     "test"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
+    "Zero breaking findings with p99 under 120 ms at 500 RPS on the golden method set",
+    "v1 clients replay cleanly against v2 servers with old fields decoding correctly",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -42,14 +55,22 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
+    "project_types": [
+      "api",
+      "web-saas",
+      "microservices"
+    ],
     "features_any": [
-      "networking",
-      "rpc"
+      "rpc",
+      "grpc",
+      "protobuf",
+      "versioning",
+      "idl"
     ]
   },
   "requires_any": [],

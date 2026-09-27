@@ -1,0 +1,70 @@
+{
+  "id": "type-system-theory",
+  "name": "Type System Theory & Formal Semantics",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Specify and verify type systems, Hindley-Milner inference, subtyping, and ownership/affine type rules.",
+  "risk_level": "high",
+  "modes": [
+    "design",
+    "implementation",
+    "review"
+  ],
+  "inputs": [
+    "Type rules specification",
+    "AST with unresolved types"
+  ],
+  "outputs": [
+    "Typed AST",
+    "Soundness verification proofs",
+    "Type error diagnostics"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/type-system-theory-guide.md"
+  ],
+  "templates": [
+    "templates/type-system-theory-spec.md"
+  ],
+  "checks": [
+    "checks/type-system-theory-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/type-system-theory-example.json"
+  ],
+  "required_evidence": [
+    "test",
+    "review"
+  ],
+  "stop_conditions": [
+    "All Type System Theory & Formal Semantics invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "project_types": [
+      "compiler",
+      "language"
+    ],
+    "features_any": [
+      "type-checker",
+      "compiler"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

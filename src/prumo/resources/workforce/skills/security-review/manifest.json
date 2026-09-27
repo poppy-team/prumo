@@ -1,8 +1,8 @@
 {
   "id": "security-review",
   "name": "Security Review",
-  "version": 1,
-  "schema_version": 2,
+  "version": 2,
+  "schema_version": 3,
   "purpose": "Independently audit source code and infrastructure for vulnerability patterns.",
   "risk_level": "high",
   "modes": [
@@ -13,14 +13,14 @@
     "documentation"
   ],
   "inputs": [
-    "Security policy",
-    "Target codebase",
-    "Threat model"
+    "Security threat model and trust boundaries",
+    "Changed authentication, authorization, cryptography, and data-flow code",
+    "CI, SAST, dependency, and independent-review evidence"
   ],
   "outputs": [
-    "Security audit report",
-    "Vulnerability remediation patches",
-    "Security gate evidence"
+    "Severity-ranked findings with data-flow and trust-boundary evidence",
+    "Targeted remediation with failing-first regression tests",
+    "SAST, dependency, independent-review, and audit-trail evidence"
   ],
   "requires": [],
   "conflicts": [],
@@ -29,21 +29,28 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
+  "references": [
+    "references/code-review-guide.md"
+  ],
   "templates": [
     "templates/security-review-report.md"
   ],
   "checks": [
     "checks/security-review-checklist.md"
   ],
-  "scripts": [],
-  "examples": [],
+  "scripts": [
+    "scripts/review_checklist_generator.sh",
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/pr_security_review.md"
+  ],
   "required_evidence": [
     "security-scan",
     "test"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
+    "High and Critical findings have independent review, regression tests, and a recorded verdict",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -51,9 +58,9 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
     "risk_any": [
@@ -64,6 +71,5 @@
     ]
   },
   "requires_any": [],
-  "tools": [],
-  "instructions": "---\nname: security-review\ndescription: Threat model alignment, security diff analysis, SAST integration, independent verifier policy, escape hatch denial, and audit logging\n---\n# Security-Focused Code Review\n\n## 1. Threat Model Alignment\nVerify every pull request against the system threat model and trust boundaries. Evaluate whether proposed changes introduce new attack vectors, expand attack surfaces, or alter privilege boundaries.\n\n## 2. Security-Focused Diff Prioritization\nPrioritize scrutiny on code modifications touching authentication, authorization, cryptographic routines, session handling, input deserialization, and network egress.\n\n## 3. Automated SAST & Security Linter Gates\nRequire 100% clean passes from static application security testing (SAST) tools (e.g. CodeQL, Semgrep, gosec) as mandatory pre-conditions for review approval.\n\n## 4. Independent Verifier Policy\nEnforce the Prumo Independent Verifier policy: any change categorized with High or Critical risk must be reviewed by a distinct, specialized security reviewer or persona.\n\n## 5. Security Acceptance Criteria Verification\nVerify that security-related pull requests include dedicated automated regression test cases demonstrating that the identified vulnerability is eliminated.\n\n## 6. Denial of Unregistered Escape Hatches\nStrictly reject pull requests introducing banned unsafe constructs (raw pointers, @trusted, memory reinterpret casts, or linter suppression directives) without formal registration in .prumo/escape-hatches.json.\n\n## 7. Defense-in-Depth Verification\nEnsure that security architecture does not rely on a single defensive layer. Verify multiple interlocking safeguards (e.g. database-level constraints combined with application-level authorization).\n\n## 8. Security Regression Prevention\nMandate automated unit or integration tests for every security bug fix, ensuring the test fails against the vulnerable baseline and passes with the fix.\n\n## 9. Structured Review Findings Format\nEmit security review findings using standard severity ratings (Critical, High, Medium, Low) with explicit file links, line ranges, vulnerability explanations, and suggested code patches.\n\n## 10. Audit Trail & Compliance Records\nLog the final security review verdict, reviewer identity, timestamp, commit hash, and verification gate evidence permanently into the project compliance history.\n"
+  "tools": []
 }

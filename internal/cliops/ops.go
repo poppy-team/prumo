@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/raillen/prumo/internal/protocol"
+	"github.com/raillen/prumo/internal/protocol/evidence"
 	"github.com/raillen/prumo/internal/protocol/goals"
 	"github.com/raillen/prumo/internal/resolver"
 	"github.com/raillen/prumo/internal/validation"
@@ -369,7 +370,48 @@ func (s *Service) GoalState(root, id, state, reason string) (goals.Goal, error) 
 	if err != nil {
 		return nil, err
 	}
-	return goals.TransitionGoal(match, state, reason)
+	// DONE requires that the goal's evidence resolves to real records, so the
+	// project's evidence store is read before the transition rather than after.
+	// Without this the transition could only ask whether the evidence array was
+	// non-empty, which any non-empty value satisfies (GAP-124).
+	records, err := loadEvidenceRecords(root)
+	if err != nil {
+		return nil, err
+	}
+	return goals.TransitionGoalWithEvidence(match, state, reason, records)
+}
+
+// loadEvidenceRecords reads every evidence record the project has produced.
+// A project that has produced none yields an empty, non-nil slice so the DONE
+// check reports "no such record" per reference instead of "no store".
+func loadEvidenceRecords(root string) ([]evidence.Record, error) {
+	dir := filepath.Join(root, ".prumo", "runtime", "harness")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []evidence.Record{}, nil
+		}
+		return nil, fmt.Errorf("read evidence store: %w", err)
+	}
+	records := []evidence.Record{}
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasPrefix(name, "evidence-") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		data, readErr := os.ReadFile(filepath.Join(dir, name))
+		if readErr != nil {
+			return nil, fmt.Errorf("read %s: %w", name, readErr)
+		}
+		var record evidence.Record
+		if unmarshalErr := json.Unmarshal(data, &record); unmarshalErr != nil {
+			// A corrupt evidence file must not silently become "no evidence" for
+			// the whole store; name the file instead.
+			return nil, fmt.Errorf("parse %s: %w", name, unmarshalErr)
+		}
+		records = append(records, record)
+	}
+	return records, nil
 }
 func (s *Service) GoalAmend(root, id, file, reason, approvedBy string) (goals.Goal, error) {
 	match, err := findGoal(root, id)

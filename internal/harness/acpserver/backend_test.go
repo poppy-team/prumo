@@ -15,7 +15,8 @@ type stubTools struct{}
 func (stubTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolResult, error) {
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
-func (stubTools) KindOf(string) string { return "read-only" }
+func (stubTools) OperationOf(string) string { return "" }
+func (stubTools) KindOf(string) string      { return "read-only" }
 
 func TestDaemonBackendPromptFlow(t *testing.T) {
 	dir := t.TempDir()

@@ -1,0 +1,165 @@
+{
+  "id": "security-audit-release",
+  "name": "Security Audit & Release Gate",
+  "version": 1,
+  "purpose": "Execute comprehensive secure-by-design verification covering threat models, authorization matrices, multi-tenant isolation, memory safety sanitizers, and supply chain attestations.",
+  "preconditions": [
+    "System architecture and trust boundaries documented",
+    "Candidate release build ready for gate verification"
+  ],
+  "inputs": [
+    "System architecture",
+    "API inventory",
+    "Dependency lockfiles",
+    "Release binary artifacts"
+  ],
+  "agents": [
+    "security-architect",
+    "security-reviewer",
+    "isolation-auditor",
+    "release-verifier"
+  ],
+  "skills": [
+    "security-threat-model",
+    "security-authz-matrix",
+    "security-saas-isolation",
+    "memory-safety-sanitizers",
+    "binary-security-mitigations",
+    "supply-chain-security",
+    "secrets-security"
+  ],
+  "gates": [
+    "threat-model-approved",
+    "authz-matrix-clean",
+    "isolation-verified",
+    "sanitizers-clean",
+    "supply-chain-passed",
+    "release-signoff"
+  ],
+  "artifacts": [
+    "STRIDE Threat Model",
+    "Authorization Matrix Audit",
+    "Cross-Tenant Penetration Report",
+    "Sanitizer & Binary Hardening Scorecard",
+    "Signed Release Security Manifest"
+  ],
+  "stop_conditions": [
+    "Zero critical or high unmitigated vulnerabilities; signed release manifest produced"
+  ],
+  "steps": [
+    {
+      "id": "threat-modeling",
+      "name": "Construct STRIDE threat model, trust boundaries, and abuse cases",
+      "agent_role": "security-architect",
+      "skills": [
+        "security-threat-model"
+      ],
+      "input": "System architecture and data classification",
+      "output": "Threat model and abuse catalog",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "threat-model-approved"
+      ]
+    },
+    {
+      "id": "authz-verification",
+      "name": "Validate role-resource-action authorization matrix and tenant boundaries",
+      "depends_on": [
+        "threat-modeling"
+      ],
+      "agent_role": "isolation-auditor",
+      "skills": [
+        "security-authz-matrix"
+      ],
+      "input": "API routes and permission rules",
+      "output": "Negative authorization test evidence",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "authz-matrix-clean"
+      ]
+    },
+    {
+      "id": "isolation-testing",
+      "name": "Execute adversarial cross-tenant and sandbox containment tests",
+      "depends_on": [
+        "authz-verification"
+      ],
+      "agent_role": "isolation-auditor",
+      "skills": [
+        "security-saas-isolation",
+        "linux-kernel-isolation"
+      ],
+      "input": "Multi-tenant fixtures and sandbox profiles",
+      "output": "Isolation verification report",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "isolation-verified"
+      ]
+    },
+    {
+      "id": "native-sanitizer-audit",
+      "name": "Execute binary analysis, CFI validation, and sanitizer verification (ASan/TSan)",
+      "depends_on": [
+        "isolation-testing"
+      ],
+      "agent_role": "security-reviewer",
+      "skills": [
+        "memory-safety-sanitizers",
+        "binary-security-mitigations"
+      ],
+      "input": "Compiled release binaries",
+      "output": "Sanitizer test logs and hardening scorecard",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "sanitizers-clean"
+      ]
+    },
+    {
+      "id": "supply-chain-check",
+      "name": "Verify SBOM, provenance attestations, dependency CVEs, and secrets scan",
+      "depends_on": [
+        "native-sanitizer-audit"
+      ],
+      "agent_role": "security-reviewer",
+      "skills": [
+        "supply-chain-security",
+        "secrets-security"
+      ],
+      "input": "Lockfiles, CI configs, and artifacts",
+      "output": "SBOM and CVE triage report",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "supply-chain-passed"
+      ]
+    },
+    {
+      "id": "release-manifest-sign",
+      "name": "Consolidate security findings into signed release evidence manifest",
+      "depends_on": [
+        "supply-chain-check"
+      ],
+      "agent_role": "release-verifier",
+      "skills": [
+        "security-review"
+      ],
+      "input": "All security audit reports",
+      "output": "Release security manifest",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "release-signoff"
+      ]
+    }
+  ]
+}

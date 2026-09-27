@@ -18,9 +18,9 @@ Prumo integrates natively with OpenCode via the OpenCode Native Harness (`openco
 Install the OpenCode native harness into your repository:
 
 ```bash
-prumo connector install opencode
+prumo-agent connector install opencode
 # or via backward-compatible command
-prumo install connector opencode
+prumo-agent install connector opencode
 ```
 
 This compiles the `.opencode/` workspace directory:
@@ -62,10 +62,10 @@ Tool guards enforce the Prumo trust model prior to tool invocation (`pre_tool_bl
 
 Validate the native harness installation:
 ```bash
-prumo connector validate opencode
+prumo-agent connector validate opencode
 ```
 
 Safely uninstall without deleting repository files:
 ```bash
-prumo connector uninstall opencode
+prumo-agent connector uninstall opencode
 ```

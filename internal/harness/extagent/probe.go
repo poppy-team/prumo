@@ -88,6 +88,7 @@ func (p Prober) Matrix(ctx context.Context) []ProbeResult {
 		{Name: "fake", Kind: "model", Available: true, Version: "builtin", Detail: "deterministic conformance double"},
 		p.openAICompat(),
 		p.anthropic(),
+		p.openCodeModel(),
 		p.cliAgent("opencode-cli", "opencode", "--version"),
 		p.openCodeServer(ctx),
 		p.cliAgent("codex-cli", "codex", "--version"),
@@ -145,6 +146,31 @@ func (p Prober) cliAgent(name, bin, versionArg string) ProbeResult {
 	r.Available = true
 	r.Version = ver
 	r.Detail = "binary " + full
+	return r
+}
+
+// openCodeModel reports opencode as a *model* provider: the delegated path where
+// opencode runs the turn with its own tools, its own policy and its own
+// authentication (including the models it serves for free).
+func (p Prober) openCodeModel() ProbeResult {
+	r := ProbeResult{Name: "opencode", Kind: "model"}
+	bin := "opencode"
+	if env := envVal("PRUMO_OPENCODE_BIN"); env != "" {
+		bin = env
+	}
+	full := p.lookPath(bin)
+	if full == "" {
+		r.Detail = "binary " + bin + " not on PATH: install opencode or use an api-key provider"
+		return r
+	}
+	ver, err := p.runner()(context.Background(), full, "--version")
+	r.Available = true
+	r.Version = ver
+	if err != nil {
+		r.Detail = "present but --version failed: " + firstLine(err.Error())
+		return r
+	}
+	r.Detail = "delegated turn: opencode runs it with its own tools and its own auth (no api-key needed); Prumo does not see the tool calls"
 	return r
 }
 

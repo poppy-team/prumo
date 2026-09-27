@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/raillen/prumo/internal/install"
 	"github.com/raillen/prumo/internal/protocol"
 )
 
@@ -15,11 +16,20 @@ func captureOutput(f func() int) (int, string) {
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
+	var buf bytes.Buffer
+	done := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(done)
+	}()
+
 	code := f()
 	_ = w.Close()
 	os.Stdout = oldStdout
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
+	<-done
+	_ = r.Close()
+
 	return code, buf.String()
 }
 
@@ -94,7 +104,7 @@ func TestInstallLifecyclePreservesProject(t *testing.T) {
 	if code := run([]string{"--home", home, "setup"}); code != 0 {
 		t.Fatalf("second setup failed: %d", code)
 	}
-	if code := run([]string{"--home", home, "install", "connector", "opencode"}); code != 0 {
+	if code := run([]string{"--home", home, "install", "connector", "opencode", "--path", project}); code != 0 {
 		t.Fatalf("install failed: %d", code)
 	}
 	if code := run([]string{"--home", home, "uninstall", "--connectors", "--purge-cache"}); code != 0 {
@@ -105,6 +115,32 @@ func TestInstallLifecyclePreservesProject(t *testing.T) {
 	}
 	if _, err := os.Stat(projectFile); err != nil {
 		t.Fatalf("project data was removed: %v", err)
+	}
+}
+
+func TestInstallStateRecordsRunningVersion(t *testing.T) {
+	for _, command := range []string{"setup", "install"} {
+		t.Run(command, func(t *testing.T) {
+			home := t.TempDir()
+			stale, err := install.LoadManifest(home)
+			if err != nil {
+				t.Fatalf("load empty manifest: %v", err)
+			}
+			stale.PrumoVersion = "0.5.0"
+			if err := install.SaveManifest(home, stale); err != nil {
+				t.Fatalf("seed manifest: %v", err)
+			}
+			if code := run([]string{"--home", home, command}); code != 0 {
+				t.Fatalf("%s failed: %d", command, code)
+			}
+			got, err := install.LoadManifest(home)
+			if err != nil {
+				t.Fatalf("load manifest: %v", err)
+			}
+			if got.PrumoVersion != protocol.CLIVersion {
+				t.Fatalf("%s recorded version %q, want %q", command, got.PrumoVersion, protocol.CLIVersion)
+			}
+		})
 	}
 }
 

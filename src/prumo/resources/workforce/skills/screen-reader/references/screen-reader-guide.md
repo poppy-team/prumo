@@ -1,26 +1,28 @@
-# Screen Reader Compatibility — Technical Reference Guide
+# Accessibility Tree & W3C AccName 1.2 Reference Guide
 
-## Overview & Purpose
-Verify semantic HTML, ARIA roles, live regions, and accessible names.
+## 1. How Screen Readers Interact with Modern UIs
+Screen readers do not inspect the visual DOM directly. They communicate with the operating system's native accessibility API:
+- **macOS / iOS**: NSAccessibility / UIAccessibility
+- **Windows**: UI Automation (UIA) / IAccessible2
+- **Linux**: AT-SPI2
+- **Android**: AccessibilityNodeInfo
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+The browser or native UI framework (e.g. AccessKit in Rust) compiles the UI into an internal graph known as the **Accessibility Tree**. Each node contains:
+- **Role**: e.g., `ROLE_SYSTEM_PUSHBUTTON`
+- **Name**: e.g., `"Submit Application"`
+- **State**: e.g., `STATE_SYSTEM_FOCUSED`, `STATE_SYSTEM_EXPANDED`
+- **Bounding Rect**: For magnifier focus tracking.
 
-## Operational Standards
-- **Inputs**: Product requirements, Design tokens, Wireframe / UI view
-- **Outputs**: Design specification / findings, Accessibility audit scorecard, UI tests
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, review
+## 2. Accessible Name Computation (AccName 1.2) Precedence
+When an assistive technology determines what text to announce for an element, it computes the Accessible Name following this deterministic algorithm:
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+1. **`aria-labelledby`**: If present, resolve each referenced ID in order, concatenate their visible inner text.
+2. **`aria-label`**: If `aria-labelledby` is absent, use the exact string value of `aria-label`.
+3. **Host Language Association**: e.g. `<label for="...">` associated with `<input>`.
+4. **Subtree Text Content**: For elements allowing name from contents (like buttons, links, table headers), concatenate direct and descendant text nodes.
+5. **Tooltips / Fallbacks**: `title` or `placeholder` attributes (only evaluated if steps 1-4 yield an empty string).
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 3. ARIA Live Region Best Practices
+- Mount the live container on page load: `<div aria-live="polite" aria-atomic="true" class="sr-only" id="announcer"></div>`.
+- Mutate the `textContent` of the container only when an announcement is needed.
+- If the container is created dynamically and populated simultaneously, some screen readers (e.g. older NVDA versions) will miss the announcement because the DOM observer was not initialized.

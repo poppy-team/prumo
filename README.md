@@ -4,6 +4,10 @@ Prumo is a Git-native protocol and CLI for software projects built with humans a
 
 The repository is the durable source of truth. Prumo stores canonical project state in Markdown, JSON, JSON Schema, and Git; generated adapters, caches, indexes, and runtime state remain derived.
 
+## Names
+
+The framework is **Prumo**. The command you run is **`prumo`** (built from `cmd/prumo`), and the terminal client is a separate binary launched by **`prumo agent`** — installed as **`prumo-agent`** (or its short alias **`pa`**). See [ADR 016](docs/adr/016-product-split-agent-and-harness.md) for the naming decision.
+
 ## Current release line
 
 Prumo v0.6 is a pure Go distribution (ADR 002).
@@ -21,7 +25,11 @@ Prumo v0.6 is a pure Go distribution (ADR 002).
 - Plan DAG validation, Events, Evidence, Gates, and Doctor diagnostics.
 - JSON Schema Draft 2020-12 validation with local `$ref` resolution.
 - Lean Progressive Context planning and project intelligence reports.
-- Compiler adapters for Generic, ChatGPT, Claude, Kimi, Codex, Claude Code, Traycer, Gemini, OpenCode, and Google Antigravity.
+- Compiler adapters and harness connectors for Generic, ChatGPT, Claude, Kimi, Codex, Claude Code, Traycer, Gemini, OpenCode, Google Antigravity, Cursor, Windsurf, and Cline / Roo Code.
+- Surgical managed region integration (`doccompile`) preserving user instruction files across installs/uninstalls.
+- Model provider integration: OpenAI-compatible, Anthropic (with prompt caching), DeepSeek (with reasoning streams), and OpenCode.
+- SCM integration supporting GitHub (with GitHub Checks API evidence publishing) and GitLab (pipelines and commit status).
+- High-performance Rust-based Native Workspace Viewer (`prumo-viewer`) with extension ecosystem.
 - Machine-readable JSON envelopes for automation and harness integrations.
 - Conformance tests comparing Go behavior with golden specification baselines.
 - Portable installation state, connector ownership, setup, and safe uninstall.
@@ -44,7 +52,7 @@ go run ./cmd/prumo --json version
 Expected version output:
 
 ```text
-0.5.0
+0.6.0
 ```
 
 Run `prumo --help` or `prumo <command> --help` to view all available commands, options, and quick examples. You can also consult the [CLI reference](docs/manual/usage.md#command-reference).
@@ -182,5 +190,9 @@ The Go suite includes comprehensive tests for initialization, resolver behavior,
 Use `docs/PRUMO.md` as the repository documentation router. Do not load the entire documentation tree for a single task.
 
 ## License and contribution
+
+Prumo is released under the [MIT License](LICENSE). Code derived from other
+projects, and the revisions it was taken from, are recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Before contributing, read `AGENTS.md`, the [coding standards](docs/development/coding-standards.md), the [dependency rules](docs/architecture/dependency-rules.md), and the [testing strategy](docs/development/testing-strategy.md).

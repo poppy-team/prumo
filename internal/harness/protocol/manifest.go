@@ -4,7 +4,7 @@
 package protocol
 
 // Ops lists every daemon/CLI protocol operation in stable order.
-var Ops = []string{"start", "status", "list", "events", "cancel", "steer", "schedule", "unschedule", "jobs", "protocol"}
+var Ops = []string{"start", "status", "list", "events", "cancel", "steer", "schedule", "unschedule", "jobs", "protocol", "approve", "deny", "models", "diff", "subscribe"}
 
 // ErrorCodes lists stable machine-readable error codes.
 var ErrorCodes = []string{
@@ -19,6 +19,10 @@ var ErrorCodes = []string{
 	"run not active",
 	"no tool executor configured",
 	"client version required",
+	"permission request required",
+	"no pending permission",
+	"path required",
+	"cursor beyond event log",
 }
 
 // OpArgs documents required arguments per op.
@@ -33,6 +37,13 @@ var OpArgs = map[string][]string{
 	"unschedule": {"job_id"},
 	"jobs":       {},
 	"protocol":   {},
+	"approve":    {"run_id", "request_id"},
+	"deny":       {"run_id", "request_id"},
+	// Models has no required argument: asking the default provider is the
+	// common case, and the rest identify a provider to ask instead.
+	"models":    {},
+	"diff":      {"run_id", "path"},
+	"subscribe": {"run_id"},
 }
 
 // Manifest returns the full IDL document.

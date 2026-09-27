@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/raillen/prumo/internal/connectors"
@@ -27,6 +28,11 @@ func RunAll(t *testing.T, c connectors.Connector) {
 		home := t.TempDir()
 		root := t.TempDir()
 		VerifySafeUninstall(t, c, home, root)
+	})
+	t.Run("PreExistingInstructionPreserved", func(t *testing.T) {
+		home := t.TempDir()
+		root := t.TempDir()
+		VerifyPreExistingInstructionPreserved(t, c, home, root)
 	})
 	t.Run("Negotiation", func(t *testing.T) { VerifyNegotiation(t, c) })
 }
@@ -138,6 +144,55 @@ func VerifySafeUninstall(t *testing.T, c connectors.Connector, home, projectRoot
 	}
 
 	_ = uninstRes
+}
+
+// VerifyPreExistingInstructionPreserved verifies GAP-141: an existing instruction file is augmented with a managed region, not destroyed.
+func VerifyPreExistingInstructionPreserved(t *testing.T, c connectors.Connector, home, projectRoot string) {
+	t.Helper()
+	contract := c.Contract()
+	cfg, ok := contract.Install["config"].(string)
+	if !ok || cfg == "" || (!strings.HasSuffix(cfg, ".md") && !strings.HasSuffix(cfg, ".mdc") && !strings.HasSuffix(cfg, "rules")) {
+		return
+	}
+	targetFile := filepath.Join(projectRoot, cfg)
+	if err := os.MkdirAll(filepath.Dir(targetFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	customUserText := "# My Custom Team Instructions\n\n- Do not break production\n"
+	if err := os.WriteFile(targetFile, []byte(customUserText), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Install connector into project
+	res, err := c.Install(home, projectRoot, connectors.InstallOptions{})
+	if err != nil {
+		t.Fatalf("Install on pre-existing config failed: %v", err)
+	}
+
+	// Verify file still exists and contains user custom text
+	contentAfterInstall, err := os.ReadFile(targetFile)
+	if err != nil {
+		t.Fatalf("config file was removed or missing after install: %v", err)
+	}
+	if !strings.Contains(string(contentAfterInstall), "My Custom Team Instructions") {
+		t.Fatalf("user custom text was erased during install!\nContent:\n%s", string(contentAfterInstall))
+	}
+
+	// Uninstall connector
+	_, err = c.Uninstall(home, projectRoot, connectors.UninstallOptions{})
+	if err != nil {
+		t.Fatalf("Uninstall failed: %v", err)
+	}
+
+	// Verify file STILL exists and contains user custom text (GAP-141 resolved)
+	contentAfterUninstall, err := os.ReadFile(targetFile)
+	if err != nil {
+		t.Fatalf("CRITICAL GAP-141: pre-existing user file was destroyed during uninstall: %v", err)
+	}
+	if !strings.Contains(string(contentAfterUninstall), "My Custom Team Instructions") {
+		t.Fatalf("user custom text was lost after uninstall:\n%s", string(contentAfterUninstall))
+	}
+	_ = res
 }
 
 // VerifyNegotiation checks capability negotiation for strict and degraded modes.

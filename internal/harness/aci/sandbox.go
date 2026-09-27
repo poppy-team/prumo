@@ -65,12 +65,27 @@ func (c ContainerProvider) Describe() string {
 }
 
 // DetectContainerRuntime prefers podman (rootless) over docker, else "".
+// containerRuntimes is the preference order: podman first (rootless by default,
+// the least privilege), docker second.
+var containerRuntimes = []string{"podman", "docker"}
+
+// DetectContainerRuntime returns the first runtime that can actually run a
+// container here, or "" when none can.
+//
+// Presence is not capability: a binary on PATH that cannot reach its store or
+// daemon is not a sandbox, and reporting it as one takes the sandbox away from a
+// host that has a working runtime beside it. So the order is a preference, not a
+// verdict — the first *usable* runtime wins. An explicitly requested runtime
+// still fails fast instead of falling back (ADR 006); that is a different
+// question, asked by the operator rather than detected by us.
 func DetectContainerRuntime() string {
-	if _, err := exec.LookPath("podman"); err == nil {
-		return "podman"
-	}
-	if _, err := exec.LookPath("docker"); err == nil {
-		return "docker"
+	for _, rt := range containerRuntimes {
+		if _, err := exec.LookPath(rt); err != nil {
+			continue
+		}
+		if (CLIRunner{Runtime: rt}).Available() {
+			return rt
+		}
 	}
 	return ""
 }

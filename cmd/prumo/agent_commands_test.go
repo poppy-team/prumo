@@ -14,6 +14,8 @@ import (
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/daemon"
 	"github.com/raillen/prumo/internal/harness/model"
+	"github.com/raillen/prumo/internal/harness/perm"
+	harnessprotocol "github.com/raillen/prumo/internal/harness/protocol"
 )
 
 func TestAgentRunResumeHandoff(t *testing.T) {
@@ -45,9 +47,18 @@ func TestAgentProtocolManifest(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("protocol manifest failed: code=%d", code)
 	}
-	for _, want := range []string{`"start"`, `"cancel"`, `"protocol"`, `"0.1.0"`} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("manifest missing %s:\n%s", want, out)
+	// The version is asserted from the constant, and the ops by name: a test
+	// that pins either literally turns every protocol addition into a test edit,
+	// which is how a test stops being read.
+	want := []string{`"start"`, `"cancel"`, `"protocol"`, `"approve"`, `"deny"`, `"models"`, `"` + harnessprotocol.Version + `"`}
+	for _, w := range want {
+		if !strings.Contains(out, w) {
+			t.Fatalf("manifest missing %s:\n%s", w, out)
+		}
+	}
+	for _, op := range harnessprotocol.Ops {
+		if !strings.Contains(out, `"`+op+`"`) {
+			t.Fatalf("manifest does not list op %s:\n%s", op, out)
 		}
 	}
 }
@@ -69,7 +80,7 @@ func TestAgentEventsAndProtocol(t *testing.T) {
 	code, out = captureOutput(func() int {
 		return run([]string{"agent", "protocol", "--client", "0.1.0"})
 	})
-	if code != 0 || !strings.Contains(out, "protocol 0.1.0") {
+	if code != 0 || !strings.Contains(out, "protocol "+harnessprotocol.Version) {
 		t.Fatalf("agent protocol failed: code=%d out=%s", code, out)
 	}
 	code, _ = captureOutput(func() int {
@@ -85,7 +96,8 @@ type cliStubTools struct{}
 func (cliStubTools) Execute(_ context.Context, call agent.ToolCall) (agent.ToolResult, error) {
 	return agent.ToolResult{ToolCallID: call.ID, Output: "ok"}, nil
 }
-func (cliStubTools) KindOf(string) string { return "read-only" }
+func (cliStubTools) OperationOf(string) string { return "" }
+func (cliStubTools) KindOf(string) string      { return "read-only" }
 
 func TestAgentPsLogsAgainstDaemon(t *testing.T) {
 	dir := t.TempDir()
@@ -140,6 +152,137 @@ func TestAgentPsLogsAgainstDaemon(t *testing.T) {
 		t.Fatalf("agent logs failed: code=%d out=%s", code, out)
 	}
 }
+
+// TestAgentApprovePendingPermission drives the CLI the way an operator does:
+// find the pending request with `agent ps`, answer it with `agent approve`, and
+// watch the run finish.
+func TestAgentApprovePendingPermission(t *testing.T) {
+	dir := t.TempDir()
+	sock := filepath.Join(dir, "agentd.sock")
+	srv := daemon.New(sock, filepath.Join(dir, "store"), daemon.Deps{
+		NewProvider: func(name, baseURL, apiKey, mdl string) (model.Provider, error) {
+			return model.ForName("fake-tools", "", "", "")
+		},
+		Tools:      cliStubTools{},
+		PermPolicy: perm.Policy{DefaultAction: agent.PermissionAsk},
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = srv.Serve(ctx) }()
+	c := daemon.Client{SocketPath: sock}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, err := c.Protocol(); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("daemon did not come up")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if _, err := c.Start("read the readme", "fake-tools", "R-pcli", 1); err != nil {
+		t.Fatal(err)
+	}
+	var requestID string
+	deadline = time.Now().Add(10 * time.Second)
+	for {
+		st, err := c.Status("R-pcli")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if st["ok"] == true && st["status"] == "awaiting_approval" {
+			ids, _ := st["pending_permissions"].([]any)
+			if len(ids) == 1 {
+				requestID, _ = ids[0].(string)
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("run never asked for approval: %v", st)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	code, out := captureOutput(func() int {
+		return run([]string{"agent", "ps", "--socket", sock})
+	})
+	// The listing names the request and the fingerprint an answer must quote.
+	if code != 0 || !strings.Contains(out, "waiting-for="+requestID+":") {
+		t.Fatalf("agent ps must name the pending request and its fingerprint: code=%d out=%s", code, out)
+	}
+	fingerprint := ""
+	for _, part := range strings.Split(out, "waiting-for=") {
+		for _, entry := range strings.Split(part, ",") {
+			if id, fp, found := strings.Cut(strings.TrimSpace(entry), ":"); found && id == requestID {
+				fingerprint = fp
+			}
+		}
+	}
+	if fingerprint == "" {
+		t.Fatalf("agent ps did not show a fingerprint: %s", out)
+	}
+	code, out = captureOutput(func() int {
+		return run([]string{"agent", "approve", "--run", "R-pcli", "--request", requestID, "--fingerprint", fingerprint, "--socket", sock})
+	})
+	if code != 0 || !strings.Contains(out, "Approved") {
+		t.Fatalf("agent approve failed: code=%d out=%s", code, out)
+	}
+	deadline = time.Now().Add(10 * time.Second)
+	for {
+		st, err := c.Status("R-pcli")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if st["ok"] == true && st["status"] == "complete" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("run did not continue after approval: %v", st)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	// Answering a second time is refused rather than silently accepted.
+	code, out = captureOutput(func() int {
+		return run([]string{"agent", "approve", "--run", "R-pcli", "--request", requestID, "--socket", sock})
+	})
+	if code == 0 {
+		t.Fatalf("approving a finished run must fail: %s", out)
+	}
+}
+
+func TestAgentPermissionFlags(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want agent.PermissionDecision
+	}{
+		{[]string{}, agent.PermissionAllow},
+		{[]string{"--permission", "ask"}, agent.PermissionAsk},
+		{[]string{"--permission", "deny"}, agent.PermissionDeny},
+	} {
+		policy, err := permissionPolicy(agentFlags(tc.args))
+		if err != nil {
+			t.Fatalf("%v: %v", tc.args, err)
+		}
+		if policy.DefaultAction != tc.want {
+			t.Fatalf("%v: default = %s, want %s", tc.args, policy.DefaultAction, tc.want)
+		}
+	}
+	if _, err := permissionPolicy(agentFlags([]string{"--permission", "sometimes"})); err == nil {
+		t.Fatal("an unknown permission mode must be refused")
+	}
+	if policy, _ := permissionPolicy(agentFlags([]string{"--ask-kind", "destructive,network"})); len(policy.AskKinds) != 2 {
+		t.Fatalf("ask-kind not parsed: %v", policy.AskKinds)
+	}
+}
+
+func TestAgentApproveValidatesFlags(t *testing.T) {
+	if code, _ := captureOutput(func() int { return run([]string{"agent", "approve"}) }); code == 0 {
+		t.Fatal("approve without --run must fail")
+	}
+	if code, _ := captureOutput(func() int { return run([]string{"agent", "deny", "--run", "R-1"}) }); code == 0 {
+		t.Fatal("deny without --request must fail")
+	}
+}
+
 func TestDaemonClientRemoteMapping(t *testing.T) {
 	dir := t.TempDir()
 	tok := filepath.Join(dir, "token")
@@ -380,9 +523,45 @@ func TestAgentRunAnthropicAgainstStub(t *testing.T) {
 	defer srv.Close()
 	dir := t.TempDir()
 	code, out := captureOutput(func() int {
-		return run([]string{"agent", "run", "--goal", "anthropic stub", "--path", dir, "--run", "R-anthropic", "--provider", "anthropic", "--base-url", srv.URL, "--model", "stub", "--max-turns", "1"})
+		// The stub is a loopback server, which the default destination policy
+		// refuses. Reaching a local gateway is opt-in, so the test says so.
+		return run([]string{"agent", "run", "--goal", "anthropic stub", "--path", dir, "--run", "R-anthropic", "--provider", "anthropic", "--base-url", srv.URL, "--allow-local-model", "--model", "stub", "--max-turns", "1"})
 	})
 	if code != 0 || !strings.Contains(out, "R-anthropic") {
 		t.Fatalf("anthropic run failed: code=%d out=%s", code, out)
+	}
+}
+
+// --base-url is a command line value, and the harness sends the conversation
+// and the API key wherever it names. The default refuses the addresses an SSRF
+// probe wants; a local gateway is opt-in (GAP-111).
+
+func TestAgentRunRefusesAMetadataBaseURL(t *testing.T) {
+	dir := t.TempDir()
+	for _, baseURL := range []string{
+		"https://169.254.169.254/latest/meta-data/",
+		"https://10.0.0.5/v1",
+		"http://127.0.0.1:11434/v1",
+	} {
+		code, out := captureOutput(func() int {
+			return run([]string{"agent", "run", "--goal", "x", "--path", dir,
+				"--run", "R-ssrf", "--provider", "anthropic", "--base-url", baseURL, "--model", "m", "--max-turns", "1"})
+		})
+		if code == 0 {
+			t.Fatalf("%s must be refused by default; out=%s", baseURL, out)
+		}
+	}
+}
+
+func TestAllowLocalModelStillRefusesTheMetadataEndpoint(t *testing.T) {
+	// The opt-in opens loopback, not the metadata endpoint.
+	dir := t.TempDir()
+	code, out := captureOutput(func() int {
+		return run([]string{"agent", "run", "--goal", "x", "--path", dir,
+			"--run", "R-ssrf2", "--provider", "anthropic", "--base-url", "https://169.254.169.254/",
+			"--allow-local-model", "--model", "m", "--max-turns", "1"})
+	})
+	if code == 0 {
+		t.Fatalf("the metadata endpoint must stay refused even with the local opt-in; out=%s", out)
 	}
 }

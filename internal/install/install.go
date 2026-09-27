@@ -1,6 +1,8 @@
 package install
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,6 +21,7 @@ type Manifest struct {
 type CleanupManifest struct {
 	Connector        string   `json:"connector"`
 	Scope            string   `json:"scope"`
+	ProjectRoot      string   `json:"project_root,omitempty"`
 	CreatedPaths     []string `json:"created_paths"`
 	ManagedFragments []string `json:"managed_fragments"`
 	Backups          []string `json:"backups"`
@@ -41,6 +44,15 @@ func HomeDir(explicit string) (string, error) {
 func ManifestPath(home string) string { return filepath.Join(home, "config", "installation.json") }
 func CleanupPath(home, connector string) string {
 	return filepath.Join(home, "connectors", connector, "cleanup.json")
+}
+
+func CleanupPathForProject(home, connector, projectRoot string) string {
+	if projectRoot == "" {
+		return CleanupPath(home, connector)
+	}
+	sum := sha256.Sum256([]byte(filepath.Clean(projectRoot)))
+	slug := hex.EncodeToString(sum[:])[:12]
+	return filepath.Join(home, "connectors", connector, slug, "cleanup.json")
 }
 
 func LoadManifest(home string) (Manifest, error) {

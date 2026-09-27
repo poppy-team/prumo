@@ -70,11 +70,11 @@ and retention policies manage storage expiration.
 ### 7. CLI Surface
 
 - Implemented in `cmd/prumo/experience_commands.go` and `cmd/prumo/main.go`:
-  - `prumo experience status`
-  - `prumo experience handoff create --id <id> --from <from> --to <to> --goal <goal>`
-  - `prumo experience handoff show <id>`
-  - `prumo experience handoff ack <id> --actor <actor>`
-  - `prumo experience events --session <id>`
+  - `prumo-agent experience status`
+  - `prumo-agent experience handoff create --id <id> --from <from> --to <to> --goal <goal>`
+  - `prumo-agent experience handoff show <id>`
+  - `prumo-agent experience handoff ack <id> --actor <actor>`
+  - `prumo-agent experience events --session <id>`
 - Verified by automated tests in `cmd/prumo/experience_commands_test.go`.
 
 ---

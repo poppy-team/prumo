@@ -9,9 +9,9 @@ Run != ExecutorSession
 A Run remains the same when model, harness, or session changes. The current baseline stores derived runtime records under `.prumo/runtime/` and exposes:
 
 ```bash
-prumo run --run R001 --path ./project
-prumo continue --run R001 --path ./project --json
-prumo continue --run R001 --path ./project --prompt
+prumo-agent run --run R001 --path ./project
+prumo-agent continue --run R001 --path ./project --json
+prumo-agent continue --run R001 --path ./project --prompt
 ```
 
 The portable continuation record must contain enough structured state to rehydrate a fresh executor: Run identity, Goal/Task refs, branch/revision/dirty state, completed/current/pending work, decisions, evidence, blockers, pending side effects, and next steps.

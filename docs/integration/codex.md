@@ -4,7 +4,7 @@ This guide explains how to integrate Prumo with Codex agents.
 
 ## Compilation Output
 
-Running `prumo compile codex` produces an integration layer tailored for Codex:
+Running `prumo-agent compile codex` produces an integration layer tailored for Codex:
 
 ```text
 .codex/
@@ -19,8 +19,8 @@ Codex agents are instructed via `AGENTS.md` to look in the `.codex/skills/` dire
 
 ## Step-by-Step
 
-1. `prumo init`: Initialize the project configuration.
-2. `prumo compile codex`: Generate the Codex integration artifacts.
+1. `prumo-agent init`: Initialize the project configuration.
+2. `prumo-agent compile codex`: Generate the Codex integration artifacts.
 3. Verify output: Check `.codex/AGENTS.md` and ensure skills are present.
 
 ## Customization

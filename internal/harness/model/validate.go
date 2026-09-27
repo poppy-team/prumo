@@ -35,12 +35,9 @@ func ValidateValue(schema map[string]any, value any) error {
 		if !ok {
 			return fmt.Errorf("want object, got %T", value)
 		}
-		if req, ok := schema["required"].([]any); ok {
-			for _, r := range req {
-				name, _ := r.(string)
-				if _, ok := obj[name]; !ok {
-					return fmt.Errorf("missing required property %q", name)
-				}
+		for _, name := range requiredProperties(schema) {
+			if _, ok := obj[name]; !ok {
+				return fmt.Errorf("missing required property %q", name)
 			}
 		}
 		props, _ := schema["properties"].(map[string]any)
@@ -133,4 +130,29 @@ func ToolNames(specs []agent.ToolSpec) []string {
 // UnknownToolError reports an undeclared tool call.
 func UnknownToolError(specs []agent.ToolSpec, name string) error {
 	return fmt.Errorf("unknown tool %q (known: %s)", name, strings.Join(ToolNames(specs), ", "))
+}
+
+// requiredProperties reads a schema's required list in both forms it can arrive
+// in.
+//
+// A schema decoded from JSON holds []any; a schema written in Go — which is how
+// every native tool's schema is written — holds []string. Reading only the
+// decoded form meant the required arguments of every native tool were silently
+// unenforced, and a model was never held to the contract it had just been sent
+// (GAP-114).
+func requiredProperties(schema map[string]any) []string {
+	switch req := schema["required"].(type) {
+	case []string:
+		return req
+	case []any:
+		out := make([]string, 0, len(req))
+		for _, r := range req {
+			if name, ok := r.(string); ok {
+				out = append(out, name)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }

@@ -6,6 +6,8 @@
 package contextv2
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -244,4 +246,21 @@ func Fresh(freshness string, maxAge time.Duration) bool {
 		return !strings.Contains(freshness, "stale")
 	}
 	return time.Since(t) <= maxAge
+}
+
+// MicroCompactObservation replaces a lengthy observation payload with a SHA-256
+// digest pointer and preview, in adherence to Lean Progressive Context (W4.12).
+func MicroCompactObservation(content string, maxPreview int) (summary string, sha256Hex string, origLen int) {
+	origLen = len(content)
+	h := sha256.Sum256([]byte(content))
+	sha256Hex = fmt.Sprintf("%x", h)
+	preview := strings.ReplaceAll(content, "\n", " ")
+	if maxPreview <= 0 {
+		maxPreview = 80
+	}
+	if len(preview) > maxPreview {
+		preview = preview[:maxPreview]
+	}
+	summary = fmt.Sprintf("[Observation micro-compacted: %d bytes, sha256:%s. Preview: %s...]", origLen, sha256Hex[:16], preview)
+	return summary, sha256Hex, origLen
 }

@@ -47,5 +47,5 @@ automated pass does not complete it. A waived obligation must be recorded as
 ## Verification
 
 - Contract presence and shape: `conformance/schema-runtime` (W1).
-- Per-project obligations: `prumo docs audit` / `prumo docs readiness` (W15 semantics).
+- Per-project obligations: `prumo-agent docs audit` / `prumo-agent docs readiness` (W15 semantics).
 - Evidence freshness: media and evidence records (W20).

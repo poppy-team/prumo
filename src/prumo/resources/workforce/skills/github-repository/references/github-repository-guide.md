@@ -1,26 +1,33 @@
 # GitHub Repository Management — Technical Reference Guide
 
-## Overview & Purpose
-Manage repository settings, branch protections, secrets, and environment configurations.
+## 1. Core Concepts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+**Branch protection as code**: required reviews, required status checks (exact names), up-to-date-branch enforcement, force-push/deletion blocks — snapshotted before change via `gh api repos/{owner}/{repo}/branches/main/protection` and re-fetched after.
 
-## Operational Standards
-- **Inputs**: Repository context, Issue / PR specifications, Roadmap Goal
-- **Outputs**: Structured GitHub artifact, Validation confirmation
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, review
+**Secret scoping**: environment > repository > organization is the wrong order — secrets live at the *lowest* scope that works (environment secrets for prod, repository for shared CI, organization only for truly global tokens). Fork PRs never see secrets; production environments require named reviewers.
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+**CODEOWNERS routing**: every protected path maps to an owner team; area labels mirror triage routing so issues land with humans, not voids.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 2. Patterns
+
+- **Snapshot-diff-verify**: export protection JSON → apply change → re-fetch → diff; the diff is the evidence.
+- **Negative proofs**: attempt direct push to `main` (expect rejection), inspect a fork-PR run's env (expect empty secrets), request a production deployment as non-approver (expect gate).
+- **Check-name exactness**: required checks reference the job's full name (`test (ubuntu-22.04, node 20)`), not the workflow name — renames break protection silently.
+- **Rotation ledger**: secret names + scopes + rotation dates recorded; values never appear in logs or reports.
+
+## 3. Anti-Patterns
+
+- Undocumented click-ops ("I think I set it in the UI").
+- Organization-wide secrets for single-repo needs.
+- Required checks pointing at renamed/deleted jobs (protection theater).
+- Stale CODEOWNERS routing reviews to departed teams.
+
+## 4. Worked Example
+
+Repo `acme/api`: snapshot shows `main` requires 1 review but zero required checks and allows force-push. Change: 2 reviews for `src/auth/**` (via CODEOWNERS + ruleset), required checks `lint`, `test (ubuntu-22.04, node 20)`, block force pushes and deletions, production environment with 2 named approvers, `NPM_TOKEN` moved from repository to production-environment scope. Negative proof: direct push rejected (`GH006`), fork-PR run shows no secrets. Before/after payloads archived.
+
+## 5. Verification Pointers
+
+- Re-fetched protection payload matches the intended policy field-for-field.
+- Every secret lists scope + rotation date; no values in evidence.
+- CODEOWNERS covers all protected paths with no stale owners.

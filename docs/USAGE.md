@@ -17,7 +17,7 @@ examples/brasa/project-profile.json
 ## 3. Initialize
 
 ```bash
-prumo init ./project --profile ./project-profile.json --non-interactive
+prumo-agent init ./project --profile ./project-profile.json --non-interactive
 ```
 
 New projects receive:
@@ -33,7 +33,7 @@ New projects receive:
 ## 4. Validate
 
 ```bash
-prumo validate ./project --schemas ./schemas
+prumo-agent validate ./project --schemas ./schemas
 ```
 
 ## 5. Define and lock Goals
@@ -56,8 +56,8 @@ Do not generate permanent task context files.
 ## 7. Compile adapters only when needed
 
 ```bash
-prumo compile --target codex --path ./project
-prumo compile --target traycer --path ./project
+prumo-agent compile --target codex --path ./project
+prumo-agent compile --target traycer --path ./project
 ```
 
 Generic/chat compiled context is runtime state.
@@ -85,7 +85,7 @@ Canonical Markdown remains source of truth. Projects may continuously build a do
 A fresh model/tool reads `ENTRYPOINT.md`, `prumo.json`, `PROJECT_STATE.md`, `docs/PRUMO.md`, the active Goal and then expands context on demand.
 
 ```bash
-prumo snapshot ./project
+prumo-agent snapshot ./project
 ```
 
 Snapshots exclude runtime/cache state.

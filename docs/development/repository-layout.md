@@ -54,6 +54,10 @@ prumo/
 │   ├── codex/
 │   ├── claude-code/
 │   └── generic/
+├── prumo-viewer/
+│   ├── src/extensions/          # host-side discovery and extension state
+│   ├── extension-sdk/          # distributable, UI-independent contracts
+│   └── extensions/             # reference extension packages
 ├── schemas/
 ├── resources/
 │   ├── documentation-contracts/
@@ -108,6 +112,10 @@ prumo/
 | `internal/storage/git/` | Git filesystem operations (Repository port) | No |
 | `internal/storage/sqlite/` | Derived index (DerivedIndex port) | No |
 | `integrations/` | Harness adapters (thin, generated templates + host code) | No |
+| `prumo-viewer/` | Native Freya workspace viewer | No |
+| `prumo-viewer/src/extensions/` | Viewer-side extension discovery, validation and state | No |
+| `prumo-viewer/extension-sdk/` | Public UI-independent extension contracts and RPC helpers | Publishable |
+| `prumo-viewer/extensions/` | Independently distributable reference packages | No |
 | `schemas/` | **Canonical** JSON Schemas (source of truth) | No (git) |
 | `resources/` | **Canonical** agent/skill/recipe catalogs, doc contracts, profiles | Yes (`go:embed`) |
 | `conformance/` | Fixtures, golden outputs, baseline metadata | No (git) |

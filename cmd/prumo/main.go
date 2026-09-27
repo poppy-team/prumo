@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/raillen/prumo/internal/cliops"
+	"github.com/raillen/prumo/internal/harness/guitest"
 	"github.com/raillen/prumo/internal/project"
 	"github.com/raillen/prumo/internal/protocol"
 )
@@ -190,10 +192,16 @@ func run(args []string) int {
 		return runDocumentation(asJSON, rest)
 	case "run", "continue", "budget", "debug", "tool", "model", "env", "runtime":
 		return runRuntime(asJSON, rest)
+	case "ask":
+		return runAsk(asJSON, rest[1:])
+	case "serve":
+		return runAgentServe(asJSON, rest[1:])
 	case "agent":
 		return runAgent(asJSON, rest[1:])
 	case "tui":
 		return runTui(asJSON, rest[1:])
+	case "native", "viewer":
+		return runNative(asJSON, rest[1:])
 	case "ui":
 		return runUI(asJSON, rest[1:])
 	case "package", "automation":
@@ -206,6 +214,8 @@ func run(args []string) int {
 		return runInstall(asJSON, home, rest[1:])
 	case "uninstall":
 		return runUninstall(asJSON, home, rest[1:])
+	case "upgrade", "update", "self-update":
+		return runUpgrade(asJSON, home, rest[1:])
 	case "status":
 		path := "."
 		for i := 1; i < len(rest); i++ {
@@ -335,7 +345,7 @@ func run(args []string) int {
 	case "experience":
 		return runExperience(asJSON, rest[1:])
 	case "connector":
-		return runConnector(asJSON, rest[1:])
+		return runConnector(asJSON, home, rest[1:])
 	case "knowledge":
 		return runKnowledge(asJSON, rest[1:])
 	case "context":
@@ -428,9 +438,23 @@ func run(args []string) int {
 		if len(rest) > 1 && rest[1] != "--json" {
 			path = rest[1]
 		}
-		findings, err := svc.Doctor(path)
-		if err != nil {
-			return serviceError(asJSON, err)
+		var findings []map[string]any
+		if path == "gui" {
+			guiFindings := guitest.DoctorCheck(context.Background())
+			for _, f := range guiFindings {
+				findings = append(findings, map[string]any{
+					"category": f.Category,
+					"severity": f.Severity,
+					"message":  f.Message,
+					"target":   f.Target,
+				})
+			}
+		} else {
+			f, err := svc.Doctor(path)
+			if err != nil {
+				return serviceError(asJSON, err)
+			}
+			findings = f
 		}
 		hasErrors := false
 		for _, finding := range findings {
@@ -727,6 +751,51 @@ func runExplain(svc *cliops.Service, asJSON bool, args []string) int {
 			return printEnvelope(protocol.OkEnvelope(result))
 		}
 		fmt.Printf("Profile: %v\n", result["profile_id"])
+		return exitOK
+	case "run":
+		result, err := svc.ExplainRun(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Run ID: %v\n", result["run_id"])
+		return exitOK
+	case "route":
+		result, err := svc.ExplainRoute(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Println("Routing Hierarchy:")
+		if classes, ok := result["classes"].(map[string]any); ok {
+			for k, v := range classes {
+				fmt.Printf("  %s: %s\n", k, v)
+			}
+		}
+		return exitOK
+	case "budget":
+		result, err := svc.ExplainBudget(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Budget Hierarchy: %v | Reserve: %v\n", result["hierarchy"], result["review_reserve"])
+		return exitOK
+	case "decision":
+		result, err := svc.ExplainDecision(path, target)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Decision Pipeline: %v\n", result["pipeline"])
 		return exitOK
 	default:
 		fmt.Fprintf(os.Stderr, "error: unknown explain topic: %s\n", topic)

@@ -1,0 +1,72 @@
+{
+  "id": "compiler-frontend-engineering",
+  "name": "Compiler Frontend Engineering",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design and implement lexing, parsing (Pratt, LR, PEG), AST/CST construction, and robust error recovery.",
+  "risk_level": "medium",
+  "modes": [
+    "implementation",
+    "testing",
+    "review"
+  ],
+  "inputs": [
+    "Formal grammar specification",
+    "Lexer token definition",
+    "Source code files"
+  ],
+  "outputs": [
+    "Concrete and Abstract Syntax Trees",
+    "Diagnostic error reports with source spans"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/compiler-frontend-engineering-guide.md"
+  ],
+  "templates": [
+    "templates/compiler-frontend-engineering-spec.md"
+  ],
+  "checks": [
+    "checks/compiler-frontend-engineering-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/compiler-frontend-engineering-example.json"
+  ],
+  "required_evidence": [
+    "test",
+    "conformance"
+  ],
+  "stop_conditions": [
+    "All Compiler Frontend Engineering invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "project_types": [
+      "compiler",
+      "language",
+      "game-engine"
+    ],
+    "features_any": [
+      "compiler",
+      "parser",
+      "dsl"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

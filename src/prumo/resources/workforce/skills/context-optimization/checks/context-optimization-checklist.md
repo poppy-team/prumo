@@ -1,21 +1,26 @@
 # Context Optimization — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Task requirements, System architecture, Relevant source files) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Measurement First
+- [ ] Working set tokenized per section before any cut; largest sections identified.
+- [ ] Target budget stated in writing (e.g. 24,000 loaded, 12,000 target).
+- [ ] Critical facts enumerated from acceptance criteria before compression starts.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Dedup & Pruning
+- [ ] Repeated frames, headers, and configs collapsed by script with kept/dropped counts.
+- [ ] Sections tiered critical / supporting / noise; noise fully dropped.
+- [ ] No critical-tier content paraphrased, truncated, or moved to a summary.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test) has been generated and recorded.
+## 3. Summarization Fidelity
+- [ ] Passing test output replaced by counts; failing assertions kept byte-identical.
+- [ ] Every summary states what was removed and where the original lives.
+- [ ] Error signatures, ids, and acceptance criteria verified verbatim post-compression.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Cache Discipline
+- [ ] Immutable instruction/schema blocks annotated as cache candidates.
+- [ ] Cacheable prefixes byte-stable across runs; hit rate recorded (target above 80%).
+- [ ] Rewording a cacheable prefix invalidates and re-baselines the hit-rate record.
+
+## 5. Verification Gates
+- [ ] Token accounting shows per-section before/after and total savings percentage.
+- [ ] Tokens-per-resolved-goal recorded against the trailing mean.
+- [ ] Automated verification script `scripts/verify.sh` executes with exit code 0.

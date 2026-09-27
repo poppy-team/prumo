@@ -1,21 +1,28 @@
 {
   "id": "state-management",
-  "name": "State Management",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Design predictable, unidirectional frontend and backend state machines.",
+  "name": "State Management Architecture",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design, engineer, and audit deterministic state architectures using finite state machines, unidirectional data flow, reactive signals, and optimistic transactional rollbacks.",
   "risk_level": "low",
   "modes": [
-    "implementation"
+    "implementation",
+    "review",
+    "audit",
+    "design",
+    "testing"
   ],
   "inputs": [
     "API specifications",
     "Domain models",
-    "UI wireframes"
+    "UI wireframes",
+    "State transition specifications"
   ],
   "outputs": [
-    "Tested web / backend service",
-    "API test evidence"
+    "State machine specification",
+    "Deterministic state transitions",
+    "Tested state machines and stores",
+    "Transition test evidence"
   ],
   "requires": [],
   "conflicts": [],
@@ -24,13 +31,24 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
-  "checks": [],
-  "scripts": [],
-  "examples": [],
+  "references": [
+    "references/state-management-guide.md"
+  ],
+  "templates": [
+    "templates/state-machine-spec.md"
+  ],
+  "checks": [
+    "checks/state-management-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/state_machine.ts"
+  ],
   "required_evidence": [
-    "test"
+    "test",
+    "review"
   ],
   "stop_conditions": [
     "Task acceptance criteria satisfied with evidence",
@@ -41,14 +59,17 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
     "features_any": [
       "ui",
-      "state-management"
+      "state-management",
+      "architecture",
+      "frontend",
+      "backend"
     ]
   },
   "requires_any": [],

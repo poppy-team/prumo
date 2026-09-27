@@ -2,7 +2,7 @@
 
 # Status
 
-Proposed (pending measurement)
+Accepted (2026-09-17). The measurement below is a follow-up, not a precondition: the driver lives behind a port, so swapping it is one file, and the decision was blocking ADR 009.
 
 # Context
 

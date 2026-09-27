@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "com.prumo.rust-analyzer",
+  "name": "Rust Analyzer",
+  "description": "Reference LSP contribution for Rust language intelligence.",
+  "version": "0.1.0",
+  "publisher": "Prumo",
+  "extension_api": "prumo.viewer.extensions/v1",
+  "host": {
+    "min_version": "0.1.0",
+    "max_version": "0.2.0"
+  },
+  "runtime": {
+    "kind": "declarative"
+  },
+  "capabilities": [
+    {
+      "id": "editor.lsp",
+      "required": true,
+      "since": "1.0.0"
+    }
+  ],
+  "permissions": [
+    {
+      "capability": "editor.lsp",
+      "scope": "workspace",
+      "risk": "high",
+      "justification": "Starts rust-analyzer to provide language intelligence for Rust files."
+    }
+  ],
+  "contributions": {
+    "lsp": [
+      {
+        "id": "com.prumo.rust-analyzer.rust",
+        "language": "rust",
+        "command": "rust-analyzer"
+      }
+    ]
+  }
+}

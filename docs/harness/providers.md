@@ -42,13 +42,67 @@ External state is normalized, never canonical.
 ## ACP agent server (`internal/harness/acpserver`)
 
 The Harness itself speaks ACP v1 as an agent over stdio
-(`prumo agent acp`, backed by the local daemon): `initialize`,
+(`prumo-agent agent acp`, backed by the local daemon): `initialize`,
 `session/new|load|resume|list|delete|close`, `session/prompt` with
 `session/update` streaming (`agent_message_chunk`, stop reasons
 `end_turn|cancelled`), `session/cancel` notification. Per-session
 `mcpServers` fail loudly (daemon-level `--mcp` instead); authenticate,
 elicitation and terminals are out of the v1 subset by decision (GAP-032).
 Prompts steer live runs or start fresh ones — editors never lose input.
+
+## `opencode` — a delegated model provider
+
+`--provider opencode` hands the turn to the opencode CLI, which runs it with its
+own tools, its own permission policy and **its own authentication** — including
+the models it serves for free. It is a `ModelProvider` with one difference that
+is declared rather than hidden: `Capabilities().ToolCalls` is **false**, because
+the tools are opencode's. Forwarding its tool calls would make Prumo execute a
+tool that was already executed; reporting them as text would put words in the
+model's mouth. So the run gets the answer and the spend, and says so.
+
+```bash
+prumo-agent agent run --provider opencode --model opencode/mimo-v2.5-free --goal "..."
+prumo-agent agent providers          # opencode is listed as a model provider
+prumo-agent agent models --provider opencode
+```
+
+The wire format is `opencode run --format json`, one JSON object per line:
+`{type, timestamp, sessionID, ...extra}`. The types are `text`, `reasoning`,
+`tool_use`, `step_start`, `step_finish` (which carries `tokens` and `cost`) and
+`error`. These shapes were read from the installed binary (1.18.31) rather than
+guessed; an event the adapter does not recognise is reported as unrecognised and
+never invented. A provider error is surfaced with the provider's own words — an
+exhausted free quota says so, instead of failing as "the run failed".
+
+`PRUMO_OPENCODE_BIN` overrides the binary; `PRUMO_OPENCODE_DIR` the working
+directory (the daemon sets it to the workspace for runs it hosts).
+
+## What each model can do (`.prumo/models.json`)
+
+No provider publishes its models' features in a form a client can read: OpenAI's
+`/models` returns ids, Anthropic's returns ids and display names. So the harness
+reports **what the workspace declares** and marks everything else as undeclared —
+it never infers `vision` from a model's name.
+
+```json
+{
+  "version": 1,
+  "models": {
+    "some-model": {"text": true, "vision": true, "tools": true, "context_tokens": 200000},
+    "another-model": {"text": true, "reasoning": true}
+  }
+}
+```
+
+The `models` operation answers with both faces: `models` carries bare ids (for a
+client that only picks one), `model_info` carries
+`{"id", "declared", "capabilities"}`. A model nobody declared arrives with
+`declared: false` — the difference between "nobody said" and "it cannot see" is
+the whole point, and a client that erases it is lying about a model. Schema:
+`schemas/model-declarations.schema.json`.
+
+`vision` is the flag the image-attachment work gates on (`GAP-090`): a model that
+does not declare it receives an image reference as text, not as pixels.
 
 ## Bounds (explicit, not gaps-in-disguise)
 
@@ -58,7 +112,7 @@ Prompts steer live runs or start fresh ones — editors never lose input.
 - Codex credentials are present on the dev host (`~/.codex/auth.json`);
   live `exec` is ready to run the moment spend is approved.
 
-## Availability matrix (`prumo agent providers`)
+## Availability matrix (`prumo-agent agent providers`)
 
 `internal/harness/extagent/probe.go` reports honest availability: binaries +
 versions + server reachability, never assumed interop. Measured 2026-09-11

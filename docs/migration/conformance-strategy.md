@@ -57,13 +57,13 @@ Python v0.3 generates the reference:
 
 ```bash
 python -m pytest tests/test_conformance.py
-prumo <command> <args> --json > conformance/golden/json/<case>.json
+prumo-agent <command> <args> --json > conformance/golden/json/<case>.json
 ```
 
 Go executes the same case:
 
 ```bash
-go run ./cmd/prumo <command> <args> --json
+go run ./cmd/prumo-agent <command> <args> --json
 ```
 
 Golden updates require an intentional protocol decision, an updated schema/ADR, and review. Never regenerate all outputs as a convenience.

@@ -57,5 +57,5 @@ English by default; localized content is user-facing only.
 
 ## Verification
 
-- `prumo docs translate status` (W20) — per-locale coverage.
+- `prumo-agent docs translate status` (W20) — per-locale coverage.
 - Test fixtures: source-change → `needs-update` (audit case D006).

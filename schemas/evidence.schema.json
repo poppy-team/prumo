@@ -24,7 +24,8 @@
         "review",
         "command",
         "manual-verification",
-        "external-reference"
+        "external-reference",
+        "harness_run"
       ]
     },
     "producer": { "type": "string", "minLength": 1 },

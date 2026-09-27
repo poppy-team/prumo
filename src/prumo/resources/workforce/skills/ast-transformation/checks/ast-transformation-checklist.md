@@ -1,21 +1,20 @@
-# AST Transformation — Verification Checklist
+# AST Transformation & Codemods Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Task requirements, System architecture, Relevant source files) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Syntax Parsing & Trivia Fidelity
+- [ ] **Lossless Parsing**: Parser retains comments, whitespace, and formatting for untouched source regions.
+- [ ] **Accurate Node Spans**: Transformed nodes preserve or correctly compute new source line/column spans.
+- [ ] **Error Resilience**: Files with minor syntax errors fail gracefully without writing partial corruptions to disk.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Transformation Safety & Scope Hygiene
+- [ ] **Hygienic Identifiers**: Newly introduced bindings use collision-free names (`gensym` or scoped prefix) to prevent accidental shadowing.
+- [ ] **Scope Disambiguation**: Pattern matcher verifies that target identifiers are imported from target modules rather than shadowed locally.
+- [ ] **Import Management**: Deprecated imports removed; newly required symbols added to import declarations cleanly.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test) has been generated and recorded.
+## 3. Idempotence & Correctness
+- [ ] **Idempotence Verified**: Running the codemod on previously transformed code produces zero file modifications ($T(T(x)) == T(x)$).
+- [ ] **Targeted Diffs**: Diffs are restricted strictly to targeted code structures; no unnecessary global file reformats.
+- [ ] **Golden Snapshots**: Test suite includes comprehensive `.before` and `.after` snapshot pairs.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Verification & Cleanliness
+- [ ] **Post-Transform Syntax Validity**: Transformed code parses cleanly with native language compiler/interpreter.
+- [ ] **Test Suite Green**: Downstream unit tests pass after applying the codemod.

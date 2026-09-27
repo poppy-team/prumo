@@ -1,0 +1,72 @@
+{
+  "id": "applied-mathematics-dsp",
+  "name": "Applied Mathematics & Digital Signal Processing",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Execute numerical computations, quaternion geometry, and Fast Fourier Transforms for graphics, audio, and CAD.",
+  "risk_level": "low",
+  "modes": [
+    "implementation",
+    "testing",
+    "review"
+  ],
+  "inputs": [
+    "Mathematical equations",
+    "Audio/visual time-domain buffers",
+    "Transform specifications"
+  ],
+  "outputs": [
+    "DSP pipeline implementation",
+    "Frequency spectra",
+    "Numerical stability proofs"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/applied-mathematics-dsp-guide.md"
+  ],
+  "templates": [
+    "templates/applied-mathematics-dsp-spec.md"
+  ],
+  "checks": [
+    "checks/applied-mathematics-dsp-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/applied-mathematics-dsp-example.json"
+  ],
+  "required_evidence": [
+    "test"
+  ],
+  "stop_conditions": [
+    "All Applied Mathematics & Digital Signal Processing invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "project_types": [
+      "game-engine",
+      "desktop"
+    ],
+    "features_any": [
+      "dsp",
+      "audio",
+      "graphics",
+      "math"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

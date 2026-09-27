@@ -33,6 +33,7 @@ func (t tools) Execute(_ context.Context, c agent.ToolCall) (agent.ToolResult, e
 	}
 	return agent.ToolResult{ToolCallID: c.ID, Output: "ok"}, nil
 }
+func (t tools) OperationOf(string) string { return "" }
 func (t tools) KindOf(n string) string {
 	if n == "edit.delete" {
 		return "destructive"
@@ -190,7 +191,12 @@ func TestEvalContextPressure(t *testing.T) {
 
 func TestEvalBudgetExhaustion(t *testing.T) {
 	r := baseRunner(t, model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "usage", Usage: &agent.Usage{InputTokens: 999999}}, {Kind: "complete"}}}), "R-eval-8")
-	r.Svc.ConsumeBudget = func(agent.Usage) error { return errBudget }
+	// A tracker too small for one call: the refusal happens before the model is
+	// asked, which is the only place a budget can actually bound spending.
+	r.Svc.ReserveBudget = func(float64) (func(float64, float64), error) {
+		return nil, errBudget
+	}
+	r.Svc.BudgetExhausted = func() error { return nil }
 	r.Messages = []agent.Message{{ID: "m", Role: agent.RoleUser, Content: "x"}}
 	if err := r.RunUntilDone(context.Background()); err == nil {
 		t.Fatal("expected budget exhaustion")

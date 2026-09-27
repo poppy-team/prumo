@@ -46,6 +46,20 @@ Only for probabilistic behavior:
 - contradiction suggestions;
 - routing/context heuristics.
 
+### Viewer Extension Contract
+
+- validate manifests against `viewer-extension-manifest.schema.json` and the SDK validator;
+- load valid, duplicate, malformed and unsafe-path manifests;
+- prove declarative commands cannot invoke unsupported host actions;
+- bound JSON-RPC messages and reject malformed frames;
+- run process extensions with crash, timeout, oversized-output and permission-expansion fixtures;
+- test install, enable, disable, update, rollback and cleanup before public distribution;
+- round-trip `.prumoext` archives, reject traversal/symlink/oversized payloads, verify Ed25519 signatures and revocation, and enforce lockfile digests;
+- exercise bounded LSP/DAP framing, handshake, timeout and capability failures, including completion, active-file code-action edits and formatting with UTF-16 positions and undo/redo;
+- opcionalmente, com `PRUMO_RUN_RUST_ANALYZER_SMOKE=1`, executar o smoke real em `extension-sdk/tests/rust_analyzer_smoke.rs`; sem `rust-src`, o teste aceita o aviso de sysroot do servidor, mas com sysroot completo exige `textDocument/publishDiagnostics`;
+- para validar o viewer completo, usar `PRUMO_VIEWER_EXTENSIONS=prumo-viewer/extensions` e um grant temporário para `com.prumo.rust-analyzer`; `rustc` e `rust-analyzer` devem pertencer ao mesmo toolchain;
+- o fork vendorizado `prumo-viewer/vendor/freya-code-editor` não é membro do workspace, então seus testes internos rodam sobre uma cópia fora do repositório com `cargo test --manifest-path <copia>/Cargo.toml --offline --lib`; ele cobre a métrica incremental da linha mais longa.
+
 ## Quality Gates
 
 Required in CI when the corresponding implementation exists:

@@ -20,23 +20,30 @@ func TestD2ToolCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tool list failed: %v (%s)", err, outList)
 	}
-	if !strings.Contains(string(outList), "read_file") || !strings.Contains(string(outList), "git_commit") {
-		t.Fatalf("expected tool list to show read_file and git_commit: %s", outList)
+	// The listing must show the tools that actually run. read_file and
+	// git_commit used to appear here with no implementation behind them at all
+	// (GAP-158); the native tools are registered from the catalogue that
+	// implements them, under their real names.
+	if !strings.Contains(string(outList), "fs.read") || !strings.Contains(string(outList), "git.status") {
+		t.Fatalf("tool list must show the native tools it can run: %s", outList)
+	}
+	if strings.Contains(string(outList), "read_file") || strings.Contains(string(outList), "git_commit") {
+		t.Fatalf("tool list must not advertise tools with no implementation: %s", outList)
 	}
 
 	// Tool inspect
-	cmdInspect := exec.Command("go", "run", "./cmd/prumo", "--json", "tool", "inspect", "read_file")
+	cmdInspect := exec.Command("go", "run", "./cmd/prumo", "--json", "tool", "inspect", "fs.read")
 	cmdInspect.Dir = projectRoot
 	outInspect, err := cmdInspect.CombinedOutput()
 	if err != nil {
 		t.Fatalf("tool inspect failed: %v (%s)", err, outInspect)
 	}
-	if !strings.Contains(string(outInspect), `"read_file"`) || !strings.Contains(string(outInspect), `"read-only"`) {
+	if !strings.Contains(string(outInspect), `"fs.read"`) || !strings.Contains(string(outInspect), `"read-only"`) {
 		t.Fatalf("unexpected tool inspect output: %s", outInspect)
 	}
 
 	// Tool evaluate allowed
-	cmdEvalOK := exec.Command("go", "run", "./cmd/prumo", "tool", "evaluate", "read_file", projectRoot)
+	cmdEvalOK := exec.Command("go", "run", "./cmd/prumo", "tool", "evaluate", "fs.read", projectRoot)
 	cmdEvalOK.Dir = projectRoot
 	outEvalOK, err := cmdEvalOK.CombinedOutput()
 	if err != nil {

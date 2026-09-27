@@ -1,26 +1,35 @@
-# Editor Tooling & UI — Technical Reference Guide
+# Editor Tooling Reference Guide
 
-## Overview & Purpose
-Implement desktop engine editors, scene inspectors, and gizmo overlays.
+## Document Model
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+The document is the source of truth; widgets and viewport objects are projections. Every entity has a stable ID, schema version, and validated fields. View state such as selection, hover, tool mode, and panel layout lives in editor session state.
 
-## Operational Standards
-- **Inputs**: Engine architecture specification, Target hardware / GPU constraints, Benchmark fixtures
-- **Outputs**: Optimized engine subsystem, Deterministic benchmark evidence, Visual test fixtures
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, benchmark
+## Command Transactions
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+Represent every user-visible mutation as a command with `apply`, `revert`, label, affected IDs, and merge policy. Pointer drags coalesce into one command; failed operations roll back completely. Undo and redo form one bounded history with explicit memory accounting.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## Schema-Driven Inspectors
+
+Generate controls from the same schema used by runtime validation. Custom editors register by type. Unknown future types open in a read-only inspector with schema and raw-value views rather than crashing or coercing data.
+
+## Gizmos and Viewports
+
+Convert pointer rays through the active camera, transform the hit point into the selected entity's local space, apply axis constraints, snapping, and fine modifiers, then execute one command. Multi-selection exposes a deterministic pivot and reports mixed values explicitly.
+
+## Persistence and Recovery
+
+Write documents through a validated, versioned serializer. Save to a temporary sibling, flush, and atomically replace the target. Migration must be deterministic and retain a recoverable prior revision.
+
+## Patterns and Anti-Patterns
+
+| Do | Avoid |
+|---|---|
+| Mutate the document through commands | Move the rendered object directly |
+| Generate inspectors from runtime schema | Maintain a second hand-written field list |
+| Keep editor state out of saves | Store selection in the document |
+| Bound undo memory | Keep an unlimited command history |
+| Test runtime symbol absence | Hide editor code with an unused source file |
+
+## Short Example
+
+Dragging a transform from `1.13` to `1.37` with 0.25-unit snapping records one `SetTransform` command with old value `1.0` and new value `1.5`; one undo restores the exact document hash.

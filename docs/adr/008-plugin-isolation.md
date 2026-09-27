@@ -2,7 +2,7 @@
 
 # Status
 
-Proposed (decision deferred until plugins exist)
+Proposed for the harness; viewer-specific extension contract is defined by ADR 021
 
 # Context
 

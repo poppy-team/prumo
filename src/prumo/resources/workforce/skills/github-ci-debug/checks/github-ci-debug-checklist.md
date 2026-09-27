@@ -1,21 +1,20 @@
 # GitHub CI Debugging — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Failure Capture & Classification
+- [ ] Failing run URL, job name, step name, exit code, and first error lines recorded and linked.
+- [ ] Cause classified: code regression, dependency drift, runner-image change, cache poisoning, permission gap, or concurrency artifact.
+- [ ] Last green run identified; suspect delta (commits, bumps, image changes) listed.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Reproduction & Minimal Fix
+- [ ] Failure reproduced locally (`act` or matching container image) before editing workflow YAML.
+- [ ] One hypothesis per change; matrix include/exclude, pins, permissions, or cache keys edited surgically.
+- [ ] No required check disabled; pasted logs scrubbed of secrets and OIDC material.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
+## 3. Verification & Hardening
+- [ ] Previously-failing job re-run green on the branch with no new failures.
+- [ ] Flaky tests quarantined with tracked follow-up issues where applicable.
+- [ ] Hardening applied: `timeout-minutes`, fail-fast policy, lockfile-hashed cache keys.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Evidence & Sign-Off
+- [ ] Failing and passing run URLs linked in the diagnosis artifact.
+- [ ] `scripts/verify.sh` exits 0 from the repository root.

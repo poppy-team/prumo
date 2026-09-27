@@ -1,12 +1,19 @@
 # H10 — TUI Spike Scope (Prumo Code first client)
 
-Status: PROPOSED (becomes the Goal contract when the H10 increment starts).
+> **Superseded as a client strategy by [ADR 013](../adr/013-tui-foundation.md)
+> (2026-09-17).** The spike ran its course — criteria 1–4 pass end to end and 5 is
+> measured — and its from-scratch client is archived to `archive/tui-poc/`. The
+> shipping terminal client is built on the archived OpenCode Go view layer, in a
+> separate `prumo-agent tui` module. This document is kept as the record of what the
+> spike required and proved; it is no longer the plan for the client.
+
+Status: SUPERSEDED (accepted 2026-09-17, having been PROPOSED while the H10 increment ran).
 Sources: Living Book pages 13 (TUI spec), 14 (tech matrix), 18 (roadmap), 21 (Stack H), 23 (Shared Product Contract) — snapshot `2026-09-11-d41f18bb65f5`.
 
 ## Goal
 
 Prove that the Prumo Harness can drive a real Zed-like terminal client:
-one Go/Bubble Tea v2 binary that connects to `prumo agentd` over the Agent
+one Go/Bubble Tea v2 binary that connects to `prumo-agent agentd` over the Agent
 Protocol and delivers the agent-first core loop (palette → run → stream →
 approve → evidence), with zero `internal/` imports.
 
@@ -59,6 +66,18 @@ approve → evidence), with zero `internal/` imports.
 4. Remote mode: same flow against `agentd` over TCP+TLS+token.
 5. Redraw on a ~200-line event stream stays under the spike budget measured
    in ADR 009 methodology (baseline recorded, no threshold invented).
+
+## Evidence (2026-09-17)
+
+| # | Criterion | Evidence |
+|---|-----------|----------|
+| 1 | Public-surface boundary | `tui/boundary_test.go::TestBoundaryNoInternalImports` |
+| 2 | Live flow including one approval | `tui/live_test.go::TestLiveDaemonFlow` for the daemon flow; `tui/app_test.go::TestVerticalSliceFlow` now drives palette → goal → stream → **approve** → evidence without a terminal; `TestLiveRemoteDaemonFlow` does the same over TLS. The approval ops are protocol 0.2.0 (`approve`/`deny` + `awaiting_approval` + `pending_permissions`), and `tui/redraw_test.go` covers the frame budget |
+| 3 | Kill/restart/reconnect without corruption | `tui/live_test.go` (`CommandReconnect`) + `internal/harness/daemon/reconnect_client_test.go` |
+| 4 | Remote mode over TCP+TLS+token | `tui/remote_test.go::TestLiveRemoteDaemonFlow` — the same client at another address, including the approval, and a wrong token is refused |
+| 5 | Redraw on a ~200-line stream | `tui/redraw_test.go`: 200 rows, `View` 4.38 ms/frame (1846 allocs), `Timeline.Append` 146 µs/op, `Session.Poll` 45 µs/op (i7-3632QM). Recorded in ADR 009; no threshold invented, and the criterion was explicitly non-blocking |
+
+Criteria 1–4 pass end to end; 5 is recorded as a baseline.
 
 ## Stopping condition
 

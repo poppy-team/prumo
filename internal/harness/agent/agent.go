@@ -41,14 +41,33 @@ const (
 	RoleApprover Role = "approver"
 )
 
+// ContentPart is one block of a multi-part message (text or image).
+type ContentPart struct {
+	Type     string `json:"type"`                // "text" or "image"
+	Text     string `json:"text,omitempty"`      // text content for type "text"
+	MimeType string `json:"mime_type,omitempty"` // e.g. "image/png", "image/jpeg"
+	Data     string `json:"data,omitempty"`      // base64-encoded bytes
+	Path     string `json:"path,omitempty"`      // workspace-relative path or URI
+}
+
 // Message is a normalized conversation unit.
 type Message struct {
 	ID        string         `json:"id"`
 	TurnID    string         `json:"turn_id,omitempty"`
 	Role      Role           `json:"role"`
 	Content   string         `json:"content"`
+	Parts     []ContentPart  `json:"parts,omitempty"`
 	Metadata  map[string]any `json:"metadata,omitempty"`
 	CreatedAt string         `json:"created_at"`
+	// ToolCallID names the call a tool message answers. Every provider that
+	// supports tools requires it: without it the result cannot be matched to the
+	// request that produced it, and a conversation carrying a tool result with
+	// no call is rejected or read as ordinary prose (GAP-115).
+	ToolCallID string `json:"tool_call_id,omitempty"`
+	// ToolCalls is what an assistant message asked for. Without it the follow-up
+	// request contains a result and no request, which is a conversation about a
+	// call nobody made.
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // Turn groups one model call + its tool calls + observations.
@@ -84,13 +103,37 @@ type ToolResult struct {
 	Error      string `json:"error,omitempty"`
 }
 
+// OK reports whether the tool itself said it succeeded.
+//
+// It is a method rather than an expression at each call site because "did this
+// work" has two answers — the exit code and the error — and a caller that
+// checks only one of them reports a tool that failed on a non-zero exit as a
+// success, or the reverse (GAP-116).
+func (r ToolResult) OK() bool { return r.ExitCode == 0 && r.Error == "" }
+
 // Observation records a ToolResult into conversation history.
+//
+// OK and Error exist because "content" alone could not say what happened. A
+// failing tool returned an empty Output and put the reason in Error, and only
+// Output was kept: the model received an empty result for a call that had
+// failed, which reads as a call that succeeded and returned nothing (GAP-116).
+// Content remains the success text, because that is what most readers want;
+// these two say which it is.
 type Observation struct {
 	ID         string `json:"id"`
 	TurnID     string `json:"turn_id"`
 	ToolCallID string `json:"tool_call_id"`
 	Content    string `json:"content"`
-	CreatedAt  string `json:"created_at"`
+	// OK is the tool's own verdict: false when it reported a non-zero exit or an
+	// error. A transport failure never produces an observation.
+	OK bool `json:"ok"`
+	// Error is the reason a tool failed. It is empty on success.
+	Error string `json:"error,omitempty"`
+	// ExitCode is what the tool reported, kept because "failed" and "exited 2"
+	// are different facts and a model can act on the difference.
+	ExitCode  int    `json:"exit_code"`
+	Truncated bool   `json:"truncated,omitempty"`
+	CreatedAt string `json:"created_at"`
 }
 
 // PermissionDecision is the deterministic policy outcome.
@@ -118,6 +161,10 @@ type PermissionRequest struct {
 	Reversibility    string   `json:"reversibility,omitempty"`
 	Risk             string   `json:"risk,omitempty"`
 	CreatedAt        string   `json:"created_at"`
+	// Fingerprint is derived from the action, the resource and the arguments.
+	// It is computed by the permission engine rather than supplied by the caller,
+	// because a caller that computed its own would compute the one it wanted.
+	Fingerprint string `json:"fingerprint,omitempty"`
 }
 
 // PermissionResolution is the persisted approval event.
@@ -129,6 +176,11 @@ type PermissionResolution struct {
 	Constraints []string           `json:"constraints,omitempty"`
 	Actor       string             `json:"actor,omitempty"`
 	DecidedAt   string             `json:"decided_at"`
+	// Fingerprint identifies the content that was approved. An approval is for
+	// one specific action on one specific resource with one specific set of
+	// arguments; without this, a reused request id silently carried an approval
+	// from a different call to a different one (GAP-107).
+	Fingerprint string `json:"fingerprint,omitempty"`
 }
 
 // ModelRequest is what the NativeAgent asks a ModelProvider to do.
@@ -183,19 +235,52 @@ type ModelEvent struct {
 
 // Usage normalizes token/cost telemetry.
 type Usage struct {
-	InputTokens  int     `json:"input_tokens"`
-	OutputTokens int     `json:"output_tokens"`
-	CostUSD      float64 `json:"cost_usd,omitempty"`
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+	// Cache tokens are reported separately by providers that cache a prompt
+	// prefix, and they are not part of the two counts above: a metered input
+	// token and a token read from cache cost differently, so a client that
+	// summed them could not say what a run actually spent.
+	CacheReadTokens  int `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens int `json:"cache_write_tokens,omitempty"`
+	// ReasoningTokens are the tokens a model spent thinking, reported as a
+	// breakdown of OutputTokens rather than beside them. A provider includes them
+	// in the completion count, so adding them anywhere would bill the same token
+	// twice; they are carried because a run whose cost is mostly reasoning is a
+	// different thing from one that is mostly answering, and that is worth being
+	// able to see.
+	ReasoningTokens int `json:"reasoning_tokens,omitempty"`
+	// CostUSD is the derived cost at the pricing table named by the run. It is
+	// filled in by the provider adapter: the endpoints report tokens and no cost
+	// (GAP-129).
+	CostUSD float64 `json:"cost_usd,omitempty"`
+}
+
+// TotalTokens is every token the provider processed, in all four dimensions.
+//
+// A cached read is a token the provider still had to serve, and a cache write is
+// a token it had to store; neither is free in capacity even where it is cheap in
+// money. Summing only input and output lets a run whose entire prompt is cached
+// report a token total near zero and walk through a token ceiling it has in fact
+// filled — the same hole a cost meter would have if it only counted one
+// dimension (GAP-130).
+func (u Usage) TotalTokens() int {
+	return u.InputTokens + u.OutputTokens + u.CacheReadTokens + u.CacheWriteTokens
 }
 
 // NativeAgentState is the canonical resumable state. Provider-private
 // reasoning is never required here.
 type NativeAgentState struct {
-	RunID             string         `json:"run_id"`
-	SessionID         string         `json:"session_id"`
-	TurnID            string         `json:"turn_id"`
-	Phase             Phase          `json:"phase"`
-	Revision          int            `json:"revision"`
+	RunID     string `json:"run_id"`
+	SessionID string `json:"session_id"`
+	TurnID    string `json:"turn_id"`
+	Phase     Phase  `json:"phase"`
+	Revision  int    `json:"revision"`
+	// EventSeq is the number of events this run has emitted. It is part of the
+	// state so it travels in the checkpoint: a resumed run that restarted the
+	// count would reissue ids it had already used, and a subscriber deduplicating
+	// on id would then drop the new events as repeats (GAP-118).
+	EventSeq          int            `json:"event_seq,omitempty"`
 	ContextManifestID string         `json:"context_manifest_id,omitempty"`
 	ModelRoute        string         `json:"model_route,omitempty"`
 	PendingRequest    *ModelRequest  `json:"pending_request,omitempty"`
@@ -212,7 +297,20 @@ type Checkpoint struct {
 	RunID        string           `json:"run_id"`
 	State        NativeAgentState `json:"state"`
 	WorkspaceRev string           `json:"workspace_rev,omitempty"`
-	CreatedAt    string           `json:"created_at"`
+	// Messages is the conversation a continuation has to start from. Without it
+	// a resumed run has a phase but no history, which is why resume used to
+	// report success for a turn it never took (GAP-123).
+	Messages []Message `json:"messages,omitempty"`
+	// ToolQ is the tool calls that were ready but not yet executed at the safe
+	// point, and Obs the observations already produced, so a continuation does
+	// not re-run an effect or lose a result.
+	ToolQ []ToolCall    `json:"tool_queue,omitempty"`
+	Obs   []Observation `json:"observations,omitempty"`
+	// AfterSideEffects records that an observable effect already applied. A
+	// continuation must not transparently fall back after that point.
+	AfterSideEffects bool   `json:"after_side_effects,omitempty"`
+	TurnsDone        int    `json:"turns_done,omitempty"`
+	CreatedAt        string `json:"created_at"`
 }
 
 // Continuation is the pointer-first resume bundle (no full transcript).
@@ -291,4 +389,12 @@ type AgentRuntime interface {
 	CheckPermission(ctx context.Context, req PermissionRequest) (PermissionResolution, error)
 	SaveCheckpoint(ctx context.Context, cp Checkpoint) error
 	EmitEvent(ctx context.Context, ev AgentEvent) error
+}
+
+// Resumable reports whether a checkpoint carries enough to continue a turn. A
+// checkpoint written before the conversation was persisted, or one taken before
+// any model request, legitimately has none; that is not the same as a
+// checkpoint that claims a phase without the history behind it.
+func (cp Checkpoint) Resumable() bool {
+	return len(cp.Messages) > 0
 }

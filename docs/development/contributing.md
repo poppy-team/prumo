@@ -38,7 +38,7 @@ go test -v -race ./...
 - Keep agents, skills, and recipes under `src/prumo/resources/` until the migration explicitly moves canonical content.
 - Add differential tests for resolver, Goals, compiler, validation, scaffolding, migration, doctor, and explain behavior.
 - Validate all compiler targets after changing shared compiler logic.
-- Run `prumo framework-check` behavior coverage after catalog/workforce changes.
+- Run `prumo-agent framework-check` behavior coverage after catalog/workforce changes.
 
 ## Migration discipline
 

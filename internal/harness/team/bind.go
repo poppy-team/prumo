@@ -52,14 +52,16 @@ func RunWork(deps RunnerDeps) Work {
 		counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
 		runID := "R-" + role.Name
 		runner := harnessruntime.NewRunner(harnessruntime.Services{
-			Models:      provider,
-			Tools:       counting,
-			Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
-			Checkpoints: store,
+			Models:        provider,
+			Tools:         counting,
+			Perms:         perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+			Checkpoints:   store,
+			EffectJournal: store,
 			ContextManifest: func(_ context.Context, _ agent.NativeAgentState) (string, error) {
 				return "ctx-" + runID, nil
 			},
-			ConsumeBudget: tracker.ConsumeUsage,
+			ReserveBudget:   tracker.Reserve,
+			BudgetExhausted: tracker.Exhausted,
 		}, runID, "S-"+role.Name)
 		runner.MaxTurns = maxTurns
 		if deps.Strict {

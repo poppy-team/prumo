@@ -21,7 +21,9 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/raillen/prumo/internal/autoupdate"
 	"github.com/raillen/prumo/internal/harness/aci"
 	"github.com/raillen/prumo/internal/harness/acpserver"
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -47,9 +49,11 @@ func defaultSocket(root string) string {
 
 func runAgent(asJSON bool, args []string) int {
 	if len(args) == 0 {
-		return exitUsage
+		return runTui(asJSON, nil)
 	}
 	switch args[0] {
+	case "tui":
+		return runTui(asJSON, args[1:])
 	case "run":
 		return runAgentRun(asJSON, args[1:])
 	case "resume":
@@ -68,6 +72,10 @@ func runAgent(asJSON bool, args []string) int {
 		return runAgentLogs(asJSON, args[1:])
 	case "steer":
 		return runAgentSteer(asJSON, args[1:])
+	case "approve":
+		return runAgentPermission(asJSON, args[1:], true)
+	case "deny":
+		return runAgentPermission(asJSON, args[1:], false)
 	case "stop":
 		return runAgentStop(asJSON, args[1:])
 	case "schedule":
@@ -84,7 +92,14 @@ func runAgent(asJSON bool, args []string) int {
 		return runAgentACP(asJSON, args[1:])
 	case "providers":
 		return runAgentProviders(asJSON, args[1:])
+	case "models":
+		return runAgentModels(asJSON, args[1:])
+	case "diff":
+		return runAgentDiff(asJSON, args[1:])
 	default:
+		if strings.HasPrefix(args[0], "-") {
+			return runTui(asJSON, args)
+		}
 		return exitUsage
 	}
 }
@@ -144,6 +159,15 @@ func runAgentRun(asJSON bool, args []string) int {
 				{Kind: "complete"},
 			},
 		})
+	case "fake-tools", "opencode":
+		var err error
+		provider, err = model.ForName(providerName, baseURL, apiKey, modelName)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if aware, ok := provider.(interface{ SetWorkspace(string) }); ok {
+			aware.SetWorkspace(root)
+		}
 	case "openai-compat":
 		if baseURL == "" {
 			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
@@ -151,14 +175,23 @@ func runAgentRun(asJSON bool, args []string) int {
 		if baseURL == "" {
 			return serviceError(asJSON, fmt.Errorf("openai-compat requires --base-url or PRUMO_MODEL_BASE_URL"))
 		}
-		provider = model.NewOpenAICompat(baseURL, apiKey, modelName).WithHeaders(model.ModelHeaders())
+		if err := checkModelDestination(baseURL, f); err != nil {
+			return serviceError(asJSON, err)
+		}
+		provider = model.NewOpenAICompatWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f)).
+			WithHeaders(model.ModelHeaders())
 	case "anthropic":
 		if baseURL == "" {
 			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
 		}
-		provider = model.NewAnthropic(baseURL, apiKey, modelName)
+		if baseURL != "" {
+			if err := checkModelDestination(baseURL, f); err != nil {
+				return serviceError(asJSON, err)
+			}
+		}
+		provider = model.NewAnthropicWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
 	default:
-		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|openai-compat|anthropic)", providerName))
+		return serviceError(asJSON, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", providerName))
 	}
 
 	dir := filepath.Join(root, ".prumo", "runtime", "harness")
@@ -196,7 +229,11 @@ func runAgentRun(asJSON bool, args []string) int {
 	}
 	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
 	counting := &runlayer.CountingTools{Base: tools, Tracker: tracker}
-	engine := perm.New(perm.Policy{DefaultAction: agent.PermissionAllow, DenyPrefixes: []string{"/etc", ".."}, AskKinds: []string{"destructive"}})
+	policy, err := permissionPolicy(f)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	engine := perm.New(policy)
 	checkpoints := checkpoint.New(dir)
 	strict := false
 	if _, ok := f["strict"]; ok {
@@ -205,10 +242,11 @@ func runAgentRun(asJSON bool, args []string) int {
 	var timeline []agent.AgentEvent
 	appendAgentEvent(eventLog, agent.AgentEvent{ID: runID + "-started", RunID: runID, Kind: "run.started", Payload: map[string]any{"goal": goal, "provider": providerName}, CreatedAt: agent.Now()})
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
-		Models:      provider,
-		Tools:       counting,
-		Perms:       engine,
-		Checkpoints: checkpoints,
+		Models:        provider,
+		Tools:         counting,
+		Perms:         engine,
+		Checkpoints:   checkpoints,
+		EffectJournal: checkpoints,
 		Events: func(ev agent.AgentEvent) {
 			if !asJSON {
 				fmt.Fprintf(os.Stderr, "[%s] %s\n", ev.Kind, ev.TurnID)
@@ -256,7 +294,8 @@ func runAgentRun(asJSON bool, args []string) int {
 			return runlayer.GatesQualityGate(policies, reports.ReportsCopy, usage.Snapshot)()
 		}
 	}
-	runner.Svc.ConsumeBudget = tracker.ConsumeUsage
+	runner.Svc.ReserveBudget = tracker.Reserve
+	runner.Svc.BudgetExhausted = tracker.Exhausted
 	runner.Messages = []agent.Message{{ID: "m1", Role: agent.RoleUser, Content: goal, CreatedAt: agent.Now()}}
 	kstore := knowledge.New()
 	knowledge.SeedRequirement(kstore, runID, goal)
@@ -269,8 +308,10 @@ func runAgentRun(asJSON bool, args []string) int {
 		saveKnowledge()
 		_ = tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
 		_ = runlayer.DumpPermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), engine)
-		_, _ = runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
-			runID, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy())
+		if _, evErr := runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
+			runID, goal, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy()); evErr != nil {
+			fmt.Fprintf(os.Stderr, "evidence: %v\n", evErr)
+		}
 		_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
 		_, _ = checkpoints.Prune(5)
 	}
@@ -305,25 +346,116 @@ func runAgentResume(asJSON bool, args []string) int {
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
-	provider := model.NewFake(map[string][]model.ScriptStep{"*": {{Kind: "text", Text: "resumed"}, {Kind: "complete"}}})
-	runner := harnessruntime.NewRunner(harnessruntime.Services{
-		Models: provider, Tools: aci.New(root),
-		Perms:       perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
-		Checkpoints: store,
-	}, runID, cp.State.SessionID)
-	runner.State = cp.State
-	// Step once past the saved safe point toward completion.
-	if runner.State.Phase == agent.PhaseCheckpoint || runner.State.Phase == agent.PhaseYield {
-		runner.State.Phase = agent.PhaseComplete
-		if runner.State.StopReason == "" {
-			runner.State.StopReason = "resumed"
+	// A run stopped for approval has to be answered, not stepped past. Saying
+	// so is the honest outcome: answering a gate requires the live permission
+	// engine, which only the running daemon holds.
+	if len(cp.State.PendingPerms) > 0 {
+		result := map[string]any{
+			"run_id": runID, "resumed_from": cp.ID, "phase": string(cp.State.Phase),
+			"pending_permissions": cp.State.PendingPerms, "resumed": false,
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Run %s is waiting for approval: %s\n", runID, strings.Join(cp.State.PendingPerms, ", "))
+		fmt.Printf("Answer it against a live daemon: prumo agent approve --run %s --request <id>\n", runID)
+		return exitOK
+	}
+
+	// A checkpoint with no conversation cannot be continued. This used to report
+	// the run as resumed and set its phase to complete, which claimed work that
+	// was never done (GAP-123).
+	if !cp.Resumable() {
+		result := map[string]any{
+			"run_id": runID, "resumed_from": cp.ID, "phase": string(cp.State.Phase),
+			"resumed": false,
+			"reason":  "checkpoint carries no conversation, so the turn cannot be continued",
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(result))
+		}
+		fmt.Printf("Cannot resume %s from %s: the checkpoint carries no conversation.\n", runID, cp.ID)
+		fmt.Printf("The run reached %s; continuing it needs the conversation that was not recorded.\n", cp.State.Phase)
+		return exitOK
+	}
+
+	// A continuation calls a model, so the provider is the caller's to name.
+	// Defaulting to a fake provider here would produce a completed run whose
+	// output no model ever wrote.
+	providerName := f["provider"]
+	if providerName == "" {
+		providerName = "fake"
+	}
+	baseURL := f["base-url"]
+	apiKey := f["api-key"]
+	modelName := f["model"]
+	var provider model.Provider
+	switch providerName {
+	case "fake":
+		provider = model.NewFake(map[string][]model.ScriptStep{
+			"*": {{Kind: "text", Text: "continued from checkpoint"}, {Kind: "complete"}},
+		})
+	case "openai-compat":
+		if baseURL == "" {
+			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
+		}
+		if baseURL == "" {
+			return serviceError(asJSON, fmt.Errorf("openai-compat requires --base-url or PRUMO_MODEL_BASE_URL"))
+		}
+		if err := checkModelDestination(baseURL, f); err != nil {
+			return serviceError(asJSON, err)
+		}
+		provider = model.NewOpenAICompatWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f)).
+			WithHeaders(model.ModelHeaders())
+	case "anthropic":
+		if baseURL == "" {
+			baseURL = os.Getenv("PRUMO_MODEL_BASE_URL")
+		}
+		if baseURL != "" {
+			if err := checkModelDestination(baseURL, f); err != nil {
+				return serviceError(asJSON, err)
+			}
+		}
+		provider = model.NewAnthropicWithPolicy(baseURL, apiKey, modelName, destinationPolicy(f))
+	default:
+		var factoryErr error
+		provider, factoryErr = model.ForName(providerName, baseURL, apiKey, modelName)
+		if factoryErr != nil {
+			return serviceError(asJSON, factoryErr)
 		}
 	}
-	result := map[string]any{"run_id": runID, "resumed_from": cp.ID, "phase": string(runner.State.Phase)}
+	if aware, ok := provider.(interface{ SetWorkspace(string) }); ok {
+		aware.SetWorkspace(root)
+	}
+
+	runner := harnessruntime.NewRunner(harnessruntime.Services{
+		Models: provider, Tools: aci.New(root),
+		Perms:         perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Checkpoints:   store,
+		EffectJournal: store,
+	}, runID, cp.State.SessionID)
+	runner.RestoreFrom(cp)
+
+	runCtx, cancelRun := context.WithCancel(context.Background())
+	defer cancelRun()
+	stepsBefore := runner.TurnsDone
+	// RunUntilDone carries the runaway-loop guard; a hand-rolled loop here
+	// stepped forever against a provider that keeps asking for tools.
+	if runErr := runner.RunUntilDone(runCtx); runErr != nil {
+		return serviceError(asJSON, runErr)
+	}
+	continued := runner.TurnsDone > stepsBefore
+
+	result := map[string]any{
+		"run_id": runID, "resumed_from": cp.ID, "phase": string(runner.State.Phase),
+		"stop_reason": runner.State.StopReason, "resumed": continued,
+		"messages_restored": len(cp.Messages),
+	}
 	if asJSON {
 		return printEnvelope(protocol.OkEnvelope(result))
 	}
-	fmt.Printf("Resumed %s from %s: %s\n", runID, cp.ID, runner.State.Phase)
+	fmt.Printf("Resumed %s from %s: %s (%d message(s) restored, %d step(s) taken)\n",
+		runID, cp.ID, runner.State.Phase, len(cp.Messages), runner.TurnsDone)
 	return exitOK
 }
 
@@ -379,7 +511,7 @@ func appendAgentEvent(path string, ev agent.AgentEvent) {
 	}
 	defer f.Close()
 	_, _ = f.Write(append(data, '\n'))
-	_ = daemon.RotateLog(path, 2000)
+	_, _ = daemon.RotateLog(path, 2000)
 }
 
 func runAgentEvents(asJSON bool, args []string) int {
@@ -488,11 +620,33 @@ func runAgentServe(asJSON bool, args []string) int {
 		return serviceError(asJSON, err)
 	}
 	defer release()
-	srv := daemon.New(sock, store, daemon.Deps{Tools: tools, Workspace: root})
+	policy, err := permissionPolicy(f)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	srv := daemon.New(sock, store, daemon.Deps{Tools: tools, Workspace: root, PermPolicy: policy})
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	if !asJSON {
 		fmt.Printf("serving harness daemon on %s\n", sock)
+	}
+	if hasFlag(args, "--auto-update") || os.Getenv("PRUMO_AUTO_UPDATE") == "true" {
+		if !asJSON {
+			fmt.Printf("harness auto-update enabled (monitoring GitHub releases)\n")
+		}
+		autoupdate.StartPeriodicChecker(ctx, 6*time.Hour, autoupdate.CheckOptions{
+			CurrentVersion: protocol.CLIVersion,
+			CacheDir:       filepath.Join(root, ".prumo", "cache"),
+		}, func(rel *autoupdate.ReleaseInfo) {
+			fmt.Printf("[autoupdate] New release detected: %s. Upgrading harness...\n", rel.TagName)
+			_, _ = autoupdate.AutoUpgradeOnRelease(ctx, autoupdate.UpdateOptions{
+				CheckOptions: autoupdate.CheckOptions{
+					CurrentVersion: protocol.CLIVersion,
+					CacheDir:       filepath.Join(root, ".prumo", "cache"),
+				},
+				TargetVersion: rel.TagName,
+			})
+		})
 	}
 	if listen, ok := f["listen"]; ok && listen != "" {
 		token := f["token"]
@@ -616,7 +770,26 @@ func runAgentPs(asJSON bool, args []string) int {
 	}
 	for _, r := range runs {
 		m, _ := r.(map[string]any)
-		fmt.Printf("%s %s %s\n", m["run_id"], m["status"], m["phase"])
+		line := fmt.Sprintf("%s %s %s", m["run_id"], m["status"], m["phase"])
+		if ids, ok := m["pending_permissions"].([]any); ok && len(ids) > 0 {
+			// The fingerprint travels with the id because an answer has to
+			// quote it: the id names the request, the fingerprint names the
+			// call (GAP-107). Without it shown here, `agent approve` asks for
+			// something the operator cannot obtain.
+			prints, _ := m["permission_fingerprints"].(map[string]any)
+			parts := make([]string, 0, len(ids))
+			for _, id := range ids {
+				name := fmt.Sprint(id)
+				if prints != nil {
+					if fp, ok := prints[name].(string); ok && fp != "" {
+						name += ":" + fp
+					}
+				}
+				parts = append(parts, name)
+			}
+			line += " waiting-for=" + strings.Join(parts, ",")
+		}
+		fmt.Println(line)
 	}
 	return exitOK
 }
@@ -665,6 +838,95 @@ func runAgentSteer(asJSON bool, args []string) int {
 		return printEnvelope(protocol.OkEnvelope(res))
 	}
 	fmt.Printf("Steered %s\n", runID)
+	return exitOK
+}
+
+// permissionPolicy reads --permission (allow|ask|deny) and --ask-kind (a comma
+// separated list of tool kinds). With no flags it is the daemon default, so an
+// unconfigured run behaves exactly as it did before the flags existed.
+func permissionPolicy(f map[string]string) (perm.Policy, error) {
+	policy := daemon.DefaultPermPolicy()
+	switch f["permission"] {
+	case "":
+	case "allow":
+		policy.DefaultAction = agent.PermissionAllow
+	case "ask":
+		policy.DefaultAction = agent.PermissionAsk
+	case "deny":
+		policy.DefaultAction = agent.PermissionDeny
+	default:
+		return policy, fmt.Errorf("unknown --permission %q (allow|ask|deny)", f["permission"])
+	}
+	if v, ok := f["ask-kind"]; ok && v != "" {
+		policy.AskKinds = strings.Split(v, ",")
+	}
+	return policy, nil
+}
+
+// destinationPolicy decides which network a provider may be reached on.
+//
+// The default refuses loopback, private ranges and the cloud metadata endpoint,
+// because --base-url is a command line value and the harness sends the
+// conversation and the API key wherever it names. A local gateway is a real
+// need, so --allow-local-model opts into it explicitly rather than the default
+// quietly allowing it.
+func destinationPolicy(f map[string]string) model.DestinationPolicy {
+	if _, ok := f["allow-local-model"]; ok {
+		return model.LocalDevelopmentDestinationPolicy()
+	}
+	return model.DefaultDestinationPolicy()
+}
+
+func checkModelDestination(baseURL string, f map[string]string) error {
+	return model.ValidateDestinationURL(baseURL, destinationPolicy(f))
+}
+
+// runAgentPermission answers a permission request on a live daemon. Approving
+// and denying share one path: the daemon sees a different decision, not a
+// different operation.
+func runAgentPermission(asJSON bool, args []string, allow bool) int {
+	f := agentFlags(args)
+	verb := "deny"
+	if allow {
+		verb = "approve"
+	}
+	runID := f["run"]
+	if runID == "" {
+		return serviceError(asJSON, fmt.Errorf("%s requires --run <id>", verb))
+	}
+	requestID := f["request"]
+	if requestID == "" {
+		return serviceError(asJSON, fmt.Errorf("%s requires --request <id> (see `prumo agent ps`)", verb))
+	}
+	// The approval is bound to the content, so the approver quotes the
+	// fingerprint `agent ps` showed them. Without it the daemon refuses, because
+	// a request id names a request rather than a specific call (GAP-107).
+	fingerprint := f["fingerprint"]
+	if fingerprint == "" {
+		return serviceError(asJSON, fmt.Errorf("%s requires --fingerprint <hash> (see `prumo agent ps`)", verb))
+	}
+	op := "deny"
+	if allow {
+		op = "approve"
+	}
+	res, err := daemonClient(f).Call(map[string]any{
+		"op": op, "run_id": runID, "request_id": requestID,
+		"fingerprint": fingerprint, "reason": f["reason"],
+	})
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if ok, _ := res["ok"].(bool); !ok {
+		return serviceError(asJSON, fmt.Errorf("%v", res["error"]))
+	}
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(res))
+	}
+	decision := "Denied"
+	if allow {
+		decision = "Approved"
+	}
+	fmt.Printf("%s %s (%s)\n", decision, requestID, runID)
 	return exitOK
 }
 
@@ -853,6 +1115,32 @@ func runAgentGC(asJSON bool, args []string) int {
 	return exitOK
 }
 
+// runAgentModels asks a live daemon what a provider can serve. The catalogue
+// belongs to the harness: a client that carried its own would be asserting what
+// it cannot verify.
+func runAgentModels(asJSON bool, args []string) int {
+	f := agentFlags(args)
+	res, err := daemonClient(f).Models(f["provider"], f["base-url"], f["model"])
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if ok, _ := res["ok"].(bool); !ok {
+		return serviceError(asJSON, fmt.Errorf("%v", res["error"]))
+	}
+	models, _ := res["models"].([]any)
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(res))
+	}
+	if len(models) == 0 {
+		fmt.Println("no models reported")
+		return exitOK
+	}
+	for _, m := range models {
+		fmt.Println(m)
+	}
+	return exitOK
+}
+
 func runAgentProviders(asJSON bool, args []string) int {
 	f := agentFlags(args)
 	prober := extagent.Prober{OpenCodeURL: f["opencode-url"]}
@@ -870,6 +1158,38 @@ func runAgentProviders(asJSON bool, args []string) int {
 			ver = "-"
 		}
 		fmt.Printf("%-16s %-6s %-11s %-12s %s\n", r.Name, r.Kind, state, ver, r.Detail)
+	}
+	return exitOK
+}
+
+func runAgentDiff(asJSON bool, args []string) int {
+	f := agentFlags(args)
+	runID := f["run"]
+	if runID == "" {
+		runID = f["run-id"]
+	}
+	if runID == "" && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		runID = args[0]
+	}
+	path := f["path"]
+	if path == "" && len(args) > 1 && !strings.HasPrefix(args[1], "-") {
+		path = args[1]
+	}
+	res, err := daemonClient(f).Diff(runID, path)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if ok, _ := res["ok"].(bool); !ok {
+		return serviceError(asJSON, fmt.Errorf("%v", res["error"]))
+	}
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(res))
+	}
+	content, _ := res["content"].(string)
+	if content != "" {
+		fmt.Println(content)
+	} else {
+		fmt.Printf("[%s] %s\n", res["kind"], res["path"])
 	}
 	return exitOK
 }

@@ -1,0 +1,66 @@
+{
+  "id": "performance-agent",
+  "name": "Performance & Optimization Agent",
+  "version": 2,
+  "purpose": "Identify system bottlenecks, optimize cache locality, SIMD vectorization, and concurrency using hardware counters, profilers (perf, VTune, Nsight), and disassembly.",
+  "risk_level": "high",
+  "select": {
+    "features_any": [
+      "performance",
+      "optimization",
+      "profiling"
+    ],
+    "risk_any": [
+      "performance-critical"
+    ]
+  },
+  "inputs": [
+    "Baseline performance evidence",
+    "Profiler traces (perf, VTune, Nsight)",
+    "Source code and IR/assembly dumps"
+  ],
+  "outputs": [
+    "Optimization patch with raw counter evidence",
+    "Assembly & IR diffs",
+    "Statistically verified speedup report"
+  ],
+  "required_skills": [
+    "performance-native",
+    "benchmarking",
+    "memory-management"
+  ],
+  "optional_skills": [
+    "applied-mathematics-dsp",
+    "concurrency-quality",
+    "binary-security-mitigations"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ],
+  "required_evidence": [
+    "benchmark",
+    "test"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "reviewer",
+    "tester"
+  ],
+  "review_requirement": "mandatory",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Optimization verified on target hardware with raw samples, median/percentiles, and zero correctness regressions"
+  ],
+  "required_capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ]
+}

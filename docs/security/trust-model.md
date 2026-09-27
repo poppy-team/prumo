@@ -71,7 +71,7 @@ Projects with sensitive capabilities must include:
 
 ## Safe Mode
 
-`prumo --safe` or equivalent policy disables destructive shell, external plugins, and writes outside the project root. Useful during adoption of unknown repositories.
+`prumo-agent --safe` or equivalent policy disables destructive shell, external plugins, and writes outside the project root. Useful during adoption of unknown repositories.
 
 ## Data Classification
 

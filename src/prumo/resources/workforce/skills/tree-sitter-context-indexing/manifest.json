@@ -1,21 +1,25 @@
 {
   "id": "tree-sitter-context-indexing",
   "name": "Tree-Sitter Context Indexing",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Parse and extract syntax nodes using universal Tree-Sitter grammars.",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Build and query language-agnostic code-context indexes with tree-sitter: pinned multi-language parsing, declarative capture queries, syntax-aligned chunking, and incremental re-parsing for AI agent context retrieval.",
   "risk_level": "low",
   "modes": [
-    "research"
+    "implementation",
+    "research",
+    "testing"
   ],
   "inputs": [
-    "Task requirements",
-    "System architecture",
-    "Relevant source files"
+    "Target languages with pinned tree-sitter grammar revisions",
+    "Checked-in .scm query files declaring captures the index consumes",
+    "Chunking policy: max bytes, splittable node types, overlap rules",
+    "Golden node set with expected captures per language"
   ],
   "outputs": [
-    "Implementation / verification output",
-    "Evidence record"
+    "Pinned multi-language parser set with verified extraction queries",
+    "Syntax-aligned chunk index queryable by capture, name, imports, and symbol",
+    "Parse quality, throughput, and capture-recall report"
   ],
   "requires": [],
   "conflicts": [],
@@ -24,16 +28,25 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
-  "checks": [],
-  "scripts": [],
+  "references": [
+    "references/tree-sitter-context-indexing-guide.md"
+  ],
+  "templates": [
+    "templates/tree-sitter-context-indexing-spec.md"
+  ],
+  "checks": [
+    "checks/tree-sitter-context-indexing-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
   "examples": [],
   "required_evidence": [
     "test"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
+    "Capture recall reaches 100% on goldens with query p95 under 200 ms on a warm index",
+    "Incremental re-parse of a one-line edit completes in under 15 ms on reference files",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -41,16 +54,22 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
+    "project_types": [
+      "cli",
+      "web-app",
+      "ide-plugin"
+    ],
     "features_any": [
-      "code-editor",
-      "ide",
-      "editor",
-      "scripting"
+      "tree-sitter",
+      "parsing",
+      "code-context",
+      "syntax-queries",
+      "grammars"
     ]
   },
   "requires_any": [],

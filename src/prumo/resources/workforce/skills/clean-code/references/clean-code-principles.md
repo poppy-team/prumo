@@ -1,26 +1,32 @@
-# Clean Code Principles
+# Pragmatic Clean Code Principles & Design Metrics
 
-## 1. Naming Conventions
-- **Intention-Revealing Names**: The name of a variable, function, or class, should answer all the big questions. It should tell you why it exists, what it does, and how it is used.
-- **Avoid Disinformation**: Avoid leaving false clues that obscure the meaning of code.
-- **Make Meaningful Distinctions**: Number-series naming (`a1`, `a2`, `.. aN`) is the opposite of intentional naming.
+## 1. Clean Code in Prumo: The Pragmatic Contract
+Clean code in Prumo is defined as code that makes intent explicit while incurring minimal cognitive and architectural overhead. It is anchored on five pillars:
+1. **Explicit Responsibilities**: Every package, module, struct, and function has one clear reason to change.
+2. **Low Coupling**: Modules interact through narrow, stable boundaries without reaching into each other's internal state.
+3. **High Cohesion**: Data and the operations that mutate that data live together.
+4. **Domain Naming**: Symbols speak the language of the business domain, not incidental infrastructure.
+5. **No Speculative Abstraction**: We build for the concrete present, not an imaginary future.
 
-## 2. Functions
-- **Small**: The first rule of functions is that they should be small. The second rule of functions is that they should be smaller than that.
-- **Do One Thing**: Functions should do one thing. They should do it well. They should do it only.
-- **One Level of Abstraction per Function**: We need to make sure that the statements within our function are all at the same level of abstraction.
+## 2. Software Design Metrics
 
-## 3. Comments
-- Comments do not make up for bad code.
-- Explain yourself in code.
-- Good comments: Legal comments, Informative comments, Explanation of intent, Clarification, Warning of consequences, TODO comments.
-- Bad comments: Mumbling, Redundant comments, Misleading comments, Mandated comments, Journal comments, Noise comments.
+### Cyclomatic Complexity (McCabe)
+- Measures the number of linearly independent paths through program source code.
+- Formula: $M = E - N + 2P$ (where $E$ is edges, $N$ is nodes, $P$ is connected components).
+- **Target**: Functions should maintain complexity <= 10. Anything > 15 must be refactored into smaller sub-methods or table lookups.
 
-## 4. Formatting
-- **Vertical Formatting**: Small files are usually easier to understand than large files. Concepts that are closely related should be kept vertically close to each other.
-- **Horizontal Formatting**: Lines should not be too long (typically < 120 characters).
+### Lack of Cohesion of Methods (LCOM)
+- Measures the dissimilarity of methods in a class/struct based on shared field usage.
+- High LCOM indicates that a class is doing multiple unrelated jobs.
+- **Action**: Split structs with high LCOM into independent, focused components.
 
-## 5. Objects and Data Structures
-- **Data Abstraction**: Hide implementation details.
-- **Data/Object Anti-Symmetry**: Objects hide their data behind abstractions and expose functions that operate on that data. Data structure expose their data and have no meaningful functions.
-- **The Law of Demeter**: A module should not know about the innards of the objects it manipulates.
+### Coupling Metrics: Afferent vs Efferent
+- **Afferent Coupling ($C_a$)**: Number of external classes that depend on this class (responsibility).
+- **Efferent Coupling ($C_e$)**: Number of external classes this class depends on (dependency).
+- **Instability ($I$)**: $I = \frac{C_e}{C_a + C_e}$. Stable core modules must have $I \to 0$, depending on few volatile things.
+
+## 3. Command-Query Separation (CQS)
+Formulated by Bertrand Meyer:
+- **Command**: Changes the state of a system but does not return a value (e.g. `ActivateGoal()`).
+- **Query**: Returns a value but does not alter observable state (e.g. `GetActiveGoal()`).
+Mixing queries with hidden state mutations is the leading cause of spooky action-at-a-distance bugs in large codebases.

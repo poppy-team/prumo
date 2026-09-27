@@ -14,6 +14,7 @@ type RepositoryHost interface {
 	RepositoryState() (RepositoryState, error)
 	Rulesets() ([]RulesetState, error)
 	Labels(name string) ([]LabelState, error)
+	CreateCheckRun(check CheckRunRequest) (*CheckRunResponse, error)
 }
 
 type RepositoryState struct {
@@ -180,4 +181,42 @@ func (a *Client) Labels(name string) ([]LabelState, error) {
 		page++
 	}
 	return labels, nil
+}
+
+type CheckRunOutput struct {
+	Title   string `json:"title"`
+	Summary string `json:"summary"`
+	Text    string `json:"text,omitempty"`
+}
+
+type CheckRunRequest struct {
+	Name       string          `json:"name"`
+	HeadSHA    string          `json:"head_sha"`
+	Status     string          `json:"status,omitempty"`     // queued, in_progress, completed
+	Conclusion string          `json:"conclusion,omitempty"` // success, failure, neutral, cancelled, timed_out, action_required
+	Output     *CheckRunOutput `json:"output,omitempty"`
+}
+
+type CheckRunResponse struct {
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
+	HeadSHA    string `json:"head_sha"`
+	Status     string `json:"status"`
+	Conclusion string `json:"conclusion"`
+	HTMLURL    string `json:"html_url"`
+}
+
+func (a *Client) CreateCheckRun(check CheckRunRequest) (*CheckRunResponse, error) {
+	data, status, err := a.request(http.MethodPost, "/check-runs", check)
+	if err != nil {
+		return nil, err
+	}
+	if status >= 300 {
+		return nil, fmt.Errorf("GitHub error %d creating check run: %s", status, strings.TrimSpace(string(data)))
+	}
+	var resp CheckRunResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

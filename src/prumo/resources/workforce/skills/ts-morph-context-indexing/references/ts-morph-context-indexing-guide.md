@@ -1,26 +1,60 @@
-# TypeScript ts-morph Context Indexing — Technical Reference Guide
+# ts-morph Context Indexing — Technical Reference Guide
 
-## Overview & Purpose
-Index TypeScript type trees and modules using ts-morph.
+## 1. Core Concepts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+### 1.1 Projects Bound to tsconfig
+ts-morph wraps the TypeScript compiler, so the project must load the same options the build uses. Loading from the workspace tsconfig keeps module resolution identical:
 
-## Operational Standards
-- **Inputs**: Task requirements, System architecture, Relevant source files
-- **Outputs**: Implementation / verification output, Evidence record
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test
+```ts
+import { Project } from "ts-morph";
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+const project = new Project({ tsConfigFilePath: "tsconfig.json" });
+const files = project.getSourceFiles();
+console.log(`loaded ${files.length} source files`);
+```
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+If the file count diverges from the expected inventory, project references or include globs are misconfigured and the index must not proceed.
+
+### 1.2 Typed Node Visits
+Every declaration node exposes both syntax and compiler types. Recording heritage and return types at extraction time avoids re-querying the checker later:
+
+```ts
+for (const cls of sourceFile.getClasses()) {
+  const entry = {
+    name: cls.getName(),
+    extends: cls.getExtends()?.getText(),
+    methods: cls.getMethods().map((m) => ({
+      name: m.getName(),
+      returnType: m.getReturnType().getText(),
+    })),
+  };
+  store(entry);
+}
+```
+
+`getReturnType().getText()` resolves through aliases and generics exactly as the compiler reports them.
+
+### 1.3 References and Implementations
+`node.findReferences()` returns every referencing node solution-wide, while `getImplementations()` on interfaces and abstract members maps to concrete classes. Import edges come from `getImportDeclarations()` with `getModuleSpecifierSourceFile()` resolving barrels, aliases, and relative paths to real files.
+
+### 1.4 Incremental Freshness Without Leaks
+ts-morph caches AST nodes aggressively, so edits must synchronize the filesystem view and discard cached nodes:
+
+```ts
+project.forgetNodesCreatedInBlock(() => {
+  sourceFile.refreshFromFileSystem();
+  answer = runQuery(sourceFile);
+});
+```
+
+Nodes created inside the block are forgotten on exit, which guarantees no stale node survives into the next answer. Additions use `createSourceFile`, removals use `delete()`.
+
+## 2. Module Resolution Notes
+- bundler mode matches Vite and esbuild workspaces; node16 matches strict Node ESM packages — mixing them misresolves extensionless imports.
+- Path aliases like `@shop/*` resolve only when `paths` in the loaded tsconfig matches the build; verify with one aliased import per package.
+- Declaration merging means one qualified name can own several declarations; store all of them, not just the first.
+
+## 3. Common Pitfalls
+- Instantiating ts-morph with inline compiler options that contradict the tsconfig, producing an index the build would never see.
+- Forgetting barrel re-export edges, which orphans symbols imported through index files.
+- Holding node references across refreshes outside forget-blocks, serving pre-edit text as current truth.

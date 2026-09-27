@@ -38,7 +38,7 @@ the scanner is incremental and revision/branch-aware; malicious content and secr
 
 - Canonical `ConfidenceLedger` (`internal/adoption/ledger.go`, schema `schemas/confidence-ledger.schema.json`) registers all factual and inferred statements.
 - Invariant enforced by `LedgerEntry.Validate()`: Every low and medium confidence entry requires human confirmation (`RequiresConfirmation: true`) and links back to concrete observed fact IDs in `Evidence`.
-- `prumo adopt --strict` rejects execution if unconfirmed inferences or unresolved contradictions remain.
+- `prumo-agent adopt --strict` rejects execution if unconfirmed inferences or unresolved contradictions remain.
 
 ---
 
@@ -65,9 +65,9 @@ the scanner is incremental and revision/branch-aware; malicious content and secr
 - `DryRun` evaluates preconditions (e.g., `manifest_absent:prumo.json`) and produces unified diff previews without disk mutations.
 - `Apply` enforces approval invariant (`ProposalStatusApproved`), executes atomic reversible changes, and records audit evidence in `migrations.JournalEntry` with SHA-256 integrity hash.
 - CLI flags implemented in `cmd/prumo/adopt_commands.go`:
-  - `prumo adopt --propose-migration`
-  - `prumo adopt --dry-run`
-  - `prumo adopt --apply`
+  - `prumo-agent adopt --propose-migration`
+  - `prumo-agent adopt --dry-run`
+  - `prumo-agent adopt --apply`
 
 ---
 
@@ -94,7 +94,7 @@ the scanner is incremental and revision/branch-aware; malicious content and secr
   - Detected app-type: CLI.
   - Detected frameworks and toolchains: standard Go toolchain, pytest, JSON Schema.
   - Discovered existing Prumo artifacts: `prumo.json`, canonical docs, contracts, schemas.
-  - Output rendered via `prumo adopt` and `RenderHumanReport` with zero file modifications.
+  - Output rendered via `prumo-agent adopt` and `RenderHumanReport` with zero file modifications.
 
 ---
 

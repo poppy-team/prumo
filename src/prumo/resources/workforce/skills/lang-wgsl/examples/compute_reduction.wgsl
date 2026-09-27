@@ -1,28 +1,53 @@
-struct Uniforms {
-    elementCount: u32,
-    stride: u32,
+// Parallel Sum Reduction in WebGPU Shading Language (WGSL)
+// Demonstrates explicit 16-byte aligned structs, workgroupBarrier synchronization,
+// workgroup shared memory usage, and global-to-local memory indexing.
+
+struct ComputeParams {
+    @align(16) base_multiplier: vec4<f32>,
+    @align(16) total_elements: u32,
+    _padding0: u32,
+    _padding1: u32,
+    _padding2: u32,
 };
 
-@group(0) @binding(0) var<uniform> config: Uniforms;
-@group(0) @binding(1) var<storage, read_write> data: array<u32>;
+@group(0) @binding(0) var<uniform> params: ComputeParams;
+@group(0) @binding(1) var<storage, read> input_buffer: array<f32>;
+@group(0) @binding(2) var<storage, read_write> output_reduced: array<f32>;
 
-var<workgroup> sharedData: array<u32, 64>;
+// Workgroup shared memory (256 floats = 1024 bytes, well within 16KB hardware limits)
+const WORKGROUP_SIZE: u32 = 256u;
+var<workgroup> s_scratch: array<f32, WORKGROUP_SIZE>;
 
-@compute @workgroup_size(64, 1, 1)
-fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(global_invocation_id) global_id: vec3<u32>) {
-    let index = global_id.x;
-    if (index < config.elementCount) {
-        sharedData[local_id.x] = data[index];
+@compute @workgroup_size(256, 1, 1)
+fn main(
+    @builtin(global_invocation_id) global_id: vec3<u32>,
+    @builtin(local_invocation_id) local_id: vec3<u32>,
+    @builtin(workgroup_id) group_id: vec3<u32>
+) {
+    let tid = local_id.x;
+    let gid = global_id.x;
+
+    // 1. Cooperative load into workgroup cache with boundary check
+    if (gid < params.total_elements) {
+        s_scratch[tid] = input_buffer[gid] * params.base_multiplier.x;
     } else {
-        sharedData[local_id.x] = 0u;
+        s_scratch[tid] = 0.0;
     }
+
+    // 2. Barrier ensures all 256 threads finished their initial load into shared memory
     workgroupBarrier();
 
-    if (local_id.x == 0u) {
-        var sum: u32 = 0u;
-        for (var i: u32 = 0u; i < 64u; i = i + 1u) {
-            sum = sum + sharedData[i];
+    // 3. Tree-based parallel reduction with logarithmic depth (log2(256) = 8 steps)
+    for (var stride: u32 = WORKGROUP_SIZE / 2u; stride > 0u; stride = stride >> 1u) {
+        if (tid < stride) {
+            s_scratch[tid] += s_scratch[tid + stride];
         }
-        data[0] = sum;
+        // Essential barrier after every reduction step to synchronize memory visibility
+        workgroupBarrier();
     }
-}\n
+
+    // 4. Thread 0 of each workgroup writes the reduced sum for this block
+    if (tid == 0u) {
+        output_reduced[group_id.x] = s_scratch[0];
+    }
+}

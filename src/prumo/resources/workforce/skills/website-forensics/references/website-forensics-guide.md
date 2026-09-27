@@ -1,26 +1,33 @@
 # Website Forensics — Technical Reference Guide
 
-## Overview & Purpose
-Inspect public websites to extract layout, typography, interaction, and styling patterns.
+## 1. Core Concepts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+**Scoped teardown**: at most 5 forensic questions answered with measurements — grid anatomy, type scale, color roles, interaction states — from public pages only. Open-ended browsing is not forensics.
 
-## Operational Standards
-- **Inputs**: Product requirements, Design tokens, Wireframe / UI view
-- **Outputs**: Design specification / findings, Accessibility audit scorecard, UI tests
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, review
+**Respectful inspection**: browser devtools, throttled identified requests, robots.txt honored; paywalls, auth, and anti-bot measures are hard boundaries. The deliverable holds **patterns and measurements**, never redistributed fonts, images, or code.
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+**Viewport ladder**: measure at 360 / 768 / 1280 / 1920 px so breakpoints, container caps, and nav collapses are recorded, not guessed.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 2. Patterns
+
+- **Container + grid capture**: record max-width (e.g. 1200 px), column count, gutter (e.g. 24 px), and breakpoint where the grid collapses to single column.
+- **Type role table**: family, weight, size px/rem, line-height per role (display/H1/body/caption); note subsetting (`latin` only) and `font-display: swap` strategy.
+- **State inventory**: screenshot default/hover/focus/loading/empty/error for the primary flow; missing focus rings and unlabeled icon buttons go on the caution list.
+- **Token mapping row**: each finding maps onto our scale (e.g. "their 8-pt rhythm matches our spacing base; their 6-px radius differs from our 8-px token — adopt or diverge explicitly").
+
+## 3. Anti-Patterns
+
+- Bulk-scraping content, media, or user data under a research pretext.
+- Publishing findings with copied assets instead of measurements.
+- Single-viewport conclusions ("the site uses 3 columns" — at which width?).
+- Copying failing patterns (2.9:1 body contrast) because "the reference does it".
+
+## 4. Worked Example
+
+Target: competitor pricing page. Findings: container 1140 px max, 12-col grid collapsing at 768 px; H1 Inter 600 40 px/48 px, body 16 px/24 px; accent `#0066FF` on white at 4.5:1 (AA pass); FAQ accordion with visible `:focus-visible` rings; error state uses color alone (no icon/text prefix — flagged as caution). Mapped: type scale ratio 1.25 vs our 1.333 — recommend keeping ours; adopt their focus-ring treatment as an improvement ticket.
+
+## 5. Verification Pointers
+
+- Every claim carries a viewport width or a hex value; adjectives pair with numbers.
+- Recompute one contrast ratio from sampled hex values; assert it matches the report.
+- Confirm no redistributed assets in the deliverable (descriptions + measurements only).

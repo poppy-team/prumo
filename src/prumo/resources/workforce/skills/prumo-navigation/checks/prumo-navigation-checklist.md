@@ -1,21 +1,22 @@
 # Prumo Navigation — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Task requirements, System architecture, Relevant source files) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Routing
+- [ ] Question classified and routed via the `AGENTS.md` table before reading.
+- [ ] Smallest sufficient entry point chosen, not the whole docs tree.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Authority Order
+- [ ] `docs/governance/authority.md` consulted for ownership and precedence.
+- [ ] Repository spec preferred over Living Book; Living Book over inference.
+- [ ] Machine contracts read from the file itself, not from prose summaries.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test) has been generated and recorded.
+## 3. Citations
+- [ ] Every authoritative claim cites file path + section (or Notion page ID).
+- [ ] Uncited statements explicitly labeled as inference.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Conflict & Drift
+- [ ] Conflicting sources recorded with both pointers and resolved by authority order.
+- [ ] Projection-vs-canonical contradictions filed as drift, never silently merged.
+
+## 5. Progressive Context
+- [ ] Expansion stopped once the question was answered with a cited source.
+- [ ] At most one Living Book page fetched per question; never the whole book.

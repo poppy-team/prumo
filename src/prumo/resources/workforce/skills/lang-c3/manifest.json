@@ -1,13 +1,14 @@
 {
   "id": "lang-c3",
   "name": "C3 Semantic Safety & Contract Assertions",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Enforce C3 semantic safety, explicit defer cleanup, slices over raw pointers, contract annotations, and error results.",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Enforce C3 semantic safety, explicit defer and catch-defer resource cleanup, slices over raw pointers, contract annotations (@pure/@require/@ensure), and fault handling.",
   "risk_level": "high",
   "modes": [
     "implementation",
     "review",
+    "audit",
     "testing"
   ],
   "inputs": [
@@ -62,7 +63,7 @@
     "source": "prumo",
     "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-09-09"
+    "modified": "2026-09-23"
   },
   "select": {
     "stack_any": [

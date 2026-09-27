@@ -8,13 +8,16 @@ import (
 	"github.com/raillen/prumo/internal/connectors"
 	_ "github.com/raillen/prumo/internal/connectors/antigravity"
 	_ "github.com/raillen/prumo/internal/connectors/claudecode"
+	_ "github.com/raillen/prumo/internal/connectors/cline"
 	_ "github.com/raillen/prumo/internal/connectors/codex"
+	_ "github.com/raillen/prumo/internal/connectors/cursor"
 	_ "github.com/raillen/prumo/internal/connectors/gemini"
 	_ "github.com/raillen/prumo/internal/connectors/opencode"
+	_ "github.com/raillen/prumo/internal/connectors/windsurf"
 	"github.com/raillen/prumo/internal/protocol"
 )
 
-func runConnector(asJSON bool, args []string) int {
+func runConnector(asJSON bool, home string, args []string) int {
 	if len(args) == 0 {
 		return runConnectorList(asJSON)
 	}
@@ -28,13 +31,13 @@ func runConnector(asJSON bool, args []string) int {
 			err := fmt.Errorf("usage: prumo connector install <name>")
 			return serviceError(asJSON, err)
 		}
-		return runConnectorInstall(asJSON, args[1], args[2:])
+		return runConnectorInstall(asJSON, home, args[1], args[2:])
 	case "uninstall":
 		if len(args) < 2 {
 			err := fmt.Errorf("usage: prumo connector uninstall <name>")
 			return serviceError(asJSON, err)
 		}
-		return runConnectorUninstall(asJSON, args[1], args[2:])
+		return runConnectorUninstall(asJSON, home, args[1], args[2:])
 	case "validate":
 		if len(args) < 2 {
 			err := fmt.Errorf("usage: prumo connector validate <name>")
@@ -87,13 +90,8 @@ func runConnectorList(asJSON bool) int {
 	return exitOK
 }
 
-func runConnectorInstall(asJSON bool, id string, args []string) int {
+func runConnectorInstall(asJSON bool, home, id string, args []string) int {
 	c, err := connectors.Get(id)
-	if err != nil {
-		return serviceError(asJSON, err)
-	}
-
-	home, err := installationHome("")
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
@@ -123,13 +121,8 @@ func runConnectorInstall(asJSON bool, id string, args []string) int {
 	return exitOK
 }
 
-func runConnectorUninstall(asJSON bool, id string, args []string) int {
+func runConnectorUninstall(asJSON bool, home, id string, args []string) int {
 	c, err := connectors.Get(id)
-	if err != nil {
-		return serviceError(asJSON, err)
-	}
-
-	home, err := installationHome("")
 	if err != nil {
 		return serviceError(asJSON, err)
 	}

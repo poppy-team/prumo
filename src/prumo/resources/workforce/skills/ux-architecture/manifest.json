@@ -1,22 +1,27 @@
 {
   "id": "ux-architecture",
-  "name": "UX Architecture",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Structure empty states, loading states, error states, and responsive layouts.",
+  "name": "UX Information Architecture & Navigation Strategy",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Define, architect, and govern product Information Architecture (IA), sitemap hierarchies, wayfinding systems, and content taxonomies.",
   "risk_level": "low",
   "modes": [
-    "design"
+    "design",
+    "review",
+    "audit",
+    "documentation"
   ],
   "inputs": [
-    "Product requirements",
-    "Design tokens",
-    "Wireframe / UI view"
+    "Product content inventory",
+    "User mental models / personas",
+    "Wireframe / UI view",
+    "Platform navigation constraints"
   ],
   "outputs": [
-    "Design specification / findings",
-    "Accessibility audit scorecard",
-    "UI tests"
+    "Information architecture specification",
+    "Sitemap hierarchy graphs",
+    "Taxonomy dictionary",
+    "Wayfinding & navigation models"
   ],
   "requires": [],
   "conflicts": [],
@@ -25,21 +30,28 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
+  "references": [
+    "references/ux-architecture-guide.md"
+  ],
   "templates": [
-    "templates/wireframe-spec.md"
+    "templates/ia-architecture-spec.md"
   ],
   "checks": [
     "checks/ux-architecture-checklist.md"
   ],
-  "scripts": [],
-  "examples": [],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/sitemap_ia.md"
+  ],
   "required_evidence": [
     "test",
     "review"
   ],
   "stop_conditions": [
     "Task acceptance criteria satisfied with evidence",
+    "Maximum tree depth bounded (depth <= 3 for core tasks)",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -47,14 +59,17 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
     "features_any": [
       "ui",
-      "ux"
+      "ux",
+      "navigation",
+      "ia",
+      "sitemap"
     ]
   },
   "requires_any": [],

@@ -55,7 +55,7 @@
 
 ### Security & Trust
 - Trust layers (Core binary → canonical config → generated adapters → 3rd party → user content → model output)
-- Safe mode (`prumo --safe`)
+- Safe mode (`prumo-agent --safe`)
 - Data classification & egress governance
 - SecretProvider contract
 - Generated artifact ownership markers

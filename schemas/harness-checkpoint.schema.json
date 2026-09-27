@@ -19,7 +19,27 @@
         "revision": { "type": "integer", "minimum": 1 },
         "context_manifest_id": { "type": "string" },
         "model_route": { "type": "string" },
-        "stop_reason": { "type": "string" }
+        "stop_reason": { "type": "string" },
+        "pending_tools": {
+          "description": "Tool calls the run stopped on; carried so a paused run can be answered without guessing.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "turn_id", "name", "idempotency_key"],
+            "properties": {
+              "id": { "type": "string" },
+              "turn_id": { "type": "string" },
+              "name": { "type": "string" },
+              "arguments": { "type": "object" },
+              "idempotency_key": { "type": "string" }
+            }
+          }
+        },
+        "pending_permissions": {
+          "description": "Permission request ids awaiting a client decision.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
       }
     },
     "workspace_rev": { "type": "string" },

@@ -1,0 +1,69 @@
+{
+  "id": "isolation-auditor",
+  "name": "Isolation Auditor",
+  "version": 2,
+  "purpose": "Audit and verify multi-tenant isolation, process containment, capability boundaries, sandbox policies, and abuse resistance.",
+  "risk_level": "high",
+  "select": {
+    "features_any": [
+      "security",
+      "multi-tenant",
+      "sandboxing",
+      "plugins",
+      "mcp"
+    ],
+    "risk_any": [
+      "security",
+      "privacy"
+    ]
+  },
+  "inputs": [
+    "Tenant isolation policy",
+    "Process sandbox manifests",
+    "Tool execution policy"
+  ],
+  "outputs": [
+    "Isolation penetration test report",
+    "Sandbox escape audit findings",
+    "Adversarial abuse scorecard"
+  ],
+  "required_skills": [
+    "security-review",
+    "untrusted-project-security",
+    "secrets-security",
+    "security-saas-isolation"
+  ],
+  "optional_skills": [
+    "linux-kernel-isolation",
+    "security-agent-mcp",
+    "process-execution-security"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ],
+  "required_evidence": [
+    "test",
+    "review"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "security-reviewer",
+    "reviewer"
+  ],
+  "review_requirement": "mandatory",
+  "permissions": {
+    "write_code": false,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Cross-tenant and sandbox isolation verified with zero high-severity leaks"
+  ],
+  "required_capabilities": [
+    "filesystem.read",
+    "process.spawn"
+  ]
+}

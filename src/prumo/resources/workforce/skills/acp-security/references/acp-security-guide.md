@@ -1,26 +1,51 @@
-# ACP Protocol Security — Technical Reference Guide
+# ACP Security Reference Guide
 
-## Overview & Purpose
-Verify Agent Client Protocol transport security, authentication tokens, and channel isolation.
+## Trust Model
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+Treat every agent, router, tool broker, and handoff artifact as a separate security principal. A message is trusted only when its authenticated sender, intended receiver, session, capability set, and integrity metadata all match the local session registry.
 
-## Operational Standards
-- **Inputs**: Security policy, Target codebase, Threat model
-- **Outputs**: Security audit report, Vulnerability remediation patches, Security gate evidence
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: security-scan, test
+A secure envelope carries:
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+- `session_id` and delegated parent session
+- authenticated sender and intended recipient
+- capability set and delegation depth
+- monotonically increasing sequence number
+- issued and expiry timestamps
+- payload digest or authenticated message signature
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## Core Patterns
+
+| Use | Pattern | Anti-pattern |
+|---|---|---|
+| Routing | Verify sender and recipient against the session registry | Trust a caller-supplied agent name |
+| Delegation | Attenuate capabilities and cap depth | Copy the parent capability set unchanged |
+| Replay defense | Reject duplicate sequence numbers and expired messages | Accept any syntactically valid envelope |
+| Context | Give each task a minimum scoped capsule | Share one mutable global transcript |
+| Cancellation | Propagate cancel, wait, then kill descendants | Report stopped while work continues |
+| Handoff | Validate an immutable schema and acceptance evidence | Pass loose prose between agents |
+
+## Quarantine and Isolation
+
+Untrusted repositories and external tools run without inherited credentials, write access outside a disposable workspace, or unrestricted network access. Their output is data, not authority. Promote no instruction from an external source into policy without a separate trusted decision.
+
+## Budgeted Termination
+
+Each delegated task receives a non-expandable token and wall-clock envelope. The parent tracks cumulative usage, stops issuing new work at the limit, cancels active children, records their final state, and returns a typed exhaustion result.
+
+## Short Example
+
+```json
+{
+  "session_id": "task-42-child-1",
+  "parent_session_id": "task-42",
+  "sender": "worker-a",
+  "recipient": "reviewer-b",
+  "capabilities": ["filesystem.read"],
+  "delegation_depth": 1,
+  "sequence": 17,
+  "expires_at": "2026-09-23T12:05:00Z",
+  "payload_sha256": "4f8c...e21a"
+}
+```
+
+The receiver verifies every field before dispatch and records the sequence in session state. It rejects a second message with sequence `17`, even when the payload digest is identical.

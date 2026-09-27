@@ -31,7 +31,7 @@ green while the artifact is absent.
 ### 1. One artifact answers all four obligations
 
 `docs/ui-ux/interface-map.json`, validated by `schemas/ui-interface-map.schema.json`,
-compiled by `internal/uimap`, exposed as `prumo ui`. Four partial documents about
+compiled by `internal/uimap`, exposed as `prumo-agent ui`. Four partial documents about
 one object is how they drift apart; one object described from four angles cannot.
 
 ### 2. Declared and derived, with declared always winning

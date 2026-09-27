@@ -62,6 +62,10 @@ func (s *Server) ServeRemote(ctx context.Context, cfg RemoteConfig) error {
 		if err != nil {
 			select {
 			case <-ctx.Done():
+				// Same as Serve: closing the listener is not the end of the
+				// daemon's job, and a run in flight has a record to write
+				// (GAP-105).
+				s.drain()
 				return nil
 			default:
 				continue

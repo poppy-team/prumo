@@ -31,7 +31,7 @@ canonical truth.
 ## Pipeline
 
 ```text
-prumo adopt
+prumo-agent adopt
   → discover            (facts, revision-aware)
   → classify            (language, toolchain, project type, capabilities)
   → map                 (semantic mapping → candidate bindings)
@@ -142,10 +142,10 @@ Readable human output plus `--json` machine representation.
 
 ## Modes
 
-- `prumo adopt --audit-only` — no canonical mutation;
-- `prumo adopt --interactive` — uses Living Plan to resolve uncertainty;
-- `prumo adopt --non-interactive` — generates report/proposals without asking;
-- `prumo adopt --strict` — only high-confidence deterministic mapping, flags ambiguity.
+- `prumo-agent adopt --audit-only` — no canonical mutation;
+- `prumo-agent adopt --interactive` — uses Living Plan to resolve uncertainty;
+- `prumo-agent adopt --non-interactive` — generates report/proposals without asking;
+- `prumo-agent adopt --strict` — only high-confidence deterministic mapping, flags ambiguity.
 
 Default must be non-destructive. Aliases follow existing CLI conventions.
 
@@ -214,15 +214,15 @@ Candidates:
 ## CLI
 
 ```text
-prumo adopt
-prumo adopt --audit-only
-prumo adopt --interactive
-prumo adopt --non-interactive
-prumo adopt --strict
-prumo adopt status/report      # if needed
+prumo-agent adopt
+prumo-agent adopt --audit-only
+prumo-agent adopt --interactive
+prumo-agent adopt --non-interactive
+prumo-agent adopt --strict
+prumo-agent adopt status/report      # if needed
 ```
 
-`prumo adopt` must not hide external network/tool use; explain/plan first when necessary.
+`prumo-agent adopt` must not hide external network/tool use; explain/plan first when necessary.
 
 ## Goal decomposition (M7)
 

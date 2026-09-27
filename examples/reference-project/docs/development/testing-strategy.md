@@ -64,6 +64,6 @@ flowchart LR
 | Unitário & Corrida | Go test / Vitest / Pytest | `go test -v -race ./...` |
 | Formatação | Official formatter | `gofmt -d .` ou `prettier --check .` |
 | Linter | Staticcheck / ESLint / Ruff | `staticcheck ./...` |
-| Segurança | Secret scanner / Trivy | `prumo tool scan-secrets .` |
+| Segurança | Secret scanner / Trivy | `prumo-agent tool scan-secrets .` |
 | UI & E2E | Playwright | `npx playwright test` |
 | Carga | k6 / Vegeta | `k6 run load-test.js` |

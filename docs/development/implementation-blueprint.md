@@ -97,7 +97,7 @@ flowchart TD
 | **M1→M2** | Go module builds; CLI skeleton works; project discovery + schema validation + embedded resources + error model + test infra all green |
 | **M2→M3** | Goals/Plans/Tasks/Events/Evidence/Gates all ported; resolver/workforce/model policy ported; doctor/explain parity; conformance ≥ 90% on protocol |
 | **M3→M4** | Compiler parity for Codex, Claude Code, Generic; conformance 100% on critical contracts |
-| **M4→M5** | Binaries published; install/uninstall/setup work; Homebrew/Windows baseline; `prumo setup` wizard |
+| **M4→M5** | Binaries published; install/uninstall/setup work; Homebrew/Windows baseline; `prumo-agent setup` wizard |
 | **M5→M6** | Documentation Contracts + Profiles + UI Pack + Delta + Contradiction framework all functional |
 | **M6→M7** | Interview protocol + decision extraction + authority model + incremental docs updates working |
 | **M7→M8** | Scanner + semantic mapping + capabilities + confidence ledger + adoption report + migration proposals |
@@ -109,7 +109,7 @@ flowchart TD
 
 ## Self-Dogfooding Threshold
 
-- **M3+**: Prumo builds/tests itself (Go tests, `prumo doctor`, `prumo validate`)
+- **M3+**: Prumo builds/tests itself (Go tests, `prumo-agent doctor`, `prumo-agent validate`)
 - **M5+**: Prumo documents its own development (contracts, profiles, readiness on Prumo repo)
 - **M6+**: Prumo plans its own features via Living Plan
 - **M7+**: Prumo adopts its own repo history (Adoption Engine on Prumo)

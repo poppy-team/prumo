@@ -36,7 +36,7 @@ DONE           (concluída)
 ## Passo 1: Criar um Projeto
 
 ```bash
-prumo init my-project --profile examples/brasa/project-profile.json --non-interactive
+prumo-agent init my-project --profile examples/brasa/project-profile.json --non-interactive
 cd my-project
 ```
 
@@ -48,7 +48,7 @@ Isso cria:
 ## Passo 2: Criar Sua Primeira Goal
 
 ```bash
-prumo goal new P00-G01 "Setup CI/CD pipeline" --phase P00
+prumo-agent goal new P00-G01 "Setup CI/CD pipeline" --phase P00
 ```
 
 **Output esperado:**
@@ -122,7 +122,7 @@ Abra `.ai/goals/P00-G01.goal.json` e edite:
 Quando estiver satisfeito com os detalhes, mude para PLANNED:
 
 ```bash
-prumo goal state P00-G01 PLANNED --reason "CI/CD details finalized"
+prumo-agent goal state P00-G01 PLANNED --reason "CI/CD details finalized"
 ```
 
 **Output:**
@@ -135,7 +135,7 @@ Goal P00-G01 transitioned to PLANNED
 Quando confirmar que não vai mudar, trave para executar:
 
 ```bash
-prumo goal state P00-G01 LOCKED
+prumo-agent goal state P00-G01 LOCKED
 ```
 
 **Output:**
@@ -150,7 +150,7 @@ Isso computa um digest SHA256 das aceitações e gates. Se alguém mudar a Goal 
 Comece o trabalho:
 
 ```bash
-prumo goal state P00-G01 EXECUTING --reason "Started implementation"
+prumo-agent goal state P00-G01 EXECUTING --reason "Started implementation"
 ```
 
 ## Passo 7: Adicionar Evidência
@@ -180,7 +180,7 @@ cat > report.json << 'EOF'
 EOF
 
 # Registre a evidência
-prumo report add report.json
+prumo-agent report add report.json
 ```
 
 ## Passo 8: Revisar e Completar
@@ -188,15 +188,15 @@ prumo report add report.json
 Quando tudo estiver pronto:
 
 ```bash
-prumo goal state P00-G01 VERIFYING
-prumo goal state P00-G01 REVIEWING --reason "Code reviewed, all gates green"
-prumo goal state P00-G01 DONE
+prumo-agent goal state P00-G01 VERIFYING
+prumo-agent goal state P00-G01 REVIEWING --reason "Code reviewed, all gates green"
+prumo-agent goal state P00-G01 DONE
 ```
 
 ## Listar Todas as Goals
 
 ```bash
-prumo goal list
+prumo-agent goal list
 ```
 
 **Output:**
@@ -238,7 +238,7 @@ cat > amendment.json << 'EOF'
 EOF
 
 # Aplique a emenda
-prumo goal amend P00-G01 --file amendment.json
+prumo-agent goal amend P00-G01 --file amendment.json
 ```
 
 Isso incrementa a revisão de 1 → 2 e recomputa o digest.
@@ -258,7 +258,7 @@ Isso incrementa a revisão de 1 → 2 e recomputa o digest.
 - Goals devem passar por estados válidos: DRAFT → PLANNED → LOCKED → EXECUTING
 
 **Erro: "Lock digest mismatch"**
-- Você editou a Goal depois de travar. Use `prumo goal amend` para mudanças formais.
+- Você editou a Goal depois de travar. Use `prumo-agent goal amend` para mudanças formais.
 
 **Erro: "Goal is in locked/executing state but lacks a lock record"**
 - Salve o arquivo sem editar os campos criticos (objective, acceptance, gates)

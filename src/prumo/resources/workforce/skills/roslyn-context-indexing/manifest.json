@@ -1,21 +1,25 @@
 {
   "id": "roslyn-context-indexing",
   "name": "Roslyn C# Context Indexing",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Extract symbols, references, and type hierarchies using Roslyn compiler APIs.",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Build and query code-context indexes for C#/.NET solutions with Roslyn: MSBuild workspace loading, semantic-model symbol extraction, reference/implementation search, type-hierarchy expansion, and document-version incremental reindexing.",
   "risk_level": "low",
   "modes": [
-    "research"
+    "implementation",
+    "research",
+    "testing"
   ],
   "inputs": [
-    "Task requirements",
-    "System architecture",
-    "Relevant source files"
+    "Solution or project path with target frameworks and Roslyn version 4.11 or newer",
+    ".NET 8 SDK availability for MSBuildLocator workspace loading",
+    "Token budget caps for query answers (max symbols and max tokens)",
+    "Golden symbol set covering overloads, explicit implementations, and generics"
   ],
   "outputs": [
-    "Implementation / verification output",
-    "Evidence record"
+    "Loaded Roslyn solution with per-project load diagnostics report",
+    "Queryable symbol, reference, implementation, and type-hierarchy index",
+    "Golden recall and query-latency report"
   ],
   "requires": [],
   "conflicts": [],
@@ -24,16 +28,25 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
-  "checks": [],
-  "scripts": [],
+  "references": [
+    "references/roslyn-context-indexing-guide.md"
+  ],
+  "templates": [
+    "templates/roslyn-context-indexing-spec.md"
+  ],
+  "checks": [
+    "checks/roslyn-context-indexing-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
   "examples": [],
   "required_evidence": [
     "test"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
+    "Golden symbol recall reaches 100% with query p95 under 300 ms on a warm solution",
+    "Single-document edit reindexes in under 4 seconds including dependents",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -41,16 +54,23 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
-    "stack_any": [
-      "csharp",
-      "dotnet",
+    "project_types": [
+      "api",
+      "web-app",
+      "cli",
+      "desktop"
+    ],
+    "features_any": [
       "roslyn",
-      "ori"
+      "csharp",
+      "code-context",
+      "symbol-index",
+      "refactoring"
     ]
   },
   "requires_any": [],

@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/modelregistry"
 )
 
 // Anthropic calls {BaseURL}/v1/messages with stream=true.
@@ -24,14 +24,43 @@ type Anthropic struct {
 	APIKey  string
 	Model   string
 	Client  *http.Client
+	// Provider names the vendor whose published prices apply.
+	Provider string
+	// Pricing prices this provider's usage. The endpoint returns tokens and no
+	// cost, so without it a US dollar budget compares a fixed zero against a
+	// limit and never moves (GAP-129).
+	Pricing modelregistry.PricingTable
 }
 
+// ProviderKey is the vendor whose published prices apply. The endpoint can be
+// pointed at a compatible gateway whose rates differ, so it is set explicitly
+// rather than assumed from the base URL.
+func (a *Anthropic) ProviderKey() string {
+	if a.Provider != "" {
+		return a.Provider
+	}
+	return "anthropic"
+}
+
+// NewAnthropic builds an Anthropic provider. The client is destination-checked
+// for the same reason as openai-compat: the base URL can come from a request
+// (GAP-111).
 func NewAnthropic(baseURL, apiKey, model string) *Anthropic {
+	return NewAnthropicWithPolicy(baseURL, apiKey, model, DefaultDestinationPolicy())
+}
+
+// NewAnthropicWithPolicy takes an explicit destination policy.
+func NewAnthropicWithPolicy(baseURL, apiKey, model string, policy DestinationPolicy) *Anthropic {
 	baseURL = strings.TrimRight(baseURL, "/")
 	if baseURL == "" {
 		baseURL = "https://api.anthropic.com"
 	}
-	return &Anthropic{BaseURL: baseURL, APIKey: apiKey, Model: model, Client: &http.Client{Timeout: 120 * time.Second}}
+	return &Anthropic{
+		BaseURL: baseURL, APIKey: apiKey, Model: model,
+		Client: NewDestinationHTTPClient(policy),
+		// Priced by default: this endpoint returns tokens and no cost (GAP-129).
+		Pricing: modelregistry.DefaultPricing(),
+	}
 }
 
 func (a *Anthropic) Name() string { return "anthropic" }
@@ -70,7 +99,7 @@ func (a *Anthropic) setAuth(req *http.Request) {
 
 type anthropicOutboundMessage struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
 }
 
 func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan agent.ModelEvent, error) {
@@ -78,17 +107,119 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 	if modelName == "" {
 		modelName = a.Model
 	}
+	var systemBlocks []map[string]any
 	msgs := make([]anthropicOutboundMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
+		if m.Role == agent.RoleSystem {
+			block := map[string]any{
+				"type": "text",
+				"text": m.Content,
+			}
+			systemBlocks = append(systemBlocks, block)
+			continue
+		}
 		role := string(m.Role)
 		if role != "user" && role != "assistant" {
 			role = "user"
 		}
-		msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: m.Content})
+		// A tool result is a user turn carrying a tool_result block, not prose.
+		// Sent as plain text it reads as something the person said, and the model
+		// has no way to tie it to the call that produced it (GAP-115).
+		if m.Role == agent.RoleTool {
+			text := toolResultContent(m)
+			msgs = append(msgs, anthropicOutboundMessage{
+				Role: "user",
+				Content: []map[string]any{{
+					"type":        "tool_result",
+					"tool_use_id": m.ToolCallID,
+					"content":     text,
+				}},
+			})
+			continue
+		}
+		if len(m.Parts) == 0 {
+			if len(m.ToolCalls) > 0 {
+				// An assistant that asked for tools says so with tool_use blocks,
+				// so the result that follows has something to answer.
+				blocks := make([]map[string]any, 0, len(m.ToolCalls))
+				for _, tc := range m.ToolCalls {
+					input := tc.Arguments
+					if input == nil {
+						input = map[string]any{}
+					}
+					blocks = append(blocks, map[string]any{
+						"type":  "tool_use",
+						"id":    tc.ID,
+						"name":  tc.Name,
+						"input": input,
+					})
+				}
+				msgs = append(msgs, anthropicOutboundMessage{Role: "assistant", Content: blocks})
+				continue
+			}
+			msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: m.Content})
+			continue
+		}
+		blocks := make([]map[string]any, 0, len(m.Parts))
+		for _, p := range m.Parts {
+			switch p.Type {
+			case "image":
+				mediaType := p.MimeType
+				if mediaType == "" {
+					mediaType = "image/png"
+				}
+				blocks = append(blocks, map[string]any{
+					"type": "image",
+					"source": map[string]any{
+						"type":       "base64",
+						"media_type": mediaType,
+						"data":       p.Data,
+					},
+				})
+			default:
+				blocks = append(blocks, map[string]any{
+					"type": "text",
+					"text": p.Text,
+				})
+			}
+		}
+		msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: blocks})
 	}
-	body, _ := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"model": modelName, "max_tokens": 1024, "stream": true, "messages": msgs,
-	})
+	}
+	if len(systemBlocks) > 0 {
+		systemBlocks[len(systemBlocks)-1]["cache_control"] = map[string]string{"type": "ephemeral"}
+		payload["system"] = systemBlocks
+	}
+	// The tool catalogue goes in the request. This provider declared
+	// ToolCalls: true and then never sent a single schema, so a model had no way
+	// to know the tools existed — the capability was a claim in a struct
+	// (GAP-114). Anthropic names the schema "input_schema" and takes no wrapper
+	// type, unlike the OpenAI-compatible shape.
+	if len(req.Tools) > 0 {
+		tools := make([]any, 0, len(req.Tools))
+		for i, ts := range req.Tools {
+			tool := map[string]any{"name": ts.Name}
+			if ts.Description != "" {
+				tool["description"] = ts.Description
+			}
+			// An absent schema is worse than an empty one here: a model asked to
+			// call a tool with no declared arguments tends to send none, and the
+			// call then fails for a reason nothing told it.
+			schema := ts.Schema
+			if schema == nil {
+				schema = map[string]any{"type": "object", "properties": map[string]any{}}
+			}
+			tool["input_schema"] = schema
+			if i == len(req.Tools)-1 {
+				tool["cache_control"] = map[string]string{"type": "ephemeral"}
+			}
+			tools = append(tools, tool)
+		}
+		payload["tools"] = tools
+	}
+	body, _ := json.Marshal(payload)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.BaseURL+"/v1/messages", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -106,10 +237,15 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		retryAfter := resp.Header.Get("Retry-After")
 		resp.Body.Close()
 		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
+		errMsg := fmt.Sprintf("provider http %d", resp.StatusCode)
+		if retryAfter != "" {
+			errMsg += fmt.Sprintf(" (Retry-After: %s)", retryAfter)
+		}
 		ch := make(chan agent.ModelEvent, 1)
-		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: fmt.Sprintf("provider http %d", resp.StatusCode), Retryable: retryable}
+		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: errMsg, Retryable: retryable}
 		close(ch)
 		return ch, nil
 	}
@@ -117,7 +253,7 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 	go func() {
 		defer close(ch)
 		defer resp.Body.Close()
-		a.consumeSSE(ctx, req, resp, ch)
+		a.consumeSSE(ctx, req, modelName, resp, ch)
 	}()
 	return ch, nil
 }
@@ -128,7 +264,12 @@ type anthropicToolBuf struct {
 	json strings.Builder
 }
 
-func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp *http.Response, ch chan<- agent.ModelEvent) {
+// consumeSSE reads the stream. It takes the resolved model name because the
+// stream is a separate function and the cost is priced per model — pricing under
+// the adapter's configured default would charge a request for one model at
+// another's rate.
+func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, modelName string, resp *http.Response, ch chan<- agent.ModelEvent) {
+	seen := newCumulativeUsage(a.Pricing, a.ProviderKey(), modelName)
 	sc := bufio.NewScanner(resp.Body)
 	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
 	eventName := ""
@@ -193,15 +334,9 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 				ID   string `json:"id"`
 				Name string `json:"name"`
 			} `json:"content_block"`
-			Usage *struct {
-				InputTokens  int `json:"input_tokens"`
-				OutputTokens int `json:"output_tokens"`
-			} `json:"usage"`
+			Usage   *anthropicUsageBlock `json:"usage"`
 			Message *struct {
-				Usage *struct {
-					InputTokens  int `json:"input_tokens"`
-					OutputTokens int `json:"output_tokens"`
-				} `json:"usage"`
+				Usage *anthropicUsageBlock `json:"usage"`
 			} `json:"message"`
 			Error *struct {
 				Type    string `json:"type"`
@@ -230,14 +365,12 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 			continue
 		}
 		if payload.Usage != nil {
-			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-				Usage: &agent.Usage{InputTokens: payload.Usage.InputTokens, OutputTokens: payload.Usage.OutputTokens}}) {
+			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: seen.advanceAnthropic(payload.Usage)}) {
 				return
 			}
 		}
 		if payload.Message != nil && payload.Message.Usage != nil {
-			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID,
-				Usage: &agent.Usage{InputTokens: payload.Message.Usage.InputTokens, OutputTokens: payload.Message.Usage.OutputTokens}}) {
+			if !emit(agent.ModelEvent{Kind: agent.EventUsageUpdated, RequestID: req.RequestID, Usage: seen.advanceAnthropic(payload.Message.Usage)}) {
 				return
 			}
 		}
@@ -289,5 +422,35 @@ func (a *Anthropic) consumeSSE(ctx context.Context, req agent.ModelRequest, resp
 	for idx := range tools {
 		flush(idx)
 	}
-	ch <- agent.ModelEvent{Kind: agent.EventCompleted, RequestID: req.RequestID, Finished: true}
+	// Reaching here without message_stop means the stream was cut. This endpoint
+	// signals completion explicitly, so the loop simply ending is not the provider
+	// saying it finished, and reporting completion would record a truncated answer
+	// as a finished run (GAP-131).
+	if err := sc.Err(); err != nil {
+		emit(agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+			Error: "provider stream ended before completion: " + err.Error(), Retryable: true})
+		return
+	}
+	emit(agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID,
+		Error: "provider stream ended without a completion marker", Retryable: true})
+}
+
+// anthropicUsageBlock is the usage report this endpoint returns, named so the
+// mapping onto ours is written once. The same four numbers arrive on two
+// different events, and duplicating the mapping is how one of them drifts.
+type anthropicUsageBlock struct {
+	InputTokens              int `json:"input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+}
+
+// anthropicUsage maps a provider usage report onto ours.
+func anthropicUsage(u *anthropicUsageBlock) *agent.Usage {
+	return &agent.Usage{
+		InputTokens:      u.InputTokens,
+		OutputTokens:     u.OutputTokens,
+		CacheReadTokens:  u.CacheReadInputTokens,
+		CacheWriteTokens: u.CacheCreationInputTokens,
+	}
 }

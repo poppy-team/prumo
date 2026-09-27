@@ -16,7 +16,7 @@ No Python runtime, schema, resource, fixture, or example is removed or rewritten
 
 | Module | Responsibility | Go Target |
 |--------|----------------|-----------|
-| `cli.py` | CLI parser, dispatch, exit codes, output | `cmd/prumo` + `internal/app` |
+| `cli.py` | CLI parser, dispatch, exit codes, output | `cmd/prumo-agent` + `internal/app` |
 | `compiler.py` | Target adapter generation | `internal/compiler` |
 | `context.py` | Lean Progressive Context planning | `internal/control-plane/context` |
 | `doctor.py` | Diagnostics, DAG checks, health checks | `internal/evidence-gates` + `internal/app` |
@@ -38,20 +38,20 @@ No Python runtime, schema, resource, fixture, or example is removed or rewritten
 
 | Command | Python Behavior | Go Parity Target |
 |---------|-----------------|------------------|
-| `prumo init [path]` | Initializes project and compiles profile | M2 |
-| `prumo resolve <profile>` | Resolves agents/skills/recipes | M2 |
-| `prumo validate [path]` | Validates project schemas | M2 |
-| `prumo goal new|state|amend|list` | Goal lifecycle | M2 |
-| `prumo context plan` | Context strategy/budget | M2 |
-| `prumo report add|summary` | Project intelligence | M2 |
-| `prumo migrate` | Legacy project migration | M2 |
-| `prumo compile --target` | Adapter generation | M3 |
-| `prumo snapshot` | Recovery archive | M2 |
-| `prumo doctor` | Health diagnostics | M2 |
-| `prumo explain` | Workforce/context/policy explanation | M2 |
-| `prumo framework-check` | Bundled catalog validation | M2 |
+| `prumo-agent init [path]` | Initializes project and compiles profile | M2 |
+| `prumo-agent resolve <profile>` | Resolves agents/skills/recipes | M2 |
+| `prumo-agent validate [path]` | Validates project schemas | M2 |
+| `prumo-agent goal new|state|amend|list` | Goal lifecycle | M2 |
+| `prumo-agent context plan` | Context strategy/budget | M2 |
+| `prumo-agent report add|summary` | Project intelligence | M2 |
+| `prumo-agent migrate` | Legacy project migration | M2 |
+| `prumo-agent compile --target` | Adapter generation | M3 |
+| `prumo-agent snapshot` | Recovery archive | M2 |
+| `prumo-agent doctor` | Health diagnostics | M2 |
+| `prumo-agent explain` | Workforce/context/policy explanation | M2 |
+| `prumo-agent framework-check` | Bundled catalog validation | M2 |
 
-Compatibility aliases must remain where the v0.4 CLI introduces a more structured surface (notably `prumo compile --target <id>`).
+Compatibility aliases must remain where the v0.4 CLI introduces a more structured surface (notably `prumo-agent compile --target <id>`).
 
 ## Canonical Schemas
 
@@ -78,7 +78,7 @@ Scripts are not runtime dependencies of the Go Core unless explicitly reclassifi
 
 - Python package version: `0.3.0`
 - Python test suite: 127 tests passing at bootstrap
-- Existing Go bootstrap: `go.mod`, `cmd/prumo`, `internal/app`, `internal/project`, `internal/protocol`, `internal/resources`, `internal/validation`
+- Existing Go bootstrap: `go.mod`, `cmd/prumo-agent`, `internal/app`, `internal/project`, `internal/protocol`, `internal/resources`, `internal/validation`
 - Baseline manifest: `conformance/V03_BASELINE.json`
 
 ## Critical Contract Inventory To Freeze

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 type Isolation string
@@ -107,9 +109,15 @@ func (e *LocalEnvironment) Execute(name string, args []string, env []string, dir
 		workDir = e.ProjectRoot
 	}
 
-	// Verify workDir is inside ProjectRoot in safe mode
-	if e.SafeMode && !strings.HasPrefix(workDir, e.ProjectRoot) {
-		return ExecutionResult{ExitCode: 1, Error: "workdir outside project root blocked in safe mode"}, errors.New("safe mode denied out-of-root directory")
+	// Verify workDir is inside ProjectRoot in safe mode. Path-component
+	// containment, not string prefix: a sibling directory that shares the
+	// project's name prefix passed the old check.
+	if e.SafeMode {
+		resolved, err := safepath.Resolve(e.ProjectRoot, workDir, false)
+		if err != nil {
+			return ExecutionResult{ExitCode: 1, Error: "workdir outside project root blocked in safe mode"}, errors.New("safe mode denied out-of-root directory")
+		}
+		workDir = resolved
 	}
 
 	cmd := exec.Command(name, args...)

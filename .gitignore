@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 dist/
 build/
+target/
 .coverage
 htmlcov/
 
@@ -25,11 +26,21 @@ htmlcov/
 
 # Notion imports (derived, on-demand)
 .prumo/imports/
+.commandcode/
 
 # Scratch / deep-research reports and audits at root
 *-deep-research-report.md
 PRUMO_DOCUMENTATION_CONTROL_PLANE_DEEP_AUDIT_AND_WAVES.md
 *DEEP_AUDIT*.md
+*AUDITORIA*.md
 
 # Snapshot archives (large binaries)
 *.zip
+
+# Runtime state can appear wherever a workspace root is, including inside nested
+# modules and test directories. It is derived and never canonical, so the rule is
+# path-agnostic: the anchored .prumo/runtime/ above only covers the repository
+# root, which is how a nested module's store slipped into a commit.
+**/.prumo/runtime/
+**/.prumo/cache/
+**/.prumo/native-*.json

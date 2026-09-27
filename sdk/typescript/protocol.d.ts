@@ -1,7 +1,7 @@
 // Generated from schemas/protocol-manifest.json — DO NOT EDIT.
 // Regenerate: go run ./sdk/typescript/gen
 
-export const PROTOCOL_VERSION = "0.1.0";
+export const PROTOCOL_VERSION = "0.4.0";
 export const PROTOCOL_MIN_COMPATIBLE = "0.1.0";
 
 export type OpName =
@@ -14,7 +14,12 @@ export type OpName =
   | "schedule" |
   | "unschedule" |
   | "jobs" |
-  | "protocol";
+  | "protocol" |
+  | "approve" |
+  | "deny" |
+  | "models" |
+  | "diff" |
+  | "subscribe";
 
 export interface OpArgs {
   "start": ["goal"];
@@ -27,6 +32,11 @@ export interface OpArgs {
   "unschedule": ["job_id"];
   "jobs": [];
   "protocol": [];
+  "approve": ["run_id", "request_id"];
+  "deny": ["run_id", "request_id"];
+  "models": [];
+  "diff": ["run_id", "path"];
+  "subscribe": ["run_id"];
 }
 
 export interface RunStatus {
@@ -35,6 +45,7 @@ export interface RunStatus {
   phase: string;
   stop_reason: string;
   active: boolean;
+  pending_permissions: string[];
 }
 
 export interface AgentEvent {

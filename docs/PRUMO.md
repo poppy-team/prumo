@@ -21,10 +21,21 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 ## Product and architecture
 
 - [Product vision](product/vision.md)
+- [Unified architecture (Constituição 86)](architecture/unified-architecture.md)
+- [Directive Compiler & Executable Contracts (Constituição 92)](contracts/directive-compiler.md)
+- [LLM & Agent Execution Contract (Constituição 85.A)](contracts/llm-agent-execution-contract.md)
+- [Model Portfolio, Routing & Budgets (Constituição 87)](runtime/model-portfolio-and-routing.md)
+- [Documentation Architecture v2 (Constituição 88)](architecture/documentation-architecture-v2.md)
+- [Consolidation Program (Constituição 89)](development/consolidation-program.md)
+- [Consolidation Crosswalk & Supersession (Constituição 90)](governance/consolidation-crosswalk.md)
+- [Canonical Glossary & Ontology (Constituição 91)](reference/canonical-glossary.md)
+- [Capability & Skill Gap Register (Constituição 93)](harness/capability-skill-gap-register.md)
 - [v0.4 boundary scope (historical)](product/scope-v0.4.md)
 - [Architecture overview](architecture/overview.md)
 - [Dependency rules](architecture/dependency-rules.md)
 - [Repository layout](development/repository-layout.md)
+- [Viewer extensions](development/viewer-extensions.md)
+- [Viewer extension capability catalog](development/viewer-extension-capabilities.md)
 - [Runtime Control Plane](runtime/control-plane.md)
 - [Trust model](security/trust-model.md)
 
@@ -71,11 +82,11 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 
 - [Documentation Contracts](contracts/builtin.json)
 - [Documentation Profiles](profiles/builtin.json)
-- `prumo docs contracts`
-- `prumo docs profiles`
-- `prumo docs audit`
-- `prumo docs readiness`
-- `prumo docs authority`
+- `prumo-agent docs contracts`
+- `prumo-agent docs profiles`
+- `prumo-agent docs audit`
+- `prumo-agent docs readiness`
+- `prumo-agent docs authority`
 
 M5 documentation analysis is deterministic and read-only. Missing knowledge is reported; Prumo does not create empty documents or silently promote model prose to canonical state.
 

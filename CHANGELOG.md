@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+- **Multi-Platform AI Harness Connectors**:
+  - Added new native connectors for Cursor (`.cursor/rules/prumo-guidelines.mdc`, `.cursor/mcp.json`), Windsurf (`.windsurfrules`, `.windsurf/mcp_config.json`), and Cline / Roo Code (`.clinerules`, `.roomodes`).
+  - Implemented surgical managed region compiler (`doccompile.RemoveRegion` / `UpsertRegion`): pre-existing user instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.windsurfrules`, `.clinerules`) are augmented rather than overwritten and are preserved during uninstallation (GAP-141).
+  - Resolved multi-project cleanup collisions through project-root hashed cleanup manifests (`CleanupPathForProject`, GAP-137).
+- **Instruction Surface Adapters (`internal/agentsurface`)**:
+  - Expanded with `windsurf` and `cline` projection adapters respecting the provider-neutral core contract.
+- **Model Providers & DeepSeek Integration**:
+  - Anthropic prompt caching (`cache_control: {"type": "ephemeral"}`) on top-level system prompts and last tool definition, plus `Retry-After` header extraction on rate limits (GAP-108).
+  - OpenAICompat reasoning content streaming (`delta.reasoning_content` / `delta.reasoning` -> `agent.EventReasoningDelta`) and `Retry-After` header parsing.
+  - Native DeepSeek integration (`deepseek-chat` and `deepseek-reasoner`) with list pricing entries in `modelregistry.DefaultPricing()`.
+- **External Runtime Agents (GAP-142)**:
+  - Real turn cancellation and execution in `CodexCLI` and `CursorCLI` via session-scoped cancellation contexts.
+  - Eliminated stub capabilities; `CodexCLI`, `CursorCLI`, and `ACPClient` honestly advertise implemented capabilities (`session`, `events`, `cancel`).
+  - Added JSON-RPC `session/cancel` notification support to the ACP v1 client.
+- **SCM Adapters & Evidence Publishing**:
+  - GitHub adapter enhanced with GitHub Checks API (`CreateCheckRun`) for publishing verification reports, gates, and evidence directly to commits and PRs.
+  - New GitLab adapter (`internal/scm/gitlab`) supporting project settings, labels, protected branches, and commit status publishing.
+- **Native Workspace Viewer (`prumo-viewer`)**:
+  - Rust-based high-performance workspace viewer with extension architecture (ADR 021), unified command palette, diff viewer, git services, editor intelligence, terminal, follow mode, and run observability.
+
+- **opencode is a model provider** (`--provider opencode`): the turn is delegated to the opencode CLI, which runs it with its own tools and its own authentication — including the models it serves for free — so a real agent runs with no api-key of ours. The delegation is declared (`ToolCalls: false`), never papered over. The wire format was read from the installed binary, not guessed (GAP-093).
+- **First-run offer**: the client checks for opencode once and, only when nothing is configured, offers to install it (automatic, via npm), configure an api-key (variables printed, no secret written), or wait (GAP-094).
+- **Sandbox fix found by installing podman**: the availability probe asked every runtime a Docker question, so a working podman was reported unreachable and the sandbox disappeared from a host that could still run containers. Each runtime is asked in its own language and detection walks the ladder until one answers (GAP-092). Rootless podman is measured: `TestContainerLive` passes in 3.66 s.
+
+- **Command renamed to `prumo-agent`** (ADR 015): the framework, the protocol, `.prumo/`, `prumo.json`, `PRUMO_*` and the module path stay **Prumo**; the binary a person types became `prumo-agent`, and the terminal client is reached as `prumo-agent tui` (executable `prumo-agent-tui`). 75 documents and 11 source files touched. Documents written before the rename that say `prumo <command>` mean the same binary.
+- **Model capabilities reach the client**: the `models` operation reports what each model declares it can do (`model_info`), read from the workspace's `.prumo/models.json` (new schema `model-declarations.schema.json`). The TUI picker shows `[text reasoning vision tools audio]` and says "not declared" when nobody said — a declaration is never invented, and an absent feature is the absence of a claim, not a denial. This is the gate the image-attachment work needs.
+- **ADR 007 (SQLite driver) and ADR 009 (performance budgets) accepted**; podman rootless measurement and Local Intel remain open (`docs/harness/open-work.md`).
+
 ## 0.6.0 — Headless Harness
 
 - **Prumo Harness (headless, Go-native):** NativeAgent reentrant state machine, `ModelProvider`/`AgentProvider` contracts, FakeProvider determinístico + conformance suite, adapters OpenAI-compat e Anthropic, gateway com routing/fallback/retry/quota, Coding ACI completa (`fs/code/edit/git/test/process`), Permission Engine determinística, checkpoints crash-safe com journal idempotente, Handoff v2 tipado, Context Compiler v2 (gates, BM25, repo-map, LSP, Memory Atlas), Knowledge Runtime (records, Delta, contradiction/coverage/readiness, seeding, research ledger), Documentation Compiler + Human Docs Runtime HD0–HD4, workforce multi-agent com review, daemon local (Unix socket + TLS remoto) com scheduler, ACP v1 agent server, MCP stdio/HTTP, SDK Go público + IDL versionada + types TypeScript.

@@ -21,7 +21,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W0.2 | Update `docs/PRUMO.md` to consistent version |
 | W0.3 | Update `README.md` to match docs version |
 | W0.4 | Add a current-line addendum and scope clarification to the scope doc (done: `docs/product/scope-v0.4.md`) |
-| W0.5 | Audit all `docs/` files for stale release references; update or annotate (done: `prumo docs authority`) |
+| W0.5 | Audit all `docs/` files for stale release references; update or annotate (done: `prumo-agent docs authority`) |
 | W0.6 | Formalize authority order in a single canonical location |
 | W0.7 | Create a machine-readable authority map or derive one from existing contracts/bindings |
 | W0.8 | Add a drift rule for active docs that reference obsolete project versions without historical annotation |
@@ -33,7 +33,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 **Entry**: PR #64 merged (harness branch landed).  
 **Exit**: `grep -r 'v0\.4' docs/` returns only historical/migration references; authority routing is unambiguous; no active canonical or agent-routing document contains an unexplained version/authority contradiction.
 
-**Status**: ✅ complete 2026-09-14 — `docs/governance/authority.md` (authority order + projection policy), `docs/AUTHORITY_MAP.json` (127 docs: 97 canonical / 2 projection / 28 historical), `prumo docs authority` + `TestAuthorityGateClean` as the permanent `docs-authority` CI gate, routing links repaired. Drift fixes across ~30 canonical docs; explicit `drift_exempt` reasons recorded for the migration-blueprint and phases documents.
+**Status**: ✅ complete 2026-09-14 — `docs/governance/authority.md` (authority order + projection policy), `docs/AUTHORITY_MAP.json` (127 docs: 97 canonical / 2 projection / 28 historical), `prumo-agent docs authority` + `TestAuthorityGateClean` as the permanent `docs-authority` CI gate, routing links repaired. Drift fixes across ~30 canonical docs; explicit `drift_exempt` reasons recorded for the migration-blueprint and phases documents.
 
 ---
 
@@ -98,9 +98,9 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W3.8 | Migrate existing Knowledge Runtime baseline (GAP-018/019) to use stable IDs |
 
 **Entry**: W1 complete (schema conformance infra exists).  
-**Exit**: `prumo knowledge manifest` produces valid manifest; IDs survive file renames and moves.
+**Exit**: `prumo-agent knowledge manifest` produces valid manifest; IDs survive file renames and moves.
 
-**Status**: ✅ complete 2026-09-15 — `knowledge-unit`/`knowledge-claim`/`knowledge-manifest` schemas and `internal/knowledge` (stable IDs, 12 kinds, 13 typed relationships, rename-safe alias table, fail-closed visibility) landed, together with W3.6 (derived manifest builder + `prumo knowledge manifest`) and W3.8 (the harness Knowledge baseline now seeds and reloads by stable identity, so a rename no longer creates a new unit).
+**Status**: ✅ complete 2026-09-15 — `knowledge-unit`/`knowledge-claim`/`knowledge-manifest` schemas and `internal/knowledge` (stable IDs, 12 kinds, 13 typed relationships, rename-safe alias table, fail-closed visibility) landed, together with W3.6 (derived manifest builder + `prumo-agent knowledge manifest`) and W3.8 (the harness Knowledge baseline now seeds and reloads by stable identity, so a rename no longer creates a new unit).
 
 ---
 
@@ -117,15 +117,15 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W4.4 | Implement progressive disclosure levels L0–L4 (Pointer → Full) |
 | W4.5 | Treat documentation units as first-class retrieval candidates with selection reasoning |
 | W4.6 | Deduplicate equivalent canonical and projection content; prefer canonical claim pointers |
-| W4.7 | `prumo context compile --goal G... --budget N` emits manifest |
-| W4.8 | `prumo context explain CTX-...` command |
+| W4.7 | `prumo-agent context compile --goal G... --budget N` emits manifest |
+| W4.8 | `prumo-agent context explain CTX-...` command |
 | W4.9 | Context sufficiency evaluation (required claims covered, dependencies included) |
 | W4.10 | Measure instruction-token overhead separately |
 
 **Entry**: W3 complete (KnowledgeUnits exist to reference).  
 **Exit**: Every context compilation produces auditable manifest; L0–L4 levels functional; context efficiency measurable.
 
-**Status**: ✅ complete 2026-09-15 — `context-policy` schema (L0–L4, dedup policy, explainability, instruction-token accounting) plus `level`/`excluded`/`instruction_tokens` on `context-manifest` landed. W4.4 disclosure semantics, W4.5/W4.6 canonical-preference dedup, W4.7 explanation and W4.8 CLI surfacing all landed: `prumo context compile` and `prumo context explain <id>` report what was selected, at which level, and why anything was excluded.
+**Status**: ✅ complete 2026-09-15 — `context-policy` schema (L0–L4, dedup policy, explainability, instruction-token accounting) plus `level`/`excluded`/`instruction_tokens` on `context-manifest` landed. W4.4 disclosure semantics, W4.5/W4.6 canonical-preference dedup, W4.7 explanation and W4.8 CLI surfacing all landed: `prumo-agent context compile` and `prumo-agent context explain <id>` report what was selected, at which level, and why anything was excluded.
 
 ---
 
@@ -394,7 +394,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W15.13 | Create `docs/architecture/documentation-control-plane.md` (layers A–H, target contracts, package boundaries) and ADR 010 |
 
 **Entry**: W3 stable IDs and W10 core schemas exist.  
-**Exit**: `prumo docs readiness` cannot pass merely because matching words or enough evidence items exist; every obligation is semantically bound.
+**Exit**: `prumo-agent docs readiness` cannot pass merely because matching words or enough evidence items exist; every obligation is semantically bound.
 
 **Status**: ✅ complete 2026-09-15 — semantic readiness is authoritative and the repository's own bindings now carry real claims and verified evidence.
 
@@ -407,7 +407,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W15.9 canonical/projection lineage | ✅ `projectionCycleFindings` + eval case D009 |
 | W15.12 false-green fixtures | ✅ D001–D011 in `evals/documentation/` with `expect_finding` assertions |
 | W15.11 semantic dogfood | ✅ `TestSemanticReadinessDogfood` asserts the live state without hard-coding counts: no non-authoritative contract may reach `verified`, and no `unverified` state may be unexplained |
-| W15.10 migrate the repository's own bindings | ✅ 7 contracts (`product.vision`, `project.scope`, `architecture.system`, `testing.strategy`, `security.trust`, `installation.lifecycle`, `cli.reference`) carry accepted claims with verified evidence at revision 1; `prumo docs readiness` reports `ready: true` with zero warnings |
+| W15.10 migrate the repository's own bindings | ✅ 7 contracts (`product.vision`, `project.scope`, `architecture.system`, `testing.strategy`, `security.trust`, `installation.lifecycle`, `cli.reference`) carry accepted claims with verified evidence at revision 1; `prumo-agent docs readiness` reports `ready: true` with zero warnings |
 
 **Deliberate non-outcome (kept)**: the semantic evaluator has no "agent says so" escape hatch. Evidence must name the claim it proves, carry a stable ID, be marked `verified`, and — when the artifact is a documentation file — resolve to a canonical or projection document. The first draft of the repository's own bindings cited `docs/migration/conformance-strategy.md`, which the authority map classifies as **historical**; the model rejected it as `non-canonical-evidence` rather than accepting a green result. That is the audit's D002 misbinding case firing on the real repository, and it is the reason W15.10 was authored instead of asserted.
 
@@ -453,8 +453,8 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W16.11 token budgets | ✅ IR `token_budget` enforced per scope via the harness estimator (AGENTS.md region: 386/420 tokens) |
 | W16.12 duplicate/conflict detection | ✅ `duplicate-instruction` and `conflicting-rule` findings |
 | W16.13 adapter isolation invariant | ✅ `TestCoreHasNoVendorKnowledge` reads the core sources and fails on any vendor format reference |
-| W16.14 context-rot CI gate | ✅ `TestAgentSurfaceContextRotGate` + `prumo docs agents verify` (exit 1 on findings) |
-| W16.15 documentation impact integration | ✅ `AffectedSurfaces` + `prumo docs impact` emits `agent-surface:<adapter>` impacts |
+| W16.14 context-rot CI gate | ✅ `TestAgentSurfaceContextRotGate` + `prumo-agent docs agents verify` (exit 1 on findings) |
+| W16.15 documentation impact integration | ✅ `AffectedSurfaces` + `prumo-agent docs impact` emits `agent-surface:<adapter>` impacts |
 
 **Deliberate boundary**: the compiled root invariant list now lives in the IR, and `AGENTS.md` carries it as a managed region. Editing the list in `AGENTS.md` by hand makes `docs agents verify` fail until the IR is changed and the build re-run — that is the wave's exit criterion, not an accident.
 
@@ -472,7 +472,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W17.2 | Resolve symbol impact through repo map/LSP |
 | W17.3 | Resolve schema/API impact through structural diff |
 | W17.4 | Resolve UI impact through component/state/token graph |
-| W17.5 | Add `prumo docs plan --goal` command |
+| W17.5 | Add `prumo-agent docs plan --goal` command |
 | W17.6 | Populate GoalPlan `DocumentationGap`/DocumentationPlan in real path |
 | W17.7 | Run preflight at Goal lock |
 | W17.8 | Run postflight after implementation |
@@ -492,14 +492,14 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W17.2 symbol impact | ✅ resolved by identifier occurrence in a changed source file, so it runs headless with no LSP session; an unresolvable trigger never matches |
 | W17.3 schema/API impact | ✅ structural match against `schemas/*.schema.json`, `docs/contracts/builtin.json` and the connector contract |
 | W17.4 UI impact | ✅ resolved through contract → bound-document → changed-path, i.e. the component/token graph rather than a filename guess |
-| W17.5 `prumo docs plan --goal` | ✅ preflight stores a replayable `DocumentationPlan` under derived runtime state |
+| W17.5 `prumo-agent docs plan --goal` | ✅ preflight stores a replayable `DocumentationPlan` under derived runtime state |
 | W17.6 GoalPlan `DocumentationGap`/`DocumentationPlan` | ✅ `internal/app/goalplan.go` populates both on the real Goal path |
 | W17.7 preflight at Goal lock | ✅ `BuildPlanForContracts` runs when the Goal is locked, before any implementation path exists |
-| W17.8 postflight after implementation | ✅ `prumo docs plan --goal <id> --changed <paths> --reconcile` |
+| W17.8 postflight after implementation | ✅ `prumo-agent docs plan --goal <id> --changed <paths> --reconcile` |
 | W17.9 predicted vs actual diff | ✅ `Reconcile` reports obligations the preflight predicted and the observed impact did not honour |
-| W17.10 TranslationDelta / MediaDelta | ✅ emitted by `internal/doclifecycle` and surfaced by `prumo docs release` |
+| W17.10 TranslationDelta / MediaDelta | ✅ emitted by `internal/doclifecycle` and surfaced by `prumo-agent docs release` |
 | W17.11 explicit N/A reasons | ✅ `DocumentationPlan.Validate` refuses a silent N/A: every non-applicable obligation must state `not_applicable_reason` |
-| W17.12 impact explanation | ✅ `prumo docs explain <unit-or-finding>` |
+| W17.12 impact explanation | ✅ `prumo-agent docs explain <unit-or-finding>` |
 
 **Deliberate boundary**: plans, reconciliations and deltas are derived runtime state. None of them may be promoted to a canonical document, and the preflight refuses to run on an empty change set instead of reporting a silent "no impact".
 
@@ -532,14 +532,14 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 **Entry**: W10 and W15 complete.  
 **Exit**: Repository Markdown, site pages, AI indexes, and MCP retrieval resolve to the same stable IDs.
 
-**Status**: ✅ complete 2026-09-15 — the renderer boundary, four renderers, search index, versioned/locale routes, `/llms.txt`, `/llms-full.txt`, raw Markdown views, generated contract/schema reference pages and the documentation MCP surface all landed. The MCP surface is read-first: `prumo://docs/...` resources are always readable, while mutations are denied by default and must be explicitly allowlisted (`prumo docs mutations`).
+**Status**: ✅ complete 2026-09-15 — the renderer boundary, four renderers, search index, versioned/locale routes, `/llms.txt`, `/llms-full.txt`, raw Markdown views, generated contract/schema reference pages and the documentation MCP surface all landed. The MCP surface is read-first: `prumo://docs/...` resources are always readable, while mutations are denied by default and must be explicitly allowlisted (`prumo-agent docs mutations`).
 
 | Task | State |
 |---|---|
 | W18.1 renderer interface | ✅ `docpublish.Renderer` — one `Graph` in, `[]Artifact` out; no site generator in the interface |
 | W18.2 Starlight reference adapter | ✅ `starlightRenderer` emits `astro.config`-ready routes |
 | W18.3 navigation/breadcrumb/related edges | ✅ derived from the page graph in `Graph.Routes()`/`Graph.Current()` |
-| W18.4 search index | ✅ `search-index.json` chunked by heading; `prumo docs query` ranks over it |
+| W18.4 search index | ✅ `search-index.json` chunked by heading; `prumo-agent docs query` ranks over it |
 | W18.5 version-aware routes | ✅ `--versioned` |
 | W18.6 locale-aware routes/fallback | ✅ `--locale` plus `localesOf`/`versionsOf` fallback resolution |
 | W18.7 public/internal visibility filtering | ✅ `Graph.Human()` vs `Current()`; agent-facing surfaces are separated |
@@ -549,7 +549,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W18.11 read-only documentation MCP resources | ⬜ not implemented — the MCP surface exposes no documentation resources yet |
 | W18.12 mutation MCP kept separate and permission-gated | ⬜ depends on W18.11 |
 | W18.13 API reference adapters from machine contracts | ⬜ not implemented |
-| W18.14 documentation dashboard projection | ✅ `prumo docs metrics` (W21.1) provides the Project Intelligence projection |
+| W18.14 documentation dashboard projection | ✅ `prumo-agent docs metrics` (W21.1) provides the Project Intelligence projection |
 | W18.15 renderer replaceability/conformance test | ✅ `TestRenderersProjectOneGraph` projects one graph through every renderer and asserts the same page identity |
 
 **Deliberate boundary**: published output is written under `.prumo/runtime/docs-site/` and is derived — it is never a canonical artifact.
@@ -571,7 +571,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | W19.5 | Add bounded repair loop with strict stop conditions |
 | W19.6 | Persist findings/evidence per round |
 | W19.7 | Invariant: score cannot increase without resolved findings/evidence |
-| W19.8 | Add CI command `prumo docs verify` |
+| W19.8 | Add CI command `prumo-agent docs verify` |
 | W19.9 | Add `--strict` completion integration |
 | W19.10 | Add regression corpus from real Prumo drift findings |
 
@@ -584,13 +584,13 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 |---|---|
 | W19.1 `DocumentationQualityPolicy` | ✅ `schemas/documentation-quality-policy.schema.json` (W10) drives which checks are blocking |
 | W19.2 layered verifier pipeline | ✅ `VerifyDocs`: authority → managed regions → links → claim drift, all deterministic and run before any model step |
-| W19.3 docs profile in the Gauntlet runtime | ✅ `internal/gauntlet.Run` + `prumo docs gauntlet` |
+| W19.3 docs profile in the Gauntlet runtime | ✅ `internal/gauntlet.Run` + `prumo-agent docs gauntlet` |
 | W19.4 isolated critic roles | ✅ model critic is a separate, skippable stage (`model_critic: "skipped:policy-mode-off"` by default) |
 | W19.5 bounded repair loop with stop conditions | ✅ rounds 1..10 with `gates-passed` / `rounds-exhausted` / `no-progress` terminators |
 | W19.6 findings/evidence persisted per round | ✅ each round records its deterministic result and findings |
 | W19.7 score cannot rise without resolved findings | ✅ score-inflation guard from W7 is enforced in the runtime loop |
-| W19.8 `prumo docs verify` in CI | ✅ new `Documentation verification gate` CI step |
-| W19.9 `--strict` completion integration | ✅ `VerifyDocsStrict` + `prumo docs verify --strict`; a lexical-only contract now fails the gate that plain `verify` would pass, with its own CI step |
+| W19.8 `prumo-agent docs verify` in CI | ✅ new `Documentation verification gate` CI step |
+| W19.9 `--strict` completion integration | ✅ `VerifyDocsStrict` + `prumo-agent docs verify --strict`; a lexical-only contract now fails the gate that plain `verify` would pass, with its own CI step |
 | W19.10 regression corpus | ✅ `evals/documentation/` D001–D011 plus the drift cases the verifier found against real repository documents |
 | — (DOC-GAP-020, audit) example execution | ⬜ linked and existence-checked only; running them as testable units is the remaining gap |
 
@@ -626,13 +626,13 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 | Task | State |
 |---|---|
 | W20.1 TranslationRecord QA lifecycle | ✅ `internal/doclifecycle`: lifecycle states, locale-key identity, placeholder integrity, reviewer evidence, fallback and RTL |
-| W20.2 terminology/glossary management | ✅ `docs/glossary.json` + `schemas/glossary.schema.json`: closed status vocabulary (preferred/deprecated/forbidden), a deprecated term must name a **preferred** replacement, whole-word matching, and the check runs inside `docs verify`; `prumo docs glossary` reports it |
+| W20.2 terminology/glossary management | ✅ `docs/glossary.json` + `schemas/glossary.schema.json`: closed status vocabulary (preferred/deprecated/forbidden), a deprecated term must name a **preferred** replacement, whole-word matching, and the check runs inside `docs verify`; `prumo-agent docs glossary` reports it |
 | W20.3 pseudo-localization verifier | ✅ `PseudoLocalize` + `VerifyPseudoLoc`, exercised by `TestVerifyPseudoLocFindsGeneratorProblems` |
 | W20.4 `MediaRecord` + stale propagation | ✅ `schemas/media-record.schema.json` + `MediaStatuses` |
 | W20.5 visual evidence linked to state/theme/locale/platform | ✅ media records carry the UI state, theme, locale and platform they illustrate |
-| W20.6 documentation version policy | ✅ `version_policy` in `docs/lifecycle.json` + `schemas/doc-lifecycle.schema.json`: exclusive current/supported/deprecated/removed buckets, drift against `protocol.CLIVersion`, and a reference to a removed line fails unless the document is historical or the line is annotated as such; `prumo docs version` reports it |
+| W20.6 documentation version policy | ✅ `version_policy` in `docs/lifecycle.json` + `schemas/doc-lifecycle.schema.json`: exclusive current/supported/deprecated/removed buckets, drift against `protocol.CLIVersion`, and a reference to a removed line fails unless the document is historical or the line is annotated as such; `prumo-agent docs version` reports it |
 | W20.7 deprecation lifecycle | ✅ `LoadLifecycle` + `DeprecationFindings`: a deprecation must name a replacement or a removal, and be annotated in the document itself |
-| W20.8 release documentation plan | ✅ `CheckRelease` → `prumo docs release` |
+| W20.8 release documentation plan | ✅ `CheckRelease` → `prumo-agent docs release` |
 | W20.9 compatibility/migration projection inputs | ✅ migration projections feed the release report |
 | W20.10 release readiness docs gate | ✅ `release_gates` in `docs/lifecycle.json`, evaluated by `CheckRelease` |
 | W20.11 historical docs without contaminating current context | ✅ the authority map keeps historical documents out of current context, and semantic evidence refuses a historical artifact (`non-canonical-evidence`) |
@@ -670,7 +670,7 @@ criteria. Waves are sequential within priority tiers; P0 waves block P1 waves.
 
 | Task | State |
 |---|---|
-| W21.1 documentation metrics in Project Intelligence | ✅ `internal/docintel.Collect` + `prumo docs metrics` |
+| W21.1 documentation metrics in Project Intelligence | ✅ `internal/docintel.Collect` + `prumo-agent docs metrics` |
 | W21.2 retrieval/query success without storing sensitive content | ⬜ deliberately not implemented — there is no telemetry channel and no query log; capturing user queries would store sensitive content by design |
 | W21.3 top missing/failed documentation intents | ⬜ deliberately not implemented — it depends on W21.2, which is refused for the same reason |
 | W21.4 context/instruction token efficiency | ✅ `documentation_tokens` vs `instruction_tokens`, with agent-surface surfaces counted separately |
@@ -710,14 +710,14 @@ green while no component inventory existed. Decision: **ADR 012**.
 | W22.6 | Interdependence tree, typed edges and impact closure in both directions with the reason for every hop |
 | W22.7 | Three projections — developer reference, site pages, bounded agent surface plus a machine-readable index — with digest freshness and stale detection |
 | W22.8 | Per-project configuration (`ui.interface_map`: enabled, targets, derivation, path) with auto-enable on a declared interface and refusal of silent no-ops |
-| W22.9 | `prumo ui map\|verify\|impact\|config` |
+| W22.9 | `prumo-agent ui map\|verify\|impact\|config` |
 | W22.10 | Dogfood: this repository's own map, with `not-implemented` used for the approval surface that GAP-046 blocks |
 | W22.11 | Bind the four contracts to the artifact, replacing four waivers |
-| W22.12 | Conformance gate: schema enums equal the Go vocabularies, and the repository's own map is valid; projection freshness is checked by `prumo ui verify` where the runtime artifacts exist, and hermetically by `internal/uimap` on a temporary root |
+| W22.12 | Conformance gate: schema enums equal the Go vocabularies, and the repository's own map is valid; projection freshness is checked by `prumo-agent ui verify` where the runtime artifacts exist, and hermetically by `internal/uimap` on a temporary root |
 
 **Entry**: W5 complete (contracts and schemas), W9 complete (tokens), H10 Fase A
 (the `tui` profile composed, so the obligations are actually evaluated).
-**Exit**: `prumo ui verify` passes on this repository, the four contracts are
+**Exit**: `prumo-agent ui verify` passes on this repository, the four contracts are
 bound, and the projections are fresh.
 
 **Correction 2026-09-15**: the first W22.12 gate asserted projection freshness
@@ -726,7 +726,7 @@ locally only because the artifacts were present from a `--write` run and failed
 on a clean checkout — a gate green for an accident of the working tree. CI now
 decides what it can (the map compiles clean; derived artifacts are rooted outside
 `docs/`), the digest round trip is tested hermetically in `internal/uimap`, and
-freshness stays a `prumo ui verify` check on machines that hold the artifacts.
+freshness stays a `prumo-agent ui verify` check on machines that hold the artifacts.
 
 **Status**: ✅ complete 2026-09-15 — 24 elements, 10 typed interconnections, 216
 derived symbols; the four waivers are replaced by bindings; `ui.component-contracts`
@@ -735,7 +735,7 @@ the W22.12 correction above.
 
 **Cost, stated**: the map is one more artifact to keep current. It is enforced
 rather than trusted — changing the interface without changing the map fails
-`prumo ui verify`, and `prumo ui map --write` regenerates all eight projections.
+`prumo-agent ui verify`, and `prumo-agent ui map --write` regenerates all eight projections.
 The agent surface is bounded at 80 tree rows and reports the exact number it
 omitted instead of truncating silently.
 
@@ -792,7 +792,7 @@ The H10 TUI spike (defined in `docs/product/tui-spike-h10.md`) may begin when:
 - [x] W9 complete (semantic design tokens for TUI, 2026-09-14)
 - [x] W11 complete (TUI accessibility/interaction contracts, 2026-09-14)
 - [x] W12 complete (reconnect/replay verified by client-facing conformance, 2026-09-14)
-- [x] W15 complete (semantic readiness v2 eliminates false confidence; the repository's own 7 contracts are semantically bound and `prumo docs readiness` is green for the right reason) 2026-09-15
+- [x] W15 complete (semantic readiness v2 eliminates false confidence; the repository's own 7 contracts are semantically bound and `prumo-agent docs readiness` is green for the right reason) 2026-09-15
 
 P1 waves W10, W13, W14, W16–W19 may proceed in parallel with early TUI work but must
 complete before H10 exit criteria are evaluated. Their current state:
@@ -809,7 +809,7 @@ complete before H10 exit criteria are evaluated. Their current state:
 
 **P2 waves (W20/W21)**: W20 ✅ complete (terminology registry and explicit version policy landed); W21 🟡 (scale benchmark landed; query-intent tracking refused by ADR 011; workforce routing by impact type and full Markdown AST remain). Neither blocks the TUI: the spike consumes the W5/W6/W9/W11 contracts and the W12 reconnect contract, all complete.
 
-**Stopping condition for this wave set**: the TUI gate is met when every P0/P1 contract wave is complete *and* `prumo docs verify --strict` passes. Both hold. Two items the audit proposed are recorded as **refused** with ADR 011 rather than as outstanding work, and two waves remain genuinely partial by scope rather than by refusal: W19 owes DOC-GAP-020 (examples are linked and existence-checked, but not executed) and W21 owes DOC-GAP-024 and DOC-GAP-026 (workforce routing by impact type, full Markdown AST). `ACCEPTED != implemented` applies to them too.
+**Stopping condition for this wave set**: the TUI gate is met when every P0/P1 contract wave is complete *and* `prumo-agent docs verify --strict` passes. Both hold. Two items the audit proposed are recorded as **refused** with ADR 011 rather than as outstanding work, and two waves remain genuinely partial by scope rather than by refusal: W19 owes DOC-GAP-020 (examples are linked and existence-checked, but not executed) and W21 owes DOC-GAP-024 and DOC-GAP-026 (workforce routing by impact type, full Markdown AST). `ACCEPTED != implemented` applies to them too.
 
 ---
 
@@ -821,22 +821,22 @@ require the interactive site/TUI.
 
 | Command | Wave |
 |---------|------|
-| `prumo docs audit` | W0, W15 |
-| `prumo docs readiness` | W15 |
-| `prumo docs impact` · `prumo docs plan --goal <id>` · `prumo docs delta --goal <id>` | W17 |
-| `prumo docs explain <unit-or-finding>` | W15, W17 |
-| `prumo docs verify` · `prumo docs gauntlet` | W19 |
-| `prumo docs build` · `prumo docs manifest` · `prumo docs query` · `prumo docs doctor` | W15, W18 |
-| `prumo docs agents build\|verify\|explain` | W16 |
-| `prumo docs site build\|verify` | W18 |
-| `prumo docs glossary` | W20 |
-| `prumo docs version` | W20 |
-| `prumo docs translate status\|verify` | W6, W20 |
-| `prumo docs media status\|verify` | W20 |
-| `prumo docs adopt inspect\|propose` | W21 |
-| `prumo docs metrics` | W21 |
-| `prumo knowledge manifest\|search` | W3 |
-| `prumo context compile\|explain` | W4 |
+| `prumo-agent docs audit` | W0, W15 |
+| `prumo-agent docs readiness` | W15 |
+| `prumo-agent docs impact` · `prumo-agent docs plan --goal <id>` · `prumo-agent docs delta --goal <id>` | W17 |
+| `prumo-agent docs explain <unit-or-finding>` | W15, W17 |
+| `prumo-agent docs verify` · `prumo-agent docs gauntlet` | W19 |
+| `prumo-agent docs build` · `prumo-agent docs manifest` · `prumo-agent docs query` · `prumo-agent docs doctor` | W15, W18 |
+| `prumo-agent docs agents build\|verify\|explain` | W16 |
+| `prumo-agent docs site build\|verify` | W18 |
+| `prumo-agent docs glossary` | W20 |
+| `prumo-agent docs version` | W20 |
+| `prumo-agent docs translate status\|verify` | W6, W20 |
+| `prumo-agent docs media status\|verify` | W20 |
+| `prumo-agent docs adopt inspect\|propose` | W21 |
+| `prumo-agent docs metrics` | W21 |
+| `prumo-agent knowledge manifest\|search` | W3 |
+| `prumo-agent context compile\|explain` | W4 |
 
 ---
 

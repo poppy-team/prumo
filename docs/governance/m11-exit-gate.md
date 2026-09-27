@@ -51,9 +51,9 @@ A new connector can be built against the Connector SDK and passes contract tests
 
 ### 5. CLI Integration & Verification
 
-- `prumo connector list`: lists all registered connectors, versions, enforcements, and capabilities.
-- `prumo connector install <name>`: installs any registered connector and sets up cleanup manifests.
-- `prumo connector validate <name>`: verifies connector artifact integrity and ownership markers.
-- `prumo connector uninstall <name>`: performs clean removal.
-- `prumo connector negotiate <name> [--strict] [--caps <list>]`: evaluates compatibility and graceful degradations.
+- `prumo-agent connector list`: lists all registered connectors, versions, enforcements, and capabilities.
+- `prumo-agent connector install <name>`: installs any registered connector and sets up cleanup manifests.
+- `prumo-agent connector validate <name>`: verifies connector artifact integrity and ownership markers.
+- `prumo-agent connector uninstall <name>`: performs clean removal.
+- `prumo-agent connector negotiate <name> [--strict] [--caps <list>]`: evaluates compatibility and graceful degradations.
 - All unit and integration tests pass with race detection enabled.

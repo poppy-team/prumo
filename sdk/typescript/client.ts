@@ -4,12 +4,25 @@
 import net from "node:net";
 import tls from "node:tls";
 
+// The daemon refuses a request that does not declare its protocol, so the client
+// declares it on every one rather than making each call site remember. Mirrors
+// harnessprotocol.Version in internal/harness/protocol and ProtocolVersion in
+// sdk/prumo.
+export const PROTOCOL_VERSION = "0.4.0";
+
 export interface RunStatus {
   run_id: string;
   status: string;
   phase: string;
   stop_reason: string;
   active: boolean;
+  // A run whose process died is marked rather than left claiming to run, and
+  // names the checkpoint it would continue from. It is not resumed on its own.
+  interrupted?: boolean;
+  resume_checkpoint?: string;
+  // What an approver must quote back: the answer is bound to this content.
+  permission_fingerprints?: Record<string, string>;
+  pending_permissions?: string[];
 }
 
 export interface AgentEvent {
@@ -131,7 +144,9 @@ export class Client {
           clearTimeout(timer);
           reject(e);
         });
-        sock.write(JSON.stringify(msg) + "\n");
+        // Declared on the wire for every request, including ones a caller assembled
+        // by hand: the daemon does not guess a missing version.
+        sock.write(JSON.stringify({ ...msg, protocol_version: PROTOCOL_VERSION }) + "\n");
       });
       if (!reply["ok"]) {
         throw new Error(`daemon op ${op}: ${String(reply["error"])}`);
@@ -170,6 +185,24 @@ export class Client {
     await this.call({ op: "steer", run_id: runID, message });
   }
 
+  /** Answer a pending permission request, letting the run continue. */
+  // fingerprint is the value the run is waiting on. An approval is bound to the
+  // content it was given for, so a request id alone does not authorise anything.
+  async approve(runID: string, requestID: string, fingerprint: string): Promise<void> {
+    await this.call({ op: "approve", run_id: runID, request_id: requestID, fingerprint });
+  }
+
+  /** Refuse a pending permission request; the run then fails without executing. */
+  async deny(runID: string, requestID: string, fingerprint: string, reason = ""): Promise<void> {
+    await this.call({ op: "deny", run_id: runID, request_id: requestID, fingerprint, reason });
+  }
+
+  /** Ask the harness what a provider can serve. */
+  async models(provider = "", model = ""): Promise<string[]> {
+    const res = await this.call({ op: "models", provider, model });
+    return (res["models"] ?? []) as string[];
+  }
+
   async protocol(): Promise<Record<string, unknown>> {
     return this.call({ op: "protocol" });
   }
@@ -177,7 +210,7 @@ export class Client {
   async wait(runID: string, pollMs = 100): Promise<RunStatus> {
     for (;;) {
       const st = await this.status(runID);
-      if (st.status !== "running") {
+      if (st.status !== "running" && st.status !== "awaiting_approval") {
         return st;
       }
       await new Promise((r) => setTimeout(r, pollMs));

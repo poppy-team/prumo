@@ -17,15 +17,15 @@ Do not hand-edit locked Goals or generated adapters. Prefer regeneration and app
 
 ```bash
 git status --short
-prumo doctor ./my-project
-prumo validate ./my-project
-prumo goal list --path ./my-project
+prumo-agent doctor ./my-project
+prumo-agent validate ./my-project
+prumo-agent goal list --path ./my-project
 ```
 
 Create a portable snapshot before manual recovery:
 
 ```bash
-prumo snapshot ./my-project --output ./my-project-recovery.zip
+prumo-agent snapshot ./my-project --output ./my-project-recovery.zip
 ```
 
 Restore from a known-good Git commit when local state diverged:
@@ -38,8 +38,8 @@ git restore --source=<commit> -- <paths>
 Regenerate adapters from canonical resources after restoring the source files:
 
 ```bash
-prumo compile --target codex --path ./my-project
-prumo compile --target claude-code --path ./my-project
+prumo-agent compile --target codex --path ./my-project
+prumo-agent compile --target claude-code --path ./my-project
 ```
 
 ## Restore global installation state
@@ -47,7 +47,7 @@ prumo compile --target claude-code --path ./my-project
 Use a clean portable home to isolate corrupted global state:
 
 ```bash
-prumo --home ./recovery-home setup
+prumo-agent --home ./recovery-home setup
 ```
 
 Then reinstall only connectors that provide cleanup manifests. Data loss in a repository is never fixed by deleting the project directory.
@@ -61,8 +61,8 @@ Uninstall follows `docs/manual/uninstallation.md`. It removes installation state
 Preview migrations before applying them:
 
 ```bash
-prumo migrate ./my-project --dry-run --json
-prumo migrate ./my-project
+prumo-agent migrate ./my-project --dry-run --json
+prumo-agent migrate ./my-project
 ```
 
 The migration creates a timestamped pre-migration snapshot under `.prumo/snapshots/`.

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
 // ManifestDir is where compiled manifests live. They are runtime state: a
@@ -18,13 +20,23 @@ func ManifestDir(root string) string {
 // ManifestPath is where one compilation's manifest is stored. The filename keeps
 // the run-scoped spelling so existing artifacts and retention rules keep
 // working, while the manifest's own ID is the canonical `CTX-` form.
-func ManifestPath(root, runID string) string {
-	return filepath.Join(ManifestDir(root), "context-"+runID+".json")
+//
+// The run id is validated because it becomes a filename. A run id is accepted
+// from a request, and before this a value carrying a separator reached Join
+// untouched and wrote outside the runtime directory (GAP-112).
+func ManifestPath(root, runID string) (string, error) {
+	if err := safepath.ValidateID("run_id", runID); err != nil {
+		return "", err
+	}
+	return filepath.Join(ManifestDir(root), "context-"+runID+".json"), nil
 }
 
 // SaveManifest writes a manifest atomically under runtime state.
 func SaveManifest(root string, m Manifest) (string, error) {
-	path := ManifestPath(root, RunIDOf(m))
+	path, err := ManifestPath(root, RunIDOf(m))
+	if err != nil {
+		return "", err
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}
@@ -67,7 +79,11 @@ func LoadManifest(root, id string) (Manifest, error) {
 	if runID == "" {
 		return Manifest{}, fmt.Errorf("context manifest id is required")
 	}
-	data, err := os.ReadFile(ManifestPath(root, runID))
+	path, err := ManifestPath(root, runID)
+	if err != nil {
+		return Manifest{}, err
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return Manifest{}, fmt.Errorf("no compiled context %s: %w", id, err)
 	}

@@ -103,5 +103,5 @@ the failure mode this policy exists to prevent.
 
 **Media freshness.** Frames are linked to the surface they illustrate and go
 stale by content digest (W20): changing a surface without regenerating its
-frame reports `affected-by-ui-change`, and `prumo docs release` refuses to ship
+frame reports `affected-by-ui-change`, and `prumo-agent docs release` refuses to ship
 while evidence is stale.

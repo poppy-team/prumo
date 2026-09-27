@@ -3,7 +3,7 @@
 // Boundary invariant: this package imports stdlib only — never
 // prumo/internal. It is the client surface the future prumo-code repo (and
 // any third-party client) builds against. Wire shape follows
-// schemas/protocol-manifest.json v0.1.0.
+// schemas/protocol-manifest.json v0.3.0.
 package prumo
 
 import (
@@ -17,7 +17,12 @@ import (
 )
 
 // ProtocolVersion is the IDL this SDK speaks.
-const ProtocolVersion = "0.1.0"
+//
+// It is a copy of the engine's, because the SDK must not import the server's
+// internals — a public client that compiles against internal packages cannot be
+// used outside the module. A copy is a drift risk, so TestSDKVersionMatchesEngine
+// pins the two together and fails when the engine moves and this does not.
+const ProtocolVersion = "0.4.0"
 
 // Client talks to a harness daemon over its Unix socket.
 type Client struct {
@@ -93,6 +98,9 @@ func (e *Error) Error() string { return fmt.Sprintf("daemon op %s: %s", e.Op, e.
 
 func (c Client) call(ctx context.Context, msg map[string]any) (map[string]any, error) {
 	op, _ := msg["op"].(string)
+	// The daemon refuses a request that does not declare its protocol, so the SDK
+	// declares it on every one rather than making each call site remember.
+	msg["protocol_version"] = ProtocolVersion
 	conn, err := c.dial(ctx)
 	if err != nil {
 		return nil, err
@@ -136,6 +144,10 @@ type RunStatus struct {
 	Phase      string `json:"phase"`
 	StopReason string `json:"stop_reason"`
 	Active     bool   `json:"active"`
+	// PendingPermissions are the request ids awaiting a client decision. A run
+	// waiting for approval reports status "awaiting_approval" and names what it
+	// is waiting on, so a client that reconnected can still answer.
+	PendingPermissions []string `json:"pending_permissions"`
 }
 
 // StartRequest launches a headless run.
@@ -178,6 +190,7 @@ func (c Client) Status(ctx context.Context, runID string) (RunStatus, error) {
 	st.Phase, _ = out["phase"].(string)
 	st.StopReason, _ = out["stop_reason"].(string)
 	st.Active, _ = out["active"].(bool)
+	st.PendingPermissions = toStrSlice(out["pending_permissions"])
 	return st, nil
 }
 
@@ -239,6 +252,52 @@ func (c Client) Steer(ctx context.Context, runID, message string) error {
 	return err
 }
 
+// Approve answers a pending permission request, letting the run continue.
+func (c Client) Approve(ctx context.Context, runID, requestID string) error {
+	_, err := c.call(ctx, map[string]any{"op": "approve", "run_id": runID, "request_id": requestID})
+	return err
+}
+
+// Deny refuses a pending permission request. The run then fails the way a
+// policy denial fails; nothing executes.
+func (c Client) Deny(ctx context.Context, runID, requestID, reason string) error {
+	_, err := c.call(ctx, map[string]any{"op": "deny", "run_id": runID, "request_id": requestID, "reason": reason})
+	return err
+}
+
+// ModelsRequest identifies the provider to ask about.
+//
+// Empty fields mean "the daemon's default", which is the common case: a client
+// usually wants to know what the harness it is attached to can serve, not what
+// some other endpoint could.
+type ModelsRequest struct {
+	Provider string
+	BaseURL  string
+	Model    string
+}
+
+// Models asks the harness what a provider can serve.
+//
+// The client does not keep its own catalogue: which models exist is a property
+// of the provider, and only the process that talks to it can answer.
+func (c Client) Models(ctx context.Context, r ModelsRequest) ([]string, error) {
+	msg := map[string]any{"op": "models"}
+	if r.Provider != "" {
+		msg["provider"] = r.Provider
+	}
+	if r.BaseURL != "" {
+		msg["base_url"] = r.BaseURL
+	}
+	if r.Model != "" {
+		msg["model"] = r.Model
+	}
+	out, err := c.call(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return toStrSlice(out["models"]), nil
+}
+
 // Job is one scheduled run template.
 type Job struct {
 	ID        string `json:"job_id"`
@@ -261,6 +320,73 @@ func (c Client) Schedule(ctx context.Context, goal, provider string, everySecs i
 func (c Client) Unschedule(ctx context.Context, jobID string) error {
 	_, err := c.call(ctx, map[string]any{"op": "unschedule", "job_id": jobID})
 	return err
+}
+
+// CapabilitySet is what a model can do, as the workspace declared it.
+//
+// Absent means undeclared, never denied: the daemon reports what somebody wrote
+// in `.prumo/models.json` and nothing more.
+type CapabilitySet struct {
+	Text          bool `json:"text,omitempty"`
+	Vision        bool `json:"vision,omitempty"`
+	Reasoning     bool `json:"reasoning,omitempty"`
+	Tools         bool `json:"tools,omitempty"`
+	Audio         bool `json:"audio,omitempty"`
+	ContextTokens int  `json:"context_tokens,omitempty"`
+}
+
+// ModelInfo is one model with what is known about it.
+type ModelInfo struct {
+	ID           string        `json:"id"`
+	Declared     bool          `json:"declared"`
+	Capabilities CapabilitySet `json:"capabilities"`
+}
+
+// ModelInfo asks what the provider serves *and* what each model can do.
+//
+// The models operation answers both: the ids come from the provider, the
+// capabilities from the workspace's own declaration, and a model nobody declared
+// arrives with Declared false rather than with an empty set of denials.
+func (c Client) ModelInfo(ctx context.Context, r ModelsRequest) ([]ModelInfo, error) {
+	out, err := c.call(ctx, map[string]any{"op": "models", "provider": r.Provider, "base_url": r.BaseURL})
+	if err != nil {
+		return nil, err
+	}
+	raw, _ := out["model_info"].([]any)
+	infos := make([]ModelInfo, 0, len(raw))
+	for _, item := range raw {
+		m, _ := item.(map[string]any)
+		info := ModelInfo{ID: strOf(m, "id")}
+		if declared, ok := m["declared"].(bool); ok {
+			info.Declared = declared
+		}
+		if caps, ok := m["capabilities"].(map[string]any); ok {
+			info.Capabilities = CapabilitySet{
+				Text:          boolOf(caps, "text"),
+				Vision:        boolOf(caps, "vision"),
+				Reasoning:     boolOf(caps, "reasoning"),
+				Tools:         boolOf(caps, "tools"),
+				Audio:         boolOf(caps, "audio"),
+				ContextTokens: intOf(caps, "context_tokens"),
+			}
+		}
+		if info.ID != "" {
+			infos = append(infos, info)
+		}
+	}
+	return infos, nil
+}
+
+func boolOf(m map[string]any, key string) bool {
+	v, _ := m[key].(bool)
+	return v
+}
+
+func intOf(m map[string]any, key string) int {
+	if v, ok := m[key].(float64); ok {
+		return int(v)
+	}
+	return 0
 }
 
 // Jobs lists scheduled jobs.
@@ -348,4 +474,100 @@ func toStrSlice(v any) []string {
 		}
 	}
 	return out
+}
+
+// DiffResponse is what a run changed in one file (ADR 014).
+type DiffResponse struct {
+	Path    string `json:"path"`
+	Kind    string `json:"kind"`
+	Content string `json:"content"`
+}
+
+// Diff asks the harness what a run changed in one file.
+func (c Client) Diff(ctx context.Context, runID, path string) (DiffResponse, error) {
+	out, err := c.call(ctx, map[string]any{"op": "diff", "run_id": runID, "path": path})
+	if err != nil {
+		return DiffResponse{}, err
+	}
+	return DiffResponse{
+		Path:    strOf(out, "path"),
+		Kind:    strOf(out, "kind"),
+		Content: strOf(out, "content"),
+	}, nil
+}
+
+// Subscribe opens a push stream for a run's events starting at from (ADR 014).
+func (c Client) Subscribe(ctx context.Context, runID string, from int) (<-chan Event, error) {
+	conn, err := c.dial(ctx)
+	if err != nil {
+		return nil, err
+	}
+	req, _ := json.Marshal(map[string]any{"op": "subscribe", "run_id": runID, "from": from})
+	if _, err := conn.Write(append(req, '\n')); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	sc := bufio.NewScanner(conn)
+	sc.Buffer(make([]byte, 1024*1024), 1024*1024)
+	if !sc.Scan() {
+		conn.Close()
+		return nil, fmt.Errorf("no response from daemon for subscribe")
+	}
+	var ack map[string]any
+	if err := json.Unmarshal(sc.Bytes(), &ack); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("invalid subscribe ack: %w", err)
+	}
+	if ok, _ := ack["ok"].(bool); !ok && ack["op"] != "subscribed" {
+		conn.Close()
+		return nil, fmt.Errorf("subscribe failed: %v", ack["error"])
+	}
+
+	events := make(chan Event, 64)
+	go func() {
+		defer conn.Close()
+		defer close(events)
+
+		ctxDone := make(chan struct{})
+		defer close(ctxDone)
+		go func() {
+			select {
+			case <-ctx.Done():
+				conn.Close()
+			case <-ctxDone:
+			}
+		}()
+
+		for sc.Scan() {
+			var line map[string]any
+			if err := json.Unmarshal(sc.Bytes(), &line); err != nil {
+				continue
+			}
+			if strOf(line, "op") != "event" {
+				continue
+			}
+			evRaw, ok := line["event"].(map[string]any)
+			if !ok {
+				continue
+			}
+			evBytes, err := json.Marshal(evRaw)
+			if err != nil {
+				continue
+			}
+			var ev Event
+			if err := json.Unmarshal(evBytes, &ev); err != nil {
+				continue
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case events <- ev:
+			}
+			if ev.Kind == "run.finished" || ev.Kind == "run.completed" || ev.Kind == "run.failed" || ev.Kind == "run.cancelled" {
+				return
+			}
+		}
+	}()
+
+	return events, nil
 }

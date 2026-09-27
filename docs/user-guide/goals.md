@@ -14,5 +14,5 @@ Goals represent outcome-based milestones.
 ## Goal Amendments
 Once `LOCKED`, criteria cannot be silently edited. Changes require formal amendments:
 ```bash
-prumo goal amend P01-G01 --file amendment.json
+prumo-agent goal amend P01-G01 --file amendment.json
 ```

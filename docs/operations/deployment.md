@@ -38,9 +38,9 @@ Python v0.3 has been completely retired (ADR 002). CI executes pure Go checks an
 ## Project deployment checks
 
 ```bash
-prumo validate ./project
-prumo doctor ./project
-prumo framework-check
+prumo-agent validate ./project
+prumo-agent doctor ./project
+prumo-agent framework-check
 ```
 
 Do not deploy a project with failing validation or unresolved critical Doctor findings. Generated adapters must be regenerated from canonical resources rather than hand-edited.

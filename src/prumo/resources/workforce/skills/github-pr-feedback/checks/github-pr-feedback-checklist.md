@@ -1,21 +1,21 @@
 # GitHub PR Feedback Handling — Verification Checklist
 
-## Pre-Execution Gate
-- [ ] Goal or Task is locked and measurable.
-- [ ] Required inputs (Repository context, Issue / PR specifications, Roadmap Goal) are available and schema-validated.
-- [ ] Execution token and step budget are within bounded limits.
+## 1. Thread Inventory
+- [ ] Every unresolved thread listed with file/line, reviewer, and classification (fix/test/question/dispute).
+- [ ] Blocking (`request-changes`) threads separated from nits and ordered first.
+- [ ] Zero threads left unclassified.
 
-## Quality & Compliance Criteria
-- [ ] Implementation adheres to Clean Code and explicit responsibility principles.
-- [ ] No cyclic dependencies or layer boundary violations introduced.
-- [ ] Zero secrets, private tokens, or sensitive credentials exposed.
-- [ ] Error conditions are handled explicitly with actionable error context.
+## 2. Targeted Resolution
+- [ ] Fixes use minimal diffs scoped to the reviewer's ask; no opportunistic refactoring bundled.
+- [ ] Reviewer-found bugs land with failing-first regression tests.
+- [ ] Disputes documented in-thread with technical rationale and evidence, never resolve-and-ignore.
 
-## Verification & Testing
-- [ ] Unit tests pass deterministically (target: >=85% coverage for business logic).
-- [ ] Static analysis and formatting checks pass without warnings.
-- [ ] Required evidence (test, review) has been generated and recorded.
+## 3. Replies & Re-Review
+- [ ] Each thread answered (commit SHA for fixes, direct answers for questions).
+- [ ] CI green on the final push; no unmapping force-push without a note.
+- [ ] Re-review explicitly re-requested from each blocking reviewer with a thread→commit summary.
 
-## Sign-Off
-- [ ] Task acceptance criteria verified.
-- [ ] Evidence appended to task report / project intelligence.
+## 4. Closure & Evidence
+- [ ] Zero unresolved threads confirmed via `gh pr view` before sign-off.
+- [ ] Final verdict (approved/merged) recorded with evidence.
+- [ ] `scripts/verify.sh` exits 0 from the repository root.

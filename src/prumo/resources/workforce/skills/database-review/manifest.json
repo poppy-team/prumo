@@ -1,22 +1,25 @@
 {
   "id": "database-review",
   "name": "Database & Schema Review",
-  "version": 1,
-  "schema_version": 2,
-  "purpose": "Review database migrations, indexes, constraints, and query plans.",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Review and harden relational schemas, migrations, indexes, constraints, transactions, and query plans using EXPLAIN ANALYZE evidence and reversible zero-downtime migration discipline.",
   "risk_level": "high",
   "modes": [
     "review",
+    "audit",
     "implementation"
   ],
   "inputs": [
-    "API specifications",
-    "Domain models",
-    "UI wireframes"
+    "Schema dump or migration files under review with target tables, row counts, and growth rates",
+    "EXPLAIN ANALYZE plans for affected queries plus pg_stat_statements top-20 by total time",
+    "Transaction inventory: boundaries, isolation levels, retry behavior, and lock timeouts",
+    "Operational constraints: maintenance windows, backup RPO/RTO, allowed downtime in seconds"
   ],
   "outputs": [
-    "Tested web / backend service",
-    "API test evidence"
+    "Review verdict per migration: approve, approve with conditions, or block with concrete remediation",
+    "Index and constraint DDL with plan evidence and rollback procedure",
+    "Transaction and timeout configuration changes with monitoring hooks"
   ],
   "requires": [],
   "conflicts": [],
@@ -25,16 +28,26 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
-  "templates": [],
-  "checks": [],
-  "scripts": [],
+  "references": [
+    "references/database-review-guide.md"
+  ],
+  "templates": [
+    "templates/database-review-spec.md"
+  ],
+  "checks": [
+    "checks/database-review-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
   "examples": [],
   "required_evidence": [
-    "test"
+    "test",
+    "review"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
+    "All migrations reviewed with reversible paths, indexed hot paths, and staging rollback under 60 s",
+    "Blocking defect found (data-loss risk, irreversible DDL, unindexed hot query) requiring author rework",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -42,15 +55,22 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
+    "project_types": [
+      "api",
+      "web-saas",
+      "data-platform"
+    ],
     "features_any": [
       "database",
-      "persistence",
-      "analytics"
+      "migration",
+      "indexing",
+      "query-plan",
+      "persistence"
     ]
   },
   "requires_any": [],

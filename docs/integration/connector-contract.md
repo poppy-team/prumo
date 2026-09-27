@@ -50,14 +50,14 @@ A connector defines its capabilities, lifecycle hooks, and enforcement primitive
 
 ## Lifecycle Operations
 
-1. **Compile (`prumo compile <target>`)**:
+1. **Compile (`prumo-agent compile <target>`)**:
    Generates native harness files (e.g., `.opencode/`), ownership markers (`.prumo-generated.json`), and primary/subagent definitions.
 
-2. **Install (`prumo connector install <id>`)**:
+2. **Install (`prumo-agent connector install <id>`)**:
    Compiles native artifacts into the active workspace, creates a `CleanupManifest` in `PRUMO_HOME/connectors/<id>/cleanup.json`, and records the installation state in `PRUMO_HOME/config/installation.json`.
 
-3. **Validate (`prumo connector validate <id>`)**:
+3. **Validate (`prumo-agent connector validate <id>`)**:
    Verifies that required native artifacts exist, ownership markers are intact, and configurations match contract expectations.
 
-4. **Uninstall (`prumo connector uninstall <id>`)**:
+4. **Uninstall (`prumo-agent connector uninstall <id>`)**:
    Uses the recorded `CleanupManifest` to safely remove managed files without deleting user-created files or project repository data.

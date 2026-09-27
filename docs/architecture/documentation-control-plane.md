@@ -91,7 +91,7 @@ targets the current revision, is marked verified, and whose artifact exists.
 `internal/documentation` retains its legacy word-matching evaluator for
 migration visibility only. A lexical result is reported with
 `mode: lexical` and `authoritative: false`, and its state can never exceed
-`unverified`. `prumo docs readiness` therefore cannot pass merely because the
+`unverified`. `prumo-agent docs readiness` therefore cannot pass merely because the
 required words appear somewhere in a bound document.
 
 ## Package boundaries
@@ -140,7 +140,7 @@ Claude root surface imports `AGENTS.md` instead of duplicating it. Every surface
 carries a generated marker with adapter, scope, source fingerprint and source
 units, and a `manifest.json` sidecar records the compiled set.
 
-Gates: `prumo docs agents verify` (and `TestAgentSurfaceContextRotGate`) fail
+Gates: `prumo-agent docs agents verify` (and `TestAgentSurfaceContextRotGate`) fail
 when a compiled surface is stale, when instruction budgets are exceeded, when
 two rules conflict, or when any instruction document references a path,
 subcommand, test or symbol that no longer exists. Nested YAML frontmatter is
@@ -149,7 +149,7 @@ Markdown/JSON.
 
 ## CLI surfaces
 
-The whole surface is implemented: `prumo docs audit`, `readiness`, `impact`,
+The whole surface is implemented: `prumo-agent docs audit`, `readiness`, `impact`,
 `plan`, `delta`, `explain`, `contradictions`, `authority`,
 `agents build|verify|explain`, `verify [--strict]`, `gauntlet`,
 `build|manifest|query|doctor`, `site build|verify`, `translate|media|release`,
@@ -177,7 +177,7 @@ Semantic readiness v2 (W15) is implemented and enforced by the eval corpus
 lexical: seven contracts (`product.vision`, `project.scope`,
 `architecture.system`, `testing.strategy`, `security.trust`,
 `installation.lifecycle`, `cli.reference`) carry accepted claims with verified
-evidence at revision 1, and `prumo docs readiness` reports `ready: true` with no
+evidence at revision 1, and `prumo-agent docs readiness` reports `ready: true` with no
 warnings.
 
 The first draft of those bindings cited `docs/migration/conformance-strategy.md`,
@@ -202,8 +202,8 @@ duplicating truth.
 ## What the plane deliberately does not do
 
 Layer H measures the **repository**, never the reader. There is no telemetry
-channel and no query log: `prumo docs query` and `prumo docs resources read` are
-read surfaces that record nothing, and `prumo docs metrics` computes every
+channel and no query log: `prumo-agent docs query` and `prumo-agent docs resources read` are
+read surfaces that record nothing, and `prumo-agent docs metrics` computes every
 figure from repository state. Retrieval-success and missing-intent metrics
 (W21.2/W21.3) were proposed by the audit and are **refused** — see ADR 011.
 The limitation is real and accepted: Prumo cannot say which existing page people

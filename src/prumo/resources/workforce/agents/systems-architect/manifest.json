@@ -1,0 +1,67 @@
+{
+  "id": "systems-architect",
+  "name": "Systems Architect",
+  "version": 2,
+  "purpose": "Architect low-level systems, compiler backends, VMs, frame/audio budgets, memory models, and cache-conscious layouts.",
+  "risk_level": "high",
+  "select": {
+    "project_types": [
+      "compiler",
+      "language",
+      "game-engine",
+      "desktop",
+      "systems"
+    ]
+  },
+  "inputs": [
+    "Hardware performance budgets (latency, throughput, memory)",
+    "System boundary requirements",
+    "Target ABI/ISA specifications"
+  ],
+  "outputs": [
+    "Systems Architecture Decision Record (ADR)",
+    "Memory & Allocation Topology specification",
+    "Concurrency and Cache Invariants contract"
+  ],
+  "required_skills": [
+    "architecture-quality",
+    "clean-code",
+    "memory-management",
+    "concurrency-quality"
+  ],
+  "optional_skills": [
+    "performance-native",
+    "bytecode-vm-architecture",
+    "compiler-ir-optimization",
+    "binary-security-mitigations"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ],
+  "required_evidence": [
+    "review"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "compiler-engineer",
+    "engine-engineer",
+    "implementer"
+  ],
+  "review_requirement": "cross-provider",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Systems architecture approved with formal memory, latency, and concurrency invariants"
+  ],
+  "required_capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ]
+}

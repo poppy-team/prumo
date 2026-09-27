@@ -1,26 +1,43 @@
-# Game Runtime Engineering — Technical Reference Guide
+# Game Runtime Reference Guide
 
-## Overview & Purpose
-Implement main loop, fixed timestep, state updates, and scene management.
+## Fixed Simulation Step
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+Gameplay and physics advance with a fixed step. The runtime adds a clamped frame delta to an accumulator and executes at most `MAX_STEPS` updates per frame. It drops or slows excess time explicitly rather than entering a death spiral.
 
-## Operational Standards
-- **Inputs**: Engine architecture specification, Target hardware / GPU constraints, Benchmark fixtures
-- **Outputs**: Optimized engine subsystem, Deterministic benchmark evidence, Visual test fixtures
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, benchmark
+```text
+alpha = accumulator / fixed_delta
+while accumulator >= fixed_delta and steps < max_steps:
+    simulate(fixed_delta)
+    accumulator -= fixed_delta
+render(lerp(previous, current, alpha))
+```
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+## Interpolation
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+Keep the previous and current simulation snapshots required for rendering. Interpolate display transforms only; do not mutate simulation state from presentation. Document which fields are render-only and which remain discrete.
+
+## Scene Stack
+
+Scenes are explicit states with `enter`, `exit`, `pause`, and `resume`. Load the next scene to a verified checkpoint before swapping it into the active stack. Commit the transition atomically, then release the old scene and its owned resources.
+
+## Hostile Environment Events
+
+Focus loss, suspend, resize, display change, and device loss are state transitions, not ad hoc exceptions. Pause at a tick boundary, record the accumulator and interpolation state, recreate resources through the documented recovery path, and resume without reseeding or silently skipping ticks.
+
+## Determinism
+
+Simulation code cannot use wall-clock time, unseeded randomness, unordered iteration, or platform-dependent floating behavior when determinism is required. Verification compares state hashes at fixed tick boundaries across repeated runs and worker counts.
+
+## Patterns and Anti-Patterns
+
+| Do | Avoid |
+|---|---|
+| Cap catch-up work | `while accumulator >= dt` without a bound |
+| Interpolate presentation only | Feed render interpolation back into physics |
+| Load then swap scenes | Expose a half-initialized scene |
+| Resume from a saved tick boundary | Recreate state from menu defaults |
+| Report dropped simulation time | Hide a sustained frame-rate collapse |
+
+## Short Example
+
+A 250 ms hitch with a 16.67 ms fixed step and a five-step cap performs five updates, retains a bounded remainder, and reports degraded time. The next frames resume without unbounded catch-up.

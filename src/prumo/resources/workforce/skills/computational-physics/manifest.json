@@ -1,0 +1,71 @@
+{
+  "id": "computational-physics",
+  "name": "Computational Physics & Symplectic Dynamics",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Model rigid and soft body physics using symplectic integrators (Verlet, RK4) and GJK/EPA continuous collision.",
+  "risk_level": "medium",
+  "modes": [
+    "implementation",
+    "testing",
+    "review"
+  ],
+  "inputs": [
+    "Physical body definitions",
+    "Simulation boundary parameters",
+    "Time step configuration"
+  ],
+  "outputs": [
+    "Physics simulation state",
+    "Collision manifold records",
+    "Energy conservation metrics"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/computational-physics-guide.md"
+  ],
+  "templates": [
+    "templates/computational-physics-spec.md"
+  ],
+  "checks": [
+    "checks/computational-physics-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/computational-physics-example.json"
+  ],
+  "required_evidence": [
+    "test",
+    "benchmark"
+  ],
+  "stop_conditions": [
+    "All Computational Physics & Symplectic Dynamics invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "project_types": [
+      "game-engine",
+      "desktop"
+    ],
+    "features_any": [
+      "physics",
+      "simulation"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

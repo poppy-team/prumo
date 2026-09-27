@@ -24,9 +24,10 @@ func runSetup(asJSON bool, explicitHome string) int {
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
-	if manifest.PrumoVersion == "" {
-		manifest.PrumoVersion = protocol.CLIVersion
-	}
+	// The manifest describes the installation actually in effect: re-running setup
+	// after an upgrade records the binary doing the work, not the version that first
+	// created the manifest.
+	manifest.PrumoVersion = protocol.CLIVersion
 	if manifest.BinaryPath == "" {
 		if executable, err := os.Executable(); err == nil {
 			manifest.BinaryPath = executable
@@ -108,18 +109,16 @@ func runInstall(asJSON bool, explicitHome string, args []string) int {
 	if err != nil {
 		return serviceError(asJSON, err)
 	}
-	if manifest.PrumoVersion == "" {
-		manifest.PrumoVersion = protocol.CLIVersion
-	}
+	manifest.PrumoVersion = protocol.CLIVersion
 	if executable, err := os.Executable(); err == nil && manifest.BinaryPath == "" {
 		manifest.BinaryPath = executable
 	}
 	if len(args) >= 2 && args[0] == "connector" {
-		return runConnectorInstall(asJSON, args[1], args[2:])
+		return runConnectorInstall(asJSON, home, args[1], args[2:])
 	}
 	if len(args) >= 1 && !strings.HasPrefix(args[0], "-") {
 		if _, err := connectors.Get(args[0]); err == nil {
-			return runConnectorInstall(asJSON, args[0], args[1:])
+			return runConnectorInstall(asJSON, home, args[0], args[1:])
 		}
 	}
 	if err := install.SaveManifest(home, manifest); err != nil {
@@ -140,7 +139,7 @@ func runUninstall(asJSON bool, explicitHome string, args []string) int {
 	}
 	if len(args) >= 1 && !strings.HasPrefix(args[0], "-") {
 		if _, err := connectors.Get(args[0]); err == nil {
-			return runConnectorUninstall(asJSON, args[0], args[1:])
+			return runConnectorUninstall(asJSON, home, args[0], args[1:])
 		}
 	}
 	manifest, err := install.LoadManifest(home)

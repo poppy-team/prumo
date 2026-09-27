@@ -2,15 +2,15 @@
 
 > **Historical record.** This report predates semantic readiness v2 (W15). The
 > "readiness: ready" result below was produced by the lexical evaluator and is
-> **not** an authoritative verdict: `prumo docs readiness` now reports lexical
+> **not** an authoritative verdict: `prumo-agent docs readiness` now reports lexical
 > contracts as `unverified`. Current readiness semantics: ADR 010 and
 > `docs/architecture/documentation-control-plane.md`.
 
 Run against the Prumo repository:
 
 ```bash
-prumo --json docs audit --path .
-prumo --json docs readiness --goal M5 --path .
+prumo-agent --json docs audit --path .
+prumo-agent --json docs readiness --goal M5 --path .
 ```
 
 Observed result:

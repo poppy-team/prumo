@@ -1,22 +1,22 @@
 {
   "id": "design-research",
   "name": "Design Research",
-  "version": 1,
-  "schema_version": 2,
+  "version": 2,
+  "schema_version": 3,
   "purpose": "Analyze market references and translate them into reusable design evidence.",
   "risk_level": "low",
   "modes": [
     "research"
   ],
   "inputs": [
-    "Product requirements",
-    "Design tokens",
-    "Wireframe / UI view"
+    "User goals, decision questions, context, constraints, and success metrics",
+    "Participant and source criteria with dated product, market, and accessibility references",
+    "Research method, sample plan, consent and privacy rules, and synthesis deadline"
   ],
   "outputs": [
-    "Design specification / findings",
-    "Accessibility audit scorecard",
-    "UI tests"
+    "Dated evidence inventory with observations, quotations, and source provenance",
+    "Separated findings, hypotheses, patterns, and contradictions",
+    "Evidence-backed design recommendations with confidence and validation plan"
   ],
   "requires": [],
   "conflicts": [],
@@ -25,31 +25,39 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
+  "references": [
+    "references/heuristic-evaluation.md"
+  ],
   "templates": [
     "templates/wireframe-spec.md"
   ],
   "checks": [
-    "checks/design-research-checklist.md"
+    "checks/design-research-checklist.md",
+    "checks/research-methodology-checklist.md"
   ],
-  "scripts": [],
-  "examples": [],
+  "scripts": [
+    "scripts/verify.sh",
+    "scripts/scrape_competitor_metrics.sh"
+  ],
+  "examples": [
+    "examples/research-report.md"
+  ],
   "required_evidence": [
     "test",
     "review"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
-    "Token budget exhausted",
-    "Blocked on external dependency"
+    "Every recommendation traces to evidence or a labeled assumption",
+    "No observation is presented as inference and source quality is recorded",
+    "Token budget exhausted or participant and privacy authority is unavailable"
   ],
   "provenance": {
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
     "features_any": [

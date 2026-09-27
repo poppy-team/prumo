@@ -69,7 +69,7 @@ func Generate(root string) (string, error) {
 		fmt.Fprintf(&b, "  %q: [%s];\n", op.Name, quoted(op.Args))
 	}
 	b.WriteString("}\n\n")
-	b.WriteString("export interface RunStatus {\n  run_id: string;\n  status: string;\n  phase: string;\n  stop_reason: string;\n  active: boolean;\n}\n\n")
+	b.WriteString("export interface RunStatus {\n  run_id: string;\n  status: string;\n  phase: string;\n  stop_reason: string;\n  active: boolean;\n  pending_permissions: string[];\n}\n\n")
 	b.WriteString("export interface AgentEvent {\n  id: string;\n  run_id: string;\n  turn_id?: string;\n  kind: string;\n  payload?: Record<string, unknown>;\n  created_at: string;\n}\n")
 	return b.String(), nil
 }

@@ -4,7 +4,7 @@ This guide explains how to compile Prumo configurations for Gemini-based workflo
 
 ## Generic Adapter Compilation
 
-Gemini uses the generic adapter. Run `prumo compile generic --target gemini`.
+Gemini uses the generic adapter. Run `prumo-agent compile generic --target gemini`.
 
 ## Configuration
 

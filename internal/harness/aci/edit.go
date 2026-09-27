@@ -50,7 +50,11 @@ func (e *Executor) editPatch(call agent.ToolCall, arg func(string) string) agent
 		return fail("temp file: %s", err.Error())
 	}
 	tmpName := tmp.Name()
-	_, _ = tmp.WriteString(patch)
+	if _, err := tmp.WriteString(patch); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fail("write patch temp file: %s", err.Error())
+	}
 	_ = tmp.Close()
 	defer os.Remove(tmpName)
 
@@ -75,7 +79,7 @@ func (e *Executor) editDelete(call agent.ToolCall, arg func(string) string) agen
 	fail := func(format string, a ...any) agent.ToolResult {
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: fmt.Sprintf(format, a...)}
 	}
-	p, err := e.cleanPath(arg("path"))
+	p, err := e.cleanPath(arg("path"), true)
 	if err != nil {
 		return fail("%s", err.Error())
 	}
@@ -96,11 +100,11 @@ func (e *Executor) editMove(call agent.ToolCall, arg func(string) string) agent.
 	fail := func(format string, a ...any) agent.ToolResult {
 		return agent.ToolResult{ToolCallID: call.ID, ExitCode: 1, Error: fmt.Sprintf(format, a...)}
 	}
-	from, err := e.cleanPath(arg("from"))
+	from, err := e.cleanPath(arg("from"), true)
 	if err != nil {
 		return fail("from: %s", err.Error())
 	}
-	to, err := e.cleanPath(arg("to"))
+	to, err := e.cleanPath(arg("to"), false)
 	if err != nil {
 		return fail("to: %s", err.Error())
 	}

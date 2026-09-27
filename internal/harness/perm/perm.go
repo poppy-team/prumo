@@ -3,6 +3,8 @@
 package perm
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -22,21 +24,57 @@ type Policy struct {
 	AllowActions []string `json:"allow_actions,omitempty"`
 }
 
+// Fingerprint identifies the content a decision was made about.
+//
+// It is the action, the resource, the filesystem scope, the network
+// destinations and the credential scopes, hashed. Every field that could change
+// what the call does is in it. An approval is for one call: the id is
+// predictable (it is derived from the tool call id), so without binding the
+// decision to the content, a later call reusing that id would inherit an
+// approval a human gave for something else (GAP-107).
+func Fingerprint(req agent.PermissionRequest) string {
+	parts := []string{
+		"action=" + req.Action,
+		"resource=" + req.Resource,
+		"args=" + req.ArgumentsSummary,
+		"fs=" + strings.Join(req.FilesystemScope, ","),
+		"net=" + strings.Join(req.NetworkDests, ","),
+		"cred=" + strings.Join(req.CredentialScopes, ","),
+		"data=" + req.DataClass,
+		"reversibility=" + req.Reversibility,
+	}
+	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
+	return hex.EncodeToString(sum[:])
+}
+
 // Engine evaluates PermissionRequests deterministically.
 type Engine struct {
 	Policy Policy
 	Log    []agent.PermissionResolution
+	// resolutions indexes decisions already taken, so re-evaluating the same
+	// request does not ask again. Without it an approval would be recorded and
+	// then ignored, which is what left the permission gate unanswerable.
+	resolutions map[string]agent.PermissionResolution
 }
 
 func New(p Policy) *Engine {
 	if p.DefaultAction == "" {
 		p.DefaultAction = agent.PermissionAsk
 	}
-	return &Engine{Policy: p}
+	return &Engine{Policy: p, resolutions: map[string]agent.PermissionResolution{}}
 }
 
 // Evaluate returns a persistable resolution.
 func (e *Engine) Evaluate(req agent.PermissionRequest, toolKind string, actor string) agent.PermissionResolution {
+	fingerprint := Fingerprint(req)
+	req.Fingerprint = fingerprint
+	// A decision already taken for this request outranks the policy: that is
+	// what makes an approval durable across a re-evaluation. It only applies to
+	// the same content, though. A request id reused for a different call is a
+	// different decision, so the old one is not consulted.
+	if res, ok := e.resolutions[req.ID]; ok && res.Fingerprint == fingerprint {
+		return res
+	}
 	decision := e.Policy.DefaultAction
 	reason := "default policy"
 	for _, a := range e.Policy.AllowActions {
@@ -73,25 +111,80 @@ func (e *Engine) Evaluate(req agent.PermissionRequest, toolKind string, actor st
 	res := agent.PermissionResolution{
 		RequestID: req.ID, Decision: decision, Reason: reason,
 		Scope: "once", Actor: actor, DecidedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		Fingerprint: fingerprint,
 	}
-	e.Log = append(e.Log, res)
+	e.remember(res)
 	return res
 }
 
-// Approve records a human/approver allow; Deny records a deny.
-func (e *Engine) Approve(reqID, actor string) agent.PermissionResolution {
-	return e.record(reqID, agent.PermissionAllow, "approved by "+actor, actor)
+// Approve records a human/approver allow for one specific request content.
+//
+// The caller passes the fingerprint it was shown. Requiring it is what stops
+// an approval meant for one call from being applied to another that happens to
+// carry the same request id.
+func (e *Engine) Approve(reqID, fingerprint, actor string) (agent.PermissionResolution, error) {
+	if fingerprint == "" {
+		return agent.PermissionResolution{}, fmt.Errorf("approval requires the fingerprint of the request being approved")
+	}
+	return e.record(reqID, fingerprint, agent.PermissionAllow, "approved by "+actor, actor), nil
 }
 
-func (e *Engine) Deny(reqID, actor, reason string) agent.PermissionResolution {
+// Deny records a deny for one specific request content.
+func (e *Engine) Deny(reqID, fingerprint, actor, reason string) (agent.PermissionResolution, error) {
+	if fingerprint == "" {
+		return agent.PermissionResolution{}, fmt.Errorf("denial requires the fingerprint of the request being denied")
+	}
 	if reason == "" {
 		reason = "denied by " + actor
 	}
-	return e.record(reqID, agent.PermissionDeny, reason, actor)
+	return e.record(reqID, fingerprint, agent.PermissionDeny, reason, actor), nil
 }
 
-func (e *Engine) record(reqID string, d agent.PermissionDecision, reason, actor string) agent.PermissionResolution {
-	res := agent.PermissionResolution{RequestID: reqID, Decision: d, Reason: reason, Scope: "once", Actor: actor, DecidedAt: time.Now().UTC().Format(time.RFC3339Nano)}
-	e.Log = append(e.Log, res)
+func (e *Engine) record(reqID, fingerprint string, d agent.PermissionDecision, reason, actor string) agent.PermissionResolution {
+	res := agent.PermissionResolution{
+		RequestID: reqID, Decision: d, Reason: reason, Scope: "once",
+		Actor: actor, DecidedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		Fingerprint: fingerprint,
+	}
+	e.remember(res)
 	return res
+}
+
+func (e *Engine) remember(res agent.PermissionResolution) {
+	if e.resolutions == nil {
+		e.resolutions = map[string]agent.PermissionResolution{}
+	}
+	e.resolutions[res.RequestID] = res
+	e.Log = append(e.Log, res)
+}
+
+// Restore re-adopts a decision loaded from a trail.
+//
+// The fingerprint is required, and deliberately not defaulted. A trail written
+// before fingerprints existed identifies a request but not its content, so
+// reusing it would re-open the hole the fingerprint closed: an approval for one
+// call would answer a different one carrying the same id (GAP-107).
+func (e *Engine) Restore(res agent.PermissionResolution) error {
+	if res.RequestID == "" {
+		return fmt.Errorf("restored decision has no request id")
+	}
+	if res.Fingerprint == "" {
+		return fmt.Errorf("restored decision for %s has no fingerprint and cannot be matched to content", res.RequestID)
+	}
+	e.remember(res)
+	return nil
+}
+
+// Resolution returns a decision already recorded for a request, if any. The
+// fingerprint must be supplied so a caller can tell whether the decision it is
+// about to use was made about the content it now holds.
+func (e *Engine) Resolution(reqID, fingerprint string) (agent.PermissionResolution, bool) {
+	res, ok := e.resolutions[reqID]
+	if !ok {
+		return agent.PermissionResolution{}, false
+	}
+	if fingerprint != "" && res.Fingerprint != fingerprint {
+		return agent.PermissionResolution{}, false
+	}
+	return res, true
 }

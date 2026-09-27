@@ -2,9 +2,10 @@
 set -eu
 
 REPOSITORY="${PRUMO_REPOSITORY:-raillen/prumo}"
-VERSION="${PRUMO_VERSION:-v0.5.0}"
+VERSION="${PRUMO_VERSION:-v0.6.0}"
 INSTALL_DIR="${PRUMO_INSTALL_DIR:-${HOME}/.local/bin}"
 PRUMO_HOME_VALUE="${PRUMO_HOME:-${HOME}/.prumo}"
+PACKAGE="${PRUMO_PACKAGE:-${1:-}}"
 BASE_URL="https://github.com/${REPOSITORY}/releases/download/${VERSION}"
 
 case "$(uname -s)" in
@@ -19,8 +20,53 @@ case "$(uname -m)" in
   *) printf '%s\n' "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 
-case "$OS" in
-  linux|darwin) ASSET="prumo-${OS}-${ARCH}" ;;
+if [ -z "$PACKAGE" ]; then
+  if [ -t 0 ]; then
+    printf '%s\n' "================================================="
+    printf '%s\n' "       Prumo Package Selection ($VERSION)"
+    printf '%s\n' "================================================="
+    printf '%s\n' "1) Prumo Harness CLI (Headless runtime, daemon & tools) [default]"
+    printf '%s\n' "2) Prumo Agent IDE   (Desktop GUI pair programmer & editor)"
+    printf '%s\n' "3) Prumo Agent TUI   (Interactive terminal harness)"
+    printf '%s\n' "4) All packages      (CLI + IDE + TUI)"
+    printf '%s' "Select package [1-4, default: 1]: "
+    read -r choice || choice=""
+    case "$choice" in
+      2|ide|IDE) PACKAGE="ide" ;;
+      3|tui|TUI) PACKAGE="tui" ;;
+      4|all|ALL) PACKAGE="all" ;;
+      *) PACKAGE="cli" ;;
+    esac
+  else
+    PACKAGE="cli"
+  fi
+fi
+
+case "$PACKAGE" in
+  cli|harness)
+    INSTALL_CLI=true
+    INSTALL_IDE=false
+    INSTALL_TUI=false
+    ;;
+  ide|viewer)
+    INSTALL_CLI=false
+    INSTALL_IDE=true
+    INSTALL_TUI=false
+    ;;
+  tui)
+    INSTALL_CLI=false
+    INSTALL_IDE=false
+    INSTALL_TUI=true
+    ;;
+  all|full)
+    INSTALL_CLI=true
+    INSTALL_IDE=true
+    INSTALL_TUI=true
+    ;;
+  *)
+    printf '%s\n' "Unknown package: $PACKAGE. Choose from: cli, ide, tui, all." >&2
+    exit 1
+    ;;
 esac
 
 if ! command -v curl >/dev/null 2>&1; then
@@ -44,34 +90,61 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 curl --fail --silent --show-error --location "${BASE_URL}/checksums.txt" -o "${TEMP_DIR}/checksums.txt"
-curl --fail --silent --show-error --location "${BASE_URL}/${ASSET}" -o "${TEMP_DIR}/${ASSET}"
 
-EXPECTED="$(awk -v asset="$ASSET" '$2 == asset {print $1}' "${TEMP_DIR}/checksums.txt")"
-if [ -z "$EXPECTED" ]; then
-  printf '%s\n' "No checksum found for ${ASSET}." >&2
-  exit 1
+install_artifact() {
+  asset="$1"
+  dest_name="$2"
+
+  expected="$(awk -v a="$asset" '$2 == a {print $1}' "${TEMP_DIR}/checksums.txt")"
+  if [ -z "$expected" ]; then
+    printf '%s\n' "No checksum found for ${asset}." >&2
+    return 1
+  fi
+
+  printf '%s\n' "Downloading ${asset}..."
+  curl --fail --silent --show-error --location "${BASE_URL}/${asset}" -o "${TEMP_DIR}/${asset}"
+
+  if [ "$CHECKSUM_TOOL" = "sha256sum" ]; then
+    actual="$(sha256sum "${TEMP_DIR}/${asset}" | awk '{print $1}')"
+  else
+    actual="$(shasum -a 256 "${TEMP_DIR}/${asset}" | awk '{print $1}')"
+  fi
+
+  if [ "$expected" != "$actual" ]; then
+    printf '%s\n' "Checksum verification failed for ${asset}." >&2
+    return 1
+  fi
+
+  mkdir -p "$INSTALL_DIR"
+  chmod 0755 "${TEMP_DIR}/${asset}"
+  target="${INSTALL_DIR}/${dest_name}"
+  staged="${target}.tmp.$$"
+  cp "${TEMP_DIR}/${asset}" "$staged"
+  chmod 0755 "$staged"
+  mv "$staged" "$target"
+  printf '%s\n' "Installed ${dest_name} at ${target}."
+}
+
+if [ "$INSTALL_CLI" = "true" ]; then
+  cli_asset="prumo-harness-cli-${OS}-${ARCH}"
+  if ! grep -q " ${cli_asset}\$" "${TEMP_DIR}/checksums.txt" 2>/dev/null; then
+    cli_asset="prumo-${OS}-${ARCH}"
+  fi
+  install_artifact "$cli_asset" "prumo"
+  PRUMO_HOME="$PRUMO_HOME_VALUE" "${INSTALL_DIR}/prumo" setup >/dev/null || true
 fi
 
-if [ "$CHECKSUM_TOOL" = "sha256sum" ]; then
-  ACTUAL="$(sha256sum "${TEMP_DIR}/${ASSET}" | awk '{print $1}')"
-else
-  ACTUAL="$(shasum -a 256 "${TEMP_DIR}/${ASSET}" | awk '{print $1}')"
-fi
-if [ "$EXPECTED" != "$ACTUAL" ]; then
-  printf '%s\n' "Checksum verification failed." >&2
-  exit 1
+if [ "$INSTALL_TUI" = "true" ]; then
+  tui_asset="prumo-agent-tui-${OS}-${ARCH}"
+  install_artifact "$tui_asset" "prumo-tui"
+  ln -sf "${INSTALL_DIR}/prumo-tui" "${INSTALL_DIR}/pa" || cp "${INSTALL_DIR}/prumo-tui" "${INSTALL_DIR}/pa"
 fi
 
-mkdir -p "$INSTALL_DIR"
-chmod 0755 "${TEMP_DIR}/${ASSET}"
-TARGET="${INSTALL_DIR}/prumo"
-STAGED="${TARGET}.tmp.$$"
-cp "${TEMP_DIR}/${ASSET}" "$STAGED"
-chmod 0755 "$STAGED"
-mv "$STAGED" "$TARGET"
-
-PRUMO_HOME="$PRUMO_HOME_VALUE" "$TARGET" setup >/dev/null
-printf '%s\n' "Prumo ${VERSION} installed at ${TARGET}."
+if [ "$INSTALL_IDE" = "true" ]; then
+  ide_asset="prumo-agent-ide-${OS}-${ARCH}"
+  install_artifact "$ide_asset" "prumo-ide"
+  ln -sf "${INSTALL_DIR}/prumo-ide" "${INSTALL_DIR}/prumo-viewer" || cp "${INSTALL_DIR}/prumo-ide" "${INSTALL_DIR}/prumo-viewer"
+fi
 
 # Configure system PATH idempotently
 case ":${PATH}:" in
@@ -108,4 +181,15 @@ case ":${PATH}:" in
     ;;
 esac
 
-printf '%s\n' "Run: prumo version"
+printf '%s\n' ""
+printf '%s\n' "Prumo installation complete! Quick start:"
+if [ "$INSTALL_CLI" = "true" ]; then
+  printf '%s\n' "  prumo version       - Check CLI version"
+  printf '%s\n' "  prumo serve         - Start background daemon"
+fi
+if [ "$INSTALL_TUI" = "true" ]; then
+  printf '%s\n' "  prumo-tui (or pa)   - Launch interactive terminal harness"
+fi
+if [ "$INSTALL_IDE" = "true" ]; then
+  printf '%s\n' "  prumo-ide           - Launch native desktop Agent IDE"
+fi

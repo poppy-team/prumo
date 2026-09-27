@@ -1,0 +1,73 @@
+{
+  "id": "bytecode-vm-architecture",
+  "name": "Bytecode & Virtual Machine Architecture",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design stack and register-based virtual machines, direct threaded dispatch loops, and bytecode verifiers.",
+  "risk_level": "high",
+  "modes": [
+    "implementation",
+    "testing",
+    "review"
+  ],
+  "inputs": [
+    "Bytecode instruction set architecture (ISA)",
+    "Compiled bytecode binary"
+  ],
+  "outputs": [
+    "Virtual machine runtime",
+    "Bytecode execution trace",
+    "Execution verification evidence"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ],
+  "references": [
+    "references/bytecode-vm-architecture-guide.md"
+  ],
+  "templates": [
+    "templates/bytecode-vm-architecture-spec.md"
+  ],
+  "checks": [
+    "checks/bytecode-vm-architecture-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/bytecode-vm-architecture-example.json"
+  ],
+  "required_evidence": [
+    "test",
+    "benchmark"
+  ],
+  "stop_conditions": [
+    "All Bytecode & Virtual Machine Architecture invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "project_types": [
+      "compiler",
+      "language",
+      "game-engine"
+    ],
+    "features_any": [
+      "vm",
+      "bytecode",
+      "interpreter"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

@@ -1,26 +1,27 @@
-# Keyboard Navigation — Technical Reference Guide
+# W3C ARIA APG Keyboard Navigation Reference Guide
 
-## Overview & Purpose
-Verify complete keyboard navigation without mouse dependence and visible focus indicators.
+## 1. The Core Philosophy of Keyboard Accessibility
+Mouse users explore spatial layouts directly by pointing and clicking. Keyboard users explore linearly (via `Tab`) and hierarchically (via composite widget keys). An accessible interface must balance efficiency (not requiring 50 Tab presses to reach a button) with discoverability.
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+## 2. Standard Keybindings by Widget Type
 
-## Operational Standards
-- **Inputs**: Product requirements, Design tokens, Wireframe / UI view
-- **Outputs**: Design specification / findings, Accessibility audit scorecard, UI tests
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: test, review
+| Widget Type | Standard Keys | Action |
+|---|---|---|
+| **Button** | `Space`, `Enter` | Activate button action |
+| **Link** | `Enter` | Navigate to URL |
+| **Checkbox** | `Space` | Toggle checked state |
+| **Tabs** | `ArrowLeft`, `ArrowRight` | Move focus and activate tab |
+| **Tabs** | `Tab` | Exit tablist into selected `tabpanel` |
+| **Menu / Menubar** | `ArrowDown`, `ArrowUp` | Move focus between menu items |
+| **Menu / Menubar** | `Enter`, `Space` | Open submenu or activate item |
+| **Menu / Menubar** | `Escape` | Close menu and return focus to toggle |
+| **Dialog (Modal)** | `Tab`, `Shift+Tab` | Cycle through focusable elements inside dialog |
+| **Dialog (Modal)** | `Escape` | Close modal and return focus to trigger |
+| **Combobox** | `ArrowDown`, `ArrowUp` | Traverse suggestions |
+| **Combobox** | `Enter` | Select suggestion and close listbox |
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
-
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 3. WCAG 2.2 Focus Appearance (SC 2.4.11) Rules
+To satisfy the newest WCAG 2.2 AA Focus Appearance criteria:
+- **Area**: The focus indicator must have an area at least as large as a 2px perimeter border around the unfocused component.
+- **Contrast Ratio**: At least **3:1** contrast between the focused and unfocused states of the indicator pixels.
+- **Not Obscured**: The item with focus must not be fully obscured by sticky banners or fixed footers.

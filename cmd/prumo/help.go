@@ -76,18 +76,20 @@ var commandRegistry = map[string]CommandInfo{
 		Name:     "doctor",
 		Category: "Project Lifecycle",
 		Summary:  "Run comprehensive diagnostic health checks",
-		Usage:    "prumo doctor [path]",
+		Usage:    "prumo doctor [path | gui]",
 		Description: "Performs deep health checks across all framework subsystems:\n" +
 			"- Versioning and lockfile consistency\n" +
 			"- Dependencies and DAG cycles\n" +
 			"- Workforce resolution and catalog integrity\n" +
 			"- Repository governance policies and gates\n" +
-			"- Evidence models and test coverage",
+			"- Evidence models and test coverage\n" +
+			"- Graphical session and accessibility bus when invoked with 'gui' (Chapter 26)",
 		Flags: []string{
 			"--json                 Output diagnostics as structured JSON envelope",
 		},
 		Examples: []string{
 			"prumo doctor",
+			"prumo doctor gui",
 			"prumo --json doctor ./my-project",
 		},
 	},
@@ -526,6 +528,29 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo uninstall opencode",
 		},
 	},
+	"upgrade": {
+		Name:        "upgrade",
+		Category:    "Environment & Connectors",
+		Summary:     "Upgrade Prumo and Harness to the latest release from GitHub",
+		Usage:       "prumo upgrade [--check] [--version <v>] [--force] [--dry-run]",
+		Description: "Discovers, downloads, verifies SHA-256 supply chain checksums, and atomically updates the Prumo binary and harness directly from GitHub Releases.",
+		Flags: []string{
+			"--check            Check for new releases without downloading or installing",
+			"--version <v>      Install a specific version or release tag",
+			"--force            Force reinstall even if already on the latest version",
+			"--dry-run          Simulate update procedure without modifying binaries",
+			"--repo <owner/repo> Custom GitHub repository (default: raillen/prumo)",
+			"--token <token>    GitHub API token to avoid rate limiting",
+			"--no-cache         Bypass local update check cache",
+			"--json             Output update result as structured JSON envelope",
+		},
+		Examples: []string{
+			"prumo upgrade",
+			"prumo upgrade --check",
+			"prumo upgrade --version v0.6.1",
+			"prumo upgrade --force",
+		},
+	},
 	"connector": {
 		Name:        "connector",
 		Category:    "Environment & Connectors",
@@ -671,27 +696,78 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo workforce list",
 		},
 	},
+	"ask": {
+		Name:     "ask",
+		Category: "Harness",
+		Summary:  "One-shot headless query interface for questions, analysis, and shell pipes",
+		Usage:    "prumo ask [flags] [prompt]",
+		Description: "One-shot, read-only by default interface for quick analysis, code explanation, and shell scripting without launching the interactive TUI. " +
+			"Accepts prompt, stdin pipe, explicit context files, and returns clean response on stdout and diagnostics on stderr.",
+		Flags: []string{
+			"--file <path>        Add file content as context (repeatable)",
+			"--context <type>     Context mode (e.g. repo)",
+			"--model <id>         Model id to use",
+			"--provider <name>    fake|openai-compat|anthropic|opencode (default: fake)",
+			"--system <text>      Custom system instruction",
+			"--raw                Raw output without newline decoration",
+			"--json               Output envelope with model metadata as JSON",
+		},
+		Examples: []string{
+			"prumo ask \"explain this function\"",
+			"cat test.log | prumo ask \"analyze why tests failed\"",
+			"prumo ask --file internal/model.go \"summarize this file\"",
+			"prumo ask --json \"quick status check\"",
+		},
+	},
+	"serve": {
+		Name:     "serve",
+		Category: "Harness",
+		Summary:  "Start the Prumo Harness daemon over local Unix socket or remote TCP+TLS",
+		Usage:    "prumo serve [--path <dir>] [--socket <path>]",
+		Description: "Starts the persistent Harness daemon providing the versioned JSONL Agent Protocol (v0.4.0) " +
+			"for desktop clients (Native Workspace Viewer), TUI, and external tools.",
+		Flags: []string{
+			"--path <dir>         Workspace root (default: .)",
+			"--socket <path>      Daemon Unix socket path",
+			"--listen <addr>      Expose serve over TCP+TLS",
+			"--tls-cert <path>    TLS certificate path",
+			"--tls-key <path>     TLS key path",
+		},
+		Examples: []string{
+			"prumo serve",
+			"prumo serve --path /path/to/project",
+			"prumo serve --socket /tmp/prumo.sock",
+		},
+	},
 	"agent": {
-		Name:        "agent",
-		Category:    "Harness",
-		Summary:     "Headless Prumo-native agent harness (run/serve/ps/logs/events/...)",
-		Usage:       "prumo agent <run|resume|handoff|events|protocol|serve|ps|logs|steer|stop|schedule|unschedule|jobs|promote|acp|gc|providers> [flags]",
-		Description: "Runs the NativeAgent state machine headlessly: context, model, tools, permissions, checkpoints. Provider-neutral (fake|openai-compat|anthropic); external agents via AgentProvider adapters.",
+		Name:     "agent",
+		Category: "Harness",
+		Summary:  "Interactive coding agent TUI or headless harness (run/serve/ps/logs/...)",
+		Usage:    "prumo agent [subcommand|flags]",
+		Description: "Without subcommands, launches the interactive terminal coding agent (TUI). " +
+			"With subcommands, runs the NativeAgent state machine headlessly: context, model, tools, permissions, checkpoints. " +
+			"Provider-neutral (fake|fake-tools|openai-compat|anthropic|opencode); external agents via AgentProvider adapters. " +
+			"`opencode` delegates the whole turn to the opencode CLI, which runs it with its own tools and its own authentication — including the models it serves for free. " +
+			"A run that needs approval stops with status awaiting_approval and is answered with approve/deny.",
 		Flags: []string{
 			"--goal <text>        Goal for agent run (default: headless run)",
 			"--path <dir>         Workspace root (default: .)",
-			"--provider <name>    fake|openai-compat|anthropic (default: fake)",
+			"--provider <name>    fake|fake-tools|openai-compat|anthropic|opencode (default: fake)",
 			"--model <id>         Model id for real providers",
 			"--base-url <url>     Base URL for real providers",
 			"--api-key <key>      API key (else PRUMO_MODEL_API_KEY)",
+			"--permission <mode>  allow|ask|deny default action (default: allow)",
+			"--ask-kind <kinds>   Comma-separated tool kinds that require approval",
 			"--max-turns <n>      Max turns (default: 5)",
 			"--run <id>           Run id",
+			"--request <id>       Permission request id to approve or deny",
+			"--reason <text>      Why a permission was denied",
 			"--from <agent>       Handoff sender (default: native)",
 			"--to <agent>         Handoff recipient",
 			"--client <ver>       Client protocol version to negotiate",
 			"--manifest            Print the full protocol IDL manifest",
-			"--socket <path>      Daemon socket (serve/ps/logs/steer)",
-			"--remote <addr>      Daemon TCP endpoint (ps/logs/steer/schedule/...)",
+			"--socket <path>      Daemon socket (serve/ps/logs/steer/approve)",
+			"--remote <addr>      Daemon TCP endpoint (ps/logs/steer/approve/schedule/...)",
 			"--token <t>          Remote token (or --token-file / PRUMO_DAEMON_TOKEN)",
 			"--token-file <p>     File holding the remote token",
 			"--remote-tls-cert <p> CA cert pinning the remote server",
@@ -732,8 +808,11 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo agent protocol --client 0.1.0",
 			"prumo agent serve --path .",
 			"prumo agent ps",
+			"prumo agent approve --run R-agent-1 --request perm-c1 --fingerprint <sha256>",
+			"prumo agent deny --run R-agent-1 --request perm-c1 --reason 'outside the workspace'",
 			"prumo agent logs --run R-agent-1",
 			"prumo agent providers",
+			"prumo agent models --provider openai-compat --model gpt-4o-mini",
 		},
 	},
 	"tui": {
@@ -747,7 +826,11 @@ var commandRegistry = map[string]CommandInfo{
 		Flags: []string{
 			"--path <dir>         Workspace root (default: .)",
 			"--socket <path>      Attach to an existing daemon instead of starting one",
-			"--provider <name>    fake|openai-compat|anthropic (default: fake)",
+			"--remote <addr>      Attach over TCP+TLS instead (requires a token)",
+			"--token <t>          Remote token (or --token-file / PRUMO_DAEMON_TOKEN)",
+			"--token-file <p>     File holding the remote token",
+			"--remote-tls-cert <p> CA cert pinning the remote server",
+			"--provider <name>    fake|fake-tools|openai-compat|anthropic|opencode (default: fake)",
 			"--model <id>         Model id for real providers",
 			"--max-turns <n>      Max turns (default: 5)",
 			"--theme <id>         theme.default|theme.high-contrast|theme.no-color|theme.reduced-motion",
@@ -756,6 +839,37 @@ var commandRegistry = map[string]CommandInfo{
 			"prumo tui --path .",
 			"prumo tui --theme theme.no-color",
 			"prumo tui --socket .prumo/runtime/harness/agentd.sock",
+			"prumo tui --remote 127.0.0.1:7777 --token-file .prumo/agentd.token",
+		},
+	},
+	"native": {
+		Name:     "native",
+		Category: "Harness",
+		Summary:  "Native desktop agent-aware Workspace Viewer and light editor (Rust + Freya)",
+		Usage:    "prumo native [--workspace <dir>] [--socket <path>]",
+		Description: "Launches the Prumo Native Workspace Viewer built with Rust and Freya. " +
+			"Provides an IDE-style Explorer, multi-tab editing, Quick Open, working-copy diff, daemon timeline, " +
+			"run start, and permission approval over the local Agent Protocol. " +
+			"Interactive: no --json output.",
+		Flags: []string{
+			"--workspace <dir>    Workspace root directory (default: .)",
+			"--socket <path>      Daemon Unix socket (default: <workspace>/.prumo/runtime/harness/agentd.sock)",
+		},
+		Examples: []string{
+			"prumo native",
+			"prumo native --workspace ./my-project",
+			"prumo native --workspace . --socket .prumo/runtime/harness/agentd.sock",
+		},
+	},
+	"viewer": {
+		Name:        "viewer",
+		Category:    "Harness",
+		Summary:     "Alias for `prumo native`: native desktop Workspace Viewer",
+		Usage:       "prumo viewer [flags]",
+		Description: "Alias for `prumo native`.",
+		Examples: []string{
+			"prumo viewer",
+			"prumo viewer --workspace .",
 		},
 	},
 	"ui": {
@@ -867,6 +981,7 @@ func PrintGeneralHelp(asJSON bool) int {
 	fmt.Println("  prumo tool check-escape-hatches .")
 	fmt.Println("  prumo compile --target antigravity --path ./my-project")
 	fmt.Println("  prumo doctor ./my-project")
+	fmt.Println("  prumo agent                     # launch interactive agent TUI")
 	fmt.Println()
 	fmt.Println("Run 'prumo <command> --help' or 'prumo help <command>' for detailed help on any command.")
 	return exitOK

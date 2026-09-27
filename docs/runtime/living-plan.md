@@ -29,13 +29,13 @@ and runtime but are optional for the planner core.
 - autonomous architecture invention;
 - raw transcript as canonical memory;
 - model-specific conversation format;
-- implementing code as part of `prumo plan`;
+- implementing code as part of `prumo-agent plan`;
 - replacing the Goal/Task protocol.
 
 ## Pipeline
 
 ```text
-prumo plan
+prumo-agent plan
   → detect project / scope
     → new: profile + contract gap
     → existing Prumo: docs audit
@@ -51,15 +51,15 @@ prumo plan
     → ready → goal/plan ready for implementation
 ```
 
-For a non-Prumo brownfield repo, `prumo plan` may route to Adoption (Fase F); it must not
+For a non-Prumo brownfield repo, `prumo-agent plan` may route to Adoption (Fase F); it must not
 duplicate the brownfield scanner.
 
 ## Planning scopes
 
-- `prumo plan` — project-level/general;
-- `prumo plan --goal <id>` — focus on an existing Goal;
-- `prumo plan --docs` — close documentation gaps;
-- `prumo plan --resume [session|run]` — resume from structured checkpoint state.
+- `prumo-agent plan` — project-level/general;
+- `prumo-agent plan --goal <id>` — focus on an existing Goal;
+- `prumo-agent plan --docs` — close documentation gaps;
+- `prumo-agent plan --resume [session|run]` — resume from structured checkpoint state.
 
 A conversational harness may expose native UI; the Core operates via structured
 requests/events.

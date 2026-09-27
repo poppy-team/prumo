@@ -1,26 +1,33 @@
 # Untrusted Project Security — Technical Reference Guide
 
-## Overview & Purpose
-Safely inspect, analyze, and operate within third-party or untrusted repositories without executing arbitrary code.
+## 1. Core Concepts
 
-## Core Architecture Principles
-1. **Explicit Domain Boundaries**: Align all operations strictly with modular architectural boundaries.
-2. **Deterministic Behavior**: Ensure repeatable, verifiable results with zero hidden side-effects.
-3. **Defense in Depth**: Validate inputs against canonical schemas before execution.
-4. **Lean Context**: Operate only on the minimum required context without speculative expansions.
+**Zero-trust ingestion**: a foreign repository is untrusted data until quarantine inspection passes. No build, install, or test command runs during triage — analysis is static (parsers, AST, text/entropy scanners) with **network egress disabled**.
 
-## Operational Standards
-- **Inputs**: Security policy, Target codebase, Threat model
-- **Outputs**: Security audit report, Vulnerability remediation patches, Security gate evidence
-- **Required Capabilities**: filesystem.read, filesystem.write, process.spawn
-- **Evidence Contract**: security-scan, test
+**Execution triggers** hide in plain sight: `.git/hooks/*`, `.vscode/tasks.json`, `.devcontainer/devcontainer.json`, GitHub Actions workflows, `Makefile`/`build.rs` targets, npm `preinstall`/`postinstall` scripts, `.env` sourcing in shell profiles. Every trigger is an allow-list decision, not an auto-run.
 
-## Common Pitfalls & Anti-Patterns
-- Modifying shared state without cryptographic or process locks.
-- Suppressing runtime errors or ignoring validation failures.
-- Producing unbounded output that violates LPC token limits.
+**Sandboxed exploration**: when dynamic execution is finally justified, it happens in an ephemeral non-root container (or microVM) with a read-only project mount, tmpfs scratch space, CPU/memory caps, and no network — requiring explicit human authorization first.
 
-## Recommended References
-- Prumo Architecture Blueprint (`docs/architecture/overview.md`)
-- Clean Code Engineering Contract (`docs/architecture/clean-code-contract.md`)
-- Testing Quality Strategy (`docs/development/testing-strategy.md`)
+## 2. Patterns
+
+- **Static manifest parsing**: read `go.mod`, `package.json`, `Cargo.toml`, `requirements.txt` as text; map dependency names/versions without resolving or downloading.
+- **Entropy + hook sweep**: flag base64/hex blobs > 200 chars, zero-width Unicode, and any file under hook/trigger paths; report each with path + byte offset.
+- **Read-only triage mount**: `mount -o ro,nodev,noexec` for inspection; compile artifacts go to an isolated tmpfs never re-ingested.
+- **Clearance report**: emit `.prumo/history/quarantine-report.json` with findings, risk score, and an explicit APPROVED / QUARANTINED verdict before onboarding.
+
+## 3. Anti-Patterns
+
+- Running `npm install`, `cargo build`, `make`, or test suites on first contact.
+- Allowing egress "just to fetch dependencies" during triage.
+- Trusting file extensions (`.txt` containing ELF binaries, polyglot scripts).
+- Skipping human authorization because "the container looks safe".
+
+## 4. Worked Example
+
+Repository `acme-widgets` arrives as a tarball: static sweep finds a `postinstall` hook in `package.json` curling an external URL plus a 4 KB base64 blob in `assets/logo.svg`. Both flagged; network stays off; no install runs. After maintainer confirmation the hook is a telemetry exfiltrator, verdict QUARANTINED with findings, risk score 9/10, and the exact hook excerpt in the report.
+
+## 5. Verification Pointers
+
+- List all auto-executed paths (hooks, tasks, workflows, install scripts) with disposition per path.
+- Prove zero egress: firewall/cgroup counters show no outbound connections during triage.
+- Confirm verdict file exists with schema-valid risk score before any build command is authorized.

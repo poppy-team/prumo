@@ -15,95 +15,54 @@ import (
 
 func defaultToolRegistry() *toolgateway.Registry {
 	r := toolgateway.NewRegistry()
-	r.Register(toolgateway.Descriptor{
-		ID:              "read_file",
-		Version:         1,
-		Description:     "Read file content within project root",
-		Kind:            toolgateway.ReadOnly,
-		Trust:           "core",
-		Capabilities:    []string{"fs", "read"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       5000,
-		OutputLimit:     102400,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "write_file",
-		Version:         1,
-		Description:     "Write or modify file within project root",
-		Kind:            toolgateway.SideEffecting,
-		Trust:           "core",
-		Capabilities:    []string{"fs", "write"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       10000,
-		OutputLimit:     102400,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "exec_command",
-		Version:         1,
-		Description:     "Execute shell command in project directory",
-		Kind:            toolgateway.SideEffecting,
-		Trust:           "trusted",
-		Capabilities:    []string{"exec", "shell"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       60000,
-		OutputLimit:     204800,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "git_commit",
-		Version:         1,
-		Description:     "Create a Git commit according to repository policy",
-		Kind:            toolgateway.SideEffecting,
-		Trust:           "core",
-		Capabilities:    []string{"scm", "git"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       30000,
-		OutputLimit:     51200,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "scan-secrets",
-		Version:         1,
-		Description:     "Scan source files for secrets and credentials",
-		Kind:            toolgateway.ReadOnly,
-		Trust:           "core",
-		Capabilities:    []string{"security", "scan"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       15000,
-		OutputLimit:     102400,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "analyze-complexity",
-		Version:         1,
-		Description:     "Analyze function and file lengths for Clean Code compliance",
-		Kind:            toolgateway.ReadOnly,
-		Trust:           "core",
-		Capabilities:    []string{"code-quality", "complexity"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       15000,
-		OutputLimit:     102400,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "check-permissions",
-		Version:         1,
-		Description:     "Check for world-writable files and directories",
-		Kind:            toolgateway.ReadOnly,
-		Trust:           "core",
-		Capabilities:    []string{"fs", "permissions"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       10000,
-		OutputLimit:     51200,
-	})
-	r.Register(toolgateway.Descriptor{
-		ID:              "check-escape-hatches",
-		Version:         1,
-		Description:     "Scan code for unregistered escape hatches, unsafe operations, and suppressions",
-		Kind:            toolgateway.ReadOnly,
-		Trust:           "core",
-		Capabilities:    []string{"code-safety", "escape-hatches", "audit"},
-		FilesystemScope: []string{"project-root"},
-		TimeoutMS:       20000,
-		OutputLimit:     102400,
-	})
+	// The native coding tools come from the catalogue that implements them, so
+	// the registry cannot describe a tool that does not exist. The four
+	// hand-written descriptors that used to sit here had no implementation and
+	// were advertised by `prumo tool list` anyway (GAP-158).
+	toolgateway.RegisterACI(r)
+
+	// The analysis tools below are different in kind: each is a verb implemented
+	// by a case in runTool, so the registry describes something that exists. They
+	// are listed here because `tool list` and `tool evaluate` operate on the
+	// registry, and an analysis verb missing from it is one the policy surface
+	// cannot reason about.
+	for _, d := range analysisDescriptors() {
+		r.Register(d)
+	}
 	return r
+}
+
+// analysisDescriptors are the repository-analysis verbs runTool implements.
+func analysisDescriptors() []toolgateway.Descriptor {
+	return []toolgateway.Descriptor{
+		{ID: "scan-secrets", Version: 1, Description: "Scan source files for secrets and credentials",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"security", "scan"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 15000, OutputLimit: 102400},
+		{ID: "scan-headers", Version: 1, Description: "Check source files for security-relevant headers",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"security", "headers"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 15000, OutputLimit: 102400},
+		{ID: "stride", Version: 1, Description: "Run a STRIDE threat model over the project",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"security", "threat-model"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 20000, OutputLimit: 102400},
+		{ID: "security-checklist", Version: 1, Description: "Check the project against the security checklist",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"security", "checklist"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 15000, OutputLimit: 102400},
+		{ID: "check-permissions", Version: 1, Description: "Check file permissions",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"security", "permissions"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 10000, OutputLimit: 102400},
+		{ID: "analyze-complexity", Version: 1, Description: "Analyse code complexity hotspots",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"code", "complexity"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 20000, OutputLimit: 102400},
+		{ID: "check-bare-errors", Version: 1, Description: "Find discarded errors",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"code", "quality"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 15000, OutputLimit: 102400},
+		{ID: "check-subprocesses", Version: 1, Description: "Find subprocess invocations",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"code", "process"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 10000, OutputLimit: 102400},
+		{ID: "check-escape-hatches", Version: 1, Description: "Find escape hatches that bypass policy",
+			Kind: toolgateway.ReadOnly, Trust: "core", Capabilities: []string{"code", "policy"},
+			FilesystemScope: []string{"project-root"}, TimeoutMS: 10000, OutputLimit: 102400},
+	}
 }
 
 func defaultModelRegistry() *modelregistry.Registry {

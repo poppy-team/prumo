@@ -1,8 +1,8 @@
 {
   "id": "github-pr-create",
   "name": "GitHub PR Authoring",
-  "version": 1,
-  "schema_version": 2,
+  "version": 2,
+  "schema_version": 3,
   "purpose": "Author pull requests with structured descriptions, evidence links, and breaking change disclosures.",
   "risk_level": "low",
   "modes": [
@@ -13,13 +13,14 @@
     "documentation"
   ],
   "inputs": [
-    "Repository context",
-    "Issue / PR specifications",
-    "Roadmap Goal"
+    "Branch diff, base branch, and target issue",
+    "Local test, lint, and security command output",
+    "Public contract impact, migration notes, and reviewer owners"
   ],
   "outputs": [
-    "Structured GitHub artifact",
-    "Validation confirmation"
+    "Draft or ready pull request with one coherent objective",
+    "Description with technical changes, evidence, and linked issues",
+    "Reviewer routing, breaking-change note, and merge-readiness check"
   ],
   "requires": [],
   "conflicts": [],
@@ -28,21 +29,28 @@
     "filesystem.write",
     "process.spawn"
   ],
-  "references": [],
+  "references": [
+    "references/pr_best_practices.md"
+  ],
   "templates": [
     "templates/issue-template.md"
   ],
   "checks": [
     "checks/github-pr-create-checklist.md"
   ],
-  "scripts": [],
-  "examples": [],
+  "scripts": [
+    "scripts/create_pr.sh",
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/comprehensive_pr_description.md"
+  ],
   "required_evidence": [
     "test",
     "review"
   ],
   "stop_conditions": [
-    "Task acceptance criteria satisfied with evidence",
+    "The pull request is focused, evidence-backed, compatible, and ready for the requested reviewers",
     "Token budget exhausted",
     "Blocked on external dependency"
   ],
@@ -50,9 +58,9 @@
     "origin": "framework",
     "license": "MIT",
     "source": "prumo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "checksum": "",
-    "modified": "2026-08-14"
+    "modified": "2026-09-23"
   },
   "select": {
     "features_any": [
@@ -60,6 +68,5 @@
     ]
   },
   "requires_any": [],
-  "tools": [],
-  "instructions": "---\nname: github-pr-create\ndescription: Semantic PR authoring, change impact isolation, automated checklist validation, atomic commits, and gh CLI automation\n---\n# GitHub Pull Request Authoring & Creation\n\n## 1. Atomic Scope & Single Responsibility\nEnsure each pull request addresses exactly one logical feature, bug fix, or refactoring goal. Separate structural reformatting from behavioral logic modifications into distinct commits or PRs.\n\n## 2. Conventional & Structured Titling\nFormat pull request titles using strict Conventional Commits conventions (feat:, fix:, docs:, refactor:, test:, chore:). Include scope tags (e.g. feat(auth): implement PKCE OAuth code flow).\n\n## 3. Comprehensive Pull Request Description\nStructure the PR body with explicit sections: Objective / Context, Technical Changes Made, Verification Evidence (test command and pass output), and Linked Issues (Closes #123).\n\n## 4. Pre-Flight Readiness Checklist\nVerify that all local automated checks pass before creating the PR: linters clean, formatters applied, unit tests passing with zero regressions, and race detectors clean.\n\n## 5. Minimal Diff & Hygiene\nReview the git diff prior to publication. Eliminate commented-out debug code, unintended temporary files, trailing whitespace, and unneeded dependency bumps.\n\n## 6. Deterministic gh CLI Automation\nAutomate PR creation via the GitHub CLI: gh pr create --title 'feat(scope): title' --body-file .prumo/templates/pr-body.md --base main --draft (if work in progress).\n\n## 7. Draft PR Workflow for Active Collaboration\nPublish in-progress or exploratory work as Draft PRs. Transition to 'Ready for Review' only after all automated CI checks and self-review verifications pass.\n\n## 8. Reviewer & Assignee Routing\nAssign primary code owners or relevant domain experts based on modified subsystem paths. Avoid pinging broad organizational teams indiscriminately.\n\n## 9. Breaking Change Disclosure\nExplicitly highlight any breaking API, schema, or configuration modifications in the PR description with clear migration instructions and backwards compatibility notes.\n\n## 10. Self-Review & Diff Walkthrough\nPerform a meticulous self-review in the GitHub web interface or terminal diff view, adding explanatory line comments on complex or non-obvious design decisions.\n"
+  "tools": []
 }
