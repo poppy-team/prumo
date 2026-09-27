@@ -2276,6 +2276,602 @@
           "action": "escalate_to_human"
         }
       ]
+    },
+    {
+      "id": "brand-creation",
+      "name": "Brand Creation & Identity System",
+      "version": 1,
+      "purpose": "End-to-end brand identity engineering: market positioning, aesthetic definition, vector logo marks, OKLCH color tokenization, typography systems, and brand guidelines manual.",
+      "select": {
+        "features_any": [
+          "branding",
+          "brand-identity",
+          "design-system",
+          "marketing"
+        ]
+      },
+      "requires_skills_any": [
+        "brand-identity",
+        "color-science",
+        "typography-system",
+        "svg-engineering"
+      ],
+      "inputs": [
+        "Brand brief & company charter",
+        "Target audience profile",
+        "Market positioning strategy"
+      ],
+      "agents": [
+        "creative-director",
+        "brand-designer",
+        "svg-artist",
+        "visual-identity-auditor"
+      ],
+      "skills": [
+        "aesthetic-analysis",
+        "visual-communication",
+        "brand-identity",
+        "color-science",
+        "typography-system",
+        "svg-engineering",
+        "design-critique"
+      ],
+      "gates": [
+        "brand-critique",
+        "contrast-audit",
+        "vector-conformance"
+      ],
+      "artifacts": [
+        "Brand Strategy & Positioning Spec",
+        "OKLCH Color Palette & Semantic Tokens",
+        "Fluid Typography Scale Spec",
+        "SVG Logo Family (Light, Dark, Monochrome)",
+        "Brand Guidelines Manual"
+      ],
+      "stop_conditions": [
+        "Brand guidelines and vector assets pass critique and contrast audits with zero violations"
+      ],
+      "steps": [
+        {
+          "id": "aesthetic-strategy",
+          "name": "Aesthetic Research & Semiotic Positioning",
+          "agent_role": "creative-director",
+          "skills": [
+            "aesthetic-analysis",
+            "visual-communication"
+          ],
+          "input": "Brand brief & company charter",
+          "output": "Aesthetic strategy & moodboard spec",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "color-foundation",
+          "name": "OKLCH Color Science & Accessible Palette Generation",
+          "agent_role": "brand-designer",
+          "skills": [
+            "color-science",
+            "brand-identity"
+          ],
+          "depends_on": [
+            "aesthetic-strategy"
+          ],
+          "input": "Aesthetic strategy",
+          "output": "OKLCH color palette tokens JSON",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "contrast-audit"
+          ]
+        },
+        {
+          "id": "typography-architecture",
+          "name": "Fluid Typography Hierarchy & Variable Fonts Spec",
+          "agent_role": "brand-designer",
+          "skills": [
+            "typography-system",
+            "brand-identity"
+          ],
+          "depends_on": [
+            "aesthetic-strategy"
+          ],
+          "input": "Aesthetic strategy",
+          "output": "Typography system tokens JSON",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "logo-engineering",
+          "name": "Mathematical SVG Vector Logo & Mark Crafting",
+          "agent_role": "svg-artist",
+          "skills": [
+            "svg-engineering"
+          ],
+          "depends_on": [
+            "color-foundation",
+            "typography-architecture"
+          ],
+          "input": "Brand tokens and aesthetic direction",
+          "output": "Responsive SVG logo pack",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "vector-conformance"
+          ]
+        },
+        {
+          "id": "guidelines-compilation",
+          "name": "Compile Formal Brand Identity Guidelines",
+          "agent_role": "brand-designer",
+          "skills": [
+            "brand-identity",
+            "visual-communication"
+          ],
+          "depends_on": [
+            "logo-engineering"
+          ],
+          "input": "Vector logo assets and token manifests",
+          "output": "Brand guidelines manual markdown",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "identity-audit",
+          "name": "Comprehensive Visual Identity & Multi-surface Audit",
+          "agent_role": "visual-identity-auditor",
+          "skills": [
+            "design-critique"
+          ],
+          "depends_on": [
+            "guidelines-compilation"
+          ],
+          "input": "Brand guidelines and vector assets",
+          "output": "Brand audit scorecard and sign-off",
+          "required_evidence": [
+            "review"
+          ],
+          "gates": [
+            "brand-critique"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marketing-campaign",
+      "name": "Marketing & Advertising Campaign Pipeline",
+      "version": 1,
+      "purpose": "Execution pipeline for multi-channel marketing campaigns using the AIDA framework: value proposition, advertising creatives, landing view architecture, and conversion optimization.",
+      "select": {
+        "features_any": [
+          "marketing",
+          "advertising",
+          "growth",
+          "landing-page"
+        ]
+      },
+      "requires_skills_any": [
+        "advertising-design",
+        "marketing-collateral",
+        "layout-patterns",
+        "design-psychology"
+      ],
+      "inputs": [
+        "Campaign brief & core value proposition",
+        "Target channels & platform dimensions",
+        "Conversion goals & key performance indicators"
+      ],
+      "agents": [
+        "creative-director",
+        "advertising-designer",
+        "frontend-engineer",
+        "quality-reviewer"
+      ],
+      "skills": [
+        "advertising-design",
+        "marketing-collateral",
+        "layout-patterns",
+        "design-psychology",
+        "responsive-design",
+        "clean-code"
+      ],
+      "gates": [
+        "aida-evaluation",
+        "responsive-check",
+        "accessibility"
+      ],
+      "artifacts": [
+        "Campaign Creative Strategy Spec",
+        "Multi-format Ad Units (Social, Display, Banner)",
+        "Responsive Campaign Landing View",
+        "AIDA Conversion Audit Scorecard"
+      ],
+      "stop_conditions": [
+        "All ad creatives and landing view pass AIDA review, responsiveness audit, and WCAG accessibility standards"
+      ],
+      "steps": [
+        {
+          "id": "campaign-strategy",
+          "name": "AIDA Framing & Psychological Hook Strategy",
+          "agent_role": "creative-director",
+          "skills": [
+            "design-psychology",
+            "advertising-design"
+          ],
+          "input": "Campaign brief & value proposition",
+          "output": "Campaign strategy & copy matrix",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "ad-collateral",
+          "name": "Design Multi-Format Advertising Creatives",
+          "agent_role": "advertising-designer",
+          "skills": [
+            "advertising-design",
+            "marketing-collateral"
+          ],
+          "depends_on": [
+            "campaign-strategy"
+          ],
+          "input": "Campaign strategy & copy matrix",
+          "output": "Multi-format ad units (SVG, HTML5, CSS)",
+          "required_evidence": [
+            "review"
+          ],
+          "gates": [
+            "aida-evaluation"
+          ]
+        },
+        {
+          "id": "landing-architecture",
+          "name": "Layout Architecture & Cognitive Hierarchy",
+          "agent_role": "advertising-designer",
+          "skills": [
+            "layout-patterns",
+            "responsive-design"
+          ],
+          "depends_on": [
+            "campaign-strategy"
+          ],
+          "input": "Campaign strategy",
+          "output": "Landing page layout wireframe spec",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "landing-implementation",
+          "name": "Implement Responsive High-Conversion Landing View",
+          "agent_role": "frontend-engineer",
+          "skills": [
+            "responsive-design",
+            "clean-code"
+          ],
+          "depends_on": [
+            "ad-collateral",
+            "landing-architecture"
+          ],
+          "input": "Layout wireframe and creative assets",
+          "output": "Production-ready responsive landing view",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "responsive-check",
+            "accessibility"
+          ]
+        },
+        {
+          "id": "conversion-qa",
+          "name": "Full Campaign Quality & Conversion Review",
+          "agent_role": "quality-reviewer",
+          "skills": [
+            "clean-code"
+          ],
+          "depends_on": [
+            "landing-implementation"
+          ],
+          "input": "Landing view and creative assets",
+          "output": "Campaign launch readiness scorecard",
+          "required_evidence": [
+            "review"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "icon-library-creation",
+      "name": "Icon Library Engineering & Design System Integration",
+      "version": 1,
+      "purpose": "End-to-end icon library production pipeline: geometric grid standards, optical weight balance, SVG path optimization, accessibility metadata, and framework component generation.",
+      "select": {
+        "features_any": [
+          "iconography",
+          "design-system",
+          "svg",
+          "ui-components"
+        ]
+      },
+      "requires_skills_any": [
+        "svg-engineering",
+        "icon-system",
+        "design-tokens"
+      ],
+      "inputs": [
+        "Iconography taxonomy & functional requirements",
+        "Base pixel grid spec (e.g. 24x24 px, 2px stroke)",
+        "Target framework bindings (SVG, React, Vue, Web Components)"
+      ],
+      "agents": [
+        "svg-artist",
+        "design-system-engineer",
+        "accessibility-reviewer",
+        "tester"
+      ],
+      "skills": [
+        "svg-engineering",
+        "icon-system",
+        "design-tokens",
+        "generative-svg-art"
+      ],
+      "gates": [
+        "grid-conformance",
+        "path-optimization",
+        "a11y-audit"
+      ],
+      "artifacts": [
+        "Icon Pixel Grid & Optical Balance Specification",
+        "Optimized Scalable SVG Asset Bundle",
+        "Typed Component Wrapper Packages (React/Vue/Web Components)",
+        "Icon Metadata & Search Taxonomy Catalog JSON"
+      ],
+      "stop_conditions": [
+        "All icon glyphs strictly align to base grid, path data is normalized with zero redundant nodes, and accessibility metadata validates"
+      ],
+      "steps": [
+        {
+          "id": "grid-specification",
+          "name": "Establish Geometric Grid & Optical Alignment Keys",
+          "agent_role": "svg-artist",
+          "skills": [
+            "icon-system"
+          ],
+          "input": "Base pixel grid spec and design language",
+          "output": "Grid geometry and key shape guidelines",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "vector-crafting",
+          "name": "Vector Path Crafting & Optical Sizing",
+          "agent_role": "svg-artist",
+          "skills": [
+            "svg-engineering",
+            "icon-system"
+          ],
+          "depends_on": [
+            "grid-specification"
+          ],
+          "input": "Icon taxonomy and grid geometry",
+          "output": "Raw SVG vector icon glyphs",
+          "required_evidence": [
+            "review"
+          ],
+          "gates": [
+            "grid-conformance"
+          ]
+        },
+        {
+          "id": "path-optimization",
+          "name": "Path Simplification & SVGO Bytecode Optimization",
+          "agent_role": "svg-artist",
+          "skills": [
+            "svg-engineering"
+          ],
+          "depends_on": [
+            "vector-crafting"
+          ],
+          "input": "Raw SVG glyphs",
+          "output": "Normalized, zero-overhead SVG assets",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "path-optimization"
+          ]
+        },
+        {
+          "id": "component-packaging",
+          "name": "Package Typed UI Components & Token Integration",
+          "agent_role": "design-system-engineer",
+          "skills": [
+            "design-tokens",
+            "icon-system"
+          ],
+          "depends_on": [
+            "path-optimization"
+          ],
+          "input": "Optimized SVGs and design tokens",
+          "output": "Component packages & metadata catalog",
+          "required_evidence": [
+            "test"
+          ]
+        },
+        {
+          "id": "accessibility-audit",
+          "name": "Audit Accessibility & Multi-size Visual Conformance",
+          "agent_role": "accessibility-reviewer",
+          "skills": [
+            "icon-system"
+          ],
+          "depends_on": [
+            "component-packaging"
+          ],
+          "input": "Component packages and rendered test matrix",
+          "output": "Iconography a11y audit report",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "a11y-audit"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design-system-foundation",
+      "name": "Design System Foundation Architecture",
+      "version": 1,
+      "purpose": "Comprehensive engineering of an enterprise design system: W3C DTCG tokens, perceptual color spaces, modular typography, atomic primitives, and automated accessibility verification.",
+      "select": {
+        "features_any": [
+          "design-system",
+          "tokens",
+          "ui-components",
+          "frontend"
+        ]
+      },
+      "requires_skills_any": [
+        "design-system",
+        "design-tokens",
+        "color-science",
+        "typography-system"
+      ],
+      "inputs": [
+        "Brand vision & aesthetic guidelines",
+        "Target technology stack & UI framework",
+        "Accessibility targets (WCAG 2.2 AA / AAA)"
+      ],
+      "agents": [
+        "creative-director",
+        "brand-designer",
+        "design-system-engineer",
+        "ui-component-engineer",
+        "accessibility-reviewer"
+      ],
+      "skills": [
+        "design-system",
+        "design-tokens",
+        "color-science",
+        "typography-system",
+        "component-specification",
+        "ui-implementation",
+        "visual-regression"
+      ],
+      "gates": [
+        "token-validation",
+        "component-test",
+        "wcag-aaa"
+      ],
+      "artifacts": [
+        "W3C DTCG Design Tokens Package (JSON/CSS/SCSS)",
+        "Core Atomic Component Library (Button, Input, Card, Modal)",
+        "Living Styleguide & Interactive Documentation",
+        "Comprehensive Accessibility & Conformance Report"
+      ],
+      "stop_conditions": [
+        "Tokens compile cleanly to all target formats, components pass 100% unit and visual tests, and accessibility audit completes with zero critical defects"
+      ],
+      "steps": [
+        {
+          "id": "token-architecture",
+          "name": "Define Multi-Tier W3C Design Tokens",
+          "agent_role": "design-system-engineer",
+          "skills": [
+            "design-tokens",
+            "color-science",
+            "typography-system"
+          ],
+          "input": "Brand aesthetic guidelines",
+          "output": "Global, semantic, and component tokens JSON",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "token-validation"
+          ]
+        },
+        {
+          "id": "primitive-specification",
+          "name": "Specify Atomic UI Component Contracts",
+          "agent_role": "design-system-engineer",
+          "skills": [
+            "component-specification",
+            "design-system"
+          ],
+          "depends_on": [
+            "token-architecture"
+          ],
+          "input": "Semantic tokens",
+          "output": "Component props, states, and variant specifications",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "component-implementation",
+          "name": "Build Headless / Accessible UI Component Primitives",
+          "agent_role": "ui-component-engineer",
+          "skills": [
+            "ui-implementation",
+            "clean-code"
+          ],
+          "depends_on": [
+            "primitive-specification"
+          ],
+          "input": "Component specifications and tokens",
+          "output": "Component source code and test suite",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "component-test"
+          ]
+        },
+        {
+          "id": "living-styleguide",
+          "name": "Author Living Styleguide & Documentation",
+          "agent_role": "creative-director",
+          "skills": [
+            "design-system",
+            "visual-communication"
+          ],
+          "depends_on": [
+            "component-implementation"
+          ],
+          "input": "Components and token manifests",
+          "output": "Interactive documentation website & playground",
+          "required_evidence": [
+            "review"
+          ]
+        },
+        {
+          "id": "accessibility-conformance",
+          "name": "Exhaustive WCAG & Keyboard Navigation Audit",
+          "agent_role": "accessibility-reviewer",
+          "skills": [
+            "visual-regression"
+          ],
+          "depends_on": [
+            "living-styleguide"
+          ],
+          "input": "Rendered components and documentation views",
+          "output": "WCAG conformance audit report",
+          "required_evidence": [
+            "test"
+          ],
+          "gates": [
+            "wcag-aaa"
+          ]
+        }
+      ]
     }
   ]
 }

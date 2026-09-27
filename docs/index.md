@@ -37,7 +37,7 @@ features:
     link: /getting-started/concepts
   - icon: 🤖
     title: Workforce Canônica Completa
-    details: 189 skills catalogadas, 39 agentes especialistas (sistemas, arquitetura, design visual, UI/UX, SVG/motion, publicidade, segurança) e 16 receitas determinísticas na caixa.
+    details: 189 skills catalogadas, 39 agentes especialistas (sistemas, arquitetura, design visual, UI/UX, SVG/motion, publicidade, segurança) e 20 receitas determinísticas na caixa.
     link: /workforce/
   - icon: 🔌
     title: Conectores Universais Sem Lock-in

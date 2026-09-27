@@ -151,11 +151,19 @@ This project uses Prumo v0.6 with Google Antigravity.
 
 	// 4. Subagents
 	subagents := map[string]string{
-		"architect.md":         "# Architect Subagent\nRole: Architecture, Boundaries & Schema Design\n",
-		"executor.md":          "# Executor Subagent\nRole: Implementation, Refactoring & Clean Code\n",
-		"verifier.md":          "# Verifier Subagent\nRole: Exhaustive Testing, Security & Quality Gates\n",
-		"systems-architect.md": "# Systems Architect Subagent\nRole: Low-Level Systems, Memory Models, Hardware Budgets & Compiler Invariants\n",
-		"isolation-auditor.md": "# Isolation Auditor Subagent\nRole: Multi-Tenant Isolation, Sandboxing & Adversarial Abuse Verification\n",
+		"architect.md":              "# Architect Subagent\nRole: Architecture, Boundaries & Schema Design\n",
+		"executor.md":               "# Executor Subagent\nRole: Implementation, Refactoring & Clean Code\n",
+		"verifier.md":               "# Verifier Subagent\nRole: Exhaustive Testing, Security & Quality Gates\n",
+		"systems-architect.md":      "# Systems Architect Subagent\nRole: Low-Level Systems, Memory Models, Hardware Budgets & Compiler Invariants\n",
+		"isolation-auditor.md":      "# Isolation Auditor Subagent\nRole: Multi-Tenant Isolation, Sandboxing & Adversarial Abuse Verification\n",
+		"brand-designer.md":         "# Brand Designer Subagent\nRole: Brand Identity, Typography Hierarchy & OKLCH Color Systems\n",
+		"creative-director.md":      "# Creative Director Subagent\nRole: Aesthetic Strategy, Semiotic Integrity & Design Critique\n",
+		"svg-artist.md":             "# SVG Artist Subagent\nRole: Vector Math, Generative SVG Art, Filter Pipelines & Icon Systems\n",
+		"advertising-designer.md":   "# Advertising Designer Subagent\nRole: AIDA Advertising Creatives, Conversion Layouts & Marketing Collateral\n",
+		"motion-designer.md":        "# Motion Designer Subagent\nRole: Motion Physics, Spring Curves, CSS Choreography & Microinteractions\n",
+		"ui-component-engineer.md":  "# UI Component Engineer Subagent\nRole: Atomic UI Components, Headless Primitives & Accessible State Machines\n",
+		"visual-identity-auditor.md": "# Visual Identity Auditor Subagent\nRole: Visual Brand Consistency, Multi-surface QA & Token Conformance\n",
+		"prototyper.md":             "# Prototyper Subagent\nRole: Rapid Interactive Prototyping, FSM Modeling & Usability Testing\n",
 	}
 	for name, content := range subagents {
 		subPath := filepath.Join(agentsDir, "subagents", name)

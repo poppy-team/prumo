@@ -171,7 +171,7 @@ export default defineConfig({
               { text: 'Catálogo da Força de Trabalho', link: '/workforce/' },
               { text: '189 Skills de Precisão', link: '/workforce/skills' },
               { text: '39 Agentes Especialistas', link: '/workforce/agents' },
-              { text: '16 Receitas Determinísticas', link: '/workforce/recipes' }
+              { text: '20 Receitas Determinísticas', link: '/workforce/recipes' }
             ]
           },
           { text: 'Ferramentas CLI', link: '/tools/' },
@@ -230,7 +230,7 @@ export default defineConfig({
                 { text: 'Visão Geral da Força de Trabalho', link: '/workforce/' },
                 { text: '189 Skills Catalogadas', link: '/workforce/skills' },
                 { text: '39 Agentes Especialistas', link: '/workforce/agents' },
-                { text: '16 Receitas Determinísticas', link: '/workforce/recipes' }
+                { text: '20 Receitas Determinísticas', link: '/workforce/recipes' }
               ]
             }
           ],

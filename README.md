@@ -3,7 +3,7 @@
 [![Release](https://img.shields.io/github/v/release/poppy-team/prumo?color=2563eb&label=release)](https://github.com/poppy-team/prumo/releases/tag/v0.6.0)
 [![Go Version](https://img.shields.io/badge/go-1.22+-blue.svg)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Workforce](https://img.shields.io/badge/workforce-189%20skills%20%7C%2039%20agents%20%7C%2016%20recipes-blueviolet)](docs/workforce/index.md)
+[![Workforce](https://img.shields.io/badge/workforce-189%20skills%20%7C%2039%20agents%20%7C%2020%20recipes-blueviolet)](docs/workforce/index.md)
 [![Docs](https://img.shields.io/badge/docs-online-06b6d4.svg)](https://prumo-framework.vercel.app)
 
 **Prumo** is a Git-native protocol and engineering harness for software projects built collaboratively by human developers and autonomous AI agents.
@@ -35,7 +35,7 @@ Prumo v0.6 is a pure Go distribution ([ADR 002](docs/adr/002-retire-python-runti
 - **Zero External Runtime Dependencies**: No Python, pip, or virtualenv required.
 - **Embedded Assets**: All canonical schemas, catalog, workforce packages, and adapter templates are embedded directly into the binary.
 - **Headless Harness & ACI**: Deterministic sandboxed tool gateway, process execution with hard timeouts, output boundaries, and AST syntax parsing.
-- **Canonical Workforce**: **189 skills**, **39 specialized agents**, and **16 deterministic recipes** across systems, architecture, design systems, UI/UX, vector art, motion, and security.
+- **Canonical Workforce**: **189 skills**, **39 specialized agents**, and **20 deterministic recipes** across systems, architecture, design systems, UI/UX, vector art, motion, and security.
 - **Universal Connectors**: Transparent adapters for Google Antigravity, Claude Code, OpenAI Codex, Cursor, Windsurf, OpenCode, Cline, and Roo Code.
 
 ---

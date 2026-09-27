@@ -1,0 +1,144 @@
+{
+  "id": "marketing-campaign",
+  "name": "Marketing & Advertising Campaign Pipeline",
+  "version": 1,
+  "purpose": "Execution pipeline for multi-channel marketing campaigns using the AIDA framework: value proposition, advertising creatives, landing view architecture, and conversion optimization.",
+  "select": {
+    "features_any": [
+      "marketing",
+      "advertising",
+      "growth",
+      "landing-page"
+    ]
+  },
+  "requires_skills_any": [
+    "advertising-design",
+    "marketing-collateral",
+    "layout-patterns",
+    "design-psychology"
+  ],
+  "inputs": [
+    "Campaign brief & core value proposition",
+    "Target channels & platform dimensions",
+    "Conversion goals & key performance indicators"
+  ],
+  "agents": [
+    "creative-director",
+    "advertising-designer",
+    "frontend-engineer",
+    "quality-reviewer"
+  ],
+  "skills": [
+    "advertising-design",
+    "marketing-collateral",
+    "layout-patterns",
+    "design-psychology",
+    "responsive-design",
+    "clean-code"
+  ],
+  "gates": [
+    "aida-evaluation",
+    "responsive-check",
+    "accessibility"
+  ],
+  "artifacts": [
+    "Campaign Creative Strategy Spec",
+    "Multi-format Ad Units (Social, Display, Banner)",
+    "Responsive Campaign Landing View",
+    "AIDA Conversion Audit Scorecard"
+  ],
+  "stop_conditions": [
+    "All ad creatives and landing view pass AIDA review, responsiveness audit, and WCAG accessibility standards"
+  ],
+  "steps": [
+    {
+      "id": "campaign-strategy",
+      "name": "AIDA Framing & Psychological Hook Strategy",
+      "agent_role": "creative-director",
+      "skills": [
+        "design-psychology",
+        "advertising-design"
+      ],
+      "input": "Campaign brief & value proposition",
+      "output": "Campaign strategy & copy matrix",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "ad-collateral",
+      "name": "Design Multi-Format Advertising Creatives",
+      "agent_role": "advertising-designer",
+      "skills": [
+        "advertising-design",
+        "marketing-collateral"
+      ],
+      "depends_on": [
+        "campaign-strategy"
+      ],
+      "input": "Campaign strategy & copy matrix",
+      "output": "Multi-format ad units (SVG, HTML5, CSS)",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "aida-evaluation"
+      ]
+    },
+    {
+      "id": "landing-architecture",
+      "name": "Layout Architecture & Cognitive Hierarchy",
+      "agent_role": "advertising-designer",
+      "skills": [
+        "layout-patterns",
+        "responsive-design"
+      ],
+      "depends_on": [
+        "campaign-strategy"
+      ],
+      "input": "Campaign strategy",
+      "output": "Landing page layout wireframe spec",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "landing-implementation",
+      "name": "Implement Responsive High-Conversion Landing View",
+      "agent_role": "frontend-engineer",
+      "skills": [
+        "responsive-design",
+        "clean-code"
+      ],
+      "depends_on": [
+        "ad-collateral",
+        "landing-architecture"
+      ],
+      "input": "Layout wireframe and creative assets",
+      "output": "Production-ready responsive landing view",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "responsive-check",
+        "accessibility"
+      ]
+    },
+    {
+      "id": "conversion-qa",
+      "name": "Full Campaign Quality & Conversion Review",
+      "agent_role": "quality-reviewer",
+      "skills": [
+        "clean-code"
+      ],
+      "depends_on": [
+        "landing-implementation"
+      ],
+      "input": "Landing view and creative assets",
+      "output": "Campaign launch readiness scorecard",
+      "required_evidence": [
+        "review"
+      ]
+    }
+  ]
+}

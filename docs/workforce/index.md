@@ -1,6 +1,6 @@
 # Catálogo Canônico da Força de Trabalho (Workforce)
 
-O Prumo incorpora em sua distribuição uma das forças de trabalho autônomas mais robustas da engenharia de software contemporânea: **189 skills de alta precisão**, **39 agentes especialistas** e **16 receitas determinísticas**.
+O Prumo incorpora em sua distribuição uma das forças de trabalho autônomas mais robustas da engenharia de software contemporânea: **189 skills de alta precisão**, **39 agentes especialistas** e **20 receitas determinísticas**.
 
 ## Filosofia da Workforce do Prumo
 
@@ -18,7 +18,7 @@ Diferente de sistemas que utilizam um único agente genérico tentando resolver 
                  ┌────────────────┴────────────────┐
                  ▼                                 ▼
       ┌─────────────────────┐           ┌─────────────────────┐
-      │  189 Skills Prontas │           │ 16 Receitas Padrão  │
+      │  189 Skills Prontas │           │ 20 Receitas Padrão  │
       └─────────────────────┘           └─────────────────────┘
 ```
 
@@ -35,4 +35,4 @@ Diferente de sistemas que utilizam um único agente genérico tentando resolver 
 
 - **[189 Skills Catalogadas](/workforce/skills)**: Lista e detalhes das habilidades técnicas acionáveis.
 - **[39 Agentes Especialistas](/workforce/agents)**: Perfis, papéis e autoridades dos agentes pré-configurados.
-- **[16 Receitas Determinísticas](/workforce/recipes)**: Workflows prontos para automação de tarefas frequentes.
+- **[20 Receitas Determinísticas](/workforce/recipes)**: Workflows prontos para automação de tarefas frequentes.
