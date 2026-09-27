@@ -1,0 +1,33 @@
+{
+  "name": "Acme UI Scale",
+  "primitive": {
+    "blue": {
+      "50":  "oklch(0.97 0.01 250)",
+      "100": "oklch(0.93 0.03 250)",
+      "200": "oklch(0.88 0.06 250)",
+      "300": "oklch(0.80 0.10 250)",
+      "400": "oklch(0.72 0.14 250)",
+      "500": "oklch(0.62 0.20 250)",
+      "600": "oklch(0.53 0.18 250)",
+      "700": "oklch(0.44 0.15 250)",
+      "800": "oklch(0.35 0.12 250)",
+      "900": "oklch(0.26 0.08 250)",
+      "950": "oklch(0.18 0.05 250)"
+    }
+  },
+  "semantic": {
+    "surface": {
+      "base": "{primitive.blue.50}",
+      "raised": "{primitive.blue.100}"
+    },
+    "text": {
+      "primary": "{primitive.blue.950}",
+      "secondary": "{primitive.blue.700}",
+      "inverse": "{primitive.blue.50}"
+    },
+    "action": {
+      "primary": "{primitive.blue.500}",
+      "hover": "{primitive.blue.600}"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "typography": {
+    "fontFamily": {
+      "sans": { "$value": "Inter, system-ui, sans-serif" },
+      "mono": { "$value": "Fira Code, monospace" }
+    },
+    "fontSize": {
+      "base": { "$value": "1rem", "$description": "Base body size (16px)" },
+      "fluid": {
+        "display": { "$value": "clamp(3rem, 2rem + 5vw, 5rem)" },
+        "h1": { "$value": "clamp(2rem, 1.5rem + 3vw, 3.5rem)" },
+        "h2": { "$value": "clamp(1.5rem, 1.2rem + 2vw, 2.5rem)" },
+        "body": { "$value": "clamp(1rem, 0.9rem + 0.5vw, 1.125rem)" },
+        "caption": { "$value": "clamp(0.75rem, 0.7rem + 0.2vw, 0.875rem)" }
+      }
+    },
+    "lineHeight": {
+      "tight": { "$value": "1.1" },
+      "base": { "$value": "1.5" },
+      "relaxed": { "$value": "1.75" }
+    },
+    "letterSpacing": {
+      "tight": { "$value": "-0.02em" },
+      "base": { "$value": "0" },
+      "wide": { "$value": "0.05em" }
+    }
+  }
+}

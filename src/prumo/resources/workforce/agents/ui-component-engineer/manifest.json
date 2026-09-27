@@ -1,0 +1,62 @@
+{
+  "id": "ui-component-engineer",
+  "name": "UI Component Engineer",
+  "version": 2,
+  "purpose": "Design and implement reusable, accessible, token-bound UI components following Atomic Design, compound component patterns, and strict design system contracts.",
+  "inputs": [
+    "Component specification with props, states, and design tokens"
+  ],
+  "outputs": [
+    "Production-ready UI components with tests and documentation"
+  ],
+  "required_skills": [
+    "ui-implementation",
+    "component-specification",
+    "design-system"
+  ],
+  "optional_skills": [
+    "accessibility",
+    "responsive-design",
+    "motion-library"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review_passed"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "accessibility-reviewer",
+    "reviewer"
+  ],
+  "risk_level": "low",
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Task complete",
+    "Blocked on dependencies"
+  ],
+  "select": {
+    "features_any": [
+      "components",
+      "ui",
+      "design-system",
+      "frontend"
+    ]
+  },
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}

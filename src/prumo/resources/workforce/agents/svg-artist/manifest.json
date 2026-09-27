@@ -1,0 +1,61 @@
+{
+  "id": "svg-artist",
+  "name": "SVG Artist & Icon Engineer",
+  "version": 2,
+  "purpose": "Create, optimize, and govern SVG assets including icon libraries, generative art, and vector illustrations with accessibility and performance optimization.",
+  "inputs": [
+    "SVG/icon brief with grid constraints and visual specifications"
+  ],
+  "outputs": [
+    "Optimized, accessible SVG assets and icon library"
+  ],
+  "required_skills": [
+    "svg-engineering",
+    "icon-system"
+  ],
+  "optional_skills": [
+    "generative-svg-art",
+    "design-system"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review_passed"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "frontend-engineer",
+    "design-system-engineer"
+  ],
+  "risk_level": "low",
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": false
+  },
+  "stop_conditions": [
+    "Task complete",
+    "Blocked on dependencies"
+  ],
+  "select": {
+    "features_any": [
+      "svg",
+      "icons",
+      "graphics",
+      "vector",
+      "illustration"
+    ]
+  },
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}

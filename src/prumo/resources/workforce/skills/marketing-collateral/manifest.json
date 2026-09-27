@@ -1,0 +1,34 @@
+{
+  "id": "marketing-collateral",
+  "name": "Marketing Collateral Design & Production",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design, align, and produce marketing collateral across digital and print formats.",
+  "risk_level": "medium",
+  "modes": ["design", "implementation", "review"],
+  "inputs": ["brand guidelines", "copy", "campaign brief"],
+  "outputs": ["social graphics", "email templates", "landing pages", "print-ready files"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/marketing-collateral-guide.md"],
+  "templates": ["templates/collateral-spec.md"],
+  "checks": ["checks/marketing-collateral-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/social-media-template.md"],
+  "required_evidence": ["review"],
+  "stop_conditions": ["final assets approved"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["design", "marketing"]
+  },
+  "requires_any": [],
+  "tools": []
+}

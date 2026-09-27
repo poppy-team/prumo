@@ -1,0 +1,34 @@
+{
+  "id": "generative-svg-art",
+  "name": "Generative SVG Art",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Procedurally generate visually compelling SVG art using algorithms and filters.",
+  "risk_level": "low",
+  "modes": ["design", "implementation", "research"],
+  "inputs": ["parameters", "seed", "dimensions"],
+  "outputs": ["svg", "css", "js"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/guide.md"],
+  "templates": ["templates/template.md"],
+  "checks": ["checks/checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/example.svg"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Visuals match requested parameters and SVG is valid."],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["procedural-generation", "svg-filters"]
+  },
+  "requires_any": [],
+  "tools": []
+}

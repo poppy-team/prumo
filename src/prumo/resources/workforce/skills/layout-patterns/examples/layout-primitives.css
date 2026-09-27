@@ -1,0 +1,93 @@
+/*
+ * Layout Primitives
+ * Based on "Every Layout" by Heydon Pickering & Andy Bell
+ */
+
+/* 1. Stack: Vertical rhythm */
+.stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.stack > * + * {
+  margin-block-start: var(--stack-space, 1.5rem);
+}
+
+/* 2. Cluster: Horizontal wrapping groups */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cluster-space, 1rem);
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* 3. Center: Intrinsic width constraints */
+.center {
+  box-sizing: content-box;
+  margin-inline: auto;
+  max-inline-size: var(--measure, 60ch);
+  padding-inline: var(--center-padding, 1rem);
+}
+
+/* 4. Sidebar: Fluid sidebar + main content */
+.sidebar-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gutter, 1rem);
+}
+
+.sidebar {
+  flex-basis: var(--sidebar-width, 20rem);
+  flex-grow: 1;
+}
+
+.not-sidebar {
+  flex-basis: 0;
+  flex-grow: 999;
+  min-inline-size: 50%;
+}
+
+/* 5. Switcher: Flex-based responsive thresholding */
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gutter, 1rem);
+}
+
+.switcher > * {
+  flex-grow: 1;
+  flex-basis: calc((var(--threshold, 30rem) - 100%) * 999);
+}
+
+/* 6. Grid: Auto-filling responsive grid */
+.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--min-item-width, 15rem), 100%), 1fr));
+  gap: var(--gutter, 1rem);
+}
+
+/* 7. Cover: Centered principal element with pushers */
+.cover {
+  display: flex;
+  flex-direction: column;
+  min-block-size: var(--cover-min-height, 100vh);
+  padding: var(--cover-padding, 1rem);
+}
+
+.cover > * {
+  margin-block: var(--cover-margin, 1rem);
+}
+
+.cover > :first-child:not(.principal) {
+  margin-block-start: 0;
+}
+
+.cover > :last-child:not(.principal) {
+  margin-block-end: 0;
+}
+
+.cover > .principal {
+  margin-block: auto;
+}

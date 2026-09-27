@@ -1,0 +1,34 @@
+{
+  "id": "layout-patterns",
+  "name": "Layout Design Patterns & Composition",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Systematize spatial composition using grid systems, structural layout primitives, and responsive patterns.",
+  "risk_level": "low",
+  "modes": ["design", "implementation", "review", "testing", "documentation"],
+  "inputs": ["Wireframes", "Design tokens", "Content models"],
+  "outputs": ["Layout specifications", "CSS primitives", "Responsive matrices"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write", "process.spawn"],
+  "references": ["references/layout-patterns-guide.md"],
+  "templates": ["templates/layout-spec.md"],
+  "checks": ["checks/layout-patterns-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/layout-primitives.css"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Layout correctly reflows according to content-first breakpoints", "Visual hierarchy matches cognitive processing patterns"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["frontend", "css", "design-system", "ui"]
+  },
+  "requires_any": [],
+  "tools": []
+}

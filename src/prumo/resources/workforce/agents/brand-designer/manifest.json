@@ -1,0 +1,61 @@
+{
+  "id": "brand-designer",
+  "name": "Brand Designer",
+  "version": 2,
+  "purpose": "Design and govern brand identity systems including logo architecture, color palettes, typography, imagery style, and cross-touchpoint consistency.",
+  "inputs": [
+    "Brand strategy with positioning, values, and personality attributes"
+  ],
+  "outputs": [
+    "Complete brand identity guidelines and asset specifications"
+  ],
+  "required_skills": [
+    "brand-identity",
+    "color-science",
+    "typography-system"
+  ],
+  "optional_skills": [
+    "visual-reference-research",
+    "design-research"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review_passed"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "design-system-engineer",
+    "svg-artist"
+  ],
+  "risk_level": "low",
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": false,
+    "modify_docs": true,
+    "execute_tests": false
+  },
+  "stop_conditions": [
+    "Task complete",
+    "Blocked on dependencies"
+  ],
+  "select": {
+    "features_any": [
+      "branding",
+      "brand-identity",
+      "marketing",
+      "visual"
+    ]
+  },
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}

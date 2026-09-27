@@ -1,0 +1,63 @@
+{
+  "id": "visual-identity-auditor",
+  "name": "Visual Identity Auditor",
+  "version": 2,
+  "purpose": "Audit visual consistency across touchpoints, verifying brand compliance, color accuracy, typography usage, iconography coherence, and design token adherence.",
+  "inputs": [
+    "Audit scope covering touchpoints, brand assets, and interface materials"
+  ],
+  "outputs": [
+    "Visual identity audit report with findings and recommendations"
+  ],
+  "required_skills": [
+    "visual-qa",
+    "brand-identity",
+    "color-science"
+  ],
+  "optional_skills": [
+    "typography-system",
+    "design-critique",
+    "aesthetic-analysis"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review_passed"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "brand-designer",
+    "design-system-engineer"
+  ],
+  "risk_level": "low",
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": false,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Task complete",
+    "Blocked on dependencies"
+  ],
+  "select": {
+    "features_any": [
+      "audit",
+      "visual",
+      "brand",
+      "quality",
+      "consistency"
+    ]
+  },
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}

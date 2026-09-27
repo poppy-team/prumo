@@ -148,6 +148,150 @@
       "tools": []
     },
     {
+      "id": "advertising-design",
+      "name": "Advertising Design & Visual Persuasion",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Apply the AIDA model (Attention, Interest, Desire, Action), visual persuasion principles, layout composition for advertising, and conversion-optimized design patterns to create effective advertising materials across digital and print media.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "review",
+        "audit",
+        "documentation"
+      ],
+      "inputs": [
+        "Campaign objectives, target audience, and conversion goals",
+        "Brand guidelines and approved visual assets",
+        "Media specifications (dimensions, formats, platform requirements)"
+      ],
+      "outputs": [
+        "Advertising design specifications applying AIDA model with visual hierarchy rationale",
+        "Layout compositions optimized for attention capture and conversion (CTA placement, contrast)",
+        "A/B testing recommendations with measurable success criteria"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/advertising-design-guide.md"
+      ],
+      "templates": [
+        "templates/ad-design-spec.md"
+      ],
+      "checks": [
+        "checks/advertising-design-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/aida-campaign-example.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All advertising materials map to AIDA stages with documented visual hierarchy decisions",
+        "CTA elements achieve sufficient contrast and sizing for conversion optimization",
+        "Token budget exhausted or campaign brief is incomplete"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "advertising",
+          "marketing",
+          "campaign",
+          "landing-page",
+          "conversion"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "aesthetic-analysis",
+      "name": "Aesthetic Movement Analysis & Trend Evaluation",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Analyze, evaluate, and recommend digital aesthetic movements (Flat Design, Material, Neumorphism, Glassmorphism, Neubrutalism, Human Design) based on brand alignment, accessibility implications, technical feasibility, and target audience cultural context.",
+      "risk_level": "low",
+      "modes": [
+        "research",
+        "design",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Brand identity, values, and target audience demographic/psychographic profile",
+        "Current visual direction and aesthetic references",
+        "Technical constraints (CSS support, performance budgets, accessibility requirements)"
+      ],
+      "outputs": [
+        "Aesthetic movement analysis with historical context, characteristics, and application examples",
+        "Recommendation matrix mapping aesthetic movements to brand fit and audience alignment",
+        "Accessibility impact assessment for recommended aesthetic approaches"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/aesthetic-analysis-guide.md"
+      ],
+      "templates": [
+        "templates/aesthetic-evaluation.md"
+      ],
+      "checks": [
+        "checks/aesthetic-analysis-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/aesthetic-comparison.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All relevant aesthetic movements evaluated against brand, audience, and technical criteria",
+        "Recommendation includes accessibility impact assessment for each aesthetic approach",
+        "Token budget exhausted or brand direction input is unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "design",
+          "aesthetics",
+          "branding",
+          "visual",
+          "research"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "agentic-workflow-design",
       "name": "Agentic Workflow Design",
       "version": 2,
@@ -1102,6 +1246,78 @@
       "tools": []
     },
     {
+      "id": "brand-identity",
+      "name": "Brand Identity Design & Governance",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, document, and govern brand identity systems including responsive logo architecture, color palette governance, typography selection, imagery style, iconography conventions, voice and tone guidelines, and cross-touchpoint consistency auditing.",
+      "risk_level": "medium",
+      "modes": [
+        "design",
+        "review",
+        "audit",
+        "documentation"
+      ],
+      "inputs": [
+        "Brand strategy (positioning, values, personality, competitive differentiation)",
+        "Visual direction from design research (moodboards, references, aesthetic alignment)",
+        "Target touchpoints and media channels requiring brand application"
+      ],
+      "outputs": [
+        "Complete brand guidelines document with logo system, color, typography, imagery, and voice",
+        "Responsive logo suite (hero, compact, micro, favicon) with clear space and minimum size rules",
+        "Brand consistency audit report across all identified touchpoints"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/brand-identity-guide.md"
+      ],
+      "templates": [
+        "templates/brand-guidelines-spec.md"
+      ],
+      "checks": [
+        "checks/brand-identity-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/brand-audit-example.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "Brand guidelines cover logo, color, typography, imagery, iconography, and voice with usage rules",
+        "Responsive logo suite validated across all target sizes and media",
+        "Token budget exhausted or brand stakeholder approval is unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "branding",
+          "brand-identity",
+          "marketing",
+          "design-system",
+          "visual"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "bytecode-vm-architecture",
       "name": "Bytecode & Virtual Machine Architecture",
       "version": 2,
@@ -1731,6 +1947,80 @@
           "communication",
           "accessibility",
           "team-collaboration"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "color-science",
+      "name": "Color Science for Design Systems",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, generate, validate, and govern perceptually uniform color palettes using OKLCH/OKLAB color spaces, programmatic scale generation algorithms, WCAG 2.2 and APCA contrast verification, wide-gamut (P3) support, and multi-theme color token architecture.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "implementation",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Brand primary hue(s), chroma range, and lightness targets in OKLCH notation",
+        "Theme requirements (light, dark, high-contrast) with semantic intent mapping",
+        "WCAG 2.2 AA/AAA contrast targets and APCA Lc thresholds for text/background pairs"
+      ],
+      "outputs": [
+        "Systematic OKLCH palette scales (50-950) with gamut-safe sRGB and P3 fallbacks",
+        "Contrast verification matrix proving all semantic foreground/background pairs meet targets",
+        "DTCG-compliant color token definitions with theme overrides and compilation artifacts"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/color-science-guide.md"
+      ],
+      "templates": [
+        "templates/color-audit-report.md"
+      ],
+      "checks": [
+        "checks/color-science-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/oklch-palette.json"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All palette scales generate gamut-safe values across sRGB and P3 targets",
+        "Every semantic foreground/background pair meets WCAG 2.2 AA contrast (≥4.5:1 text, ≥3:1 UI)",
+        "Token budget exhausted or brand authority color source is unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "color",
+          "design-tokens",
+          "theming",
+          "design-system",
+          "branding"
         ]
       },
       "requires_any": [],
@@ -2694,6 +2984,149 @@
         "modified": "2026-09-23"
       },
       "core": true,
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "design-critique",
+      "name": "Structured Design Critique & Review Methodology",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Conduct structured design critiques using objective evaluation frameworks, actionable feedback protocols, criteria-based scoring, and documented improvement recommendations that separate craft improvement from stakeholder approval.",
+      "risk_level": "low",
+      "modes": [
+        "review",
+        "audit",
+        "documentation"
+      ],
+      "inputs": [
+        "Design artifacts to review (screens, prototypes, specifications)",
+        "Evaluation criteria (usability, brand alignment, accessibility, visual quality)",
+        "Context statement (design goals, constraints, target audience)"
+      ],
+      "outputs": [
+        "Structured critique report with criteria-based evaluation and severity ratings",
+        "Actionable improvement recommendations with specific, measurable suggestions",
+        "Design decision log documenting trade-offs and rationale"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/design-critique-guide.md"
+      ],
+      "templates": [
+        "templates/design-critique-report.md"
+      ],
+      "checks": [
+        "checks/design-critique-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/critique-session-example.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All design artifacts evaluated against established criteria with documented findings",
+        "Improvement recommendations are specific, actionable, and prioritized by impact",
+        "Token budget exhausted or design context is insufficient for meaningful critique"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "design",
+          "review",
+          "critique",
+          "ui",
+          "ux"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "design-psychology",
+      "name": "Design Psychology & Cognitive Science",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Apply empirical cognitive science principles (Hick's Law, Fitts's Law, Miller's Law, Gestalt, Cognitive Load Theory, Von Restorff, Serial Position, Doherty Threshold) to audit, optimize, and validate user interface decision architecture and information processing efficiency.",
+      "risk_level": "low",
+      "modes": [
+        "review",
+        "audit",
+        "design",
+        "documentation"
+      ],
+      "inputs": [
+        "Interface screens, navigation structure, and task flows to audit",
+        "Target user cognitive profile, task complexity, and decision frequency",
+        "Current usability metrics or heuristic evaluation findings"
+      ],
+      "outputs": [
+        "Cognitive audit report mapping each interface element to applicable psychological principles",
+        "Prioritized optimization recommendations with predicted cognitive load reduction",
+        "Before/after evidence documenting measurable improvements in decision time and task completion"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/design-psychology-guide.md"
+      ],
+      "templates": [
+        "templates/cognitive-audit-report.md"
+      ],
+      "checks": [
+        "checks/design-psychology-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/cognitive-audit-example.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All primary user flows audited against applicable cognitive science principles with evidence",
+        "No Hick's Law violation (>7 equi-probable choices) in primary decision paths",
+        "Token budget exhausted or target interface screenshots are unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "ux",
+          "ui",
+          "usability",
+          "cognitive",
+          "review"
+        ]
+      },
       "requires_any": [],
       "tools": []
     },
@@ -3879,6 +4312,78 @@
       "tools": []
     },
     {
+      "id": "generative-svg-art",
+      "name": "Generative SVG Art & Procedural Illustration",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Create algorithmically generated SVG artwork using procedural techniques (flow fields, L-systems, Voronoi, noise functions, fractals), SVG filter chains (feTurbulence, feDisplacementMap), parametric design systems, and creative coding frameworks for unique, reproducible visual assets.",
+      "risk_level": "low",
+      "modes": [
+        "implementation",
+        "design",
+        "research"
+      ],
+      "inputs": [
+        "Visual brief with style direction, color palette, and complexity constraints",
+        "Algorithmic parameters (seed, noise scale, iteration depth, symmetry rules)",
+        "Output specifications (viewBox dimensions, optimization targets, format requirements)"
+      ],
+      "outputs": [
+        "Generated SVG artwork with documented algorithmic parameters for reproducibility",
+        "Parametric SVG templates with configurable variables for brand customization",
+        "SVG filter chain specifications for texture, distortion, and visual effects"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/generative-svg-guide.md"
+      ],
+      "templates": [
+        "templates/generative-art-spec.md"
+      ],
+      "checks": [
+        "checks/generative-svg-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/flow-field.svg"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "Generated SVG artwork meets visual brief with documented algorithmic parameters",
+        "All generated SVGs are valid, optimized, and render correctly across target browsers",
+        "Token budget exhausted or creative direction is insufficient"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "generative-art",
+          "svg",
+          "procedural",
+          "creative-coding",
+          "illustration"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "git-workflow",
       "name": "Git Workflow, Branching & Evidence-Backed Review",
       "core": true,
@@ -4729,6 +5234,81 @@
         ],
         "risk_any": [
           "high"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "icon-system",
+      "name": "Icon System Design & Governance",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, govern, and distribute icon libraries with consistent grid specifications, optical alignment, stroke/fill conventions, naming taxonomy, accessibility classification, semantic versioning, and multi-platform distribution (NPM, Figma, component libraries).",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "implementation",
+        "review",
+        "audit",
+        "documentation"
+      ],
+      "inputs": [
+        "Icon grid specification (base size, padding, keylines) and style direction (stroke vs fill)",
+        "Icon inventory with categories, names, and accessibility classifications",
+        "Distribution targets (NPM package, SVG sprite, React/Vue components, Figma library)"
+      ],
+      "outputs": [
+        "Icon library with consistent grid, optical alignment, and naming conventions",
+        "Icon component wrappers with accessibility attributes and size/color props",
+        "Icon governance policy with versioning, deprecation, and quality gate rules"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/icon-system-guide.md"
+      ],
+      "templates": [
+        "templates/icon-spec.md"
+      ],
+      "checks": [
+        "checks/icon-system-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/icon-grid-spec.md"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All icons conform to grid specification with consistent stroke width and optical alignment",
+        "Icon library passes accessibility audit with correct aria attributes on all items",
+        "Token budget exhausted or design source files are unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "icons",
+          "icon-library",
+          "svg",
+          "ui",
+          "design-system"
         ]
       },
       "requires_any": [],
@@ -7908,6 +8488,81 @@
       "tools": []
     },
     {
+      "id": "layout-patterns",
+      "name": "Layout Design Patterns & Spatial Composition",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, specify, and validate spatial composition using grid systems, layout primitives (Stack, Cluster, Sidebar, Switcher, Cover, Center, Grid, Frame, Reel), responsive strategies (container queries, fluid design), scanning patterns (F/Z/Gutenberg), and spacing token architecture.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "implementation",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Content type, density requirements, and target viewport range",
+        "Grid system selection (column, modular, hierarchical) with gutter and margin policy",
+        "Responsive strategy requirements and container query breakpoint candidates"
+      ],
+      "outputs": [
+        "Layout specification with grid definition, primitives, and responsive behavior matrix",
+        "Spacing token scale with semantic names and geometric progression values",
+        "Reflow validation evidence across all canonical breakpoints"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/layout-patterns-guide.md"
+      ],
+      "templates": [
+        "templates/layout-spec.md"
+      ],
+      "checks": [
+        "checks/layout-patterns-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/layout-primitives.css"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "Layout specification covers all target viewports with reflow evidence at each breakpoint",
+        "All spacing values resolve through design tokens with zero hardcoded pixel values",
+        "Token budget exhausted or target viewport devices are unavailable for testing"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "layout",
+          "grid",
+          "responsive",
+          "ui",
+          "frontend",
+          "design-system"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "lean-progressive-context",
       "name": "Lean Progressive Context",
       "core": true,
@@ -8050,6 +8705,78 @@
         ],
         "risk_any": [
           "security"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "marketing-collateral",
+      "name": "Marketing Collateral Design & Production",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, specify, and govern marketing collateral materials (social media graphics, email templates, landing pages, banners, brochures, pitch decks, infographics) with brand consistency, funnel alignment, and multi-channel asset management.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "review",
+        "audit",
+        "documentation"
+      ],
+      "inputs": [
+        "Marketing funnel stage (awareness, consideration, conversion, retention) and collateral type",
+        "Brand guidelines with approved colors, typography, imagery, and voice",
+        "Channel specifications (social media dimensions, email client constraints, print requirements)"
+      ],
+      "outputs": [
+        "Collateral design specifications aligned to funnel stage with brand-compliant layouts",
+        "Asset template library with reusable components for rapid production",
+        "Multi-channel adaptation matrix documenting sizing, format, and content adjustments"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/marketing-collateral-guide.md"
+      ],
+      "templates": [
+        "templates/collateral-spec.md"
+      ],
+      "checks": [
+        "checks/marketing-collateral-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/social-media-template.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All collateral materials comply with brand guidelines and channel specifications",
+        "Asset templates cover all required funnel stages and channels",
+        "Token budget exhausted or brand assets are unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "marketing",
+          "collateral",
+          "social-media",
+          "email",
+          "branding"
         ]
       },
       "requires_any": [],
@@ -8521,6 +9248,80 @@
           "accessibility",
           "a11y",
           "ui"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "motion-library",
+      "name": "Motion Design Library & Animation System",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, implement, and govern reusable motion primitives using spring physics, cubic Bézier easing, semantic animation tokens, choreography rules, reduced-motion accessibility patterns, and GPU-optimized performance targeting 60fps.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "implementation",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Interaction patterns requiring animation (transitions, micro-interactions, page changes)",
+        "Motion token vocabulary (durations, easings, spring configurations)",
+        "Accessibility requirements for prefers-reduced-motion compliance"
+      ],
+      "outputs": [
+        "Motion token definitions (duration, easing, spring) in DTCG format",
+        "Reusable motion primitives library (fadeIn, slideIn, scaleIn, collapse, expand)",
+        "Reduced-motion fallback implementations with equivalent feedback"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/motion-design-guide.md"
+      ],
+      "templates": [
+        "templates/motion-spec.md"
+      ],
+      "checks": [
+        "checks/motion-library-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/motion-tokens.json"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All motion primitives achieve 60fps on target devices with GPU-composited properties only",
+        "Every animated element has a prefers-reduced-motion alternative providing equivalent feedback",
+        "Token budget exhausted or target animation framework is unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "motion",
+          "animation",
+          "interaction",
+          "ui",
+          "frontend"
         ]
       },
       "requires_any": [],
@@ -9806,6 +10607,78 @@
       "tools": []
     },
     {
+      "id": "prototyping",
+      "name": "Rapid Prototyping & Progressive Fidelity",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Create, iterate, and validate UI prototypes across progressive fidelity levels (sketch → wireframe → lo-fi → mid-fi → hi-fi → interactive) with structured feedback loops, user testing integration, and clear handoff to implementation.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "review",
+        "testing"
+      ],
+      "inputs": [
+        "User flows, information architecture, and task scenarios to prototype",
+        "Target fidelity level and validation questions to answer",
+        "Design system tokens and component library for hi-fi prototypes"
+      ],
+      "outputs": [
+        "Prototype at requested fidelity level with interaction specifications",
+        "Validation findings from user testing or expert review",
+        "Implementation handoff documentation with component mapping and state specifications"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/prototyping-guide.md"
+      ],
+      "templates": [
+        "templates/prototype-spec.md"
+      ],
+      "checks": [
+        "checks/prototyping-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/prototype-iteration.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "Prototype answers all targeted validation questions with documented findings",
+        "Implementation handoff documentation maps all prototype elements to design system components",
+        "Token budget exhausted or user testing participants are unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "prototyping",
+          "ux",
+          "ui",
+          "wireframes",
+          "testing"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "prumo-navigation",
       "name": "Prumo Canonical Navigation & Authority Resolution",
       "version": 2,
@@ -10337,6 +11210,81 @@
           "webgpu",
           "forward-plus",
           "deferred-shading"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "responsive-design",
+      "name": "Responsive Design Strategy & Implementation",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, implement, and validate responsive strategies using container queries, fluid typography and spacing (clamp/min/max), content-first breakpoints, progressive enhancement, responsive images (srcset/picture), logical properties for internationalization, and WCAG 1.4.10 reflow compliance at 400% zoom.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "implementation",
+        "review",
+        "audit",
+        "testing"
+      ],
+      "inputs": [
+        "Content inventory with density and hierarchy requirements across viewports",
+        "Grid system specification with column counts, gutters, and margin policies per breakpoint",
+        "Target device matrix with viewport ranges, pointer types, and orientation requirements"
+      ],
+      "outputs": [
+        "Responsive specification with content-first breakpoints and reflow behavior matrix",
+        "Fluid implementation using clamp(), container queries, and logical properties",
+        "Multi-viewport test evidence including 200%/400% zoom reflow validation"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/responsive-design-guide.md"
+      ],
+      "templates": [
+        "templates/responsive-spec.md"
+      ],
+      "checks": [
+        "checks/responsive-design-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/fluid-responsive.css"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All content reflows correctly at 400% zoom without horizontal scrolling (WCAG 1.4.10)",
+        "Container queries provide component-level adaptivity independent of viewport width",
+        "Token budget exhausted or target test devices are unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "responsive",
+          "mobile",
+          "layout",
+          "frontend",
+          "ui"
         ]
       },
       "requires_any": [],
@@ -11674,6 +12622,81 @@
       "tools": []
     },
     {
+      "id": "svg-engineering",
+      "name": "SVG Engineering & Optimization",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Author, optimize, and validate scalable vector graphics with semantic structure, accessibility attributes (title, desc, aria), SVGO automation pipelines, currentColor theming, SVG filters and animation, sprite systems, and procedural SVG generation.",
+      "risk_level": "low",
+      "modes": [
+        "implementation",
+        "review",
+        "audit",
+        "design"
+      ],
+      "inputs": [
+        "SVG source files or design specifications requiring vector implementation",
+        "Icon grid and keyline specifications (24px, 48px base grids)",
+        "Accessibility classification (decorative vs informative) for each SVG asset"
+      ],
+      "outputs": [
+        "Optimized SVG assets with semantic structure and accessibility attributes",
+        "SVGO configuration and CI pipeline integration for automated optimization",
+        "SVG component wrappers or sprite sheets with theming support via currentColor"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/svg-engineering-guide.md"
+      ],
+      "templates": [
+        "templates/svg-component-spec.md"
+      ],
+      "checks": [
+        "checks/svg-engineering-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/accessible-icon.svg"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All SVG assets pass SVGO optimization with zero redundant elements",
+        "Every SVG has correct accessibility attributes matching its decorative/informative classification",
+        "Token budget exhausted or source design files are unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "svg",
+          "icons",
+          "graphics",
+          "vector",
+          "ui",
+          "design-system"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "testing-quality",
       "name": "Testing Quality",
       "version": 2,
@@ -12112,6 +13135,80 @@
       "tools": []
     },
     {
+      "id": "typography-system",
+      "name": "Typography System Architecture & Fluid Type Scale",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design, specify, and validate systematic typographic hierarchies using modular scales, fluid sizing (clamp()), variable font axis configuration, OpenType feature selection, vertical rhythm enforcement, and DTCG-compliant typography tokens.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "implementation",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Project type, reading context, and target viewport range for modular scale selection",
+        "Font families with variable font axes, OpenType features, and licensing constraints",
+        "Vertical rhythm base unit, line-height conventions, and maximum line length (ch) target"
+      ],
+      "outputs": [
+        "Complete type ramp with fluid clamp() values, weight/size/leading for each hierarchy level",
+        "DTCG typography tokens with variable font axis settings and OpenType feature flags",
+        "Readability audit evidence covering min size, max line length, and zoom/reflow compliance"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/typography-guide.md"
+      ],
+      "templates": [
+        "templates/typography-spec.md"
+      ],
+      "checks": [
+        "checks/typography-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/type-scale.json"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "Type ramp covers all hierarchy levels with fluid sizing and passes readability audit",
+        "All typography tokens validate against DTCG schema with variable font axes specified",
+        "Token budget exhausted or required font licensing authority is unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "typography",
+          "design-tokens",
+          "fonts",
+          "design-system",
+          "frontend"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "ui-implementation",
       "name": "Design System UI Component Implementation",
       "version": 2,
@@ -12492,6 +13589,80 @@
           "navigation",
           "ia",
           "sitemap"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "visual-communication",
+      "name": "Visual Communication Theory & Semiotics",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Apply visual communication theory (hierarchy, semiotics, visual rhetoric, information design) to define message architecture, evaluate iconographic meaning, audit data visualization integrity, and validate cultural appropriateness of visual language across audiences.",
+      "risk_level": "low",
+      "modes": [
+        "design",
+        "review",
+        "audit",
+        "documentation",
+        "research"
+      ],
+      "inputs": [
+        "Communication objectives, target audience profile, and cultural context",
+        "Interface screens, marketing materials, or data visualizations to audit",
+        "Iconographic inventory with intended meanings and semiotic classification"
+      ],
+      "outputs": [
+        "Visual communication strategy document with message hierarchy and semiotic analysis",
+        "Visual hierarchy audit mapping each element to its intended communication priority",
+        "Cultural appropriateness review with flagged symbols, colors, and imagery"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/visual-communication-guide.md"
+      ],
+      "templates": [
+        "templates/visual-strategy-spec.md"
+      ],
+      "checks": [
+        "checks/visual-communication-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/visual-hierarchy-audit.md"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All primary communication objectives mapped to visual hierarchy decisions with rationale",
+        "Semiotic analysis completed for all icons and symbols with cultural cross-check",
+        "Token budget exhausted or target audience representative data is unavailable"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      },
+      "select": {
+        "features_any": [
+          "visual",
+          "communication",
+          "marketing",
+          "branding",
+          "data-visualization",
+          "ui"
         ]
       },
       "requires_any": [],

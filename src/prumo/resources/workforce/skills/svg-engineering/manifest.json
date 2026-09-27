@@ -1,0 +1,73 @@
+{
+  "id": "svg-engineering",
+  "name": "SVG Engineering & Optimization",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Expert-level SVG authoring, optimization, and accessibility implementation.",
+  "risk_level": "low",
+  "modes": [
+    "design",
+    "implementation",
+    "review",
+    "testing",
+    "documentation"
+  ],
+  "inputs": [
+    "Raw SVG files",
+    "Design specs",
+    "UI requirements"
+  ],
+  "outputs": [
+    "Optimized SVGs",
+    "SVG Sprites",
+    "Accessible SVG Components"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ],
+  "references": [
+    "references/svg-engineering-guide.md"
+  ],
+  "templates": [
+    "templates/svg-component-spec.md"
+  ],
+  "checks": [
+    "checks/svg-engineering-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/accessible-icon.svg"
+  ],
+  "required_evidence": [
+    "review",
+    "test"
+  ],
+  "stop_conditions": [
+    "SVG passes SVGO optimization, meets a11y criteria, and adheres to viewBox conventions."
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": [
+      "svg",
+      "icons",
+      "vector graphics",
+      "svgo",
+      "sprite"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

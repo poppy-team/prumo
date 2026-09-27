@@ -280,8 +280,9 @@ var stateFrames = map[string]func(t testing.TB) tea.Model{
 			send(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl}).model
 	},
 	"read-only": func(t testing.TB) tea.Model {
-		return newBuilder(t, &stubHarness{}).seed("S1", 4).selectSession("S1").
-			send(tea.KeyPressMsg{Code: 'l', Mod: tea.ModCtrl}).model
+		b := newBuilder(t, &stubHarness{}).seed("S1", 4).selectSession("S1")
+		logging.Clear()
+		return b.send(tea.KeyPressMsg{Code: 'l', Mod: tea.ModCtrl}).model
 	},
 	"permission-requested": func(t testing.TB) tea.Model {
 		return approvalOpened(t).model

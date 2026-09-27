@@ -1,0 +1,34 @@
+{
+  "id": "design-psychology",
+  "name": "Design Psychology & Cognitive Science",
+  "version": 1,
+  "schema_version": 3,
+  "purpose": "Apply cognitive science and design psychology laws (Gestalt, Hick's, Fitts's, Miller's, etc.) to evaluate and improve user interfaces.",
+  "risk_level": "low",
+  "modes": ["design", "review", "audit", "research"],
+  "inputs": ["UI designs", "wireframes", "prototypes", "user flows"],
+  "outputs": ["Cognitive audit reports", "Redesign recommendations", "Fitts's & Hick's Law calculations"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/design-psychology-guide.md"],
+  "templates": ["templates/cognitive-audit-report.md"],
+  "checks": ["checks/design-psychology-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/cognitive-audit-example.md"],
+  "required_evidence": ["audit"],
+  "stop_conditions": ["Cognitive load minimized and all primary paths comply with UX laws"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["design", "ui", "ux", "frontend"]
+  },
+  "requires_any": [],
+  "tools": []
+}
