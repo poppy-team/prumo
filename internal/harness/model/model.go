@@ -157,10 +157,14 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 		if apiKey == "" {
 			apiKey = envOr("PRUMO_MODEL_API_KEY", "")
 		}
-		if err := ValidateDestinationURL(baseURL, DefaultDestinationPolicy()); err != nil {
+		policy := DefaultDestinationPolicy()
+		if strings.HasPrefix(baseURL, "http://localhost") || strings.HasPrefix(baseURL, "http://127.0.0.1") {
+			policy = LocalDevelopmentDestinationPolicy()
+		}
+		if err := ValidateDestinationURL(baseURL, policy); err != nil {
 			return nil, err
 		}
-		return NewOpenAICompat(baseURL, apiKey, mdl), nil
+		return NewOpenAICompatWithPolicy(baseURL, apiKey, mdl, policy), nil
 	case "opencode":
 		// A delegated turn: opencode runs it with its own tools, its own
 		// permission policy and its own authentication (including the models it
@@ -173,16 +177,90 @@ func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
 			baseURL = envOr("PRUMO_MODEL_BASE_URL", "")
 		}
 		if apiKey == "" {
-			apiKey = envOr("PRUMO_MODEL_API_KEY", "")
+			apiKey = envOr("ANTHROPIC_API_KEY", envOr("PRUMO_MODEL_API_KEY", ""))
 		}
+		if mdl == "" {
+			mdl = envOr("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
+		}
+		policy := DefaultDestinationPolicy()
 		if baseURL != "" {
-			if err := ValidateDestinationURL(baseURL, DefaultDestinationPolicy()); err != nil {
+			if strings.HasPrefix(baseURL, "http://localhost") || strings.HasPrefix(baseURL, "http://127.0.0.1") {
+				policy = LocalDevelopmentDestinationPolicy()
+			}
+			if err := ValidateDestinationURL(baseURL, policy); err != nil {
 				return nil, err
 			}
 		}
-		return NewAnthropic(baseURL, apiKey, mdl), nil
+		return NewAnthropicWithPolicy(baseURL, apiKey, mdl, policy), nil
+	case "gemini", "google":
+		if baseURL == "" {
+			baseURL = envOr("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
+		}
+		if apiKey == "" {
+			apiKey = envOr("GEMINI_API_KEY", envOr("PRUMO_MODEL_API_KEY", ""))
+		}
+		if mdl == "" {
+			mdl = envOr("GEMINI_MODEL", "gemini-2.5-pro")
+		}
+		policy := DefaultDestinationPolicy()
+		if strings.HasPrefix(baseURL, "http://localhost") || strings.HasPrefix(baseURL, "http://127.0.0.1") {
+			policy = LocalDevelopmentDestinationPolicy()
+		}
+		if err := ValidateDestinationURL(baseURL, policy); err != nil {
+			return nil, err
+		}
+		p := NewOpenAICompatWithPolicy(baseURL, apiKey, mdl, policy)
+		p.Provider = "google"
+		return p, nil
+	case "antigravity", "acf":
+		if baseURL == "" {
+			baseURL = envOr("ACF_ENDPOINT", envOr("ANTIGRAVITY_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta/openai"))
+		}
+		if apiKey == "" {
+			apiKey = envOr("ACF_TOKEN", envOr("ANTIGRAVITY_TOKEN", envOr("GEMINI_API_KEY", envOr("PRUMO_MODEL_API_KEY", ""))))
+		}
+		if mdl == "" {
+			mdl = envOr("ANTIGRAVITY_MODEL", envOr("ACF_MODEL", "gemini-2.5-pro"))
+		}
+		policy := DefaultDestinationPolicy()
+		if strings.HasPrefix(baseURL, "http://localhost") || strings.HasPrefix(baseURL, "http://127.0.0.1") {
+			policy = LocalDevelopmentDestinationPolicy()
+		}
+		if err := ValidateDestinationURL(baseURL, policy); err != nil {
+			return nil, err
+		}
+		headers := map[string]string{}
+		if acfSession := envOr("ACF_SESSION_ID", ""); acfSession != "" {
+			headers["x-acf-session-id"] = acfSession
+		}
+		if acfContext := envOr("ACF_CONTEXT_ID", ""); acfContext != "" {
+			headers["x-acf-context-id"] = acfContext
+		}
+		p := NewOpenAICompatWithPolicy(baseURL, apiKey, mdl, policy).WithHeaders(headers)
+		p.Provider = "antigravity"
+		return p, nil
+	case "deepseek":
+		if baseURL == "" {
+			baseURL = envOr("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+		}
+		if apiKey == "" {
+			apiKey = envOr("DEEPSEEK_API_KEY", envOr("PRUMO_MODEL_API_KEY", ""))
+		}
+		if mdl == "" {
+			mdl = envOr("DEEPSEEK_MODEL", "deepseek-chat")
+		}
+		policy := DefaultDestinationPolicy()
+		if strings.HasPrefix(baseURL, "http://localhost") || strings.HasPrefix(baseURL, "http://127.0.0.1") {
+			policy = LocalDevelopmentDestinationPolicy()
+		}
+		if err := ValidateDestinationURL(baseURL, policy); err != nil {
+			return nil, err
+		}
+		p := NewOpenAICompatWithPolicy(baseURL, apiKey, mdl, policy)
+		p.Provider = "deepseek"
+		return p, nil
 	default:
-		return nil, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode)", name)
+		return nil, fmt.Errorf("unknown provider %s (fake|fake-tools|openai-compat|anthropic|opencode|gemini|antigravity|deepseek)", name)
 	}
 }
 
@@ -454,12 +532,16 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		retryAfter := resp.Header.Get("Retry-After")
 		msg := parseProviderError(resp.Body)
 		resp.Body.Close()
 		if msg == "" {
 			msg = fmt.Sprintf("provider http %d", resp.StatusCode)
 		} else {
 			msg = fmt.Sprintf("provider http %d: %s", resp.StatusCode, msg)
+		}
+		if retryAfter != "" {
+			msg += fmt.Sprintf(" (Retry-After: %s)", retryAfter)
 		}
 		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
 		ch := make(chan agent.ModelEvent, 1)
@@ -500,8 +582,10 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 			var chunk struct {
 				Choices []struct {
 					Delta struct {
-						Content   string `json:"content"`
-						ToolCalls []struct {
+						Content          string `json:"content"`
+						ReasoningContent string `json:"reasoning_content"`
+						Reasoning        string `json:"reasoning"`
+						ToolCalls        []struct {
 							ID       string `json:"id"`
 							Function struct {
 								Name      string `json:"name"`
@@ -549,6 +633,13 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 				continue
 			}
 			for _, c := range chunk.Choices {
+				reasoning := c.Delta.ReasoningContent
+				if reasoning == "" {
+					reasoning = c.Delta.Reasoning
+				}
+				if reasoning != "" {
+					ch <- agent.ModelEvent{Kind: agent.EventReasoningDelta, RequestID: req.RequestID, Text: reasoning}
+				}
 				if c.Delta.Content != "" {
 					ch <- agent.ModelEvent{Kind: agent.EventTextDelta, RequestID: req.RequestID, Text: c.Delta.Content}
 				}

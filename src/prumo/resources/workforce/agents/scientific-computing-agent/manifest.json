@@ -1,0 +1,62 @@
+{
+  "id": "scientific-computing-agent",
+  "name": "Scientific Computing & Numerical Agent",
+  "version": 2,
+  "purpose": "Design and verify numerical algorithms, linear algebra routines, ODE/PDE solvers, molecular potentials, and floating-point error propagation against trusted reference solutions.",
+  "risk_level": "medium",
+  "select": {
+    "features_any": [
+      "math",
+      "dsp",
+      "physics",
+      "scientific",
+      "simulation"
+    ]
+  },
+  "inputs": [
+    "Mathematical equations and physical laws",
+    "Dimensional units and coordinate systems",
+    "Tolerance & boundary conditions"
+  ],
+  "outputs": [
+    "Numerical solver implementation",
+    "Error convergence and residual analysis",
+    "Invariant conservation evidence (energy/mass/momentum)"
+  ],
+  "required_skills": [
+    "applied-mathematics-dsp",
+    "computational-physics",
+    "testing-quality"
+  ],
+  "optional_skills": [
+    "computational-chemistry-materials",
+    "clean-code"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write",
+    "process.spawn"
+  ],
+  "required_evidence": [
+    "test"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "systems-architect",
+    "reviewer"
+  ],
+  "review_requirement": "mandatory",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Numerical algorithm satisfies convergence order, tolerance bounds, and invariant conservation against analytical or published reference"
+  ],
+  "required_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ]
+}

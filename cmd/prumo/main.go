@@ -214,6 +214,8 @@ func run(args []string) int {
 		return runInstall(asJSON, home, rest[1:])
 	case "uninstall":
 		return runUninstall(asJSON, home, rest[1:])
+	case "upgrade", "update", "self-update":
+		return runUpgrade(asJSON, home, rest[1:])
 	case "status":
 		path := "."
 		for i := 1; i < len(rest); i++ {

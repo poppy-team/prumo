@@ -51,7 +51,7 @@ func NewACPClient(command string, args ...string) *ACPClient {
 func (c *ACPClient) Name() string { return "acp" }
 
 func (c *ACPClient) Capabilities(_ context.Context) ([]string, error) {
-	return []string{"session"}, nil
+	return []string{"session", "events", "cancel"}, nil
 }
 
 func (c *ACPClient) start(ctx context.Context) error {

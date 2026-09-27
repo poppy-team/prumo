@@ -1,10 +1,152 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::services::workspace::validate_path_boundary;
-use crate::state::{AppState, DocumentTab, FileKind, NoticeTone};
+use crate::state::{
+    AppState, ConflictResolution, DocumentConflict, DocumentTab, FileKind, NoticeTone,
+};
 
 pub const MAX_FILE_SIZE_BYTES: u64 = 8 * 1024 * 1024;
+
+pub fn file_uri_to_path(uri: &str) -> Result<PathBuf, String> {
+    let encoded = uri
+        .strip_prefix("file://")
+        .ok_or_else(|| "LSP URI is not a file URI".to_string())?;
+    let (authority, encoded_path) = if let Some(path) = encoded.strip_prefix('/') {
+        (None, format!("/{path}"))
+    } else if let Some((authority, path)) = encoded.split_once('/') {
+        (Some(authority), format!("/{path}"))
+    } else {
+        (Some(encoded), "/".to_string())
+    };
+    let path = decode_uri_component(&encoded_path)?;
+    let path = if path.as_bytes().first() == Some(&b'/')
+        && path.as_bytes().get(1).is_some_and(u8::is_ascii_alphabetic)
+        && path.as_bytes().get(2) == Some(&b':')
+    {
+        path[1..].to_string()
+    } else {
+        path
+    };
+    let path = match authority {
+        None | Some("localhost") => path,
+        Some(authority) => format!("//{authority}{path}"),
+    };
+    Ok(PathBuf::from(path))
+}
+
+fn decode_uri_component(value: &str) -> Result<String, String> {
+    let mut bytes = Vec::with_capacity(value.len());
+    let mut characters = value.chars();
+    while let Some(character) = characters.next() {
+        if character == '%' {
+            let high = characters.next().and_then(|value| value.to_digit(16));
+            let low = characters.next().and_then(|value| value.to_digit(16));
+            let (Some(high), Some(low)) = (high, low) else {
+                return Err("LSP URI contains invalid percent encoding".to_string());
+            };
+            bytes.push((high * 16 + low) as u8);
+        } else {
+            let mut buffer = [0; 4];
+            bytes.extend_from_slice(character.encode_utf8(&mut buffer).as_bytes());
+        }
+    }
+    String::from_utf8(bytes).map_err(|_| "LSP URI is not valid UTF-8".to_string())
+}
+
+pub fn utf16_position_to_line_character(content: &str, position: usize) -> (usize, usize) {
+    let mut consumed = 0;
+    let mut line = 1;
+    let mut character = 0;
+    let mut characters = content.chars().peekable();
+    while let Some(value) = characters.next() {
+        if consumed >= position {
+            break;
+        }
+        if value == '\r' && characters.peek() == Some(&'\n') {
+            continue;
+        }
+        let width = value.len_utf16();
+        if value == '\n' {
+            line += 1;
+            character = 0;
+        } else {
+            character += width;
+        }
+        consumed += width;
+    }
+    (line, character)
+}
+
+pub fn line_character_to_utf16_position(
+    content: &str,
+    line: usize,
+    character: usize,
+) -> Option<usize> {
+    if line == 0 {
+        return None;
+    }
+    let mut current_line = 1;
+    let mut line_character = 0;
+    let mut position = 0;
+    let mut characters = content.chars().peekable();
+    while let Some(value) = characters.next() {
+        if current_line == line && line_character >= character {
+            return Some(position);
+        }
+        if value == '\r' && characters.peek() == Some(&'\n') {
+            continue;
+        }
+        position += value.len_utf16();
+        if value == '\n' {
+            current_line += 1;
+            line_character = 0;
+        } else {
+            line_character += value.len_utf16();
+        }
+    }
+    (current_line == line && line_character >= character).then_some(position)
+}
+
+pub fn utf16_position_to_byte(
+    content: &str,
+    line: usize,
+    character: usize,
+) -> Result<usize, String> {
+    if line == 0 {
+        return Err("LSP line must be one-based".to_string());
+    }
+    let mut current_line = 1;
+    let mut consumed = 0;
+    let mut characters = content.char_indices().peekable();
+    while let Some((offset, value)) = characters.next() {
+        if current_line == line && consumed >= character {
+            return Ok(offset);
+        }
+        if value == '\r' && characters.peek().is_some_and(|(_, next)| *next == '\n') {
+            if current_line == line && consumed >= character {
+                return Ok(offset);
+            }
+            continue;
+        }
+        if value == '\n' {
+            if current_line == line && consumed >= character {
+                return Ok(offset);
+            }
+            current_line += 1;
+            consumed = 0;
+        } else {
+            consumed += value.len_utf16();
+        }
+    }
+    if current_line == line && consumed >= character {
+        Ok(content.len())
+    } else {
+        Err(format!(
+            "LSP position is outside the document: {line}:{character}"
+        ))
+    }
+}
 
 pub fn open_file(root: &Path, file_path: &Path) -> Result<DocumentTab, String> {
     let canonical_path = validate_path_boundary(root, file_path)?;
@@ -47,6 +189,8 @@ pub fn open_file(root: &Path, file_path: &Path) -> Result<DocumentTab, String> {
         is_dirty: false,
         persisted_content: content.clone(),
         content,
+        revision: 0,
+        conflict: None,
         is_agent_modified: false,
         kind,
     })
@@ -94,6 +238,7 @@ pub fn activate_path(state: &mut AppState, path: &Path) -> Result<(), String> {
     state.tabs.push(tab);
     state.active_tab_index = Some(state.tabs.len() - 1);
     state.selected_path = Some(path.to_path_buf());
+    state.close_editor_popup();
     state.clear_notice();
     Ok(())
 }
@@ -112,12 +257,63 @@ pub fn save_active_tab(state: &mut AppState) -> Result<(), String> {
     };
 
     if let Err(error) = save_file(&workspace_root, &path, &content, &persisted_content) {
+        if let Ok(disk_content) = fs::read_to_string(&path)
+            && disk_content != persisted_content
+        {
+            state.set_active_conflict(disk_content);
+        }
         state.show_notice(NoticeTone::Error, error.clone());
         return Err(error);
     }
 
     state.mark_active_saved();
+    let saved = state.active_tab().map(|tab| tab.rel_path.clone());
+    if let Some(saved) = saved {
+        state.follow_conflict_paths.retain(|path| path != &saved);
+        state.agent_line_decorations.clear();
+    }
     state.show_notice(NoticeTone::Success, "File saved");
+    Ok(())
+}
+
+pub fn resolve_active_conflict(
+    state: &mut AppState,
+    resolution: ConflictResolution,
+) -> Result<(), String> {
+    let Some(tab) = state.active_tab_mut() else {
+        return Err("There is no active file to resolve".to_string());
+    };
+    let Some(conflict) = tab.conflict.clone() else {
+        return Err("The active file has no external-change conflict".to_string());
+    };
+    let DocumentConflict::ExternalChange { disk_content } = conflict;
+    match resolution {
+        ConflictResolution::Reload => {
+            tab.content = disk_content.clone();
+            tab.persisted_content = disk_content;
+            tab.is_dirty = false;
+            tab.conflict = None;
+            tab.revision = tab.revision.saturating_add(1);
+        }
+        ConflictResolution::KeepMine => {
+            tab.persisted_content = disk_content.clone();
+            tab.is_dirty = tab.content != disk_content;
+            tab.conflict = None;
+            tab.revision = tab.revision.saturating_add(1);
+        }
+        ConflictResolution::ThreeWayMerge => {
+            let base = &tab.persisted_content;
+            let mine = &tab.content;
+            let theirs = &disk_content;
+            let outcome = crate::services::merge::three_way_merge(base, mine, theirs);
+            let is_clean = outcome.is_clean();
+            tab.content = outcome.content;
+            tab.persisted_content = disk_content.clone();
+            tab.is_dirty = !is_clean || tab.content != disk_content;
+            tab.conflict = None;
+            tab.revision = tab.revision.saturating_add(1);
+        }
+    }
     Ok(())
 }
 
@@ -216,6 +412,78 @@ mod tests {
         discard_pending_tab(&mut state);
         assert!(state.tabs.is_empty());
         assert_eq!(state.active_tab_index, None);
+    }
+
+    #[test]
+    fn converts_utf16_cursor_positions_and_file_uris() {
+        assert_eq!(utf16_position_to_line_character("one\ntwo", 5), (2, 1));
+        assert_eq!(
+            file_uri_to_path("file:///tmp/a%20file.rs").unwrap(),
+            PathBuf::from("/tmp/a file.rs")
+        );
+        assert_eq!(
+            file_uri_to_path("file:///C:/tmp/main.rs").unwrap(),
+            PathBuf::from("C:/tmp/main.rs")
+        );
+        assert_eq!(
+            file_uri_to_path("file://server/share/main.rs").unwrap(),
+            PathBuf::from("//server/share/main.rs")
+        );
+    }
+
+    #[test]
+    fn converts_lsp_positions_to_byte_offsets() {
+        let content = "á\nsecond";
+        assert_eq!(utf16_position_to_byte(content, 1, 0).unwrap(), 0);
+        assert_eq!(utf16_position_to_byte(content, 1, 1).unwrap(), 2);
+        assert_eq!(utf16_position_to_byte(content, 2, 0).unwrap(), 3);
+        assert_eq!(utf16_position_to_byte(content, 2, 3).unwrap(), 6);
+        assert!(utf16_position_to_byte(content, 2, 99).is_err());
+        assert_eq!(line_character_to_utf16_position(content, 2, 0), Some(2));
+        assert_eq!(line_character_to_utf16_position(content, 2, 3), Some(5));
+        let crlf = "one\r\ntwo";
+        assert_eq!(utf16_position_to_line_character(crlf, 4), (2, 0));
+        assert_eq!(utf16_position_to_byte(crlf, 1, 3).unwrap(), 3);
+        assert_eq!(line_character_to_utf16_position(crlf, 2, 0), Some(4));
+    }
+
+    #[test]
+    fn resolves_external_change_before_saving() {
+        let directory = tempdir().unwrap();
+        let root = directory.path();
+        let file_path = root.join("test.txt");
+        fs::write(&file_path, "base").unwrap();
+        let mut state = AppState::new(PathBuf::from(root));
+        activate_path(&mut state, &file_path).unwrap();
+        state.update_active_content("human".to_string());
+        fs::write(&file_path, "agent").unwrap();
+
+        assert!(save_active_tab(&mut state).is_err());
+        assert!(state.active_tab().unwrap().conflict.is_some());
+        resolve_active_conflict(&mut state, ConflictResolution::KeepMine).unwrap();
+        assert!(state.active_tab().unwrap().is_dirty);
+        save_active_tab(&mut state).unwrap();
+        assert_eq!(fs::read_to_string(&file_path).unwrap(), "human");
+    }
+
+    #[test]
+    fn resolves_conflict_with_three_way_merge() {
+        let directory = tempdir().unwrap();
+        let root = directory.path();
+        let file_path = root.join("test.txt");
+        fs::write(&file_path, "header\nbase\nfooter\n").unwrap();
+        let mut state = AppState::new(PathBuf::from(root));
+        activate_path(&mut state, &file_path).unwrap();
+        state.update_active_content("header\nbase\nfooter\nhuman addition\n".to_string());
+        fs::write(&file_path, "agent addition\nheader\nbase\nfooter\n").unwrap();
+
+        assert!(save_active_tab(&mut state).is_err());
+        assert!(state.active_tab().unwrap().conflict.is_some());
+        resolve_active_conflict(&mut state, ConflictResolution::ThreeWayMerge).unwrap();
+        assert!(state.active_tab().unwrap().conflict.is_none());
+        let merged = &state.active_tab().unwrap().content;
+        assert!(merged.contains("agent addition"));
+        assert!(merged.contains("human addition"));
     }
 
     #[test]

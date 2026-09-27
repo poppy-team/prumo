@@ -72,10 +72,10 @@ func TestEvaluateCompletion_TotalAssurance(t *testing.T) {
 	// Waived criterion without reason is blocked
 	criteriaWaived := []AcceptanceCriterion{
 		{
-			ID:          "AC-WAIVE",
-			Description: "Optional feature",
-			Required:    true,
-			Status:      AcceptanceWaived,
+			ID:           "AC-WAIVE",
+			Description:  "Optional feature",
+			Required:     true,
+			Status:       AcceptanceWaived,
 			WaivedReason: "", // Empty!
 		},
 	}

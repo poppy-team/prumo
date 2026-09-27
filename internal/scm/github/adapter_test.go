@@ -54,3 +54,46 @@ func TestRepositoryErrorsAreExplicit(t *testing.T) {
 		server.Close()
 	}
 }
+
+func TestCreateCheckRun(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/example/project/check-runs" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{
+			"id": 123456,
+			"name": "prumo/verification",
+			"head_sha": "abc1234",
+			"status": "completed",
+			"conclusion": "success",
+			"html_url": "https://github.com/example/project/runs/123456"
+		}`))
+	}))
+	defer server.Close()
+
+	client := NewAdapter("example/project", "token")
+	client.BaseURL = server.URL + "/repos"
+	client.HTTP = server.Client()
+
+	resp, err := client.CreateCheckRun(CheckRunRequest{
+		Name:       "prumo/verification",
+		HeadSHA:    "abc1234",
+		Status:     "completed",
+		Conclusion: "success",
+		Output: &CheckRunOutput{
+			Title:   "Prumo Verification",
+			Summary: "All verification gates passed",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateCheckRun failed: %v", err)
+	}
+	if resp.ID != 123456 || resp.Status != "completed" || resp.Conclusion != "success" {
+		t.Fatalf("unexpected check run response: %+v", resp)
+	}
+}

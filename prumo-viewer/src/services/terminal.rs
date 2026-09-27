@@ -1,3 +1,4 @@
+use freya::prelude::{Key, Modifiers, NamedKey};
 use portable_pty::{CommandBuilder, MasterPty, PtySize, native_pty_system};
 use std::{
     io::{Read, Write},
@@ -8,6 +9,65 @@ use std::{
     },
     thread,
 };
+
+pub fn terminal_key_bytes(key: &Key, modifiers: &Modifiers) -> Option<Vec<u8>> {
+    let control = modifiers.contains(Modifiers::CONTROL);
+    let alt = modifiers.contains(Modifiers::ALT);
+    match key {
+        Key::Character(text) => {
+            if control && !alt {
+                let mut characters = text.chars();
+                match (characters.next(), characters.next()) {
+                    (Some(character), None) => {
+                        let lower = character.to_ascii_lowercase();
+                        if lower.is_ascii_alphabetic() {
+                            return Some(vec![lower as u8 - b'a' + 1]);
+                        }
+                        return None;
+                    }
+                    _ => return None,
+                }
+            }
+            let mut bytes = Vec::with_capacity(text.len() + 1);
+            if alt {
+                bytes.push(0x1b);
+            }
+            bytes.extend_from_slice(text.as_bytes());
+            Some(bytes)
+        }
+        Key::Named(named) => {
+            let sequence: &[u8] = match named {
+                NamedKey::Enter => b"\r",
+                NamedKey::Backspace => b"\x7f",
+                NamedKey::Tab => b"\t",
+                NamedKey::Escape => b"\x1b",
+                NamedKey::Delete => b"\x1b[3~",
+                NamedKey::Home => b"\x1b[H",
+                NamedKey::End => b"\x1b[F",
+                NamedKey::PageUp => b"\x1b[5~",
+                NamedKey::PageDown => b"\x1b[6~",
+                NamedKey::ArrowUp => b"\x1b[A",
+                NamedKey::ArrowDown => b"\x1b[B",
+                NamedKey::ArrowRight => b"\x1b[C",
+                NamedKey::ArrowLeft => b"\x1b[D",
+                NamedKey::F1 => b"\x1bOP",
+                NamedKey::F2 => b"\x1bOQ",
+                NamedKey::F3 => b"\x1bOR",
+                NamedKey::F4 => b"\x1bOS",
+                NamedKey::F5 => b"\x1b[15~",
+                NamedKey::F6 => b"\x1b[17~",
+                NamedKey::F7 => b"\x1b[18~",
+                NamedKey::F8 => b"\x1b[19~",
+                NamedKey::F9 => b"\x1b[20~",
+                NamedKey::F10 => b"\x1b[21~",
+                NamedKey::F11 => b"\x1b[23~",
+                NamedKey::F12 => b"\x1b[24~",
+                _ => return None,
+            };
+            Some(sequence.to_vec())
+        }
+    }
+}
 
 const DEFAULT_ROWS: u16 = 24;
 const DEFAULT_COLUMNS: u16 = 120;
@@ -63,14 +123,14 @@ impl TerminalRuntime {
         })
     }
 
-    pub fn write(&self, data: &str) -> Result<(), String> {
+    pub fn write_bytes(&self, data: &[u8]) -> Result<(), String> {
         let mut session = self
             .session
             .lock()
             .map_err(|_| "terminal session lock is poisoned".to_string())?;
         session
             .writer
-            .write_all(data.as_bytes())
+            .write_all(data)
             .and_then(|()| session.writer.flush())
             .map_err(|error| format!("terminal write failed: {error}"))
     }
@@ -197,11 +257,49 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
+    fn terminal_key_mapping_sends_shell_bytes() {
+        let plain = Modifiers::empty();
+        assert_eq!(
+            terminal_key_bytes(&Key::Character("a".to_string()), &plain),
+            Some(b"a".to_vec())
+        );
+        assert_eq!(
+            terminal_key_bytes(&Key::Named(NamedKey::Enter), &plain),
+            Some(b"\r".to_vec())
+        );
+        assert_eq!(
+            terminal_key_bytes(&Key::Named(NamedKey::Backspace), &plain),
+            Some(b"\x7f".to_vec())
+        );
+        assert_eq!(
+            terminal_key_bytes(&Key::Named(NamedKey::ArrowUp), &plain),
+            Some(b"\x1b[A".to_vec())
+        );
+        assert_eq!(
+            terminal_key_bytes(&Key::Named(NamedKey::Tab), &plain),
+            Some(b"\t".to_vec())
+        );
+        let control = Modifiers::CONTROL;
+        assert_eq!(
+            terminal_key_bytes(&Key::Character("c".to_string()), &control),
+            Some(vec![3])
+        );
+        assert_eq!(
+            terminal_key_bytes(&Key::Character("d".to_string()), &control),
+            Some(vec![4])
+        );
+        assert_eq!(
+            terminal_key_bytes(&Key::Named(NamedKey::Shift), &plain),
+            None
+        );
+    }
+
+    #[test]
     fn pty_round_trips_shell_output() {
         let directory = tempdir().unwrap();
         let runtime = TerminalRuntime::new(directory.path(), Some("/bin/sh".to_string())).unwrap();
         runtime
-            .write("printf '__prumo_terminal_ok__\\n'\r")
+            .write_bytes(b"printf '__prumo_terminal_ok__\\n'\r")
             .unwrap();
         let deadline = std::time::Instant::now() + Duration::from_secs(5);
         let mut output = String::new();
@@ -219,7 +317,9 @@ mod tests {
         );
 
         runtime.restart().unwrap();
-        runtime.write("printf '__prumo_restart_ok__\\n'\r").unwrap();
+        runtime
+            .write_bytes(b"printf '__prumo_restart_ok__\\n'\r")
+            .unwrap();
         let deadline = std::time::Instant::now() + Duration::from_secs(5);
         let mut restarted_output = String::new();
         while std::time::Instant::now() < deadline

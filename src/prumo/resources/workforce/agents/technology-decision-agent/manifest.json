@@ -1,0 +1,59 @@
+{
+  "id": "technology-decision-agent",
+  "name": "Technology Decision Agent",
+  "version": 2,
+  "purpose": "Evaluate technology candidates, programming languages, runtimes, and architectures using hard constraint elimination, Pareto analysis, and benchmark experiment plans.",
+  "risk_level": "medium",
+  "select": {
+    "features_any": [
+      "architecture",
+      "bootstrap",
+      "planning"
+    ]
+  },
+  "inputs": [
+    "Workload constraints (latency, throughput, memory)",
+    "Hardware & deployment platform requirements",
+    "Team domain expertise"
+  ],
+  "outputs": [
+    "Technology Decision Record (TDR)",
+    "Pareto Candidate Matrix",
+    "Falsification Experiment Plan"
+  ],
+  "required_skills": [
+    "clean-code",
+    "architecture-quality",
+    "benchmarking"
+  ],
+  "optional_skills": [
+    "performance-native",
+    "memory-management",
+    "compiler-development"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "systems-architect",
+    "architect"
+  ],
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": false,
+    "modify_docs": true,
+    "execute_tests": false
+  },
+  "stop_conditions": [
+    "Pareto candidates selected with explicit trade-offs and falsification experiment plan"
+  ],
+  "required_capabilities": [
+    "filesystem.read"
+  ]
+}

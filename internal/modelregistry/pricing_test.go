@@ -171,7 +171,11 @@ func TestModelsListsWhatIsActuallyPriced(t *testing.T) {
 			t.Errorf("Models(provider) returned %q, which is not that provider", m)
 		}
 	}
-	if all := table.Models(""); len(all) != 4 {
-		t.Errorf("the table prices four models, got %v", all)
+	if all := table.Models(""); len(all) != 6 {
+		t.Errorf("the table prices six models, got %v", all)
+	}
+	deepseekModels := table.Models("deepseek")
+	if len(deepseekModels) != 2 {
+		t.Fatalf("deepseek has two priced models, got %v", deepseekModels)
 	}
 }

@@ -21,7 +21,9 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/raillen/prumo/internal/autoupdate"
 	"github.com/raillen/prumo/internal/harness/aci"
 	"github.com/raillen/prumo/internal/harness/acpserver"
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -627,6 +629,24 @@ func runAgentServe(asJSON bool, args []string) int {
 	defer stop()
 	if !asJSON {
 		fmt.Printf("serving harness daemon on %s\n", sock)
+	}
+	if hasFlag(args, "--auto-update") || os.Getenv("PRUMO_AUTO_UPDATE") == "true" {
+		if !asJSON {
+			fmt.Printf("harness auto-update enabled (monitoring GitHub releases)\n")
+		}
+		autoupdate.StartPeriodicChecker(ctx, 6*time.Hour, autoupdate.CheckOptions{
+			CurrentVersion: protocol.CLIVersion,
+			CacheDir:       filepath.Join(root, ".prumo", "cache"),
+		}, func(rel *autoupdate.ReleaseInfo) {
+			fmt.Printf("[autoupdate] New release detected: %s. Upgrading harness...\n", rel.TagName)
+			_, _ = autoupdate.AutoUpgradeOnRelease(ctx, autoupdate.UpdateOptions{
+				CheckOptions: autoupdate.CheckOptions{
+					CurrentVersion: protocol.CLIVersion,
+					CacheDir:       filepath.Join(root, ".prumo", "cache"),
+				},
+				TargetVersion: rel.TagName,
+			})
+		})
 	}
 	if listen, ok := f["listen"]; ok && listen != "" {
 		token := f["token"]

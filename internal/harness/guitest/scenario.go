@@ -18,21 +18,21 @@ type Scenario struct {
 
 // Step represents a single interaction or assertion step in a GUI scenario.
 type Step struct {
-	Action       string        `json:"action"` // launch, find, click, double_click, type, shortcut, focus, wait_for, assert, screenshot, close
-	Locator      *Locator      `json:"locator,omitempty"`
-	Input        string        `json:"input,omitempty"`
-	Expectations *Expectation  `json:"expectations,omitempty"`
-	TimeoutMs    int           `json:"timeout_ms,omitempty"`
+	Action       string       `json:"action"` // launch, find, click, double_click, type, shortcut, focus, wait_for, assert, screenshot, close
+	Locator      *Locator     `json:"locator,omitempty"`
+	Input        string       `json:"input,omitempty"`
+	Expectations *Expectation `json:"expectations,omitempty"`
+	TimeoutMs    int          `json:"timeout_ms,omitempty"`
 }
 
 // Expectation represents asserted conditions on an element.
 type Expectation struct {
-	Visible *bool   `json:"visible,omitempty"`
-	Focused *bool   `json:"focused,omitempty"`
-	Enabled *bool   `json:"enabled,omitempty"`
-	Text    string  `json:"text,omitempty"`
-	Value   string  `json:"value,omitempty"`
-	State   string  `json:"state,omitempty"`
+	Visible *bool  `json:"visible,omitempty"`
+	Focused *bool  `json:"focused,omitempty"`
+	Enabled *bool  `json:"enabled,omitempty"`
+	Text    string `json:"text,omitempty"`
+	Value   string `json:"value,omitempty"`
+	State   string `json:"state,omitempty"`
 }
 
 // ActionTimelineEntry records each action executed during a scenario run.

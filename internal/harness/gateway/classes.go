@@ -23,12 +23,12 @@ const (
 
 // Explainability Reason Codes for model routing.
 const (
-	ReasonCodeCheapPreferred         = "CHEAP_PREFERRED"
-	ReasonCodePrimaryStandard        = "PRIMARY_STANDARD"
-	ReasonCodeFallbackDegraded       = "FALLBACK_DEGRADED"
-	ReasonCodeQuotaCooldown          = "QUOTA_COOLDOWN"
-	ReasonCodeQuotaExhausted         = "QUOTA_EXHAUSTED"
-	ReasonCodePostMutationRefusal    = "POST_MUTATION_REFUSAL"
+	ReasonCodeCheapPreferred      = "CHEAP_PREFERRED"
+	ReasonCodePrimaryStandard     = "PRIMARY_STANDARD"
+	ReasonCodeFallbackDegraded    = "FALLBACK_DEGRADED"
+	ReasonCodeQuotaCooldown       = "QUOTA_COOLDOWN"
+	ReasonCodeQuotaExhausted      = "QUOTA_EXHAUSTED"
+	ReasonCodePostMutationRefusal = "POST_MUTATION_REFUSAL"
 )
 
 // RouteExplanation provides structured insight into routing decisions.

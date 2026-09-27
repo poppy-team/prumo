@@ -375,10 +375,10 @@ func (s *Service) ExplainExecution(root, profileID string) (map[string]any, erro
 func (s *Service) ExplainRun(root, runID string) (map[string]any, error) {
 	if runID == "" {
 		return map[string]any{
-			"topic": "run",
+			"topic":       "run",
 			"description": "Explains harness agent run lifecycle, checkpoints, and derived completion.",
-			"states": []string{"planned", "running", "checkpointed", "evidenced", "verified", "completed"},
-			"invariants": "Completion is strictly derived from verified evidence; self-declared model text is rejected.",
+			"states":      []string{"planned", "running", "checkpointed", "evidenced", "verified", "completed"},
+			"invariants":  "Completion is strictly derived from verified evidence; self-declared model text is rejected.",
 		}, nil
 	}
 	path := filepath.Join(root, ".prumo", "runtime", "harness", "runs", runID, "record.json")
@@ -389,8 +389,8 @@ func (s *Service) ExplainRun(root, runID string) (map[string]any, error) {
 		}
 	}
 	return map[string]any{
-		"run_id": runID,
-		"status": "active_or_ephemeral",
+		"run_id":         runID,
+		"status":         "active_or_ephemeral",
 		"checkpoint_dir": filepath.Join(root, ".prumo", "runtime", "harness", "runs", runID),
 	}, nil
 }
@@ -421,26 +421,26 @@ func (s *Service) ExplainRoute(root, routeClass string) (map[string]any, error) 
 
 func (s *Service) ExplainBudget(root, scope string) (map[string]any, error) {
 	return map[string]any{
-		"topic": "budget",
-		"scope": scope,
-		"hierarchy": "Project -> Goal -> Task -> Run",
+		"topic":          "budget",
+		"scope":          scope,
+		"hierarchy":      "Project -> Goal -> Task -> Run",
 		"review_reserve": "10-20% reserved capacity strictly protected from implementation overreach",
-		"hard_stop": "ErrBlockedBudget triggers immediate safe stop and durable blocked_budget checkpoint",
-		"dimensions": []string{"tokens", "cost_usd", "tool_calls"},
+		"hard_stop":      "ErrBlockedBudget triggers immediate safe stop and durable blocked_budget checkpoint",
+		"dimensions":     []string{"tokens", "cost_usd", "tool_calls"},
 	}, nil
 }
 
 func (s *Service) ExplainDecision(root, decisionID string) (map[string]any, error) {
 	return map[string]any{
 		"topic": "decision",
-		"id": decisionID,
+		"id":    decisionID,
 		"levels": map[string]string{
-			"L0 - Rule":       "Deterministic Go code and policy engines",
-			"L1 - Decision":   "Closed answer space DecisionProvider (scoring, classification, routing)",
-			"L2 - Reasoning":  "Generative LLM for open synthesis and code generation",
-			"L3 - Authority":  "Human approval for high-risk or irreversible mutations",
+			"L0 - Rule":      "Deterministic Go code and policy engines",
+			"L1 - Decision":  "Closed answer space DecisionProvider (scoring, classification, routing)",
+			"L2 - Reasoning": "Generative LLM for open synthesis and code generation",
+			"L3 - Authority": "Human approval for high-risk or irreversible mutations",
 		},
-		"pipeline": "DETERMINISTIC -> DECISION MODEL -> GENERATIVE MODEL -> HUMAN",
+		"pipeline":   "DETERMINISTIC -> DECISION MODEL -> GENERATIVE MODEL -> HUMAN",
 		"abstention": "DecisionProviders abstain when uncertainty exceeds threshold, escalating up the hierarchy",
 	}, nil
 }

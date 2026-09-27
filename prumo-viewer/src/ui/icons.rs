@@ -22,10 +22,17 @@ pub fn icon(name: &str) -> Bytes {
         "refresh" => lucide::refresh_cw(),
         "settings" => lucide::settings(),
         "terminal" => lucide::terminal(),
+        "menu" => lucide::menu(),
+        "command" => lucide::command(),
+        "sun" => lucide::sun(),
+        "moon" => lucide::moon(),
+        "chevron_up" => lucide::chevron_up(),
         "play" => lucide::play(),
         "stop" => lucide::circle_stop(),
         "list_checks" => lucide::list_checks(),
         "panel_bottom" => lucide::panel_bottom(),
+        "plus" => lucide::plus(),
+        "check" => lucide::check(),
         _ => lucide::file(),
     }
 }

@@ -167,9 +167,11 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	cleanup := install.CleanupManifest{
-		Connector:    "gemini",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
+		Connector:        "gemini",
+		Scope:            "project",
+		ProjectRoot:      projectRoot,
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
 	}
 	if err := connectors.SaveCleanup(home, "gemini", cleanup); err != nil {
 		return nil, err
@@ -189,12 +191,13 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	return &connectors.InstallResult{
-		Connector:    "gemini",
-		Status:       "installed",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
-		CleanupPath:  install.CleanupPath(home, "gemini"),
-		Contract:     c.Contract(),
+		Connector:        "gemini",
+		Status:           "installed",
+		Scope:            "project",
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
+		CleanupPath:      install.CleanupPath(home, "gemini"),
+		Contract:         c.Contract(),
 	}, nil
 }
 

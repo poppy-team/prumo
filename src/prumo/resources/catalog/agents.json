@@ -852,6 +852,75 @@
       ]
     },
     {
+      "id": "isolation-auditor",
+      "name": "Isolation Auditor",
+      "version": 2,
+      "purpose": "Audit and verify multi-tenant isolation, process containment, capability boundaries, sandbox policies, and abuse resistance.",
+      "risk_level": "high",
+      "select": {
+        "features_any": [
+          "security",
+          "multi-tenant",
+          "sandboxing",
+          "plugins",
+          "mcp"
+        ],
+        "risk_any": [
+          "security",
+          "privacy"
+        ]
+      },
+      "inputs": [
+        "Tenant isolation policy",
+        "Process sandbox manifests",
+        "Tool execution policy"
+      ],
+      "outputs": [
+        "Isolation penetration test report",
+        "Sandbox escape audit findings",
+        "Adversarial abuse scorecard"
+      ],
+      "required_skills": [
+        "security-review",
+        "untrusted-project-security",
+        "secrets-security",
+        "security-saas-isolation"
+      ],
+      "optional_skills": [
+        "linux-kernel-isolation",
+        "security-agent-mcp",
+        "process-execution-security"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 0,
+      "handoff_to": [
+        "security-reviewer",
+        "reviewer"
+      ],
+      "review_requirement": "mandatory",
+      "permissions": {
+        "write_code": false,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Cross-tenant and sandbox isolation verified with zero high-severity leaks"
+      ],
+      "required_capabilities": [
+        "filesystem.read",
+        "process.spawn"
+      ]
+    },
+    {
       "id": "issue-author",
       "name": "Issue Author",
       "version": 2,
@@ -1003,6 +1072,72 @@
       },
       "stop_conditions": [
         "Replication tested under simulated jitter and packet loss"
+      ],
+      "required_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ]
+    },
+    {
+      "id": "performance-agent",
+      "name": "Performance & Optimization Agent",
+      "version": 2,
+      "purpose": "Identify system bottlenecks, optimize cache locality, SIMD vectorization, and concurrency using hardware counters, profilers (perf, VTune, Nsight), and disassembly.",
+      "risk_level": "high",
+      "select": {
+        "features_any": [
+          "performance",
+          "optimization",
+          "profiling"
+        ],
+        "risk_any": [
+          "performance-critical"
+        ]
+      },
+      "inputs": [
+        "Baseline performance evidence",
+        "Profiler traces (perf, VTune, Nsight)",
+        "Source code and IR/assembly dumps"
+      ],
+      "outputs": [
+        "Optimization patch with raw counter evidence",
+        "Assembly & IR diffs",
+        "Statistically verified speedup report"
+      ],
+      "required_skills": [
+        "performance-native",
+        "benchmarking",
+        "memory-management"
+      ],
+      "optional_skills": [
+        "applied-mathematics-dsp",
+        "concurrency-quality",
+        "binary-security-mitigations"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "benchmark",
+        "test"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 0,
+      "handoff_to": [
+        "reviewer",
+        "tester"
+      ],
+      "review_requirement": "mandatory",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Optimization verified on target hardware with raw samples, median/percentiles, and zero correctness regressions"
       ],
       "required_capabilities": [
         "filesystem.read",
@@ -1234,6 +1369,68 @@
       ]
     },
     {
+      "id": "scientific-computing-agent",
+      "name": "Scientific Computing & Numerical Agent",
+      "version": 2,
+      "purpose": "Design and verify numerical algorithms, linear algebra routines, ODE/PDE solvers, molecular potentials, and floating-point error propagation against trusted reference solutions.",
+      "risk_level": "medium",
+      "select": {
+        "features_any": [
+          "math",
+          "dsp",
+          "physics",
+          "scientific",
+          "simulation"
+        ]
+      },
+      "inputs": [
+        "Mathematical equations and physical laws",
+        "Dimensional units and coordinate systems",
+        "Tolerance & boundary conditions"
+      ],
+      "outputs": [
+        "Numerical solver implementation",
+        "Error convergence and residual analysis",
+        "Invariant conservation evidence (energy/mass/momentum)"
+      ],
+      "required_skills": [
+        "applied-mathematics-dsp",
+        "computational-physics",
+        "testing-quality"
+      ],
+      "optional_skills": [
+        "computational-chemistry-materials",
+        "clean-code"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "test"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 0,
+      "handoff_to": [
+        "systems-architect",
+        "reviewer"
+      ],
+      "review_requirement": "mandatory",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Numerical algorithm satisfies convergence order, tolerance bounds, and invariant conservation against analytical or published reference"
+      ],
+      "required_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ]
+    },
+    {
       "id": "security-architect",
       "name": "Security Architect",
       "version": 2,
@@ -1351,6 +1548,132 @@
       "required_capabilities": [
         "filesystem.read",
         "process.spawn"
+      ]
+    },
+    {
+      "id": "systems-architect",
+      "name": "Systems Architect",
+      "version": 2,
+      "purpose": "Architect low-level systems, compiler backends, VMs, frame/audio budgets, memory models, and cache-conscious layouts.",
+      "risk_level": "high",
+      "select": {
+        "project_types": [
+          "compiler",
+          "language",
+          "game-engine",
+          "desktop",
+          "systems"
+        ]
+      },
+      "inputs": [
+        "Hardware performance budgets (latency, throughput, memory)",
+        "System boundary requirements",
+        "Target ABI/ISA specifications"
+      ],
+      "outputs": [
+        "Systems Architecture Decision Record (ADR)",
+        "Memory & Allocation Topology specification",
+        "Concurrency and Cache Invariants contract"
+      ],
+      "required_skills": [
+        "architecture-quality",
+        "clean-code",
+        "memory-management",
+        "concurrency-quality"
+      ],
+      "optional_skills": [
+        "performance-native",
+        "bytecode-vm-architecture",
+        "compiler-ir-optimization",
+        "binary-security-mitigations"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 0,
+      "handoff_to": [
+        "compiler-engineer",
+        "engine-engineer",
+        "implementer"
+      ],
+      "review_requirement": "cross-provider",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Systems architecture approved with formal memory, latency, and concurrency invariants"
+      ],
+      "required_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ]
+    },
+    {
+      "id": "technology-decision-agent",
+      "name": "Technology Decision Agent",
+      "version": 2,
+      "purpose": "Evaluate technology candidates, programming languages, runtimes, and architectures using hard constraint elimination, Pareto analysis, and benchmark experiment plans.",
+      "risk_level": "medium",
+      "select": {
+        "features_any": [
+          "architecture",
+          "bootstrap",
+          "planning"
+        ]
+      },
+      "inputs": [
+        "Workload constraints (latency, throughput, memory)",
+        "Hardware & deployment platform requirements",
+        "Team domain expertise"
+      ],
+      "outputs": [
+        "Technology Decision Record (TDR)",
+        "Pareto Candidate Matrix",
+        "Falsification Experiment Plan"
+      ],
+      "required_skills": [
+        "clean-code",
+        "architecture-quality",
+        "benchmarking"
+      ],
+      "optional_skills": [
+        "performance-native",
+        "memory-management",
+        "compiler-development"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 0,
+      "handoff_to": [
+        "systems-architect",
+        "architect"
+      ],
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": false,
+        "modify_docs": true,
+        "execute_tests": false
+      },
+      "stop_conditions": [
+        "Pareto candidates selected with explicit trade-offs and falsification experiment plan"
+      ],
+      "required_capabilities": [
+        "filesystem.read"
       ]
     },
     {

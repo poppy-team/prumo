@@ -2,7 +2,7 @@ use freya::prelude::*;
 use torin::prelude::Direction;
 
 use crate::state::AppState;
-use crate::ui::icons::icon;
+use crate::ui::chrome::IconButton;
 
 #[derive(PartialEq)]
 pub struct DiffModal {
@@ -20,26 +20,27 @@ impl Component for DiffModal {
 
         let additions = lines.iter().filter(|(_, tag)| *tag == '+').count();
         let deletions = lines.iter().filter(|(_, tag)| *tag == '-').count();
+        let window = Platform::get().root_size.read();
 
         rect()
-            .width(Size::fill())
-            .height(Size::fill())
+            .width(Size::px(window.width))
+            .height(Size::px(window.height))
             .position(Position::new_global().top(0.).left(0.))
             .layer(Layer::Overlay)
-            .background(Color::from_argb(160, 0, 0, 0))
+            .background(Color::TRANSPARENT)
             .horizontal()
             .main_align(Alignment::center())
             .cross_align(Alignment::center())
-            .padding(Gaps::new_all(40.))
+            .padding(Gaps::new_all(24.))
             .on_mouse_up(move |_| {
                 state.write().diff_open = false;
             })
             .child(
                 rect()
                     .width(Size::fill())
-                    .max_width(Size::px(900.))
+                    .max_width(Size::px(760.))
                     .height(Size::fill())
-                    .max_height(Size::px(600.))
+                    .max_height(Size::px(560.))
                     .background(c.background)
                     .corner_radius(CornerRadius::new_all(8.))
                     .border(Border::new().fill(c.border).width(BorderWidth {
@@ -54,7 +55,6 @@ impl Component for DiffModal {
                         e.stop_propagation();
                     })
                     .child(
-                        // Header
                         rect()
                             .width(Size::fill())
                             .height(Size::px(40.))
@@ -71,8 +71,9 @@ impl Component for DiffModal {
                             .child(
                                 label()
                                     .color(c.text_primary)
-                                    .font_size(13.)
-                                    .font_weight(FontWeight::BOLD)
+                                    .font_size(12.5)
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .max_lines(1)
                                     .text(title),
                             )
                             .child(
@@ -83,13 +84,13 @@ impl Component for DiffModal {
                                     .child(
                                         label()
                                             .color(c.success)
-                                            .font_size(12.)
+                                            .font_size(11.)
                                             .text(format!("+{additions}")),
                                     )
                                     .child(
                                         label()
                                             .color(c.error)
-                                            .font_size(12.)
+                                            .font_size(11.)
                                             .text(format!("-{deletions}")),
                                     ),
                             )
@@ -98,22 +99,18 @@ impl Component for DiffModal {
                                     .expanded()
                                     .horizontal()
                                     .main_align(Alignment::end())
-                                    .child(
-                                        Button::new()
-                                            .on_press(move |_| {
-                                                state.write().diff_open = false;
-                                            })
-                                            .child(
-                                                SvgViewer::new(("x", icon("x")))
-                                                    .color(c.text_placeholder)
-                                                    .width(Size::px(14.))
-                                                    .height(Size::px(14.)),
-                                            ),
-                                    ),
+                                    .child(IconButton {
+                                        icon: "x",
+                                        label: "Close diff",
+                                        size: 12.,
+                                        on_press: (move |_: Event<PressEventData>| {
+                                            state.write().diff_open = false;
+                                        })
+                                        .into(),
+                                    }),
                             ),
                     )
                     .child(
-                        // Diff lines viewer
                         ScrollView::new()
                             .direction(Direction::Vertical)
                             .height(Size::flex(1.))
@@ -140,7 +137,7 @@ impl Component for DiffModal {
 
                                             rect()
                                                 .width(Size::fill())
-                                                .height(Size::px(20.))
+                                                .height(Size::px(18.))
                                                 .horizontal()
                                                 .cross_align(Alignment::center())
                                                 .background(bg_color)
@@ -155,7 +152,8 @@ impl Component for DiffModal {
                                                 .child(
                                                     label()
                                                         .color(text_color)
-                                                        .font_size(12.)
+                                                        .font_size(11.5)
+                                                        .font_family("Jetbrains Mono")
                                                         .text(format!("{prefix}{line}")),
                                                 )
                                                 .into()

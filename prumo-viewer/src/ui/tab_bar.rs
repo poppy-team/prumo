@@ -1,5 +1,6 @@
 use crate::services::document::request_close_tab;
-use crate::state::{AppState, DocumentTab, FileKind};
+use crate::state::{AppState, FileKind};
+use crate::ui::chrome::IconButton;
 use crate::ui::icons::icon;
 use freya::prelude::*;
 use torin::prelude::Direction;
@@ -13,39 +14,50 @@ impl Component for TabBar {
     fn render(&self) -> impl IntoElement {
         let colors = get_theme_or_default().read().colors.clone();
         let state = self.state;
-        let tabs = state.read().tabs.clone();
         let active_index = state.read().active_tab_index;
+        let tabs = state
+            .read()
+            .tabs
+            .iter()
+            .enumerate()
+            .map(|(index, tab)| TabItem {
+                state,
+                title: tab.title.clone(),
+                kind: tab.kind,
+                is_agent_modified: tab.is_agent_modified,
+                is_dirty: tab.is_dirty,
+                index,
+                is_active: active_index == Some(index),
+            })
+            .collect::<Vec<_>>();
 
         rect()
             .width(Size::fill())
-            .height(Size::px(36.))
+            .height(Size::px(30.))
             .horizontal()
             .cross_align(Alignment::end())
-            .background(colors.surface_primary)
+            .background(colors.background)
             .border(Border::new().fill(colors.border).width(BorderWidth {
                 top: 0.,
                 right: 0.,
                 bottom: 1.,
                 left: 0.,
             }))
-            .child(ScrollView::new().direction(Direction::Horizontal).children(
-                tabs.into_iter().enumerate().map(|(index, tab)| {
-                    TabItem {
-                        state,
-                        tab,
-                        index,
-                        is_active: active_index == Some(index),
-                    }
-                    .into()
-                }),
-            ))
+            .child(
+                ScrollView::new()
+                    .direction(Direction::Horizontal)
+                    .children(tabs.into_iter().map(|tab| tab.into())),
+            )
     }
 }
 
 #[derive(PartialEq)]
 struct TabItem {
     state: State<AppState>,
-    tab: DocumentTab,
+    title: String,
+    kind: FileKind,
+    is_agent_modified: bool,
+    is_dirty: bool,
     index: usize,
     is_active: bool,
 }
@@ -55,65 +67,58 @@ impl Component for TabItem {
         let colors = get_theme_or_default().read().colors.clone();
         let a11y_id = use_a11y();
         let focus = use_focus(a11y_id);
+        let mut hovered = use_state(|| false);
         let mut state = self.state;
-        let tab = self.tab.clone();
         let index = self.index;
         let is_active = self.is_active;
-        let (icon_name, icon_color) = match tab.kind {
-            FileKind::Rust => ("file_code_2", Color::from_rgb(0xe0, 0x8f, 0x62)),
-            FileKind::Go => ("file_code", Color::from_rgb(0x5c, 0xa8, 0xe0)),
-            FileKind::Manifest => ("package", colors.text_secondary),
-            FileKind::Markdown => ("file_text", Color::from_rgb(0x89, 0xb4, 0xfa)),
-            _ => ("file_text", colors.text_secondary),
+        let icon_name = match self.kind {
+            FileKind::Rust => "file_code_2",
+            FileKind::Go => "file_code",
+            FileKind::Manifest => "package",
+            _ => "file_text",
         };
 
         rect()
-            .min_width(Size::px(118.))
-            .max_width(Size::px(240.))
-            .height(Size::px(35.))
+            .min_width(Size::px(110.))
+            .max_width(Size::px(220.))
+            .height(Size::px(29.))
             .horizontal()
             .cross_align(Alignment::center())
             .spacing(6.)
-            .padding(Gaps::new(0., 9., 0., 10.))
+            .padding(Gaps::new(0., 8., 0., 8.))
             .a11y_id(a11y_id)
             .a11y_focusable(true)
             .a11y_role(AccessibilityRole::Tab)
-            .a11y_alt(format!("{} tab", self.tab.title))
+            .a11y_alt(format!("{} tab", self.title))
             .background(if is_active {
-                colors.background
-            } else {
                 colors.surface_primary
+            } else {
+                colors.background
             })
             .border(
                 Border::new()
                     .fill(if focus() == Focus::Keyboard {
-                        colors.primary
+                        colors.border_focus
                     } else {
                         colors.border
                     })
                     .width(BorderWidth {
-                        top: if is_active || focus() == Focus::Keyboard {
-                            2.
-                        } else {
-                            0.
-                        },
+                        top: 0.,
                         right: if is_active { 0. } else { 1. },
                         bottom: 0.,
-                        left: if is_active { 0. } else { 1. },
+                        left: 0.,
                     }),
             )
             .on_all_press(move |_| {
                 state.write().active_tab_index = Some(index);
             })
+            .on_pointer_enter(move |_| hovered.set(true))
+            .on_pointer_leave(move |_| hovered.set(false))
             .child(
                 SvgViewer::new((icon_name, icon(icon_name)))
-                    .color(if is_active {
-                        icon_color
-                    } else {
-                        colors.text_secondary
-                    })
-                    .width(Size::px(13.))
-                    .height(Size::px(13.)),
+                    .color(colors.text_secondary)
+                    .width(Size::px(11.))
+                    .height(Size::px(11.)),
             )
             .child(
                 label()
@@ -122,49 +127,48 @@ impl Component for TabItem {
                     } else {
                         colors.text_secondary
                     })
-                    .font_size(12.5)
+                    .font_size(12.)
                     .max_lines(1)
-                    .text(tab.title.clone()),
+                    .text(self.title.clone()),
             )
-            .child(if tab.is_agent_modified {
-                Element::from(
-                    label()
-                        .color(colors.warning)
-                        .font_size(10.)
-                        .font_weight(FontWeight::BOLD)
-                        .text("A"),
-                )
-            } else {
-                Element::from(label().text(""))
-            })
-            .child(if tab.is_dirty {
+            .child(if self.is_agent_modified {
                 Element::from(
                     rect()
-                        .width(Size::px(6.))
-                        .height(Size::px(6.))
+                        .width(Size::px(5.))
+                        .height(Size::px(5.))
                         .corner_radius(CornerRadius::new_all(3.))
                         .background(colors.warning),
                 )
             } else {
                 Element::from(label().text(""))
             })
-            .child(
-                Button::new()
-                    .flat()
-                    .compact()
-                    .width(Size::px(20.))
-                    .height(Size::px(20.))
-                    .padding(0.)
-                    .on_press(move |_| {
+            .child(if *hovered.read() || is_active {
+                Element::from(IconButton {
+                    icon: "x",
+                    label: "Close tab",
+                    size: 10.,
+                    on_press: (move |_: Event<PressEventData>| {
                         let mut app_state = state.write();
                         request_close_tab(&mut app_state, index);
                     })
-                    .child(
-                        SvgViewer::new(("close tab", icon("x")))
-                            .color(colors.text_placeholder)
-                            .width(Size::px(11.))
-                            .height(Size::px(11.)),
-                    ),
-            )
+                    .into(),
+                })
+            } else if self.is_dirty {
+                Element::from(
+                    rect()
+                        .width(Size::px(22.))
+                        .horizontal()
+                        .main_align(Alignment::center())
+                        .child(
+                            rect()
+                                .width(Size::px(6.))
+                                .height(Size::px(6.))
+                                .corner_radius(CornerRadius::new_all(3.))
+                                .background(colors.warning),
+                        ),
+                )
+            } else {
+                Element::from(rect().width(Size::px(22.)))
+            })
     }
 }

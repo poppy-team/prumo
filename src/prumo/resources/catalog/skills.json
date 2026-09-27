@@ -375,6 +375,78 @@
       "tools": []
     },
     {
+      "id": "applied-mathematics-dsp",
+      "name": "Applied Mathematics & Digital Signal Processing",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Execute numerical computations, quaternion geometry, and Fast Fourier Transforms for graphics, audio, and CAD.",
+      "risk_level": "low",
+      "modes": [
+        "implementation",
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Mathematical equations",
+        "Audio/visual time-domain buffers",
+        "Transform specifications"
+      ],
+      "outputs": [
+        "DSP pipeline implementation",
+        "Frequency spectra",
+        "Numerical stability proofs"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/applied-mathematics-dsp-guide.md"
+      ],
+      "templates": [
+        "templates/applied-mathematics-dsp-spec.md"
+      ],
+      "checks": [
+        "checks/applied-mathematics-dsp-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/applied-mathematics-dsp-example.json"
+      ],
+      "required_evidence": [
+        "test"
+      ],
+      "stop_conditions": [
+        "All Applied Mathematics & Digital Signal Processing invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "game-engine",
+          "desktop"
+        ],
+        "features_any": [
+          "dsp",
+          "audio",
+          "graphics",
+          "math"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "architecture-quality",
       "name": "Architecture Quality",
       "version": 2,
@@ -955,6 +1027,148 @@
           "throughput",
           "regression-detection",
           "load-testing"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "binary-security-mitigations",
+      "name": "Binary Hardening & Exploit Mitigations",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Enforce Control Flow Integrity (CFI), Stack Canaries, SafeStack, RELRO, and ASLR compliance on compiled artifacts.",
+      "risk_level": "high",
+      "modes": [
+        "audit",
+        "release",
+        "review"
+      ],
+      "inputs": [
+        "Compiled binary executables",
+        "Linker configurations"
+      ],
+      "outputs": [
+        "Binary hardening scorecard",
+        "Mitigation verification report"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "process.spawn"
+      ],
+      "references": [
+        "references/binary-security-mitigations-guide.md"
+      ],
+      "templates": [
+        "templates/binary-security-mitigations-spec.md"
+      ],
+      "checks": [
+        "checks/binary-security-mitigations-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/binary-security-mitigations-example.json"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All Binary Hardening & Exploit Mitigations invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "desktop",
+          "systems"
+        ],
+        "risk_any": [
+          "security"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "bytecode-vm-architecture",
+      "name": "Bytecode & Virtual Machine Architecture",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design stack and register-based virtual machines, direct threaded dispatch loops, and bytecode verifiers.",
+      "risk_level": "high",
+      "modes": [
+        "implementation",
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Bytecode instruction set architecture (ISA)",
+        "Compiled bytecode binary"
+      ],
+      "outputs": [
+        "Virtual machine runtime",
+        "Bytecode execution trace",
+        "Execution verification evidence"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/bytecode-vm-architecture-guide.md"
+      ],
+      "templates": [
+        "templates/bytecode-vm-architecture-spec.md"
+      ],
+      "checks": [
+        "checks/bytecode-vm-architecture-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/bytecode-vm-architecture-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "benchmark"
+      ],
+      "stop_conditions": [
+        "All Bytecode & Virtual Machine Architecture invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "language",
+          "game-engine"
+        ],
+        "features_any": [
+          "vm",
+          "bytecode",
+          "interpreter"
         ]
       },
       "requires_any": [],
@@ -1677,6 +1891,147 @@
       "tools": []
     },
     {
+      "id": "compiler-frontend-engineering",
+      "name": "Compiler Frontend Engineering",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Design and implement lexing, parsing (Pratt, LR, PEG), AST/CST construction, and robust error recovery.",
+      "risk_level": "medium",
+      "modes": [
+        "implementation",
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Formal grammar specification",
+        "Lexer token definition",
+        "Source code files"
+      ],
+      "outputs": [
+        "Concrete and Abstract Syntax Trees",
+        "Diagnostic error reports with source spans"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/compiler-frontend-engineering-guide.md"
+      ],
+      "templates": [
+        "templates/compiler-frontend-engineering-spec.md"
+      ],
+      "checks": [
+        "checks/compiler-frontend-engineering-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/compiler-frontend-engineering-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "conformance"
+      ],
+      "stop_conditions": [
+        "All Compiler Frontend Engineering invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "language",
+          "game-engine"
+        ],
+        "features_any": [
+          "compiler",
+          "parser",
+          "dsl"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "compiler-ir-optimization",
+      "name": "Compiler IR & SSA Optimization",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Transform AST into SSA form, compute dominance frontiers, and perform dead code elimination, GVN, and vectorization.",
+      "risk_level": "high",
+      "modes": [
+        "implementation",
+        "review",
+        "testing"
+      ],
+      "inputs": [
+        "Typed AST or high-level IR",
+        "Target optimization budgets"
+      ],
+      "outputs": [
+        "Optimized SSA Intermediate Representation",
+        "Control Flow Graph (CFG) analysis"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/compiler-ir-optimization-guide.md"
+      ],
+      "templates": [
+        "templates/compiler-ir-optimization-spec.md"
+      ],
+      "checks": [
+        "checks/compiler-ir-optimization-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/compiler-ir-optimization-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "benchmark"
+      ],
+      "stop_conditions": [
+        "All Compiler IR & SSA Optimization invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "language"
+        ],
+        "features_any": [
+          "optimization",
+          "compiler-backend"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "component-specification",
       "name": "Component Specification",
       "version": 2,
@@ -1738,6 +2093,148 @@
         "features_any": [
           "ui",
           "design-system"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "computational-chemistry-materials",
+      "name": "Computational Chemistry & Physically Based Materials",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Simulate material optical properties (complex refractive index, Fresnel, microfacets) and molecular potential interactions.",
+      "risk_level": "low",
+      "modes": [
+        "implementation",
+        "research",
+        "review"
+      ],
+      "inputs": [
+        "Material spectral specifications",
+        "Refractive index datasets",
+        "Molecular parameters"
+      ],
+      "outputs": [
+        "PBR material shader parameters",
+        "Spectral absorption profiles"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/computational-chemistry-materials-guide.md"
+      ],
+      "templates": [
+        "templates/computational-chemistry-materials-spec.md"
+      ],
+      "checks": [
+        "checks/computational-chemistry-materials-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/computational-chemistry-materials-example.json"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All Computational Chemistry & Physically Based Materials invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "game-engine",
+          "desktop"
+        ],
+        "features_any": [
+          "rendering",
+          "shaders",
+          "materials"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "computational-physics",
+      "name": "Computational Physics & Symplectic Dynamics",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Model rigid and soft body physics using symplectic integrators (Verlet, RK4) and GJK/EPA continuous collision.",
+      "risk_level": "medium",
+      "modes": [
+        "implementation",
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Physical body definitions",
+        "Simulation boundary parameters",
+        "Time step configuration"
+      ],
+      "outputs": [
+        "Physics simulation state",
+        "Collision manifold records",
+        "Energy conservation metrics"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/computational-physics-guide.md"
+      ],
+      "templates": [
+        "templates/computational-physics-spec.md"
+      ],
+      "checks": [
+        "checks/computational-physics-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/computational-physics-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "benchmark"
+      ],
+      "stop_conditions": [
+        "All Computational Physics & Symplectic Dynamics invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "game-engine",
+          "desktop"
+        ],
+        "features_any": [
+          "physics",
+          "simulation"
         ]
       },
       "requires_any": [],
@@ -3094,6 +3591,75 @@
           "components",
           "forms",
           "routing"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "fuzz-grammar-testing",
+      "name": "Grammar-Based Fuzzing & Property Verification",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Execute coverage-guided and grammar-based fuzzing on parsers, decoders, and compilers using libFuzzer and AFL++.",
+      "risk_level": "high",
+      "modes": [
+        "testing",
+        "audit"
+      ],
+      "inputs": [
+        "Target API / parser entry point",
+        "Input grammar dictionary",
+        "Seed corpus"
+      ],
+      "outputs": [
+        "Crash reproduction testcases",
+        "Corpus coverage report"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/fuzz-grammar-testing-guide.md"
+      ],
+      "templates": [
+        "templates/fuzz-grammar-testing-spec.md"
+      ],
+      "checks": [
+        "checks/fuzz-grammar-testing-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/fuzz-grammar-testing-example.json"
+      ],
+      "required_evidence": [
+        "test"
+      ],
+      "stop_conditions": [
+        "All Grammar-Based Fuzzing & Property Verification invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "game-engine",
+          "systems"
+        ],
+        "risk_any": [
+          "security"
         ]
       },
       "requires_any": [],
@@ -7419,6 +7985,77 @@
       "tools": []
     },
     {
+      "id": "linux-kernel-isolation",
+      "name": "Linux Kernel Isolation & Sandboxing",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Enforce process sandboxing and isolation via seccomp-BPF, Landlock LSM, cgroups v2, and Linux namespaces.",
+      "risk_level": "high",
+      "modes": [
+        "implementation",
+        "audit",
+        "testing"
+      ],
+      "inputs": [
+        "Sandbox security profile",
+        "Permitted syscalls list",
+        "Filesystem access mask"
+      ],
+      "outputs": [
+        "Seccomp/Landlock policy rules",
+        "Isolation verification test suite"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/linux-kernel-isolation-guide.md"
+      ],
+      "templates": [
+        "templates/linux-kernel-isolation-spec.md"
+      ],
+      "checks": [
+        "checks/linux-kernel-isolation-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/linux-kernel-isolation-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "stop_conditions": [
+        "All Linux Kernel Isolation & Sandboxing invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "features_any": [
+          "security",
+          "sandboxing",
+          "isolation"
+        ],
+        "risk_any": [
+          "security"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "mcp-integration",
       "name": "MCP Integration",
       "version": 2,
@@ -7733,6 +8370,79 @@
       "tools": [
         "check-escape-hatches"
       ]
+    },
+    {
+      "id": "memory-safety-sanitizers",
+      "name": "Native Memory Safety & Sanitizer Verification",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Verify C/C++/Rust native code against UAF, buffer overflows, data races, and leaks using ASan, MSan, TSan, and UBSan.",
+      "risk_level": "high",
+      "modes": [
+        "testing",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Native source code",
+        "Compilation flags",
+        "Test binaries"
+      ],
+      "outputs": [
+        "Sanitizer execution report",
+        "Memory safety violation logs"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/memory-safety-sanitizers-guide.md"
+      ],
+      "templates": [
+        "templates/memory-safety-sanitizers-spec.md"
+      ],
+      "checks": [
+        "checks/memory-safety-sanitizers-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/memory-safety-sanitizers-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "stop_conditions": [
+        "All Native Memory Safety & Sanitizer Verification invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "game-engine",
+          "desktop",
+          "systems"
+        ],
+        "risk_any": [
+          "security",
+          "performance-critical"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
     },
     {
       "id": "motion-accessibility",
@@ -9174,6 +9884,78 @@
       "tools": []
     },
     {
+      "id": "realtime-audio-dsp",
+      "name": "Realtime Audio DSP & Zero-Allocation Pipelines",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Build ultra-low latency, lock-free audio processing graphs with strict zero-allocation in the realtime audio thread.",
+      "risk_level": "medium",
+      "modes": [
+        "implementation",
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Audio buffer constraints",
+        "Sample rate specifications",
+        "DSP filter graphs"
+      ],
+      "outputs": [
+        "Lock-free audio engine",
+        "Underrun-free performance benchmarks"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/realtime-audio-dsp-guide.md"
+      ],
+      "templates": [
+        "templates/realtime-audio-dsp-spec.md"
+      ],
+      "checks": [
+        "checks/realtime-audio-dsp-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/realtime-audio-dsp-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "benchmark"
+      ],
+      "stop_conditions": [
+        "All Realtime Audio DSP & Zero-Allocation Pipelines invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "game-engine",
+          "desktop"
+        ],
+        "features_any": [
+          "audio",
+          "dsp",
+          "realtime"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "realtime-synchronization",
       "name": "Realtime Synchronization",
       "version": 2,
@@ -9717,6 +10499,78 @@
       "tools": []
     },
     {
+      "id": "runtime-memory-gc",
+      "name": "Runtime Memory Management & Garbage Collection",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Implement custom allocators (arenas, pools, TLSF) and garbage collectors (generational, incremental, concurrent).",
+      "risk_level": "high",
+      "modes": [
+        "implementation",
+        "testing",
+        "review"
+      ],
+      "inputs": [
+        "Memory budget constraints",
+        "Runtime allocation profile"
+      ],
+      "outputs": [
+        "Memory manager implementation",
+        "Allocation profiling reports",
+        "Leak and fragmentation metrics"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/runtime-memory-gc-guide.md"
+      ],
+      "templates": [
+        "templates/runtime-memory-gc-spec.md"
+      ],
+      "checks": [
+        "checks/runtime-memory-gc-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/runtime-memory-gc-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "benchmark"
+      ],
+      "stop_conditions": [
+        "All Runtime Memory Management & Garbage Collection invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "language",
+          "game-engine"
+        ],
+        "features_any": [
+          "memory-management",
+          "runtime"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "rust-analyzer-context-indexing",
       "name": "Rust Analyzer Context Indexing",
       "version": 2,
@@ -10088,6 +10942,147 @@
       "tools": []
     },
     {
+      "id": "security-agent-mcp",
+      "name": "Agentic Security & MCP Tool Sandboxing",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Audit coding agents, MCP tool manifests, prompt injection vectors, permission drift, and tool shadowing.",
+      "risk_level": "critical",
+      "modes": [
+        "audit",
+        "review",
+        "testing"
+      ],
+      "inputs": [
+        "MCP server configurations",
+        "Agent system instructions",
+        "Skill manifests"
+      ],
+      "outputs": [
+        "Agent security scorecard",
+        "MCP sandbox policy manifest"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/security-agent-mcp-guide.md"
+      ],
+      "templates": [
+        "templates/security-agent-mcp-spec.md"
+      ],
+      "checks": [
+        "checks/security-agent-mcp-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/security-agent-mcp-example.json"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "stop_conditions": [
+        "All Agentic Security & MCP Tool Sandboxing invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "features_any": [
+          "mcp",
+          "ai-assisted-development",
+          "orchestration"
+        ],
+        "risk_any": [
+          "security"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "security-authz-matrix",
+      "name": "Authorization Matrix & Multi-Tenant Enforcement",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Define and automatically verify fine-grained role-resource-action authorization matrices and cross-tenant boundaries.",
+      "risk_level": "high",
+      "modes": [
+        "design",
+        "testing",
+        "audit"
+      ],
+      "inputs": [
+        "API route inventory",
+        "Tenant data schema",
+        "Permission definitions"
+      ],
+      "outputs": [
+        "Authorization test suite",
+        "Negative access control audit report"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/security-authz-matrix-guide.md"
+      ],
+      "templates": [
+        "templates/security-authz-matrix-spec.md"
+      ],
+      "checks": [
+        "checks/security-authz-matrix-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/security-authz-matrix-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "stop_conditions": [
+        "All Authorization Matrix & Multi-Tenant Enforcement invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "features_any": [
+          "security",
+          "auth",
+          "multi-tenant"
+        ],
+        "risk_any": [
+          "security"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
       "id": "security-review",
       "name": "Security Review",
       "version": 2,
@@ -10156,6 +11151,145 @@
           "security",
           "public-web",
           "financial",
+          "privacy"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "security-saas-isolation",
+      "name": "SaaS Multi-Tenant Isolation Verification",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Execute adversarial cross-user and cross-tenant penetration tests across database RLS, caches, queues, and storage.",
+      "risk_level": "critical",
+      "modes": [
+        "testing",
+        "audit"
+      ],
+      "inputs": [
+        "Multi-tenant test fixtures",
+        "Target API endpoints"
+      ],
+      "outputs": [
+        "Cross-tenant isolation audit report",
+        "Data leak verification evidence"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "references": [
+        "references/security-saas-isolation-guide.md"
+      ],
+      "templates": [
+        "templates/security-saas-isolation-spec.md"
+      ],
+      "checks": [
+        "checks/security-saas-isolation-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/security-saas-isolation-example.json"
+      ],
+      "required_evidence": [
+        "test"
+      ],
+      "stop_conditions": [
+        "All SaaS Multi-Tenant Isolation Verification invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "features_any": [
+          "multi-tenant",
+          "database"
+        ],
+        "risk_any": [
+          "security",
+          "privacy"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "security-threat-model",
+      "name": "Structured Threat Modeling & STRIDE",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Map system assets, trust boundaries, attacker capabilities, STRIDE threat matrices, and mitigation requirements.",
+      "risk_level": "high",
+      "modes": [
+        "design",
+        "review",
+        "audit"
+      ],
+      "inputs": [
+        "Architecture diagrams",
+        "Data classification",
+        "Trust boundary specifications"
+      ],
+      "outputs": [
+        "Threat model document",
+        "Abuse cases catalog",
+        "Residual risk ledger"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/security-threat-model-guide.md"
+      ],
+      "templates": [
+        "templates/security-threat-model-spec.md"
+      ],
+      "checks": [
+        "checks/security-threat-model-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/security-threat-model-example.json"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "stop_conditions": [
+        "All Structured Threat Modeling & STRIDE invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "features_any": [
+          "security",
+          "auth",
+          "billing"
+        ],
+        "risk_any": [
+          "security",
           "privacy"
         ]
       },
@@ -10902,6 +12036,76 @@
           "code-context",
           "type-index",
           "refactoring"
+        ]
+      },
+      "requires_any": [],
+      "tools": []
+    },
+    {
+      "id": "type-system-theory",
+      "name": "Type System Theory & Formal Semantics",
+      "version": 2,
+      "schema_version": 3,
+      "purpose": "Specify and verify type systems, Hindley-Milner inference, subtyping, and ownership/affine type rules.",
+      "risk_level": "high",
+      "modes": [
+        "design",
+        "implementation",
+        "review"
+      ],
+      "inputs": [
+        "Type rules specification",
+        "AST with unresolved types"
+      ],
+      "outputs": [
+        "Typed AST",
+        "Soundness verification proofs",
+        "Type error diagnostics"
+      ],
+      "requires": [],
+      "conflicts": [],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "references": [
+        "references/type-system-theory-guide.md"
+      ],
+      "templates": [
+        "templates/type-system-theory-spec.md"
+      ],
+      "checks": [
+        "checks/type-system-theory-checklist.md"
+      ],
+      "scripts": [
+        "scripts/verify.sh"
+      ],
+      "examples": [
+        "examples/type-system-theory-example.json"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "stop_conditions": [
+        "All Type System Theory & Formal Semantics invariants verified with evidence"
+      ],
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-23"
+      },
+      "select": {
+        "project_types": [
+          "compiler",
+          "language"
+        ],
+        "features_any": [
+          "type-checker",
+          "compiler"
         ]
       },
       "requires_any": [],

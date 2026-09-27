@@ -3,6 +3,10 @@ name = "prumo-viewer"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = ["extension-sdk"]
+resolver = "2"
+
 [[bin]]
 name = "prumo-native"
 path = "src/main.rs"
@@ -25,7 +29,15 @@ similar = "2.7"
 portable-pty = "0.9"
 vt100 = "0.16"
 tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+notify = "8"
+ignore = "0.4.33"
+regex = "1.13.1"
+sha2 = "0.10"
+prumo-extension-sdk = { path = "extension-sdk" }
 
 [dev-dependencies]
 freya-testing = "0.4.3"
 tempfile = "3"
+
+[patch.crates-io]
+freya-code-editor = { path = "vendor/freya-code-editor" }

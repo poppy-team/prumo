@@ -27,12 +27,12 @@ const (
 
 // DecisionQuestion represents a single closed-space question to be decided.
 type DecisionQuestion struct {
-	ID          string       `json:"id"`
-	Kind        QuestionKind `json:"kind"`
-	Prompt      string       `json:"prompt"`
-	Choices     []string     `json:"choices,omitempty"`
-	MinScore    float64      `json:"min_score,omitempty"`
-	MaxScore    float64      `json:"max_score,omitempty"`
+	ID       string       `json:"id"`
+	Kind     QuestionKind `json:"kind"`
+	Prompt   string       `json:"prompt"`
+	Choices  []string     `json:"choices,omitempty"`
+	MinScore float64      `json:"min_score,omitempty"`
+	MaxScore float64      `json:"max_score,omitempty"`
 }
 
 // DecisionRequest bundles the state, questions, constraints, and confidence thresholds.
@@ -58,12 +58,12 @@ type DecisionAnswer struct {
 
 // DecisionResult aggregates answers from a DecisionProvider.
 type DecisionResult struct {
-	Answers       []DecisionAnswer  `json:"answers"`
-	Provider      string            `json:"provider"`
-	ModelRevision string            `json:"model_revision,omitempty"`
-	LatencyMs     int64             `json:"latency_ms"`
-	CostUSD       float64           `json:"cost_usd"`
-	TraceMetadata map[string]any    `json:"trace_metadata,omitempty"`
+	Answers       []DecisionAnswer `json:"answers"`
+	Provider      string           `json:"provider"`
+	ModelRevision string           `json:"model_revision,omitempty"`
+	LatencyMs     int64            `json:"latency_ms"`
+	CostUSD       float64          `json:"cost_usd"`
+	TraceMetadata map[string]any   `json:"trace_metadata,omitempty"`
 }
 
 // DecisionProvider defines the canonical interface for decision-making components.
@@ -75,11 +75,11 @@ type DecisionProvider interface {
 
 // Rule evaluates a condition against state and produces an answer.
 type Rule struct {
-	QuestionID  string
-	Condition   func(state map[string]any) bool
-	Outcome     string
-	Confidence  float64
-	ReasonCode  string
+	QuestionID string
+	Condition  func(state map[string]any) bool
+	Outcome    string
+	Confidence float64
+	ReasonCode string
 }
 
 // RuleDecisionProvider is the deterministic L0 provider evaluating explicit rules.

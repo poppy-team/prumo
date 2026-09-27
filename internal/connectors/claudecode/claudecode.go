@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/raillen/prumo/internal/connectors"
+	"github.com/raillen/prumo/internal/harness/doccompile"
 	"github.com/raillen/prumo/internal/install"
 	"github.com/raillen/prumo/internal/protocol"
 )
@@ -65,10 +67,11 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	claudeDir := filepath.Join(projectRoot, ".claude")
 	created := []string{}
+	managedFragments := []string{}
 
-	// 1. CLAUDE.md entrypoint in project root
+	// 1. CLAUDE.md entrypoint in project root using managed region
 	claudeMD := `# CLAUDE.md
-This project uses Prumo v0.5.
+This project uses Prumo v0.5 with Anthropic Claude Code.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.
@@ -77,10 +80,25 @@ This project uses Prumo v0.5.
 - Stop when verification evidence is sufficient.
 `
 	claudeMDPath := filepath.Join(projectRoot, "CLAUDE.md")
-	if err := writeText(claudeMDPath, claudeMD); err != nil {
-		return nil, err
+	if existingData, err := os.ReadFile(claudeMDPath); err == nil && len(existingData) > 0 {
+		cleaned, _ := doccompile.RemoveRegion(string(existingData), "connector-claude-code")
+		hasUserContent := strings.TrimSpace(cleaned) != ""
+		merged := doccompile.UpsertRegion(string(existingData), "connector-claude-code", claudeMD)
+		if err := writeText(claudeMDPath, merged); err != nil {
+			return nil, err
+		}
+		if hasUserContent {
+			managedFragments = append(managedFragments, "CLAUDE.md:connector-claude-code")
+		} else {
+			created = append(created, claudeMDPath)
+		}
+	} else {
+		content := doccompile.UpsertRegion("", "connector-claude-code", claudeMD)
+		if err := writeText(claudeMDPath, content); err != nil {
+			return nil, err
+		}
+		created = append(created, claudeMDPath)
 	}
-	created = append(created, claudeMDPath)
 
 	// 2. Settings
 	settings := map[string]any{
@@ -139,9 +157,10 @@ This project uses Prumo v0.5.
 
 	sort.Strings(created)
 	return &connectors.CompileResult{
-		Target:       "claude-code",
-		CreatedPaths: created,
-		ManifestPath: settingsPath,
+		Target:           "claude-code",
+		CreatedPaths:     created,
+		ManagedFragments: managedFragments,
+		ManifestPath:     settingsPath,
 	}, nil
 }
 
@@ -167,9 +186,11 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	cleanup := install.CleanupManifest{
-		Connector:    "claude-code",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
+		Connector:        "claude-code",
+		Scope:            "project",
+		ProjectRoot:      projectRoot,
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
 	}
 	if err := connectors.SaveCleanup(home, "claude-code", cleanup); err != nil {
 		return nil, err
@@ -189,12 +210,13 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	return &connectors.InstallResult{
-		Connector:    "claude-code",
-		Status:       "installed",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
-		CleanupPath:  install.CleanupPath(home, "claude-code"),
-		Contract:     c.Contract(),
+		Connector:        "claude-code",
+		Status:           "installed",
+		Scope:            "project",
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
+		CleanupPath:      install.CleanupPath(home, "claude-code"),
+		Contract:         c.Contract(),
 	}, nil
 }
 

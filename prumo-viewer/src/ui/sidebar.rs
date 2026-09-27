@@ -4,9 +4,11 @@ use torin::prelude::Direction;
 use crate::{
     WorkspaceCommands,
     state::{
-        AgentFileStatus, AppState, ChangedFile, DockView, FileKind, NoticeTone, SidebarView,
-        TreeNode,
+        AgentFileStatus, AppState, ChangedFile, DockView, ExplorerMenu, FileKind, NoticeTone,
+        SidebarView, TreeNode,
     },
+    ui::chrome::IconButton,
+    ui::git_view::GitView,
     ui::icons::icon,
 };
 
@@ -22,28 +24,28 @@ impl Component for ActivityBar {
         let count = state.read().changed_files.len();
 
         rect()
-            .width(Size::px(44.))
+            .width(Size::px(36.))
             .height(Size::fill())
-            .background(colors.surface_inverse)
+            .background(colors.background)
             .border(Border::new().fill(colors.border).width(BorderWidth {
                 top: 0.,
                 right: 1.,
                 bottom: 0.,
                 left: 0.,
             }))
-            .padding(Gaps::new(0., 6., 0., 6.))
+            .padding(Gaps::new(0., 4., 0., 4.))
             .child(
                 rect()
                     .width(Size::fill())
                     .height(Size::fill())
                     .vertical()
-                    .padding(Gaps::new(0., 4., 0., 4.))
-                    .spacing(4.)
+                    .padding(Gaps::new(0., 2., 0., 2.))
+                    .spacing(2.)
                     .child(ActivityRailItem {
                         state,
                         icon: "files",
                         label: "Explorer",
-                        badge: None,
+                        badge: false,
                         active: state.read().sidebar_visible
                             && (!state.read().agent_panel_visible
                                 || state.read().viewport_width >= 1180.)
@@ -54,7 +56,7 @@ impl Component for ActivityBar {
                         state,
                         icon: "list_checks",
                         label: "Changes",
-                        badge: (count > 0).then_some(count),
+                        badge: count > 0,
                         active: state.read().sidebar_visible
                             && (!state.read().agent_panel_visible
                                 || state.read().viewport_width >= 1180.)
@@ -63,9 +65,20 @@ impl Component for ActivityBar {
                     })
                     .child(ActivityRailItem {
                         state,
+                        icon: "git_branch",
+                        label: "Git",
+                        badge: !state.read().git.files.is_empty(),
+                        active: state.read().sidebar_visible
+                            && (!state.read().agent_panel_visible
+                                || state.read().viewport_width >= 1180.)
+                            && state.read().sidebar_view == SidebarView::Git,
+                        action: RailAction::Git,
+                    })
+                    .child(ActivityRailItem {
+                        state,
                         icon: "bot",
                         label: "Prumo Agent",
-                        badge: None,
+                        badge: false,
                         active: state.read().agent_panel_visible
                             && state.read().viewport_width >= 900.,
                         action: RailAction::Agent,
@@ -74,18 +87,10 @@ impl Component for ActivityBar {
                         state,
                         icon: "terminal",
                         label: "Integrated Terminal",
-                        badge: None,
+                        badge: false,
                         active: state.read().dock_open
                             && state.read().dock_view == DockView::Terminal,
                         action: RailAction::Terminal,
-                    })
-                    .child(ActivityRailItem {
-                        state,
-                        icon: "settings",
-                        label: "Settings",
-                        badge: None,
-                        active: state.read().config_open,
-                        action: RailAction::Settings,
                     }),
             )
     }
@@ -95,9 +100,9 @@ impl Component for ActivityBar {
 enum RailAction {
     Explorer,
     Changes,
+    Git,
     Agent,
     Terminal,
-    Settings,
 }
 
 #[derive(PartialEq)]
@@ -105,7 +110,7 @@ struct ActivityRailItem {
     state: State<AppState>,
     icon: &'static str,
     label: &'static str,
-    badge: Option<usize>,
+    badge: bool,
     active: bool,
     action: RailAction,
 }
@@ -122,23 +127,18 @@ impl Component for ActivityRailItem {
         } else {
             colors.text_secondary
         };
-        let background = if self.active {
-            colors.surface_tertiary
-        } else {
-            Color::TRANSPARENT
-        };
-        let focus_width = if focus() == Focus::Keyboard { 2. } else { 0. };
+        let focus_width = if focus() == Focus::Keyboard { 1. } else { 0. };
 
         rect()
             .width(Size::fill())
-            .height(Size::px(36.))
+            .height(Size::px(32.))
             .a11y_id(a11y_id)
             .a11y_focusable(true)
             .a11y_role(AccessibilityRole::Button)
             .a11y_alt(self.label)
-            .background(background)
-            .corner_radius(CornerRadius::new_all(5.))
-            .border(Border::new().fill(colors.primary).width(focus_width))
+            .background(Color::TRANSPARENT)
+            .corner_radius(CornerRadius::new_all(4.))
+            .border(Border::new().fill(colors.border_focus).width(focus_width))
             .vertical()
             .main_align(Alignment::center())
             .cross_align(Alignment::center())
@@ -173,6 +173,18 @@ impl Component for ActivityRailItem {
                             state.sidebar_visible = true;
                         }
                     }
+                    RailAction::Git => {
+                        if state.viewport_width < 1180. {
+                            state.sidebar_view = SidebarView::Git;
+                            state.sidebar_visible = true;
+                            state.agent_panel_visible = false;
+                        } else if state.sidebar_visible && state.sidebar_view == SidebarView::Git {
+                            state.sidebar_visible = false;
+                        } else {
+                            state.sidebar_view = SidebarView::Git;
+                            state.sidebar_visible = true;
+                        }
+                    }
                     RailAction::Agent => {
                         if state.viewport_width < 1180. {
                             state.sidebar_visible = false;
@@ -186,24 +198,21 @@ impl Component for ActivityRailItem {
                         state.dock_view = DockView::Terminal;
                         state.dock_open = true;
                     }
-                    RailAction::Settings => {
-                        state.config_open = true;
-                    }
                 }
             })
             .child(
                 SvgViewer::new((self.icon, icon(self.icon)))
                     .color(foreground)
-                    .width(Size::px(19.))
-                    .height(Size::px(19.)),
+                    .width(Size::px(15.))
+                    .height(Size::px(15.)),
             )
-            .maybe(self.badge.is_some(), |rect| {
-                rect.child(
-                    label()
-                        .color(colors.primary)
-                        .font_size(8.)
-                        .font_weight(FontWeight::BOLD)
-                        .text(self.badge.unwrap_or_default().to_string()),
+            .maybe(self.badge, |el| {
+                el.child(
+                    rect()
+                        .width(Size::px(4.))
+                        .height(Size::px(4.))
+                        .corner_radius(CornerRadius::new_all(2.))
+                        .background(colors.primary),
                 )
             })
     }
@@ -236,6 +245,13 @@ impl Component for Sidebar {
                         workspace: self.workspace,
                     })
             }
+            SidebarView::Git => rect()
+                .width(Size::fill())
+                .height(Size::fill())
+                .child(GitView {
+                    state: self.state,
+                    workspace: self.workspace,
+                }),
         }
     }
 }
@@ -248,7 +264,7 @@ struct ExplorerView {
 
 impl Component for ExplorerView {
     fn render(&self) -> impl IntoElement {
-        let state = self.state;
+        let mut state = self.state;
         let root = state.read().tree.clone();
         let workspace = self.workspace;
         let colors = use_theme().read().colors.clone();
@@ -270,44 +286,47 @@ impl Component for ExplorerView {
             .child(
                 rect()
                     .width(Size::fill())
-                    .height(Size::px(36.))
+                    .height(Size::px(30.))
                     .horizontal()
                     .main_align(Alignment::space_between())
                     .cross_align(Alignment::center())
-                    .padding(Gaps::new(10., 0., 6., 0.))
+                    .padding(Gaps::new(0., 6., 0., 8.))
                     .child(
                         label()
                             .color(colors.text_secondary)
                             .font_size(11.)
-                            .font_weight(FontWeight::BOLD)
-                            .text("EXPLORER"),
+                            .font_weight(FontWeight::MEDIUM)
+                            .text("Explorer"),
                     )
-                    .child(
-                        Button::new()
-                            .flat()
-                            .compact()
-                            .height(Size::px(24.))
-                            .padding(Gaps::new(6., 0., 6., 0.))
-                            .on_press(move |_| workspace.refresh())
-                            .child(
-                                label()
-                                    .color(colors.text_secondary)
-                                    .font_size(10.)
-                                    .text("REFRESH"),
-                            ),
-                    ),
+                    .child(IconButton {
+                        icon: "refresh",
+                        label: "Refresh workspace",
+                        size: 12.,
+                        on_press: (move |_: Event<PressEventData>| workspace.refresh()).into(),
+                    }),
             )
-            .child(
-                rect()
-                    .width(Size::fill())
-                    .height(Size::px(1.))
-                    .background(colors.border),
-            )
+            .child(crate::ui::chrome::hairline())
             .child(
                 ScrollView::new().direction(Direction::Vertical).child(
                     rect()
                         .width(Size::fill())
                         .vertical()
+                        .on_secondary_down({
+                            let workspace_root = state.read().workspace_root.clone();
+                            move |event: Event<PressEventData>| {
+                                if let PressEventData::Mouse(mouse) = event.data() {
+                                    let mut app_state = state.write();
+                                    app_state.explorer_focused = true;
+                                    app_state.explorer_menu = Some(ExplorerMenu {
+                                        path: workspace_root.clone(),
+                                        is_dir: true,
+                                        is_empty: true,
+                                        x: mouse.global_location.x as f32,
+                                        y: mouse.global_location.y as f32,
+                                    });
+                                }
+                            }
+                        })
                         .padding(Gaps::new(0., 4., 0., 4.))
                         .child(WorkspaceRow { state })
                         .child(root_children),
@@ -328,31 +347,24 @@ impl Component for WorkspaceRow {
 
         rect()
             .width(Size::fill())
-            .height(Size::px(26.))
+            .height(Size::px(24.))
             .horizontal()
             .cross_align(Alignment::center())
             .spacing(6.)
-            .padding(Gaps::new(8., 0., 8., 0.))
+            .padding(Gaps::new(0., 8., 0., 8.))
             .child(
                 SvgViewer::new(("folder", icon("folder")))
                     .color(colors.text_secondary)
-                    .width(Size::px(14.))
-                    .height(Size::px(14.)),
+                    .width(Size::px(12.))
+                    .height(Size::px(12.)),
             )
             .child(
                 label()
                     .color(colors.text_primary)
                     .font_size(12.)
-                    .font_weight(FontWeight::BOLD)
-                    .text(name.to_uppercase()),
-            )
-            .child(
-                rect().width(Size::fill()).child(
-                    label()
-                        .color(colors.text_secondary)
-                        .font_size(12.)
-                        .text("⌄"),
-                ),
+                    .font_weight(FontWeight::MEDIUM)
+                    .max_lines(1)
+                    .text(name),
             )
     }
 }
@@ -425,15 +437,34 @@ impl Component for FileTreeRow {
         Button::new()
             .flat()
             .expanded()
-            .height(Size::px(24.))
+            .height(Size::px(22.))
             .padding(0.)
+            .on_secondary_down({
+                let path = path.clone();
+                move |event: Event<PressEventData>| {
+                    event.stop_propagation();
+                    if let PressEventData::Mouse(mouse) = event.data() {
+                        let mut app_state = state.write();
+                        app_state.explorer_focused = true;
+                        app_state.explorer_menu = Some(ExplorerMenu {
+                            path: path.clone(),
+                            is_dir,
+                            is_empty: false,
+                            x: mouse.global_location.x as f32,
+                            y: mouse.global_location.y as f32,
+                        });
+                    }
+                }
+            })
             .on_press(move |_| {
+                let mut app_state = state.write();
+                app_state.explorer_focused = true;
+                app_state.selected_path = Some(path.clone());
                 if is_dir {
-                    crate::services::workspace::toggle_folder(&mut state.write().tree, &path);
+                    crate::services::workspace::toggle_folder(&mut app_state.tree, &path);
                 } else {
-                    let already_open = state.write().activate_path(&path);
+                    let already_open = app_state.activate_path(&path);
                     if !already_open {
-                        state.write().selected_path = Some(path.clone());
                         workspace.load_file(path.clone());
                     }
                 }
@@ -445,8 +476,8 @@ impl Component for FileTreeRow {
                     .horizontal()
                     .cross_align(Alignment::center())
                     .spacing(5.)
-                    .padding(Gaps::new(depth_padding, 0., 6., 0.))
-                    .child(rect().width(Size::px(12.)).maybe(has_children, |rect| {
+                    .padding(Gaps::new(0., 6., 0., depth_padding))
+                    .child(rect().width(Size::px(10.)).maybe(has_children, |rect| {
                         rect.child(
                             SvgViewer::new((
                                 if node.expanded {
@@ -461,15 +492,15 @@ impl Component for FileTreeRow {
                                 }),
                             ))
                             .color(colors.text_secondary)
-                            .width(Size::px(12.))
-                            .height(Size::px(12.)),
+                            .width(Size::px(10.))
+                            .height(Size::px(10.)),
                         )
                     }))
                     .child(
                         SvgViewer::new((file_icon(node.kind), icon(file_icon(node.kind))))
-                            .color(file_icon_color(&colors, node.kind))
-                            .width(Size::px(14.))
-                            .height(Size::px(14.)),
+                            .color(colors.text_secondary)
+                            .width(Size::px(12.))
+                            .height(Size::px(12.)),
                     )
                     .child(
                         rect().width(Size::fill()).child(
@@ -542,43 +573,32 @@ impl Component for ChangesView {
             .child(
                 rect()
                     .width(Size::fill())
-                    .height(Size::px(36.))
+                    .height(Size::px(30.))
                     .horizontal()
                     .main_align(Alignment::space_between())
                     .cross_align(Alignment::center())
-                    .padding(Gaps::new(12., 0., 12., 0.))
+                    .padding(Gaps::new(0., 8., 0., 8.))
                     .child(
                         rect()
                             .horizontal()
                             .cross_align(Alignment::center())
-                            .spacing(7.)
+                            .spacing(6.)
                             .child(
                                 label()
                                     .color(colors.text_secondary)
                                     .font_size(11.)
-                                    .font_weight(FontWeight::BOLD)
-                                    .text("CHANGES"),
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text("Changes"),
                             )
                             .child(
                                 label()
-                                    .color(colors.text_secondary)
+                                    .color(colors.text_placeholder)
                                     .font_size(10.)
                                     .text(row_count.to_string()),
                             ),
-                    )
-                    .child(
-                        label()
-                            .color(colors.text_secondary)
-                            .font_size(10.)
-                            .text("CURRENT RUN"),
                     ),
             )
-            .child(
-                rect()
-                    .width(Size::fill())
-                    .height(Size::px(1.))
-                    .background(colors.border),
-            )
+            .child(crate::ui::chrome::hairline())
             .child(content)
     }
 }
@@ -608,7 +628,7 @@ impl Component for ChangeRow {
         Button::new()
             .flat()
             .expanded()
-            .height(Size::px(28.))
+            .height(Size::px(26.))
             .padding(0.)
             .on_press(move |_| {
                 if status == AgentFileStatus::Deleted {
@@ -621,6 +641,27 @@ impl Component for ChangeRow {
                     workspace.load_file(absolute_path);
                 }
             })
+            .on_secondary_down({
+                let file_path = file.path.clone();
+                move |event: Event<PressEventData>| {
+                    event.stop_propagation();
+                    let mut app_state = state.write();
+                    let root = app_state.workspace_root.clone();
+                    let full_path = root.join(&file_path);
+                    if let Ok(disk_tab) = crate::services::document::open_file(&root, &full_path) {
+                        let active_content = app_state
+                            .tabs
+                            .iter()
+                            .find(|t| t.rel_path == file_path)
+                            .map(|t| t.content.clone())
+                            .unwrap_or_else(|| disk_tab.content.clone());
+                        let diff = crate::services::diff::compute_line_diff(&disk_tab.persisted_content, &active_content);
+                        app_state.diff_title = format!("Changes · {}", file_path);
+                        app_state.diff_lines = diff.lines;
+                        app_state.diff_open = true;
+                    }
+                }
+            })
             .child(
                 rect()
                     .width(Size::fill())
@@ -628,7 +669,7 @@ impl Component for ChangeRow {
                     .horizontal()
                     .cross_align(Alignment::center())
                     .spacing(8.)
-                    .padding(Gaps::new(10., 0., 10., 0.))
+                    .padding(Gaps::new(0., 10., 0., 10.))
                     .child(
                         label()
                             .color(foreground)
@@ -642,8 +683,41 @@ impl Component for ChangeRow {
                                 .color(colors.text_primary)
                                 .font_size(12.)
                                 .max_lines(1)
-                                .text(file.path),
+                                .text(file.path.clone()),
                         ),
+                    )
+                    .child(
+                        Button::new()
+                            .compact()
+                            .flat()
+                            .padding(Gaps::new(0., 5., 0., 5.))
+                            .on_press({
+                                let file_path = file.path.clone();
+                                move |event: Event<PressEventData>| {
+                                    event.stop_propagation();
+                                    let mut app_state = state.write();
+                                    let root = app_state.workspace_root.clone();
+                                    let full_path = root.join(&file_path);
+                                    if let Ok(disk_tab) = crate::services::document::open_file(&root, &full_path) {
+                                        let active_content = app_state
+                                            .tabs
+                                            .iter()
+                                            .find(|t| t.rel_path == file_path)
+                                            .map(|t| t.content.clone())
+                                            .unwrap_or_else(|| disk_tab.content.clone());
+                                        let diff = crate::services::diff::compute_line_diff(&disk_tab.persisted_content, &active_content);
+                                        app_state.diff_title = format!("Changes · {}", file_path);
+                                        app_state.diff_lines = diff.lines;
+                                        app_state.diff_open = true;
+                                    }
+                                }
+                            })
+                            .child(
+                                label()
+                                    .color(colors.text_placeholder)
+                                    .font_size(9.5)
+                                    .text("diff"),
+                            ),
                     ),
             )
     }
@@ -669,14 +743,14 @@ impl Component for EmptyState {
             .child(
                 SvgViewer::new((self.icon, icon(self.icon)))
                     .color(colors.text_secondary)
-                    .width(Size::px(24.))
-                    .height(Size::px(24.)),
+                    .width(Size::px(18.))
+                    .height(Size::px(18.)),
             )
             .child(
                 label()
                     .color(colors.text_primary)
                     .font_size(12.)
-                    .font_weight(FontWeight::BOLD)
+                    .font_weight(FontWeight::MEDIUM)
                     .text(self.title),
             )
             .child(
@@ -696,19 +770,6 @@ fn file_icon(kind: FileKind) -> &'static str {
         FileKind::Markdown => "file_text",
         FileKind::Json | FileKind::Yaml | FileKind::Toml | FileKind::Manifest => "package",
         FileKind::Other => "file_text",
-    }
-}
-
-fn file_icon_color(colors: &ColorsSheet, kind: FileKind) -> Color {
-    match kind {
-        FileKind::Go => colors.secondary,
-        FileKind::Rust => colors.warning,
-        FileKind::Manifest | FileKind::Toml => colors.primary,
-        FileKind::Markdown | FileKind::Other => colors.text_secondary,
-        FileKind::Json | FileKind::Yaml => colors.tertiary,
-        FileKind::TypeScript => colors.primary,
-        FileKind::JavaScript => colors.warning,
-        FileKind::Folder => colors.text_secondary,
     }
 }
 

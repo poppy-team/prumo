@@ -8,9 +8,12 @@ import (
 	"github.com/raillen/prumo/internal/connectors"
 	_ "github.com/raillen/prumo/internal/connectors/antigravity"
 	_ "github.com/raillen/prumo/internal/connectors/claudecode"
+	_ "github.com/raillen/prumo/internal/connectors/cline"
 	_ "github.com/raillen/prumo/internal/connectors/codex"
+	_ "github.com/raillen/prumo/internal/connectors/cursor"
 	_ "github.com/raillen/prumo/internal/connectors/gemini"
 	_ "github.com/raillen/prumo/internal/connectors/opencode"
+	_ "github.com/raillen/prumo/internal/connectors/windsurf"
 	"github.com/raillen/prumo/internal/protocol"
 )
 

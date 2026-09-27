@@ -107,8 +107,17 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 	if modelName == "" {
 		modelName = a.Model
 	}
+	var systemBlocks []map[string]any
 	msgs := make([]anthropicOutboundMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
+		if m.Role == agent.RoleSystem {
+			block := map[string]any{
+				"type": "text",
+				"text": m.Content,
+			}
+			systemBlocks = append(systemBlocks, block)
+			continue
+		}
 		role := string(m.Role)
 		if role != "user" && role != "assistant" {
 			role = "user"
@@ -179,6 +188,10 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 	payload := map[string]any{
 		"model": modelName, "max_tokens": 1024, "stream": true, "messages": msgs,
 	}
+	if len(systemBlocks) > 0 {
+		systemBlocks[len(systemBlocks)-1]["cache_control"] = map[string]string{"type": "ephemeral"}
+		payload["system"] = systemBlocks
+	}
 	// The tool catalogue goes in the request. This provider declared
 	// ToolCalls: true and then never sent a single schema, so a model had no way
 	// to know the tools existed — the capability was a claim in a struct
@@ -186,7 +199,7 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 	// type, unlike the OpenAI-compatible shape.
 	if len(req.Tools) > 0 {
 		tools := make([]any, 0, len(req.Tools))
-		for _, ts := range req.Tools {
+		for i, ts := range req.Tools {
 			tool := map[string]any{"name": ts.Name}
 			if ts.Description != "" {
 				tool["description"] = ts.Description
@@ -199,6 +212,9 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 				schema = map[string]any{"type": "object", "properties": map[string]any{}}
 			}
 			tool["input_schema"] = schema
+			if i == len(req.Tools)-1 {
+				tool["cache_control"] = map[string]string{"type": "ephemeral"}
+			}
 			tools = append(tools, tool)
 		}
 		payload["tools"] = tools
@@ -221,10 +237,15 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		retryAfter := resp.Header.Get("Retry-After")
 		resp.Body.Close()
 		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
+		errMsg := fmt.Sprintf("provider http %d", resp.StatusCode)
+		if retryAfter != "" {
+			errMsg += fmt.Sprintf(" (Retry-After: %s)", retryAfter)
+		}
 		ch := make(chan agent.ModelEvent, 1)
-		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: fmt.Sprintf("provider http %d", resp.StatusCode), Retryable: retryable}
+		ch <- agent.ModelEvent{Kind: agent.EventError, RequestID: req.RequestID, Error: errMsg, Retryable: retryable}
 		close(ch)
 		return ch, nil
 	}

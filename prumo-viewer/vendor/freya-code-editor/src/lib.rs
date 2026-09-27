@@ -1,0 +1,43 @@
+pub mod constants;
+pub mod editor_data;
+pub mod editor_line;
+pub mod editor_theme;
+pub mod editor_ui;
+pub mod languages;
+pub mod metrics;
+pub mod syntax;
+
+pub use tree_sitter;
+
+pub mod prelude {
+    pub use ropey::Rope;
+
+    pub use crate::{
+        constants::{
+            BASE_FONT_SIZE,
+            MAX_FONT_SIZE,
+        },
+        editor_data::{CodeEditorData, LineDecoration},
+        editor_line::EditorLineUI,
+        editor_theme::{
+            CodeEditorThemeExt,
+            EditorSyntaxTheme,
+            EditorTheme,
+            EditorThemePartial,
+            EditorThemePartialExt,
+            EditorThemePreference,
+        },
+        editor_ui::CodeEditor,
+        languages::EditorLanguage,
+        metrics::EditorMetrics,
+        syntax::{
+            InputEditExt,
+            RopeChunkIter,
+            RopeTextProvider,
+            SyntaxBlocks,
+            SyntaxHighlighter,
+            SyntaxLine,
+            TextNode,
+        },
+    };
+}

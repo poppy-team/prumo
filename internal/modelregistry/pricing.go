@@ -198,6 +198,8 @@ func DefaultPricing() PricingTable {
 			"openai/gpt-4o-mini":          entry("openai", "gpt-4o-mini", 0.15, 0.60, 0, 0.075, false),
 			"anthropic/claude-3-5-sonnet": entry("anthropic", "claude-3-5-sonnet", 3.00, 15.00, 3.75, 0.30, false),
 			"anthropic/claude-3-5-haiku":  entry("anthropic", "claude-3-5-haiku", 0.80, 4.00, 1.00, 0.08, false),
+			"deepseek/deepseek-chat":      entry("deepseek", "deepseek-chat", 0.14, 0.28, 0, 0.014, false),
+			"deepseek/deepseek-reasoner":  entry("deepseek", "deepseek-reasoner", 0.55, 2.19, 0, 0.14, false),
 		},
 	}
 }

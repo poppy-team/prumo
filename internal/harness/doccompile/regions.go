@@ -54,6 +54,47 @@ func ExtractRegion(doc, id string) (string, error) {
 	return strings.Trim(rest[:ei], "\n"), nil
 }
 
+// RemoveRegion cuts out a managed region including its begin and end markers.
+func RemoveRegion(doc, id string) (string, error) {
+	begin, end := beginMarker(id), endMarker(id)
+	bi := strings.Index(doc, begin)
+	if bi < 0 {
+		return doc, nil
+	}
+	rest := doc[bi+len(begin):]
+	ei := strings.Index(rest, end)
+	if ei < 0 {
+		return "", fmt.Errorf("managed region %q missing end marker", id)
+	}
+	endIdx := bi + len(begin) + ei + len(end)
+	if endIdx < len(doc) && doc[endIdx] == '\n' {
+		endIdx++
+	}
+	startIdx := bi
+	if startIdx > 0 && doc[startIdx-1] == '\n' && endIdx < len(doc) && doc[endIdx] == '\n' {
+		endIdx++
+	}
+	res := doc[:startIdx] + doc[endIdx:]
+	return strings.TrimRight(res, "\n") + "\n", nil
+}
+
+// UpsertRegion replaces the region if present, or appends it with markers if not present.
+func UpsertRegion(doc, id, body string) string {
+	begin, end := beginMarker(id), endMarker(id)
+	formattedBody := begin + "\n" + strings.TrimSpace(body) + "\n" + end
+	if strings.Contains(doc, begin) {
+		res, err := ReplaceRegion(doc, id, body)
+		if err == nil {
+			return res
+		}
+	}
+	trimmed := strings.TrimSpace(doc)
+	if trimmed == "" {
+		return formattedBody + "\n"
+	}
+	return trimmed + "\n\n" + formattedBody + "\n"
+}
+
 // PatchOp is one RFC 6902 operation (add/remove/replace subset).
 type PatchOp struct {
 	Op    string `json:"op"`

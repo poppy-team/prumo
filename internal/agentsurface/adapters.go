@@ -55,6 +55,8 @@ func Adapters() map[string]Adapter {
 		cursorAdapter{},
 		claudeAdapter{},
 		skillAdapter{},
+		windsurfAdapter{},
+		clineAdapter{},
 	}
 	registry := make(map[string]Adapter, len(list))
 	for _, a := range list {
@@ -269,4 +271,38 @@ func (a skillAdapter) Render(ir IR, scope string) (Surface, bool, error) {
 	head := "---\nname: prumo-" + slug(scope) +
 		"\ndescription: Prumo framework instructions for " + scopeLabel(scope) + ".\n---\n"
 	return buildSurface(a.Name(), scope, path, "", head, body, sources, rules), true, nil
+}
+
+// windsurfAdapter projects rules into .windsurfrules (root) or .windsurf/rules/prumo-*.md.
+type windsurfAdapter struct{}
+
+func (windsurfAdapter) Name() string { return "windsurf" }
+
+func (a windsurfAdapter) Render(ir IR, scope string) (Surface, bool, error) {
+	body, sources, rules := renderBullets(ir, a.Name(), scope)
+	if body == "" {
+		return Surface{}, false, nil
+	}
+	if NormalScope(scope) == "" {
+		return buildSurface(a.Name(), scope, ".windsurfrules", "", "", body, sources, rules), true, nil
+	}
+	path := ".windsurf/rules/prumo-" + slug(scope) + ".md"
+	return buildSurface(a.Name(), scope, path, "", "", body, sources, rules), true, nil
+}
+
+// clineAdapter projects rules into .clinerules (root) or .cline/rules/prumo-*.md.
+type clineAdapter struct{}
+
+func (clineAdapter) Name() string { return "cline" }
+
+func (a clineAdapter) Render(ir IR, scope string) (Surface, bool, error) {
+	body, sources, rules := renderBullets(ir, a.Name(), scope)
+	if body == "" {
+		return Surface{}, false, nil
+	}
+	if NormalScope(scope) == "" {
+		return buildSurface(a.Name(), scope, ".clinerules", "", "", body, sources, rules), true, nil
+	}
+	path := ".cline/rules/prumo-" + slug(scope) + ".md"
+	return buildSurface(a.Name(), scope, path, "", "", body, sources, rules), true, nil
 }

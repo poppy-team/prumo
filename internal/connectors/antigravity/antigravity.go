@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/raillen/prumo/internal/connectors"
+	"github.com/raillen/prumo/internal/harness/doccompile"
 	"github.com/raillen/prumo/internal/install"
 	"github.com/raillen/prumo/internal/protocol"
 )
@@ -69,8 +71,9 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	agentsDir := filepath.Join(projectRoot, ".agents")
 	created := []string{}
+	managedFragments := []string{}
 
-	// 1. GEMINI.md entrypoint in project root
+	// 1. GEMINI.md entrypoint in project root using managed region
 	geminiMD := `# GEMINI.md
 This project uses Prumo v0.5 with Google Antigravity.
 
@@ -84,10 +87,25 @@ This project uses Prumo v0.5 with Google Antigravity.
 - Directory Documentation: Ensure each folder contains a structured README.md.
 `
 	geminiMDPath := filepath.Join(projectRoot, "GEMINI.md")
-	if err := writeText(geminiMDPath, geminiMD); err != nil {
-		return nil, err
+	if existingData, err := os.ReadFile(geminiMDPath); err == nil && len(existingData) > 0 {
+		cleaned, _ := doccompile.RemoveRegion(string(existingData), "connector-antigravity")
+		hasUserContent := strings.TrimSpace(cleaned) != ""
+		merged := doccompile.UpsertRegion(string(existingData), "connector-antigravity", geminiMD)
+		if err := writeText(geminiMDPath, merged); err != nil {
+			return nil, err
+		}
+		if hasUserContent {
+			managedFragments = append(managedFragments, "GEMINI.md:connector-antigravity")
+		} else {
+			created = append(created, geminiMDPath)
+		}
+	} else {
+		content := doccompile.UpsertRegion("", "connector-antigravity", geminiMD)
+		if err := writeText(geminiMDPath, content); err != nil {
+			return nil, err
+		}
+		created = append(created, geminiMDPath)
 	}
-	created = append(created, geminiMDPath)
 
 	// 2. Harness Config
 	config := map[string]any{
@@ -133,9 +151,11 @@ This project uses Prumo v0.5 with Google Antigravity.
 
 	// 4. Subagents
 	subagents := map[string]string{
-		"architect.md": "# Architect Subagent\nRole: Architecture, Boundaries & Schema Design\n",
-		"executor.md":  "# Executor Subagent\nRole: Implementation, Refactoring & Clean Code\n",
-		"verifier.md":  "# Verifier Subagent\nRole: Exhaustive Testing, Security & Quality Gates\n",
+		"architect.md":         "# Architect Subagent\nRole: Architecture, Boundaries & Schema Design\n",
+		"executor.md":          "# Executor Subagent\nRole: Implementation, Refactoring & Clean Code\n",
+		"verifier.md":          "# Verifier Subagent\nRole: Exhaustive Testing, Security & Quality Gates\n",
+		"systems-architect.md": "# Systems Architect Subagent\nRole: Low-Level Systems, Memory Models, Hardware Budgets & Compiler Invariants\n",
+		"isolation-auditor.md": "# Isolation Auditor Subagent\nRole: Multi-Tenant Isolation, Sandboxing & Adversarial Abuse Verification\n",
 	}
 	for name, content := range subagents {
 		subPath := filepath.Join(agentsDir, "subagents", name)
@@ -236,9 +256,10 @@ Verify outputs against quality checklists before declaring completion.
 
 	sort.Strings(created)
 	return &connectors.CompileResult{
-		Target:       "antigravity",
-		CreatedPaths: created,
-		ManifestPath: configPath,
+		Target:           "antigravity",
+		CreatedPaths:     created,
+		ManagedFragments: managedFragments,
+		ManifestPath:     configPath,
 		Metadata: map[string]any{
 			"rules_count":  len(rules),
 			"skills_count": len(skills),
@@ -268,9 +289,11 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	cleanup := install.CleanupManifest{
-		Connector:    "antigravity",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
+		Connector:        "antigravity",
+		Scope:            "project",
+		ProjectRoot:      projectRoot,
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
 	}
 	if err := connectors.SaveCleanup(home, "antigravity", cleanup); err != nil {
 		return nil, err
@@ -290,12 +313,13 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	return &connectors.InstallResult{
-		Connector:    "antigravity",
-		Status:       "installed",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
-		CleanupPath:  install.CleanupPath(home, "antigravity"),
-		Contract:     c.Contract(),
+		Connector:        "antigravity",
+		Status:           "installed",
+		Scope:            "project",
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
+		CleanupPath:      install.CleanupPath(home, "antigravity"),
+		Contract:         c.Contract(),
 	}, nil
 }
 

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrBlockedBudget      = errors.New("budget: hard limit exhausted, triggering safe stop blocked_budget")
+	ErrBlockedBudget          = errors.New("budget: hard limit exhausted, triggering safe stop blocked_budget")
 	ErrReviewReserveProtected = errors.New("budget: cannot consume from review reserve during implementation phase")
 )
 

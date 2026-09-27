@@ -62,7 +62,7 @@ Prumo Native (Rust, Freya 0.4+)
 ├── notify           — file watching (debounced)
 ├── tokio            — runtime async compartilhado (1 runtime, workers limitados)
 ├── serde/serde_json — config, projeções e eventos do protocol
-├── git2 (libgit2)   — git status/diff em worker de fundo
+├── git CLI           — status/diff/stage/commit/push/pull em worker de fundo
 ├── portable-pty + vt100 — terminal embutido (fase 2, implementada)
 └── arboard/rfd      — clipboard e diálogos nativos
 ```
@@ -137,7 +137,7 @@ Em viewport largo, rail, sidebar, editor, right stack e dock coexistem. Em viewp
 - Changes lista somente arquivos presentes na projeção da Run;
 - o right stack mostra Run, phase, approvals e timeline;
 - o bottom dock apresenta Activity, Changes e Evidence apenas quando existem dados;
-- controles de debug, terminal e inspector não aparecem até possuírem operação real.
+- o dock tem seis visões reais: Activity, Changes, Terminal, Search, Problems, Evidence e Quality. Evidence lista os arquivos que a Run criou ou alterou (clicável, abre no editor) seguido das tool calls e approvals; Quality agrega apenas fatos que o Core já emite — `tool.failed`, `side_effect_refused`, `side_effect_journal_failed`, `scope_violation`, `budget_exhausted`, `side_effect_skipped`, `permission_denied` e o desfecho de `run.finished` — com severidade, contagem no título e estado vazio que diz o que o preenche. O protocolo **não** expõe hoje `evidence-<run>.json` nem os quality gates do CLI, então a surface não os inventa: Evidence comprovado e gates declarados entram quando o Core ganhar uma operação para eles;- controles de debug, terminal e inspector não aparecem até possuírem operação real.
 
 ### Integrações Prumo
 
@@ -149,14 +149,42 @@ Em viewport largo, rail, sidebar, editor, right stack e dock coexistem. Em viewp
 
 ### Estado implementado do shell
 
-- o editor usa o componente `CodeEditor` nativo do Freya com Rope, VirtualScrollView e Tree-sitter;
+- o editor usa o componente `CodeEditor` nativo do Freya com Rope, VirtualScrollView e Tree-sitter; conflitos de alteração externa entram em estado explícito e oferecem Reload ou Keep mine; diagnostics do LSP aparecem no Problems e nas linhas do editor;
 - Rust, Go, JSON, YAML, Markdown, TOML, TypeScript e JavaScript possuem gramáticas carregadas pelo editor;
 - o Runner envia `start`, `steer`, `cancel`, `models`, `approve` e `deny` exclusivamente pelo Agent Protocol publicado;
-- o terminal inferior usa `portable-pty` + `vt100`, inicia no workspace, mantém stdin/stdout, permite restart e termina o child junto com a sessão;
+- o terminal inferior usa `portable-pty` + `vt100`, inicia no workspace e termina o child junto com a sessão; o painel é focável e envia teclas direto ao PTY (texto, Enter, Backspace, Tab, setas, Delete, F1-F12, Ctrl+letra, Alt+letra), sem caixa de comando separada;
 - o terminal não executa com privilégios elevados e a UI informa que herda os privilégios do usuário;
 - preferências persistidas usam `schemas/viewer-config.schema.json` em `$PRUMO_VIEWER_CONFIG` ou, por padrão, no diretório de configuração do usuário sob `prumo/viewer.json`; segredos e API keys nunca são armazenadas nesse arquivo;
 - socket e shell customizados exigem restart, enquanto provider, model, tema, whitespace e intervalo de polling entram em vigor na viewer;
 - ResizableContainer horizontal usa contexto interno do Freya, chaves estáveis e `Content::flex`; o CodeEditor precisa ocupar a área central medida por teste headless.
+- o chrome segue o modelo Zed: barra de 32 px, rail de 36 px, tabs de 30 px, statusbar de 24 px, superfícies unificadas e divisórias de 1 px;
+- inputs usam o estilo padrão do Freya e botões primários usam o estilo padrão, sem blocos azuis cheios; ações icon-only usam `IconButton` com label acessível;
+- o painel Agent começa oculto e abre pelo rail; sidebar começa visível com 264 px; dock começa recolhido;
+- modais usam larguras menores, cabeçalhos compactos e botão de fechar icon-only; Quick Open não tem botão X redundante;
+- overlays (Settings, Quick Open, Diff, confirmação de close, prompts do Explorer, menu) medem a raiz pelo tamanho da janela via `Platform::get().root_size`, nunca com `fill` dentro da coluna flex do app; `fill` na vertical resolve para o espaço restante e colapsa o backdrop e as áreas flex do modal;
+- backdrops de modal usam véu leve (`argb 100`), nunca sombra pesada; o menu e o contexto do Explorer usam fundo transparente;
+- Settings existe somente no header; o rail tem Explorer, Changes, Agent e Terminal;
+- o header tem menu hambúrguer à direita com Quick Open, toggles de Sidebar/Agent/Dock, Open Terminal, Settings e Toggle Theme;
+- tabs mostram o X de fechar apenas no hover ou na aba ativa; aba inativa limpa mostra espaçador e aba dirty mostra dot;
+- o Explorer abre menu de contexto no botão direito com New File, New Folder, Rename, Duplicate e Delete; a área vazia oferece somente New File e New Folder; `Ctrl+N`, `Ctrl+Shift+N`/`Alt+Ctrl+N`, `F2`, `Delete` e `Backspace` executam essas ações quando o Explorer está focado; rename/delete usam modal de prompt/confirmação, tabs abertas são remapeadas ou fechadas e a árvore recarrega;
+- o comando Delete no Explorer move o item para a lixeira do sistema após confirmação; o discard de arquivo Git não rastreado continua sendo exclusão permanente; o adapter usa o mecanismo nativo da plataforma (`gio`, AppleScript ou PowerShell) e nunca recorre silenciosamente à exclusão permanente quando a lixeira falha;
+- command palette (Ctrl+Shift+P) com 20 comandos reais: navegação, toggles de chrome, Problems, save/close/refresh, terminal, settings, tema, follow do agente, novo arquivo/pasta e ações de language server;
+- find no arquivo (Ctrl+F) com contagem, anterior/próximo, seleção e scroll automático até o match, case toggle, replace atual e replace all sobre o Rope;
+- busca textual no projeto (Ctrl+Shift+F) como aba do dock com literal/regex, case toggle, resultados com arquivo/linha/preview, abertura com seleção/scroll no match e replace all com confirmação em dois cliques; respeita `.gitignore` e ignora binários e arquivos acima de 2 MB;
+- watcher de arquivos com `notify` e debounce de 400 ms recarrega a árvore automaticamente, ignorando `.git`, `target`, `node_modules` e similares;
+- Git real via CLI: view própria no rail com branch, ahead/behind, Staged/Changes, stage/unstage por arquivo e em massa, commit, discard, diff no modal existente, push e pull; clicar em um arquivo rastreado abre-o no editor, revela a primeira alteração e destaca as linhas Git (arquivos não rastreados são treatados como adições); polling atualiza o status com a view visível;
+- linhas horizontais com filhos `flex` exigem `.content(Content::flex())` explícito no container, senão o filho flex ocupa a largura total em bloco e empurra os irmãos para fora da tela;
+- o `freya-code-editor` 0.4.3 é mantido como fork local mínimo, via `[patch.crates-io]`, para expor uma API de cursor/seleção/scroll sem reescrever o editor; a API converte offsets de busca em UTF-16 e o componente mede o viewport real antes de revelar uma linha.
+
+## Extensibilidade distribuível
+
+- o contrato `prumo.viewer.extensions/v1` é independente da versão do viewer e do Agent Protocol;
+- `prumo-viewer/extension-sdk/` publica contratos de manifest, capabilities, permissões e JSON-RPC sem depender de Freya ou do Core;
+- `prumo-viewer/extensions/` contém pacotes de referência com `manifest.json`; `com.prumo.editor-navigation` demonstra comandos declarativos reutilizáveis e `com.prumo.rust-analyzer` conecta um servidor LSP externo após grant explícito;
+- a descoberta aceita `.prumo/extensions`, `PRUMO_VIEWER_EXTENSIONS` e o diretório de desenvolvimento durante o build local;
+- a v1 do viewer ativa contributions declarativas e processuais com grant válido; o SDK possui runtime process-isolado, handshake, timeout, clientes LSP/DAP e o broker conecta workspace, editor, index, filesystem, Git, notificações, LSP e DAP; operações arbitrárias de filesystem e comandos diretos do Core permanecem contratos futuros; o lifecycle LSP atual sincroniza didOpen/didChange/didSave, publica diagnostics no Problems, oferece completion/code actions/formatting para o documento ativo e preserva a posição real do cursor;
+- extensões não recebem widgets, sockets, tokens ou estado mutável do viewer; comandos declarativos passam por ações host-owned e comandos processuais usam `command/invoke` em worker, sem bloquear o paint;
+- o contrato completo, trust model e critérios de distribuição estão em `docs/adr/021-viewer-extension-contract.md` e `schemas/viewer-extension-manifest.schema.json`.
 
 ## Agent-aware Explorer
 
@@ -181,6 +209,15 @@ O Follow Agent mantém a UI sincronizada com a execução:
 - exibe timeline de eventos da Run (tool calls, edições, approvals pendentes);
 - nunca bloqueia a edição humana (o usuário pode desanexar a qualquer momento).
 
+Regras implementadas:
+
+- segue apenas a alteração mais recente ainda não vista, uma por poll, para não abrir abas em cascata;
+- arquivo aberto e sem edição humana é recarregado do disco, recebe as decorations das linhas novas e revela a primeira linha alterada;
+- arquivo aberto com edição humana **não** é sobrescrito: o conflito é registrado, o usuário é avisado uma vez e a lista some quando ele salva ou quando a Run muda;
+- arquivo fechado é aberto pelo loader existente; arquivo deletado nunca é reaberto;
+- o toggle fica no cabeçalho do painel Agent e no Command Palette (`Toggle Follow Agent`), e desanexar limpa as decorations pendentes;
+- o protocolo não envia números de linha: as linhas vêm de um diff local (`similar`) entre o conteúdo anterior e o novo, limitado a 2.000 decorations por evento.
+
 ## Alterações planejadas no editor
 
 O editor é construído do zero com escopo restrito:
@@ -192,7 +229,7 @@ O editor é construído do zero com escopo restrito:
 - save/reload com detecção de alteração externa;
 - diff aberto como tab do editor (read-only, com gutter);
 - sem minimap no MVP (reavaliar após medir custo de render);
-- sem LSP no MVP.
+- LSP, formatters e language intelligence são extensões independentes; não ficam acopladas ao shell do viewer.
 
 ## File watching
 
@@ -202,14 +239,23 @@ O editor é construído do zero com escopo restrito:
 - **nenhuma I/O de filesystem durante o paint** — watchers escrevem em canal; uma task Tokio consolida e atualiza `Signal`s;
 - ignore rules respeitadas (`.gitignore`, `.prumoignore`).
 
+## Regras de atualização da UI
+
+- o `render` não grava estado compartilhado; sincronizações do editor acontecem em efeito reativo e só notificam quando cursor, seleção ou conteúdo realmente mudam; cursor/seleção notificam apenas `EditorCursorState`, não o `AppState` completo;
+- o find local ignora a árvore quando a barra está fechada ou vazia e memoiza o resultado enquanto a entrada não muda;
+- a busca no workspace roda em worker, com debounce de 180 ms, e descarta respostas de requisições antigas;
+- o polling do protocolo não reaplica snapshots idênticos e só clona o `AppState` completo quando há refresh de workspace ou Git;
+- a sincronização LSP do documento ativo ocorre apenas quando path ou revision mudam; cada servidor tem fila própria, cancelamento `$/cancelRequest` e `didClose` no fechamento da tab;
+- o Follow Agent reage no poll do protocolo: a detecção do arquivo alterado e a leitura do disco acontecem no worker, e só o estado derivado é escrito na thread da UI.
+
 ## Buffer e arquivos grandes
 
 - buffer `String` com limite defensivo (default 8 MB por arquivo aberto);
 - arquivos acima do limite abrem em modo truncado com aviso explícito e opção "abrir mesmo assim" (somente leitura);
-- não migrar para Ropey por entusiasmo tecnológico. Primeiro medir:
+- Ropey é o buffer do `CodeEditor`; o fork mantém a API de cursor, seleção, scroll e decorations. Não introduzir um segundo buffer sem medição:
   - latência de inserção/remoção típica de edição humana (<1k linhas alteradas por save);
   - tamanho real dos arquivos em workspaces-alvo;
-- virtualização: apenas as linhas visíveis são medidas e rasterizadas; windows de contexto para scroll suave.
+  - virtualização: apenas as linhas visíveis são medidas e rasterizadas; windows de contexto para scroll suave.
 
 ## Conflitos humano × agente
 
@@ -218,8 +264,8 @@ Contrato explícito:
 - se o humano edita um arquivo que o agente modifica:
   - a UI não salva silenciosamente por cima;
   - o arquivo entra em estado `conflicted` visível;
-  - o diff 3-way (base, agente, humano) é oferecido;
-  - resolver é ação humana explícita (manter meu, aceitar do agente, mesclar manual);
+  - o banner oferece `Reload` e `Keep mine`;
+  - diff 3-way, aceitar o agente e merge manual são a próxima etapa;
 - autosave é opt-in, nunca default;
 - o Core continua sendo a autoridade do que foi aceito na Run; a GUI apenas projeta.
 
@@ -255,7 +301,8 @@ Evitar que um componente `App` acumule responsabilidades. UI chama application s
 - `projections/` — estado derivado; reconstituível a partir de replay do protocol;
 - `client/` — transporte do protocolo (socket, framing, reconexão);
 - `platform/` — watchers, PTY, clipboard, diálogos;
-- `state/` — Signals e stores compartilhados.
+- `state/` — Signals e stores compartilhados; `EditorState` concentra tabs, popup, diagnostics e lifecycle de documentos dentro de `AppState`, enquanto cursor/seleção usam `EditorCursorState` para não invalidar o shell inteiro;
+- `extensions/` — manifest discovery, capability negotiation e host bridge; nunca contém widgets de terceiros.
 
 Nenhuma camada pula a anterior: componente não fala com o client; service não toca widget.
 
@@ -271,6 +318,26 @@ Medido no hardware de referência da equipe, workspace médio (2–5k arquivos):
 - scroll em árvore de 10k itens sem stutter.
 
 Freya renderiza com Skia e só reavalia componentes cujos `Signal`s mudaram; qualquer violação de budget vira issue com benchmark reproduzível (ver matriz obrigatória).
+
+### Baseline de regressão
+
+Medição local sem interação, usando `cargo build --bin prumo-native` e `ps` em 2 s, 7 s e 15 s:
+
+- antes das correções: 52–93% de CPU no processo;
+- depois das correções: aproximadamente 8–11% após o warm-up;
+- o binário de debug ainda executa polling, terminal e initialization; esse número é uma regressão diagnóstica, não substitui o budget de produção de idle CPU ≤ 1%.
+
+### Custo por tecla no editor
+
+O fork vendorizado de `freya-code-editor` mantém em cache o comprimento e o índice da linha mais longa, que dimensionam a área de código:
+
+- tecla em uma linha: mede só a linha afetada e, quando o edit insere ou remove linhas, desloca o índice cacheado;
+- edição que toca a linha cacheada, undo, redo ou substituição de intervalo: recalcula o documento inteiro uma única vez;
+- dois `parse` sem `measure` intermediário invalidam o cache e forçam o recálculo completo.
+
+Medição local em perfil debug, arquivo de 100k linhas, 2.000 atualizações: 15 ms no caminho incremental contra 257 s em 2.000 recálculos completos, cerca de 17.000×. Antes, cada tecla pagava o recálculo completo, aproximadamente 128 ms por tecla.
+
+O fork não é membro do workspace de propósito: ele segue o estilo do upstream e não deve ser submetido aos gates de formatação e lint do projeto. Por estar dentro do diretório do workspace sem ser membro, o Cargo recusa rodá-lo no lugar; os testes internos rodam sobre uma cópia fora do repositório, com `cargo test --manifest-path <copia>/Cargo.toml --offline --lib`.
 
 ## Testes obrigatórios
 
@@ -301,10 +368,11 @@ O recorte do zero exige disciplina de fatias verticais entregáveis:
 - **Wave 1 — Workspace read-only:** explorer virtualizado + abertura de arquivos com highlighting + busca fuzzy de arquivos. Sem protocol: dados locais.
 - **Wave 2 — Protocol:** PrumoClient (connect/reconnect/replay) + RunProjection + painel Agent com timeline de eventos.
 - **Wave 3 — Edição:** save/reload + deteção de conflito humano×agente + diff view (Similar) como tab.
-- **Wave 4 — Git:** worker de fundo (git2) + status no explorer + diff Git.
+- **Wave 4 — Git:** worker de fundo (Git CLI) + status no explorer + diff Git.
 - **Wave 5 — Follow Agent:** auto-follow das edições do agente + highlight de linhas modificadas.
 - **Wave 6 — Terminal:** PTY embutido (portable-pty + vt100) como painel inferior.
 - **Wave 7 — Polish:** atalhos, acessibilidade Freya/AccessKit, golden tests visuais, tuning de performance.
+- **Wave 8 — Extension Contract:** SDK, manifest, descoberta local, contributions declarativas, broker, LSP/DAP, panels, themes, keybindings, tasks, archive e lockfile; renderers adicionais e Git broker entram após o broker e os testes de compatibilidade.
 
 Cada Wave termina com benchmark + golden tests atualizados + doc desta página se o contrato mudar.
 
@@ -371,13 +439,24 @@ Cada Wave passa pelo loop:
 
 Waves não acumulam: uma Wave só começa quando a anterior fecha com critérios verdes.
 
-## Non-goals reafirmados
+## Non-goals reaffirmed para o recorte atual
 
-- não virar IDE generalista (sem LSP no MVP, sem debugger, sem refactor engine);
+- não virar IDE generalista (LSP e debugger são adapters extension-owned, sem engine de refatoração ou serviço de linguagem pertencente ao viewer);
 - não implementar segundo harness ou estado canônico no client;
 - não adicionar webview/web tech;
 - não herdar fork de editor de terceiros;
-- não otimizar prematuramente (Ropey, minimap, multi-janela) sem medição.
+- não otimizar prematuramente (Ropey, minimap) sem medição.
+
+Multi-janela está **descartado**: mais de uma janela do sistema não faz parte de nenhuma versão do produto, porque o ganho de uso não compensa o custo de manter estado, docks e editores sincronizados entre processos de janela.
+
+## Candidatos para versões futuras
+
+Não são escopo do recorte atual e não são compromisso de entrega. São registrados para que a ideia não precise ser redesenhada do zero, e para que ninguém os trate como meta assumida:
+
+- **editor geral** — tornar o viewer um IDE de uso diário: gerenciamento de projeto, refatoração, debug, terminal integrado e catálogo de extensões. Continua sendo uma direção de produto possível, não uma meta do MVP agent-aware;
+- **engine de refatoração** — renomear símbolo em escopo de projeto, extrair função, mover arquivo e alterar assinatura, com suporte real da linguagem. A responsabilidade continua sendo do agente ou de uma extensão de linguagem; o viewer não a implementa nem a embute.
+
+Qualquer promoção desses candidatos exige um ADR novo, com medição de custo e sem reverter as boundaries de `ui/`, `services/`, `client/` e `extensions/`.
 
 ## Decisão consolidada
 

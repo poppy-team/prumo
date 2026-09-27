@@ -7,29 +7,29 @@ import (
 )
 
 var (
-	ErrInvalidDAG   = errors.New("recipe: invalid DAG")
-	ErrCycleDetected = errors.New("recipe: cycle detected in recipe DAG")
-	ErrMissingOwner = errors.New("recipe: step missing owner actor")
-	ErrInfiniteRetry = errors.New("recipe: unbounded or infinite retry detected")
+	ErrInvalidDAG          = errors.New("recipe: invalid DAG")
+	ErrCycleDetected       = errors.New("recipe: cycle detected in recipe DAG")
+	ErrMissingOwner        = errors.New("recipe: step missing owner actor")
+	ErrInfiniteRetry       = errors.New("recipe: unbounded or infinite retry detected")
 	ErrMissingCompensation = errors.New("recipe: destructive step missing compensation procedure")
-	ErrStepFailed   = errors.New("recipe: step execution failed")
+	ErrStepFailed          = errors.New("recipe: step execution failed")
 )
 
 // RecipeStep declares one node in the Recipe workflow.
 type RecipeStep struct {
-	ID             string   `json:"id"`
-	Actor          string   `json:"actor"` // step owner (required)
-	Capability     string   `json:"capability"`
-	Inputs         []string `json:"inputs"`
-	Outputs        []string `json:"outputs"`
-	Preconditions  []string `json:"preconditions,omitempty"`
-	SideEffects    string   `json:"side_effects"` // read_only, idempotent, stateful, destructive
-	RetryLimit     int      `json:"retry_limit"`  // must be >= 0 and <= 10
-	FailurePolicy  string   `json:"failure_policy,omitempty"` // stop, compensate, continue
-	Compensation   string   `json:"compensation,omitempty"`   // required if destructive
-	Evidence       string   `json:"evidence,omitempty"`
-	Gate           string   `json:"gate,omitempty"`
-	Next           []string `json:"next,omitempty"`
+	ID            string   `json:"id"`
+	Actor         string   `json:"actor"` // step owner (required)
+	Capability    string   `json:"capability"`
+	Inputs        []string `json:"inputs"`
+	Outputs       []string `json:"outputs"`
+	Preconditions []string `json:"preconditions,omitempty"`
+	SideEffects   string   `json:"side_effects"`             // read_only, idempotent, stateful, destructive
+	RetryLimit    int      `json:"retry_limit"`              // must be >= 0 and <= 10
+	FailurePolicy string   `json:"failure_policy,omitempty"` // stop, compensate, continue
+	Compensation  string   `json:"compensation,omitempty"`   // required if destructive
+	Evidence      string   `json:"evidence,omitempty"`
+	Gate          string   `json:"gate,omitempty"`
+	Next          []string `json:"next,omitempty"`
 }
 
 // RecipeDAG is the directed acyclic graph representing a complete recipe.

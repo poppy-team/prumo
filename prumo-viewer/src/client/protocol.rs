@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -9,7 +10,7 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientError {
-    #[cfg(not(unix))]
+    #[allow(dead_code)]
     UnsupportedPlatform,
     Connect {
         path: PathBuf,
@@ -23,9 +24,8 @@ pub enum ClientError {
 impl Display for ClientError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            #[cfg(not(unix))]
             Self::UnsupportedPlatform => {
-                write!(formatter, "local Prumo protocol requires Unix sockets")
+                write!(formatter, "local Prumo protocol requires Unix sockets or TCP")
             }
             Self::Connect { path, message } => {
                 write!(formatter, "cannot connect to {}: {message}", path.display())
@@ -49,6 +49,15 @@ pub struct DaemonRun {
     pub phase: String,
     #[serde(default)]
     pub pending_permissions: Vec<String>,
+    #[serde(default)]
+    pub permission_fingerprints: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DaemonDiff {
+    pub path: String,
+    pub kind: String,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -156,6 +165,8 @@ impl PrumoClient {
         workspace_root: &Path,
         provider: Option<&str>,
         model: Option<&str>,
+        api_key: Option<&str>,
+        base_url: Option<&str>,
     ) -> Result<String, ClientError> {
         let mut request = serde_json::json!({
             "op": "start",
@@ -167,6 +178,12 @@ impl PrumoClient {
         }
         if let Some(model) = model.filter(|value| !value.trim().is_empty()) {
             request["model"] = Value::String(model.to_string());
+        }
+        if let Some(api_key) = api_key.filter(|value| !value.trim().is_empty()) {
+            request["api_key"] = Value::String(api_key.to_string());
+        }
+        if let Some(base_url) = base_url.filter(|value| !value.trim().is_empty()) {
+            request["base_url"] = Value::String(base_url.to_string());
         }
         let response = self.call(request)?;
         response
@@ -190,11 +207,28 @@ impl PrumoClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn models(&self, provider: &str) -> Result<DaemonModels, ClientError> {
-        let response = self.call(serde_json::json!({
+        self.models_with_options(provider, None, None)
+    }
+
+    pub fn models_with_options(
+        &self,
+        provider: &str,
+        api_key: Option<&str>,
+        base_url: Option<&str>,
+    ) -> Result<DaemonModels, ClientError> {
+        let mut request = serde_json::json!({
             "op": "models",
             "provider": provider,
-        }))?;
+        });
+        if let Some(api_key) = api_key.filter(|value| !value.trim().is_empty()) {
+            request["api_key"] = Value::String(api_key.to_string());
+        }
+        if let Some(base_url) = base_url.filter(|value| !value.trim().is_empty()) {
+            request["base_url"] = Value::String(base_url.to_string());
+        }
+        let response = self.call(request)?;
         let provider = response
             .get("provider")
             .and_then(Value::as_str)
@@ -211,26 +245,131 @@ impl PrumoClient {
         Ok(DaemonModels { provider, models })
     }
 
-    pub fn approve(&self, run_id: &str, request_id: &str) -> Result<(), ClientError> {
-        self.permission(run_id, request_id, true)
+    pub fn approve(
+        &self,
+        run_id: &str,
+        request_id: &str,
+        fingerprint: Option<&str>,
+    ) -> Result<(), ClientError> {
+        self.permission(run_id, request_id, fingerprint, true)
     }
 
-    pub fn deny(&self, run_id: &str, request_id: &str) -> Result<(), ClientError> {
-        self.permission(run_id, request_id, false)
+    pub fn deny(
+        &self,
+        run_id: &str,
+        request_id: &str,
+        fingerprint: Option<&str>,
+    ) -> Result<(), ClientError> {
+        self.permission(run_id, request_id, fingerprint, false)
     }
 
     fn permission(
         &self,
         run_id: &str,
         request_id: &str,
+        fingerprint: Option<&str>,
         approved: bool,
     ) -> Result<(), ClientError> {
-        self.call(serde_json::json!({
+        let mut request = serde_json::json!({
             "op": if approved { "approve" } else { "deny" },
             "run_id": run_id,
             "request_id": request_id,
-        }))?;
+        });
+        if let Some(fp) = fingerprint.filter(|s| !s.is_empty()) {
+            request["fingerprint"] = Value::String(fp.to_string());
+        }
+        self.call(request)?;
         Ok(())
+    }
+
+    pub fn diff(&self, run_id: &str, path: &str) -> Result<DaemonDiff, ClientError> {
+        let response = self.call(serde_json::json!({
+            "op": "diff",
+            "run_id": run_id,
+            "path": path,
+        }))?;
+        let path = response
+            .get("path")
+            .and_then(Value::as_str)
+            .unwrap_or(path)
+            .to_string();
+        let kind = response
+            .get("kind")
+            .and_then(Value::as_str)
+            .unwrap_or("modified")
+            .to_string();
+        let content = response
+            .get("content")
+            .and_then(Value::as_str)
+            .ok_or_else(|| ClientError::InvalidResponse("diff content is missing".to_string()))?
+            .to_string();
+        Ok(DaemonDiff { path, kind, content })
+    }
+
+    pub fn subscribe(
+        &self,
+        run_id: &str,
+        from: usize,
+    ) -> Result<std::sync::mpsc::Receiver<DaemonEvent>, ClientError> {
+        use std::io::{BufRead, BufReader, Write};
+
+        let mut stream =
+            connect_stream(&self.socket_path, None).map_err(|error| ClientError::Connect {
+                path: self.socket_path.clone(),
+                message: error.to_string(),
+            })?;
+
+        let req = serde_json::json!({
+            "op": "subscribe",
+            "run_id": run_id,
+            "from": from,
+        });
+        let mut payload = serde_json::to_vec(&req)
+            .map_err(|error| ClientError::InvalidResponse(error.to_string()))?;
+        payload.push(b'\n');
+        stream
+            .write_all(&payload)
+            .map_err(|error| ClientError::Io(error.to_string()))?;
+
+        let mut reader = BufReader::new(stream);
+        let mut ack_line = String::new();
+        reader
+            .read_line(&mut ack_line)
+            .map_err(|error| ClientError::Io(error.to_string()))?;
+
+        let ack: Value = serde_json::from_str(&ack_line)
+            .map_err(|error| ClientError::InvalidResponse(error.to_string()))?;
+
+        if ack.get("op").and_then(Value::as_str) != Some("subscribed")
+            && ack.get("ok").and_then(Value::as_bool) != Some(true)
+        {
+            let error_msg = ack
+                .get("error")
+                .and_then(Value::as_str)
+                .unwrap_or("subscribe failed")
+                .to_string();
+            return Err(ClientError::Remote(error_msg));
+        }
+
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut line = String::new();
+            while let Ok(n) = reader.read_line(&mut line) {
+                if n == 0 {
+                    break;
+                }
+                if let Ok(msg) = serde_json::from_str::<Value>(&line)
+                    && msg.get("op").and_then(Value::as_str) == Some("event")
+                        && let Some(event_val) = msg.get("event")
+                            && let Ok(event) = serde_json::from_value::<DaemonEvent>(event_val.clone())
+                                && sender.send(event).is_err() {
+                                    break;
+                                }
+                line.clear();
+            }
+        });
+
+        Ok(receiver)
     }
 
     fn call(&self, request: Value) -> Result<Value, ClientError> {
@@ -246,13 +385,11 @@ impl PrumoClient {
         Ok(response)
     }
 
-    #[cfg(unix)]
     fn exchange(&self, request: &Value) -> Result<Value, ClientError> {
         use std::io::{BufRead, BufReader, Read, Write};
-        use std::os::unix::net::UnixStream;
 
         let mut stream =
-            UnixStream::connect(&self.socket_path).map_err(|error| ClientError::Connect {
+            connect_stream(&self.socket_path, Some(self.timeout)).map_err(|error| ClientError::Connect {
                 path: self.socket_path.clone(),
                 message: error.to_string(),
             })?;
@@ -282,10 +419,101 @@ impl PrumoClient {
         }
         serde_json::from_str(&line).map_err(|error| ClientError::InvalidResponse(error.to_string()))
     }
+}
+
+enum ProtocolStream {
+    #[cfg(unix)]
+    Unix(std::os::unix::net::UnixStream),
+    Tcp(std::net::TcpStream),
+}
+
+impl std::io::Read for ProtocolStream {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            #[cfg(unix)]
+            Self::Unix(stream) => stream.read(buf),
+            Self::Tcp(stream) => stream.read(buf),
+        }
+    }
+}
+
+impl std::io::Write for ProtocolStream {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self {
+            #[cfg(unix)]
+            Self::Unix(stream) => stream.write(buf),
+            Self::Tcp(stream) => stream.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self {
+            #[cfg(unix)]
+            Self::Unix(stream) => stream.flush(),
+            Self::Tcp(stream) => stream.flush(),
+        }
+    }
+}
+
+impl ProtocolStream {
+    fn set_read_timeout(&self, timeout: Option<Duration>) -> std::io::Result<()> {
+        match self {
+            #[cfg(unix)]
+            Self::Unix(stream) => stream.set_read_timeout(timeout),
+            Self::Tcp(stream) => stream.set_read_timeout(timeout),
+        }
+    }
+
+    fn set_write_timeout(&self, timeout: Option<Duration>) -> std::io::Result<()> {
+        match self {
+            #[cfg(unix)]
+            Self::Unix(stream) => stream.set_write_timeout(timeout),
+            Self::Tcp(stream) => stream.set_write_timeout(timeout),
+        }
+    }
+}
+
+fn connect_stream(path: &Path, timeout: Option<Duration>) -> Result<ProtocolStream, std::io::Error> {
+    let path_str = path.to_string_lossy();
+    if path_str.contains(':') && !path_str.starts_with('/') {
+        let addr = path_str.trim_start_matches("tcp://");
+        let stream = if let Some(t) = timeout {
+            let addrs: Vec<std::net::SocketAddr> = std::net::ToSocketAddrs::to_socket_addrs(addr)?.collect();
+            if let Some(first) = addrs.first() {
+                std::net::TcpStream::connect_timeout(first, t)?
+            } else {
+                return Err(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no socket addresses"));
+            }
+        } else {
+            std::net::TcpStream::connect(addr)?
+        };
+        return Ok(ProtocolStream::Tcp(stream));
+    }
+
+    #[cfg(unix)]
+    {
+        let stream = std::os::unix::net::UnixStream::connect(path)?;
+        Ok(ProtocolStream::Unix(stream))
+    }
 
     #[cfg(not(unix))]
-    fn exchange(&self, _request: &Value) -> Result<Value, ClientError> {
-        Err(ClientError::UnsupportedPlatform)
+    {
+        let addr = if path_str.contains(':') {
+            path_str.trim_start_matches("tcp://")
+        } else {
+            "127.0.0.1:9099"
+        };
+        let stream = if let Some(t) = timeout {
+            let addrs: Vec<std::net::SocketAddr> = std::net::ToSocketAddrs::to_socket_addrs(addr)?.collect();
+            if let Some(first) = addrs.first() {
+                std::net::TcpStream::connect_timeout(first, t)?
+            } else {
+                return Err(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no socket addresses"));
+            }
+        } else {
+            std::net::TcpStream::connect(addr)?
+        };
+        Ok(ProtocolStream::Tcp(stream))
     }
 }
 
@@ -405,5 +633,89 @@ mod tests {
         assert!(matches!(error, ClientError::Connect { .. }));
         assert!(!socket_path.exists());
         assert!(!fs::metadata(socket_path).is_ok());
+    }
+
+    #[test]
+    fn handles_approval_with_fingerprint_and_file_diff() {
+        let directory = tempdir().unwrap();
+        let socket_path = directory.path().join("agentd.sock");
+        let listener = UnixListener::bind(&socket_path).unwrap();
+        let (request_sender, request_receiver) = mpsc::channel();
+        let responses = [
+            json!({"ok": true, "run_id": "R-1", "request_id": "req-1", "approved": true}),
+            json!({"ok": true, "path": "src/main.rs", "kind": "modified", "content": "--- a/src/main.rs\n+++ b/src/main.rs\n@@ -1 +1,2 @@\n-old\n+new"}),
+        ];
+        let server = thread::spawn(move || {
+            for response in responses {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut line = String::new();
+                BufReader::new(&mut stream).read_line(&mut line).unwrap();
+                let request: Value = serde_json::from_str(&line).unwrap();
+                request_sender.send(request).unwrap();
+                serde_json::to_writer(&mut stream, &response).unwrap();
+                stream.write_all(b"\n").unwrap();
+            }
+        });
+
+        let client = PrumoClient::new(Some(socket_path), directory.path());
+        client.approve("R-1", "req-1", Some("fp-sha256-1234")).unwrap();
+        let diff = client.diff("R-1", "src/main.rs").unwrap();
+        server.join().unwrap();
+
+        let req1 = request_receiver.recv().unwrap();
+        assert_eq!(req1["op"], "approve");
+        assert_eq!(req1["fingerprint"], "fp-sha256-1234");
+
+        let req2 = request_receiver.recv().unwrap();
+        assert_eq!(req2["op"], "diff");
+        assert_eq!(req2["path"], "src/main.rs");
+        assert_eq!(diff.kind, "modified");
+        assert!(diff.content.contains("+new"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn handles_push_streaming_events() {
+        let directory = tempdir().unwrap();
+        let socket_path = directory.path().join("agentd_stream.sock");
+        let listener = UnixListener::bind(&socket_path).unwrap();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut line = String::new();
+            BufReader::new(&mut stream).read_line(&mut line).unwrap();
+            let req: Value = serde_json::from_str(&line).unwrap();
+            assert_eq!(req["op"], "subscribe");
+            assert_eq!(req["run_id"], "R-STREAM");
+            assert_eq!(req["from"], 0);
+
+            // send ack
+            let ack = json!({"op": "subscribed", "run_id": "R-STREAM", "from": 0});
+            serde_json::to_writer(&mut stream, &ack).unwrap();
+            stream.write_all(b"\n").unwrap();
+            stream.flush().unwrap();
+
+            // stream an event
+            let event = json!({
+                "op": "event",
+                "run_id": "R-STREAM",
+                "event": {
+                    "id": "ev-1",
+                    "run_id": "R-STREAM",
+                    "kind": "tool_call_ready",
+                    "payload": {"name": "read_file"},
+                    "created_at": "2026-09-26T12:00:00Z"
+                }
+            });
+            serde_json::to_writer(&mut stream, &event).unwrap();
+            stream.write_all(b"\n").unwrap();
+            stream.flush().unwrap();
+        });
+
+        let client = PrumoClient::new(Some(socket_path), directory.path());
+        let rx = client.subscribe("R-STREAM", 0).unwrap();
+        let event = rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert_eq!(event.id, "ev-1");
+        assert_eq!(event.kind, "tool_call_ready");
+        server.join().unwrap();
     }
 }

@@ -26,13 +26,14 @@ impl Component for QuickOpenModal {
         let result_count = results.len();
         let selected_index = (*selected_state.read()).min(result_count.saturating_sub(1));
         let submit_results = results.clone();
+        let window = Platform::get().root_size.read();
 
         rect()
-            .width(Size::fill())
-            .height(Size::fill())
+            .width(Size::px(window.width))
+            .height(Size::px(window.height))
             .position(Position::new_global().top(0.).left(0.))
             .layer(Layer::Overlay)
-            .background(Color::from_argb(150, 0, 0, 0))
+            .background(Color::TRANSPARENT)
             .horizontal()
             .main_align(Alignment::center())
             .cross_align(Alignment::start())
@@ -42,15 +43,15 @@ impl Component for QuickOpenModal {
             })
             .child(
                 rect()
-                    .width(Size::px(620.))
-                    .max_height(Size::px(460.))
+                    .width(Size::px(520.))
+                    .max_height(Size::px(400.))
                     .background(colors.surface_primary)
                     .corner_radius(CornerRadius::new_all(8.))
                     .border(Border::new().fill(colors.border_focus).width(1.))
-                    .padding(Gaps::new_all(10.))
+                    .padding(Gaps::new_all(8.))
                     .vertical()
                     .content(Content::flex())
-                    .spacing(8.)
+                    .spacing(6.)
                     .on_mouse_up(|event: Event<MouseEventData>| {
                         event.stop_propagation();
                     })
@@ -63,15 +64,14 @@ impl Component for QuickOpenModal {
                             .child(
                                 SvgViewer::new(("search", icon("search")))
                                     .color(colors.text_secondary)
-                                    .width(Size::px(16.))
-                                    .height(Size::px(16.)),
+                                    .width(Size::px(12.))
+                                    .height(Size::px(12.)),
                             )
                             .child(
                                 Input::new(query_state.into_writable())
                                     .placeholder("Type a file name…")
                                     .width(Size::fill())
                                     .auto_focus(true)
-                                    .filled()
                                     .on_pre_key_down(move |event: Event<KeyboardEventData>| {
                                         match event.key {
                                             Key::Named(NamedKey::ArrowDown) => {
@@ -112,18 +112,6 @@ impl Component for QuickOpenModal {
                                             );
                                         }
                                     }),
-                            )
-                            .child(
-                                Button::new()
-                                    .on_press(move |_| {
-                                        state.write().quick_open_open = false;
-                                    })
-                                    .child(
-                                        SvgViewer::new(("x", icon("x")))
-                                            .color(colors.text_placeholder)
-                                            .width(Size::px(14.))
-                                            .height(Size::px(14.)),
-                                    ),
                             ),
                     )
                     .child(
@@ -146,7 +134,7 @@ impl Component for QuickOpenModal {
                     .child(
                         label()
                             .color(colors.text_placeholder)
-                            .font_size(10.5)
+                            .font_size(10.)
                             .text("↑↓ navigate · Enter open · Esc close"),
                     ),
             )
@@ -175,7 +163,7 @@ impl Component for QuickOpenRow {
 
         rect()
             .width(Size::fill())
-            .min_height(Size::px(30.))
+            .min_height(Size::px(28.))
             .horizontal()
             .cross_align(Alignment::center())
             .padding(Gaps::new(0., 8., 0., 8.))
@@ -200,13 +188,13 @@ impl Component for QuickOpenRow {
             .child(
                 SvgViewer::new(("file", icon("file")))
                     .color(colors.text_secondary)
-                    .width(Size::px(14.))
-                    .height(Size::px(14.)),
+                    .width(Size::px(12.))
+                    .height(Size::px(12.)),
             )
             .child(
                 label()
                     .color(colors.text_primary)
-                    .font_size(12.5)
+                    .font_size(12.)
                     .max_lines(1)
                     .text(relative_path),
             )

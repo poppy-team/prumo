@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -193,13 +192,7 @@ func processAlive(record LockRecord) bool {
 	if state := processState(record.PID); state == 'Z' || state == 'X' {
 		return false
 	}
-	err := syscall.Kill(record.PID, 0)
-	if err == nil {
-		return true
-	}
-	// EPERM means the process exists and belongs to someone else, which is
-	// exactly the case that must not be read as "gone".
-	return err == syscall.EPERM
+	return isPidAlive(record.PID)
 }
 
 // Stop signals a running daemon and waits for it to be gone.
@@ -220,7 +213,7 @@ func Stop(storeDir string) error {
 		_ = os.Remove(PIDFile(storeDir))
 		return fmt.Errorf("stale lock cleared (pid %d unreachable)", record.PID)
 	}
-	if err := syscall.Kill(record.PID, syscall.SIGTERM); err != nil {
+	if err := terminateProcess(record.PID); err != nil {
 		return fmt.Errorf("cannot signal daemon (pid %d): %w", record.PID, err)
 	}
 	return waitForExit(record, stopGracePeriod, stopPollInterval)

@@ -1,0 +1,137 @@
+{
+  "id": "compiler-conformance",
+  "name": "Compiler & Virtual Machine Conformance",
+  "version": 1,
+  "purpose": "Execute end-to-end verification of compiler passes, type systems, SSA lowering, bytecode VM, and grammar fuzzing.",
+  "preconditions": [
+    "Language grammar and type system formal specifications available",
+    "Target VM and execution environment initialized"
+  ],
+  "inputs": [
+    "Grammar specification",
+    "Type rules",
+    "Bytecode instruction set architecture",
+    "Test corpus"
+  ],
+  "agents": [
+    "architect",
+    "compiler-engineer",
+    "systems-architect",
+    "tester",
+    "reviewer"
+  ],
+  "skills": [
+    "compiler-development",
+    "compiler-frontend-engineering",
+    "type-system-theory",
+    "compiler-ir-optimization",
+    "bytecode-vm-architecture",
+    "fuzz-grammar-testing",
+    "testing-quality",
+    "code-review"
+  ],
+  "gates": [
+    "type-soundness",
+    "fuzz-clean",
+    "conformance-100",
+    "review"
+  ],
+  "artifacts": [
+    "AST/CST verification report",
+    "SSA optimization trace",
+    "Bytecode execution logs",
+    "Fuzzing crash-free certificate"
+  ],
+  "stop_conditions": [
+    "100% of language conformance test cases pass without regressions"
+  ],
+  "steps": [
+    {
+      "id": "frontend-verification",
+      "name": "Verify lexing, parsing, and AST construction with grammar fuzzing",
+      "agent_role": "compiler-engineer",
+      "skills": [
+        "compiler-frontend-engineering",
+        "fuzz-grammar-testing"
+      ],
+      "input": "Language grammar and seed corpus",
+      "output": "Parser validation and fuzz test report",
+      "required_evidence": [
+        "test"
+      ]
+    },
+    {
+      "id": "type-system-check",
+      "name": "Check type inference, soundness, and ownership/affine invariants",
+      "depends_on": [
+        "frontend-verification"
+      ],
+      "agent_role": "compiler-engineer",
+      "skills": [
+        "type-system-theory"
+      ],
+      "input": "Parsed AST",
+      "output": "Typed AST and type diagnostics proof",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "type-soundness"
+      ]
+    },
+    {
+      "id": "ir-optimization",
+      "name": "Lower to SSA form, compute dominance, and run optimization passes",
+      "depends_on": [
+        "type-system-check"
+      ],
+      "agent_role": "systems-architect",
+      "skills": [
+        "compiler-ir-optimization"
+      ],
+      "input": "Typed AST",
+      "output": "Optimized SSA IR",
+      "required_evidence": [
+        "benchmark"
+      ]
+    },
+    {
+      "id": "vm-execution",
+      "name": "Emit bytecode and execute on virtual machine with direct threaded dispatch",
+      "depends_on": [
+        "ir-optimization"
+      ],
+      "agent_role": "compiler-engineer",
+      "skills": [
+        "bytecode-vm-architecture"
+      ],
+      "input": "Optimized SSA IR",
+      "output": "VM execution results and stack/register trace",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "conformance-100"
+      ]
+    },
+    {
+      "id": "conformance-signoff",
+      "name": "Independent correctness, performance, and contract sign-off",
+      "depends_on": [
+        "vm-execution"
+      ],
+      "agent_role": "reviewer",
+      "skills": [
+        "code-review"
+      ],
+      "input": "All compiler stage artifacts",
+      "output": "Compiler conformance certificate",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "review"
+      ]
+    }
+  ]
+}

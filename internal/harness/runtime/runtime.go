@@ -12,6 +12,7 @@ import (
 
 	"github.com/raillen/prumo/internal/harness/agent"
 	"github.com/raillen/prumo/internal/harness/checkpoint"
+	"github.com/raillen/prumo/internal/harness/contextv2"
 	"github.com/raillen/prumo/internal/harness/directive"
 	"github.com/raillen/prumo/internal/harness/model"
 	"github.com/raillen/prumo/internal/harness/perm"
@@ -96,6 +97,22 @@ type Runner struct {
 	// CompactBudget auto-triggers compaction when estimated conversation
 	// tokens exceed it (0 = off). Estimate uses the versioned table.
 	CompactBudget int
+	// ContextWindow bounds model context (e.g. 128000, 200000). 0 disables threshold check.
+	ContextWindow int
+	// CompactThresholdRatio triggers micro-compacting when token usage reaches this ratio.
+	// Default is 0.70 (70%).
+	CompactThresholdRatio float64
+	// Telemetry & Budget Tracking (cumulative across turns)
+	PromptTokens     int
+	CompletionTokens int
+	CacheReadTokens  int
+	CacheWriteTokens int
+	TotalTokens      int
+	TotalCostUSD     float64
+	// MaxRepairAttempts sets how many times a failed QualityGate will trigger an adversarial
+	// repair turn before failing closed (0 = off).
+	MaxRepairAttempts int
+	RepairAttempts    int
 	// Directive holds the compiled DirectiveIR governing this execution.
 	Directive *directive.DirectiveIR
 	// mu guards Messages and State for cross-goroutine Inject/StateCopy.
@@ -107,10 +124,11 @@ type Runner struct {
 // NewRunner initializes a Run session.
 func NewRunner(svc Services, runID, sessionID string) *Runner {
 	return &Runner{
-		Svc:      svc,
-		State:    agent.NativeAgentState{RunID: runID, SessionID: sessionID, TurnID: "turn-1", Phase: agent.PhasePrepare, Revision: 1, UpdatedAt: agent.Now()},
-		Turn:     agent.Turn{ID: "turn-1", RunID: runID, SessionID: sessionID, Index: 1, Status: "open", StartedAt: agent.Now()},
-		MaxTurns: 10,
+		Svc:                   svc,
+		State:                 agent.NativeAgentState{RunID: runID, SessionID: sessionID, TurnID: "turn-1", Phase: agent.PhasePrepare, Revision: 1, UpdatedAt: agent.Now()},
+		Turn:                  agent.Turn{ID: "turn-1", RunID: runID, SessionID: sessionID, Index: 1, Status: "open", StartedAt: agent.Now()},
+		MaxTurns:              10,
+		CompactThresholdRatio: 0.70,
 	}
 }
 
@@ -212,6 +230,53 @@ func (r *Runner) TryStateCopy() (agent.NativeAgentState, bool) {
 	return r.State, true
 }
 
+// microCompactObservationsLocked replaces verbose historical tool outputs
+// with content-addressed SHA-256 summaries (pointer over payload).
+// Caller must hold mu.
+func (r *Runner) microCompactObservationsLocked() bool {
+	if len(r.Messages) <= 4 {
+		return false
+	}
+	// Protect the most recent messages (active turn)
+	protectWindow := 4
+	if len(r.Messages) < protectWindow {
+		protectWindow = len(r.Messages)
+	}
+	cutoff := len(r.Messages) - protectWindow
+	compacted := false
+
+	for i := 0; i < cutoff; i++ {
+		m := &r.Messages[i]
+		if m.Role != agent.RoleTool {
+			continue
+		}
+		if m.Metadata != nil && m.Metadata["compacted"] == true {
+			continue
+		}
+		if len(m.Content) < 150 {
+			continue
+		}
+
+		summary, hash, origLen := contextv2.MicroCompactObservation(m.Content, 80)
+		if m.Metadata == nil {
+			m.Metadata = map[string]any{}
+		}
+		m.Metadata["compacted"] = true
+		m.Metadata["sha256"] = hash
+		m.Metadata["original_length"] = origLen
+		m.Content = summary
+
+		r.emitLocked("context.micro_compacted", map[string]any{
+			"message_id":      m.ID,
+			"sha256":          hash,
+			"original_bytes":  origLen,
+			"compacted_bytes": len(m.Content),
+		})
+		compacted = true
+	}
+	return compacted
+}
+
 // maybeCompactLocked collapses oldest tool observations into a summary.
 // Caller must hold mu.
 func (r *Runner) maybeCompactLocked() {
@@ -219,9 +284,41 @@ func (r *Runner) maybeCompactLocked() {
 	if !over && r.CompactBudget > 0 {
 		over = r.conversationTokensLocked() > r.CompactBudget
 	}
+	if !over && r.ContextWindow > 0 {
+		ratio := 0.70
+		if r.CompactThresholdRatio > 0 {
+			ratio = r.CompactThresholdRatio
+		}
+		over = float64(r.conversationTokensLocked()) >= float64(r.ContextWindow)*ratio
+	}
 	if !over {
 		return
 	}
+
+	// First pass: perform surgical micro-compacting on old tool observations (pointer over payload)
+	compactedAny := r.microCompactObservationsLocked()
+
+	// Check if conversation tokens now fit within budget/window
+	stillOver := r.CompactKeep > 0 && len(r.Messages) > r.CompactKeep*2
+	if !stillOver && r.CompactBudget > 0 {
+		stillOver = r.conversationTokensLocked() > r.CompactBudget
+	}
+	if !stillOver && r.ContextWindow > 0 {
+		ratio := 0.70
+		if r.CompactThresholdRatio > 0 {
+			ratio = r.CompactThresholdRatio
+		}
+		stillOver = float64(r.conversationTokensLocked()) >= float64(r.ContextWindow)*ratio
+	}
+
+	// If still over hard message keep or token budget, collapse oldest into summary
+	if !stillOver && compactedAny {
+		return
+	}
+	if !stillOver && r.CompactKeep <= 0 && r.CompactBudget <= 0 {
+		return
+	}
+
 	keepN := r.CompactKeep
 	if keepN <= 0 {
 		keepN = 10
@@ -306,6 +403,36 @@ func (r *Runner) RestoreFrom(cp agent.Checkpoint) {
 	r.AfterSideEffects = cp.AfterSideEffects
 	if cp.TurnsDone > 0 {
 		r.TurnsDone = cp.TurnsDone
+	}
+	if cp.State.Budget != nil {
+		if pt, ok := cp.State.Budget["prompt_tokens"].(int); ok {
+			r.PromptTokens = pt
+		} else if ptf, ok := cp.State.Budget["prompt_tokens"].(float64); ok {
+			r.PromptTokens = int(ptf)
+		}
+		if ct, ok := cp.State.Budget["completion_tokens"].(int); ok {
+			r.CompletionTokens = ct
+		} else if ctf, ok := cp.State.Budget["completion_tokens"].(float64); ok {
+			r.CompletionTokens = int(ctf)
+		}
+		if cr, ok := cp.State.Budget["cache_read_tokens"].(int); ok {
+			r.CacheReadTokens = cr
+		} else if crf, ok := cp.State.Budget["cache_read_tokens"].(float64); ok {
+			r.CacheReadTokens = int(crf)
+		}
+		if cw, ok := cp.State.Budget["cache_write_tokens"].(int); ok {
+			r.CacheWriteTokens = cw
+		} else if cwf, ok := cp.State.Budget["cache_write_tokens"].(float64); ok {
+			r.CacheWriteTokens = int(cwf)
+		}
+		if tt, ok := cp.State.Budget["total_tokens"].(int); ok {
+			r.TotalTokens = tt
+		} else if ttf, ok := cp.State.Budget["total_tokens"].(float64); ok {
+			r.TotalTokens = int(ttf)
+		}
+		if cost, ok := cp.State.Budget["cost_usd"].(float64); ok {
+			r.TotalCostUSD = cost
+		}
 	}
 }
 
@@ -559,6 +686,13 @@ func (r *Runner) ResolvePermission(requestID, fingerprint string, allow bool, ac
 func (r *Runner) Step(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		r.State.Phase = agent.PhaseYield
+		r.State.StopReason = "paused: " + err.Error()
+		r.emitLocked("run_paused", map[string]any{"reason": r.State.StopReason})
+		_ = r.persist()
+		return err
+	}
 	switch r.State.Phase {
 	case agent.PhasePrepare:
 		r.State.Phase = agent.PhaseCompileContext
@@ -624,8 +758,11 @@ func (r *Runner) Step(ctx context.Context) error {
 		for ev := range ch {
 			select {
 			case <-ctx.Done():
+				settle(0, 0)
 				r.State.Phase = agent.PhaseYield
-				r.State.StopReason = "cancelled"
+				r.State.StopReason = "paused: cancelled"
+				r.emitLocked("run_paused", map[string]any{"reason": "cancelled"})
+				_ = r.persist()
 				return ctx.Err()
 			default:
 			}
@@ -645,6 +782,23 @@ func (r *Runner) Step(ctx context.Context) error {
 				}
 			}
 			if ev.Kind == agent.EventUsageUpdated && ev.Usage != nil {
+				// Accumulate real-time and cumulative usage statistics
+				r.PromptTokens += ev.Usage.InputTokens
+				r.CompletionTokens += ev.Usage.OutputTokens
+				r.CacheReadTokens += ev.Usage.CacheReadTokens
+				r.CacheWriteTokens += ev.Usage.CacheWriteTokens
+				r.TotalCostUSD += ev.Usage.CostUSD
+				r.TotalTokens += ev.Usage.TotalTokens()
+
+				r.State.Budget = map[string]any{
+					"prompt_tokens":      r.PromptTokens,
+					"completion_tokens":  r.CompletionTokens,
+					"cache_read_tokens":  r.CacheReadTokens,
+					"cache_write_tokens": r.CacheWriteTokens,
+					"total_tokens":       r.TotalTokens,
+					"cost_usd":           r.TotalCostUSD,
+				}
+
 				// What a run spent belongs on its record, not only in the
 				// budget: a client that cannot read usage can only render a
 				// statusline that is wrong, and the timeline is replayed whole
@@ -658,6 +812,16 @@ func (r *Runner) Step(ctx context.Context) error {
 					"cache_read_tokens":  ev.Usage.CacheReadTokens,
 					"cache_write_tokens": ev.Usage.CacheWriteTokens,
 					"cost_usd":           ev.Usage.CostUSD,
+				})
+				r.emitLocked("budget.tick", map[string]any{
+					"turn":                     r.State.TurnID,
+					"delta_input_tokens":       ev.Usage.InputTokens,
+					"delta_output_tokens":      ev.Usage.OutputTokens,
+					"delta_cache_read_tokens":  ev.Usage.CacheReadTokens,
+					"delta_cache_write_tokens": ev.Usage.CacheWriteTokens,
+					"delta_cost_usd":           ev.Usage.CostUSD,
+					"total_tokens":             r.TotalTokens,
+					"total_cost_usd":           r.TotalCostUSD,
 				})
 				// The call is accounted for: the reservation becomes the real
 				// cost, so the next turn's preflight sees the truth.
@@ -873,6 +1037,24 @@ func (r *Runner) Step(ctx context.Context) error {
 		if completed && len(r.ToolQ) == 0 {
 			if r.QualityGate != nil {
 				if err := r.QualityGate(); err != nil {
+					if r.RepairAttempts < r.MaxRepairAttempts {
+						r.RepairAttempts++
+						r.Messages = append(r.Messages, agent.Message{
+							ID:        fmt.Sprintf("repair-%d-%s", r.RepairAttempts, r.State.TurnID),
+							TurnID:    r.State.TurnID,
+							Role:      agent.RoleSystem,
+							Content:   fmt.Sprintf("Verification gate failed (attempt %d/%d):\n%s\nPlease analyze the failure trace, identify the root cause, and correct the implementation.", r.RepairAttempts, r.MaxRepairAttempts, err.Error()),
+							CreatedAt: agent.Now(),
+						})
+						r.emitLocked("repair_attempt", map[string]any{
+							"attempt":      r.RepairAttempts,
+							"max_attempts": r.MaxRepairAttempts,
+							"error":        err.Error(),
+							"turn_id":      r.State.TurnID,
+						})
+						r.State.Phase = agent.PhaseRequestModel
+						break
+					}
 					r.State.Phase = agent.PhaseFailed
 					r.State.StopReason = err.Error()
 					return err
@@ -930,14 +1112,35 @@ func (r *Runner) Step(ctx context.Context) error {
 	return nil
 }
 
+// Pause safely halts the runner, transitions to PhaseYield,
+// persists a safe-point checkpoint, and emits a run_paused event.
+func (r *Runner) Pause(reason string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.State.Phase == agent.PhaseComplete || r.State.Phase == agent.PhaseFailed {
+		return fmt.Errorf("run %s is %s: cannot pause", r.State.RunID, r.State.Phase)
+	}
+	if reason == "" {
+		reason = "paused by operator"
+	}
+	r.State.Phase = agent.PhaseYield
+	r.State.StopReason = reason
+	r.emitLocked("run_paused", map[string]any{"reason": reason})
+	return r.persist()
+}
+
 // RunUntilDone steps until Complete/Failed/Yield or ctx cancel.
 func (r *Runner) RunUntilDone(ctx context.Context) error {
 	for i := 0; i < 1000; i++ {
 		if r.State.Phase == agent.PhaseComplete || r.State.Phase == agent.PhaseFailed || r.State.Phase == agent.PhaseYield {
 			return nil
 		}
+		if err := ctx.Err(); err != nil {
+			_ = r.Pause("paused: " + err.Error())
+			return err
+		}
 		if err := r.Step(ctx); err != nil {
-			// Permission wait yields without error propagation beyond state.
+			// Permission wait or pause yields without error propagation beyond state.
 			if r.State.Phase == agent.PhaseYield {
 				return nil
 			}

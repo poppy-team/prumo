@@ -87,6 +87,77 @@
         "ui-feature",
         "feature-standard"
       ]
+    },
+    {
+      "id": "compiler-toolchain",
+      "project_type": "compiler",
+      "skills": [
+        "compiler-development",
+        "compiler-frontend-engineering",
+        "type-system-theory",
+        "compiler-ir-optimization",
+        "bytecode-vm-architecture",
+        "runtime-memory-gc",
+        "fuzz-grammar-testing",
+        "clean-code"
+      ],
+      "agents": [
+        "compiler-engineer",
+        "systems-architect",
+        "tester",
+        "reviewer"
+      ],
+      "recipes": [
+        "compiler-change",
+        "feature-standard"
+      ]
+    },
+    {
+      "id": "high-performance-desktop",
+      "project_type": "desktop",
+      "skills": [
+        "performance-native",
+        "computational-physics",
+        "applied-mathematics-dsp",
+        "computational-chemistry-materials",
+        "realtime-audio-dsp",
+        "memory-management",
+        "editor-tooling"
+      ],
+      "agents": [
+        "systems-architect",
+        "editor-engineer",
+        "tester",
+        "reviewer"
+      ],
+      "recipes": [
+        "ui-feature",
+        "feature-standard"
+      ]
+    },
+    {
+      "id": "systems-security",
+      "project_type": "systems",
+      "skills": [
+        "memory-safety-sanitizers",
+        "binary-security-mitigations",
+        "linux-kernel-isolation",
+        "security-threat-model",
+        "security-authz-matrix",
+        "security-saas-isolation",
+        "security-agent-mcp",
+        "secure-coding"
+      ],
+      "agents": [
+        "security-architect",
+        "security-reviewer",
+        "isolation-auditor",
+        "release-verifier"
+      ],
+      "recipes": [
+        "security-review",
+        "release"
+      ]
     }
   ]
 }

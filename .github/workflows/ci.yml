@@ -70,6 +70,30 @@ jobs:
   # The client is its own module, so `go test ./...` from the root never reaches
   # it: a nested module is skipped, not walked. It gets its own job, which is
   # also what keeps a broken client from being discovered after a release.
+  viewer-extension-sdk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prumo-viewer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: prumo-viewer
+      - name: Rust format check
+        run: cargo fmt --all -- --check
+      - name: Viewer and extension SDK tests
+        run: cargo test --workspace --locked
+      - name: Viewer and extension SDK clippy
+        run: cargo clippy --workspace --locked --all-targets -- -D warnings
+      - name: Viewer build
+        run: cargo build --workspace --locked
+      - name: Extension SDK package check
+        run: cargo package --manifest-path extension-sdk/Cargo.toml --allow-dirty --no-verify --locked
+
   tui-test:
     runs-on: ubuntu-latest
     defaults:

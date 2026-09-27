@@ -1,0 +1,69 @@
+{
+  "id": "compiler-ir-optimization",
+  "name": "Compiler IR & SSA Optimization",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Transform AST into SSA form, compute dominance frontiers, and perform dead code elimination, GVN, and vectorization.",
+  "risk_level": "high",
+  "modes": [
+    "implementation",
+    "review",
+    "testing"
+  ],
+  "inputs": [
+    "Typed AST or high-level IR",
+    "Target optimization budgets"
+  ],
+  "outputs": [
+    "Optimized SSA Intermediate Representation",
+    "Control Flow Graph (CFG) analysis"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/compiler-ir-optimization-guide.md"
+  ],
+  "templates": [
+    "templates/compiler-ir-optimization-spec.md"
+  ],
+  "checks": [
+    "checks/compiler-ir-optimization-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/compiler-ir-optimization-example.json"
+  ],
+  "required_evidence": [
+    "test",
+    "benchmark"
+  ],
+  "stop_conditions": [
+    "All Compiler IR & SSA Optimization invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "project_types": [
+      "compiler",
+      "language"
+    ],
+    "features_any": [
+      "optimization",
+      "compiler-backend"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

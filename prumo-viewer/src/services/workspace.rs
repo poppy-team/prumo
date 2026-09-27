@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
 use crate::state::{AgentFileStatus, AppState, FileKind, FlattenedTreeItem, TreeNode};
 
@@ -15,6 +16,68 @@ const IGNORED_DIRS: &[&str] = &[
     "__pycache__",
     ".venv",
 ];
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IndexedFile {
+    pub path: String,
+    pub size: u64,
+    pub modified_ms: u64,
+    pub kind: FileKind,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct WorkspaceIndex {
+    files: BTreeMap<String, IndexedFile>,
+}
+
+impl WorkspaceIndex {
+    pub fn refresh(&mut self, root: &Path, candidates: &[String]) -> (Vec<String>, Vec<String>) {
+        let mut next = BTreeMap::new();
+        for rel_path in candidates {
+            let path = root.join(rel_path);
+            let Ok(metadata) = fs::metadata(&path) else {
+                continue;
+            };
+            let modified_ms = metadata
+                .modified()
+                .ok()
+                .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                .map(|duration| duration.as_millis() as u64)
+                .unwrap_or_default();
+            next.insert(
+                rel_path.clone(),
+                IndexedFile {
+                    path: rel_path.clone(),
+                    size: metadata.len(),
+                    modified_ms,
+                    kind: FileKind::from_path(&path),
+                },
+            );
+        }
+        let changed = next
+            .iter()
+            .filter_map(|(path, file)| (self.files.get(path) != Some(file)).then_some(path.clone()))
+            .collect();
+        let removed = self
+            .files
+            .keys()
+            .filter(|path| !next.contains_key(*path))
+            .cloned()
+            .collect();
+        self.files = next;
+        (changed, removed)
+    }
+
+    pub fn query(&self, query: &str, limit: usize) -> Vec<IndexedFile> {
+        let query = query.trim().to_lowercase();
+        self.files
+            .values()
+            .filter(|file| query.is_empty() || file.path.to_lowercase().contains(&query))
+            .take(limit)
+            .cloned()
+            .collect()
+    }
+}
 
 pub fn validate_path_boundary(root: &Path, target: &Path) -> Result<PathBuf, String> {
     let canonical_root = root
@@ -82,6 +145,9 @@ pub fn refresh_workspace(state: &mut AppState) -> Result<(), String> {
     state.tree = tree;
     state.flattened_tree = flatten_tree(&state.tree);
     state.file_candidates = candidates;
+    state
+        .workspace_index
+        .refresh(&state.workspace_root, &state.file_candidates);
     state.clear_notice();
     Ok(())
 }
@@ -262,6 +328,23 @@ mod tests {
         assert_eq!(flatten_tree(&tree).len(), 2);
         assert!(toggle_folder(&mut tree, &root.join("src")));
         assert_eq!(flatten_tree(&tree).len(), 3);
+    }
+
+    #[test]
+    fn workspace_index_tracks_changes_and_queries() {
+        let directory = tempdir().unwrap();
+        let root = directory.path();
+        fs::write(root.join("one.txt"), "one").unwrap();
+        let mut state = AppState::new(root.to_path_buf());
+        refresh_workspace(&mut state).unwrap();
+        assert_eq!(state.workspace_index.query("one", 10).len(), 1);
+        fs::write(root.join("two.txt"), "two").unwrap();
+        let (changed, removed) = state
+            .workspace_index
+            .refresh(root, &["one.txt".to_string(), "two.txt".to_string()]);
+        assert_eq!(changed, vec!["two.txt"]);
+        assert!(removed.is_empty());
+        assert_eq!(state.workspace_index.query("", 10).len(), 2);
     }
 
     #[test]

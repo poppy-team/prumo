@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -359,20 +360,26 @@ func (o *OpenCodeServer) Usage(ctx context.Context, sessionID string) (Usage, er
 
 // CodexCLI drives `codex exec --json` as a structured external runtime.
 type CodexCLI struct {
-	Bin string
+	Bin       string
+	Runner    func(ctx context.Context, bin string, args ...string) (string, error) // injectable for tests
+	cancels   map[string]context.CancelFunc
+	cancelsMu sync.Mutex
 }
 
 func NewCodexCLI(bin string) *CodexCLI {
 	if bin == "" {
 		bin = "codex"
 	}
-	return &CodexCLI{Bin: bin}
+	return &CodexCLI{
+		Bin:     bin,
+		cancels: make(map[string]context.CancelFunc),
+	}
 }
 
 func (c *CodexCLI) Name() string { return "codex" }
 
 func (c *CodexCLI) Capabilities(_ context.Context) ([]string, error) {
-	return []string{"session", "events", "permissions", "usage", "cancel", "resume"}, nil
+	return []string{"session", "events", "cancel"}, nil
 }
 
 func (c *CodexCLI) CreateSession(_ context.Context, runID string) (Session, error) {
@@ -380,9 +387,37 @@ func (c *CodexCLI) CreateSession(_ context.Context, runID string) (Session, erro
 }
 
 func (c *CodexCLI) Send(ctx context.Context, sessionID, message string) error {
-	cmd := exec.CommandContext(ctx, c.Bin, "exec", "--json", message)
+	turnCtx, cancel := context.WithCancel(ctx)
+	c.cancelsMu.Lock()
+	if c.cancels == nil {
+		c.cancels = make(map[string]context.CancelFunc)
+	}
+	c.cancels[sessionID] = cancel
+	c.cancelsMu.Unlock()
+	defer func() {
+		c.cancelsMu.Lock()
+		delete(c.cancels, sessionID)
+		c.cancelsMu.Unlock()
+		cancel()
+	}()
+
+	if c.Runner != nil {
+		_, err := c.Runner(turnCtx, c.Bin, "exec", "--json", message)
+		if err != nil {
+			if turnCtx.Err() != nil {
+				return turnCtx.Err()
+			}
+			return err
+		}
+		return nil
+	}
+
+	cmd := exec.CommandContext(turnCtx, c.Bin, "exec", "--json", message)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		if turnCtx.Err() != nil {
+			return turnCtx.Err()
+		}
 		return fmt.Errorf("codex exec failed: %s: %w", strings.TrimSpace(string(out)), err)
 	}
 	return nil
@@ -398,8 +433,19 @@ func (c *CodexCLI) Events(_ context.Context, sessionID string) (<-chan agent.Age
 }
 
 func (c *CodexCLI) Approve(_ context.Context, _, _ string, _ bool) error { return nil }
-func (c *CodexCLI) Cancel(_ context.Context, _ string) error             { return nil }
-func (c *CodexCLI) Close(_ context.Context, _ string) error              { return nil }
+
+func (c *CodexCLI) Cancel(_ context.Context, sessionID string) error {
+	c.cancelsMu.Lock()
+	defer c.cancelsMu.Unlock()
+	if cancel, ok := c.cancels[sessionID]; ok {
+		cancel()
+	}
+	return nil
+}
+
+func (c *CodexCLI) Close(ctx context.Context, sessionID string) error {
+	return c.Cancel(ctx, sessionID)
+}
 
 // ---- Cursor CLI adapter (print mode) ----
 
@@ -408,22 +454,28 @@ func (c *CodexCLI) Close(_ context.Context, _ string) error              { retur
 // Prumo boundary. The turn is process-scoped: the CLI owns its model loop
 // and Prumo observes completion via exit status + JSON result envelope.
 type CursorCLI struct {
-	Bin    string
-	Trust  bool
-	Runner func(ctx context.Context, bin string, args ...string) (string, error) // injectable for tests
+	Bin       string
+	Trust     bool
+	Runner    func(ctx context.Context, bin string, args ...string) (string, error) // injectable for tests
+	cancels   map[string]context.CancelFunc
+	cancelsMu sync.Mutex
 }
 
 func NewCursorCLI(bin string) *CursorCLI {
 	if bin == "" {
 		bin = "cursor-agent"
 	}
-	return &CursorCLI{Bin: bin, Trust: true}
+	return &CursorCLI{
+		Bin:     bin,
+		Trust:   true,
+		cancels: make(map[string]context.CancelFunc),
+	}
 }
 
 func (c *CursorCLI) Name() string { return "cursor" }
 
 func (c *CursorCLI) Capabilities(_ context.Context) ([]string, error) {
-	return []string{"session"}, nil
+	return []string{"session", "events", "cancel"}, nil
 }
 
 func (c *CursorCLI) CreateSession(_ context.Context, runID string) (Session, error) {
@@ -444,12 +496,29 @@ func (c *CursorCLI) run(ctx context.Context, args ...string) (string, error) {
 // approved this workspace for headless execution (non-interactive runs
 // refuse without it, so it is passed deliberately, never silently).
 func (c *CursorCLI) Send(ctx context.Context, sessionID, message string) error {
+	turnCtx, cancel := context.WithCancel(ctx)
+	c.cancelsMu.Lock()
+	if c.cancels == nil {
+		c.cancels = make(map[string]context.CancelFunc)
+	}
+	c.cancels[sessionID] = cancel
+	c.cancelsMu.Unlock()
+	defer func() {
+		c.cancelsMu.Lock()
+		delete(c.cancels, sessionID)
+		c.cancelsMu.Unlock()
+		cancel()
+	}()
+
 	args := []string{"-p", message, "--output-format", "json"}
 	if c.Trust {
 		args = append(args, "--trust")
 	}
-	out, err := c.run(ctx, args...)
+	out, err := c.run(turnCtx, args...)
 	if err != nil {
+		if turnCtx.Err() != nil {
+			return turnCtx.Err()
+		}
 		return fmt.Errorf("cursor exec failed: %s: %w", strings.TrimSpace(out), err)
 	}
 	var result struct {
@@ -482,8 +551,19 @@ func (c *CursorCLI) Events(_ context.Context, sessionID string) (<-chan agent.Ag
 }
 
 func (c *CursorCLI) Approve(_ context.Context, _, _ string, _ bool) error { return nil }
-func (c *CursorCLI) Cancel(_ context.Context, _ string) error             { return nil }
-func (c *CursorCLI) Close(_ context.Context, _ string) error              { return nil }
+
+func (c *CursorCLI) Cancel(_ context.Context, sessionID string) error {
+	c.cancelsMu.Lock()
+	defer c.cancelsMu.Unlock()
+	if cancel, ok := c.cancels[sessionID]; ok {
+		cancel()
+	}
+	return nil
+}
+
+func (c *CursorCLI) Close(ctx context.Context, sessionID string) error {
+	return c.Cancel(ctx, sessionID)
+}
 
 // ---- FakeAgentProvider for conformance without external binaries ----
 

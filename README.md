@@ -25,7 +25,11 @@ Prumo v0.6 is a pure Go distribution (ADR 002).
 - Plan DAG validation, Events, Evidence, Gates, and Doctor diagnostics.
 - JSON Schema Draft 2020-12 validation with local `$ref` resolution.
 - Lean Progressive Context planning and project intelligence reports.
-- Compiler adapters for Generic, ChatGPT, Claude, Kimi, Codex, Claude Code, Traycer, Gemini, OpenCode, and Google Antigravity.
+- Compiler adapters and harness connectors for Generic, ChatGPT, Claude, Kimi, Codex, Claude Code, Traycer, Gemini, OpenCode, Google Antigravity, Cursor, Windsurf, and Cline / Roo Code.
+- Surgical managed region integration (`doccompile`) preserving user instruction files across installs/uninstalls.
+- Model provider integration: OpenAI-compatible, Anthropic (with prompt caching), DeepSeek (with reasoning streams), and OpenCode.
+- SCM integration supporting GitHub (with GitHub Checks API evidence publishing) and GitLab (pipelines and commit status).
+- High-performance Rust-based Native Workspace Viewer (`prumo-viewer`) with extension ecosystem.
 - Machine-readable JSON envelopes for automation and harness integrations.
 - Conformance tests comparing Go behavior with golden specification baselines.
 - Portable installation state, connector ownership, setup, and safe uninstall.

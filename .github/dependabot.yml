@@ -8,6 +8,14 @@ updates:
       go:
         applies-to: version-updates
         patterns: ["*"]
+  - package-ecosystem: cargo
+    directory: "/prumo-viewer"
+    schedule:
+      interval: weekly
+    groups:
+      viewer:
+        applies-to: version-updates
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

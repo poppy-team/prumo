@@ -11,3 +11,6 @@ func processStartTime(int) uint64 { return 0 }
 
 // bootID is unknown off Linux, for the same reason.
 func bootID() string { return "" }
+
+// processState has no portable source off Linux, so it reports 0 (unknown).
+func processState(int) byte { return 0 }

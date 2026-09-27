@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/raillen/prumo/internal/connectors"
+	"github.com/raillen/prumo/internal/harness/doccompile"
 	"github.com/raillen/prumo/internal/install"
 	"github.com/raillen/prumo/internal/protocol"
 )
@@ -61,10 +63,11 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	codexDir := filepath.Join(projectRoot, ".codex")
 	created := []string{}
+	managedFragments := []string{}
 
-	// 1. AGENTS.md entrypoint in project root
+	// 1. AGENTS.md entrypoint in project root using managed region
 	agentsMD := `# AGENTS.md
-This project uses Prumo v0.5.
+This project uses Prumo v0.5 with OpenAI Codex.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.
@@ -73,10 +76,25 @@ This project uses Prumo v0.5.
 - Stop when verification evidence is sufficient.
 `
 	agentsMDPath := filepath.Join(projectRoot, "AGENTS.md")
-	if err := writeText(agentsMDPath, agentsMD); err != nil {
-		return nil, err
+	if existingData, err := os.ReadFile(agentsMDPath); err == nil && len(existingData) > 0 {
+		cleaned, _ := doccompile.RemoveRegion(string(existingData), "connector-codex")
+		hasUserContent := strings.TrimSpace(cleaned) != ""
+		merged := doccompile.UpsertRegion(string(existingData), "connector-codex", agentsMD)
+		if err := writeText(agentsMDPath, merged); err != nil {
+			return nil, err
+		}
+		if hasUserContent {
+			managedFragments = append(managedFragments, "AGENTS.md:connector-codex")
+		} else {
+			created = append(created, agentsMDPath)
+		}
+	} else {
+		content := doccompile.UpsertRegion("", "connector-codex", agentsMD)
+		if err := writeText(agentsMDPath, content); err != nil {
+			return nil, err
+		}
+		created = append(created, agentsMDPath)
 	}
-	created = append(created, agentsMDPath)
 
 	// 2. Configuration
 	config := map[string]any{
@@ -122,9 +140,10 @@ This project uses Prumo v0.5.
 
 	sort.Strings(created)
 	return &connectors.CompileResult{
-		Target:       "codex",
-		CreatedPaths: created,
-		ManifestPath: configPath,
+		Target:           "codex",
+		CreatedPaths:     created,
+		ManagedFragments: managedFragments,
+		ManifestPath:     configPath,
 	}, nil
 }
 
@@ -150,9 +169,11 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	cleanup := install.CleanupManifest{
-		Connector:    "codex",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
+		Connector:        "codex",
+		Scope:            "project",
+		ProjectRoot:      projectRoot,
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
 	}
 	if err := connectors.SaveCleanup(home, "codex", cleanup); err != nil {
 		return nil, err
@@ -172,12 +193,13 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	}
 
 	return &connectors.InstallResult{
-		Connector:    "codex",
-		Status:       "installed",
-		Scope:        "project",
-		CreatedPaths: res.CreatedPaths,
-		CleanupPath:  install.CleanupPath(home, "codex"),
-		Contract:     c.Contract(),
+		Connector:        "codex",
+		Status:           "installed",
+		Scope:            "project",
+		CreatedPaths:     res.CreatedPaths,
+		ManagedFragments: res.ManagedFragments,
+		CleanupPath:      install.CleanupPath(home, "codex"),
+		Contract:         c.Contract(),
 	}, nil
 }
 

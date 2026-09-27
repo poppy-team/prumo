@@ -1,13 +1,13 @@
 // Package evidence derived completion state machine.
 //
 // In accordance with Constitución 84.A & 85.A:
-// - Universal Surface Coverage: documented, implemented, reachable, exercised, evidenced,
-//   independently-verified, regression-protected, release-accepted.
-// - Acceptance Coverage: uncovered, planned, implemented, evidenced, verified, accepted,
-//   waived, blocked_external.
-// - Fundamental Rule: "implemented != reachable != exercised != evidenced != verified != accepted != released."
-//   Completion is ALWAYS derived by the system from verified evidence records, never accepted from
-//   agent natural language statements ("I have finished", "all done", etc.).
+//   - Universal Surface Coverage: documented, implemented, reachable, exercised, evidenced,
+//     independently-verified, regression-protected, release-accepted.
+//   - Acceptance Coverage: uncovered, planned, implemented, evidenced, verified, accepted,
+//     waived, blocked_external.
+//   - Fundamental Rule: "implemented != reachable != exercised != evidenced != verified != accepted != released."
+//     Completion is ALWAYS derived by the system from verified evidence records, never accepted from
+//     agent natural language statements ("I have finished", "all done", etc.).
 package evidence
 
 import (

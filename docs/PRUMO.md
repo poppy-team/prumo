@@ -34,6 +34,8 @@ PRUMO is an intent router. Read only the document needed for the current task; d
 - [Architecture overview](architecture/overview.md)
 - [Dependency rules](architecture/dependency-rules.md)
 - [Repository layout](development/repository-layout.md)
+- [Viewer extensions](development/viewer-extensions.md)
+- [Viewer extension capability catalog](development/viewer-extension-capabilities.md)
 - [Runtime Control Plane](runtime/control-plane.md)
 - [Trust model](security/trust-model.md)
 

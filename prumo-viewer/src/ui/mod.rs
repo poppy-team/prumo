@@ -1,7 +1,14 @@
 pub mod agent_panel;
+pub mod chrome;
+pub mod command_palette;
 pub mod diff_view;
 pub mod editor_area;
+pub mod editor_popup;
+pub mod explorer_menu;
+pub mod extension_panel;
+pub mod git_view;
 pub mod icons;
+pub mod menu;
 pub mod quick_open;
 pub mod settings;
 pub mod sidebar;

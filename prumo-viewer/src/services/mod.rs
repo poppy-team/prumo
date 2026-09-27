@@ -1,6 +1,14 @@
 pub mod config;
 pub mod diff;
 pub mod document;
+pub mod editor_intelligence;
+pub mod files;
+pub mod follow;
+pub mod git;
+pub mod merge;
+pub mod run_observability;
 pub mod search;
+pub mod tasks;
 pub mod terminal;
+pub mod watcher;
 pub mod workspace;

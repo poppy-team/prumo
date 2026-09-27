@@ -244,7 +244,7 @@ You are the primary orchestrator of Prumo within OpenCode.
 	}
 	created = append(created, prumoAgentPath)
 
-	// 4. Subagents: .opencode/agents/architect.md, executor.md, verifier.md
+	// 4. Subagents: .opencode/agents/architect.md, executor.md, verifier.md, systems-architect.md, isolation-auditor.md
 	subagents := map[string]string{
 		"architect.md": `# Architect Agent
 Role: Architecture, Schemas, and ADRs
@@ -257,6 +257,14 @@ Focus: Pragmatic clean code, explicit errors, deterministic behavior.
 		"verifier.md": `# Verifier Agent
 Role: Verification and Quality Gates
 Focus: Deterministic tests, race detection, linting, and evidence recording.
+`,
+		"systems-architect.md": `# Systems Architect Agent
+Role: Low-Level Systems, Memory Models, Hardware Budgets & Compiler Invariants
+Focus: Cache-conscious layout, zero-allocation loops, symplectic physics, and low-level NFRs.
+`,
+		"isolation-auditor.md": `# Isolation Auditor Agent
+Role: Multi-Tenant Isolation, Sandboxing & Adversarial Abuse Verification
+Focus: Cross-tenant data leakage tests, sandbox escape audits, and tool capability verification.
 `,
 	}
 	for name, content := range subagents {
@@ -386,19 +394,12 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 	cleanup := install.CleanupManifest{
 		Connector:        "opencode",
 		Scope:            "project",
+		ProjectRoot:      projectRoot,
 		CreatedPaths:     compileRes.CreatedPaths,
 		ManagedFragments: []string{},
 		Backups:          []string{},
 	}
-	cleanupPath := install.CleanupPath(home, "opencode")
-	if err := os.MkdirAll(filepath.Dir(cleanupPath), 0755); err != nil {
-		return nil, err
-	}
-	cleanupData, err := json.MarshalIndent(cleanup, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(cleanupPath, append(cleanupData, '\n'), 0644); err != nil {
+	if err := connectors.SaveCleanup(home, "opencode", cleanup); err != nil {
 		return nil, err
 	}
 
@@ -421,56 +422,14 @@ func (c *Connector) Install(home string, projectRoot string, opts connectors.Ins
 		Status:       "installed",
 		Scope:        "project",
 		CreatedPaths: compileRes.CreatedPaths,
-		CleanupPath:  cleanupPath,
+		CleanupPath:  install.CleanupPath(home, "opencode"),
 		Contract:     c.Contract(),
 	}, nil
 }
 
 // Uninstall cleanly removes managed OpenCode artifacts.
 func (c *Connector) Uninstall(home string, projectRoot string, opts connectors.UninstallOptions) (*connectors.UninstallResult, error) {
-	if home == "" {
-		h, err := install.HomeDir("")
-		if err != nil {
-			return nil, err
-		}
-		home = h
-	}
-
-	cleanupPath := install.CleanupPath(home, "opencode")
-	data, err := os.ReadFile(cleanupPath)
-	if err != nil {
-		return nil, fmt.Errorf("no cleanup manifest found for opencode: %w", err)
-	}
-
-	var cleanup install.CleanupManifest
-	if err := json.Unmarshal(data, &cleanup); err != nil {
-		return nil, fmt.Errorf("corrupt cleanup manifest: %w", err)
-	}
-
-	removed, leftovers := install.RemoveManagedPaths(cleanup.CreatedPaths)
-
-	// Clean up .opencode dir if empty
-	if projectRoot != "" {
-		opencodeDir := filepath.Join(projectRoot, ".opencode")
-		_ = os.Remove(opencodeDir)
-	}
-
-	// Remove cleanup manifest
-	_ = os.Remove(cleanupPath)
-
-	// Update installation manifest
-	manifest, err := install.LoadManifest(home)
-	if err == nil {
-		delete(manifest.Connectors, "opencode")
-		_ = install.SaveManifest(home, manifest)
-	}
-
-	return &connectors.UninstallResult{
-		Connector: "opencode",
-		Removed:   removed,
-		Leftovers: leftovers,
-		Clean:     len(leftovers) == 0,
-	}, nil
+	return connectors.ExecuteCleanup(home, "opencode", projectRoot, ".opencode")
 }
 
 // Validate checks that an OpenCode installation conforms to contract requirements.

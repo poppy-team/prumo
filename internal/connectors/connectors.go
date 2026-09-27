@@ -69,10 +69,11 @@ type CompileOptions struct {
 
 // CompileResult represents the output of compiling a connector harness.
 type CompileResult struct {
-	Target       string         `json:"target"`
-	CreatedPaths []string       `json:"created_paths"`
-	ManifestPath string         `json:"manifest_path"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
+	Target           string         `json:"target"`
+	CreatedPaths     []string       `json:"created_paths"`
+	ManagedFragments []string       `json:"managed_fragments,omitempty"`
+	ManifestPath     string         `json:"manifest_path"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
 }
 
 // InstallOptions configures installation.
@@ -85,12 +86,13 @@ type InstallOptions struct {
 
 // InstallResult reports results of connector installation.
 type InstallResult struct {
-	Connector    string   `json:"connector"`
-	Status       string   `json:"status"`
-	Scope        string   `json:"scope"`
-	CreatedPaths []string `json:"created_paths"`
-	CleanupPath  string   `json:"cleanup_path"`
-	Contract     Contract `json:"contract"`
+	Connector        string   `json:"connector"`
+	Status           string   `json:"status"`
+	Scope            string   `json:"scope"`
+	CreatedPaths     []string `json:"created_paths"`
+	ManagedFragments []string `json:"managed_fragments,omitempty"`
+	CleanupPath      string   `json:"cleanup_path"`
+	Contract         Contract `json:"contract"`
 }
 
 // UninstallOptions configures uninstallation.

@@ -28,9 +28,9 @@ type Account struct {
 // AccountPool manages multiple accounts across providers.
 type AccountPool struct {
 	mu       sync.RWMutex
-	accounts map[string]*Account          // accountID -> Account
-	byProv   map[string][]*Account        // provider -> list of accounts
-	indices  map[string]int               // provider -> round-robin cursor
+	accounts map[string]*Account   // accountID -> Account
+	byProv   map[string][]*Account // provider -> list of accounts
+	indices  map[string]int        // provider -> round-robin cursor
 }
 
 // NewAccountPool creates an empty account pool.

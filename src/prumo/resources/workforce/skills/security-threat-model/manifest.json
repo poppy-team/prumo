@@ -1,0 +1,71 @@
+{
+  "id": "security-threat-model",
+  "name": "Structured Threat Modeling & STRIDE",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Map system assets, trust boundaries, attacker capabilities, STRIDE threat matrices, and mitigation requirements.",
+  "risk_level": "high",
+  "modes": [
+    "design",
+    "review",
+    "audit"
+  ],
+  "inputs": [
+    "Architecture diagrams",
+    "Data classification",
+    "Trust boundary specifications"
+  ],
+  "outputs": [
+    "Threat model document",
+    "Abuse cases catalog",
+    "Residual risk ledger"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/security-threat-model-guide.md"
+  ],
+  "templates": [
+    "templates/security-threat-model-spec.md"
+  ],
+  "checks": [
+    "checks/security-threat-model-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/security-threat-model-example.json"
+  ],
+  "required_evidence": [
+    "review"
+  ],
+  "stop_conditions": [
+    "All Structured Threat Modeling & STRIDE invariants verified with evidence"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-23"
+  },
+  "select": {
+    "features_any": [
+      "security",
+      "auth",
+      "billing"
+    ],
+    "risk_any": [
+      "security",
+      "privacy"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

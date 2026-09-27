@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "com.prumo.editor-navigation",
+  "name": "Editor Navigation",
+  "description": "Small navigation commands contributed by an independent Prumo Viewer extension.",
+  "version": "0.1.0",
+  "publisher": "Prumo",
+  "extension_api": "prumo.viewer.extensions/v1",
+  "host": {
+    "min_version": "0.1.0",
+    "max_version": "0.2.0"
+  },
+  "runtime": {
+    "kind": "declarative"
+  },
+  "capabilities": [
+    {
+      "id": "ui.command",
+      "required": true,
+      "since": "1.0.0"
+    }
+  ],
+  "permissions": [
+    {
+      "capability": "ui.command",
+      "scope": "workspace",
+      "risk": "low",
+      "justification": "The extension contributes commands that operate on the active viewer state."
+    }
+  ],
+  "contributions": {
+    "commands": [
+      {
+        "id": "com.prumo.editor-navigation.find-in-project",
+        "title": "Editor Navigation: Find in Project",
+        "description": "Open project search from the command palette.",
+        "action": "find_in_project"
+      },
+      {
+        "id": "com.prumo.editor-navigation.refresh-workspace",
+        "title": "Editor Navigation: Refresh Workspace",
+        "description": "Refresh the workspace tree from the command palette.",
+        "action": "refresh_workspace"
+      }
+    ]
+  }
+}
