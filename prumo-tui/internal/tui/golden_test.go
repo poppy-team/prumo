@@ -468,7 +468,12 @@ func frameHeader(frame string) string {
 func firstDifference(want, got string) string {
 	wantLines := strings.Split(want, "\n")
 	gotLines := strings.Split(got, "\n")
-	for i := 0; i < len(wantLines) || i < len(gotLines); i++ {
+	start := 0
+	if len(wantLines) > 0 && strings.HasPrefix(wantLines[0], "# digest ") {
+		start = 1
+	}
+	var diffs []string
+	for i := start; i < len(wantLines) || i < len(gotLines); i++ {
 		var w, g string
 		if i < len(wantLines) {
 			w = wantLines[i]
@@ -477,8 +482,17 @@ func firstDifference(want, got string) string {
 			g = gotLines[i]
 		}
 		if w != g {
-			return fmt.Sprintf("first difference at line %d:\n  captured: %q\n  current:  %q", i+1, w, g)
+			diffs = append(diffs, fmt.Sprintf("line %d:\n  captured: %q\n  current:  %q", i+1, w, g))
+			if len(diffs) >= 5 {
+				break
+			}
 		}
+	}
+	if len(diffs) > 0 {
+		return strings.Join(diffs, "\n")
+	}
+	if len(wantLines) > 0 && len(gotLines) > 0 && wantLines[0] != gotLines[0] {
+		return fmt.Sprintf("digest line 1 mismatch:\n  captured: %q\n  current:  %q", wantLines[0], gotLines[0])
 	}
 	return "the frames differ in length only"
 }
