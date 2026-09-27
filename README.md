@@ -1,149 +1,168 @@
 # Prumo
 
-Prumo is a Git-native protocol and CLI for software projects built with humans and AI agents.
+[![Release](https://img.shields.io/github/v/release/poppy-team/prumo?color=2563eb&label=release)](https://github.com/poppy-team/prumo/releases/tag/v0.6.0)
+[![Go Version](https://img.shields.io/badge/go-1.22+-blue.svg)](https://golang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Workforce](https://img.shields.io/badge/workforce-189%20skills%20%7C%2039%20agents%20%7C%2016%20recipes-blueviolet)](docs/workforce/index.md)
+[![Docs](https://img.shields.io/badge/docs-online-06b6d4.svg)](https://prumo.vercel.app)
 
-The repository is the durable source of truth. Prumo stores canonical project state in Markdown, JSON, JSON Schema, and Git; generated adapters, caches, indexes, and runtime state remain derived.
+**Prumo** is a Git-native protocol and engineering harness for software projects built collaboratively by human developers and autonomous AI agents.
 
-## Names
+The repository is the durable source of truth. Prumo stores canonical project state in Markdown, JSON, JSON Schema, and Git commits; generated adapters, caches, indexes, and runtime state remain derived and disposable.
 
-The framework is **Prumo**. The command you run is **`prumo`** (built from `cmd/prumo`), and the terminal client is a separate binary launched by **`prumo agent`** — installed as **`prumo-agent`** (or its short alias **`pa`**). See [ADR 016](docs/adr/016-product-split-agent-and-harness.md) for the naming decision.
+---
 
-## Current release line
+## Documentation Website
 
-Prumo v0.6 is a pure Go distribution (ADR 002).
+The full documentation website, inspired by modern developer documentation portals, is available at **[prumo.vercel.app](https://prumo.vercel.app)** (or browseable locally via `pnpm` docs server).
+
+---
+
+## Names & Architecture
+
+- **Framework**: **Prumo**.
+- **CLI & Core Harness**: **`prumo`** (built from `cmd/prumo`).
+- **Interactive TUI Client**: Launched by **`prumo agent`** — installed as **`prumo-agent`** (alias **`pa`**). See [ADR 016](docs/adr/016-product-split-agent-and-harness.md).
+- **Native Workspace Viewer**: High-performance Rust-based visualizer **`prumo-viewer`** for navigating massive repositories and task DAGs.
+
+---
+
+## Release Line v0.6.0
+
+Prumo v0.6 is a pure Go distribution ([ADR 002](docs/adr/002-retire-python-runtime.md)).
 
 - **Go v0.6** is the official single-binary CLI and Core implementation.
-- Python v0.3 has been completely retired (ADR 002).
-- Zero external runtime dependencies (no Python, pip, or virtualenv required).
-- All canonical assets (schemas, catalog, workforce, adapters) are embedded directly into the Go binary.
+- **Zero External Runtime Dependencies**: No Python, pip, or virtualenv required.
+- **Embedded Assets**: All canonical schemas, catalog, workforce packages, and adapter templates are embedded directly into the binary.
+- **Headless Harness & ACI**: Deterministic sandboxed tool gateway, process execution with hard timeouts, output boundaries, and AST syntax parsing.
+- **Canonical Workforce**: **189 skills**, **39 specialized agents**, and **16 deterministic recipes** across systems, architecture, design systems, UI/UX, vector art, motion, and security.
+- **Universal Connectors**: Transparent adapters for Google Antigravity, Claude Code, OpenAI Codex, Cursor, Windsurf, OpenCode, Cline, and Roo Code.
 
-## What Prumo provides
+---
 
-- Project initialization from a profile.
-- Deterministic agent, skill, recipe, risk, and model-policy resolution.
-- Goal lifecycle with SHA-256 lock integrity and formal amendments.
-- Plan DAG validation, Events, Evidence, Gates, and Doctor diagnostics.
-- JSON Schema Draft 2020-12 validation with local `$ref` resolution.
-- Lean Progressive Context planning and project intelligence reports.
-- Compiler adapters and harness connectors for Generic, ChatGPT, Claude, Kimi, Codex, Claude Code, Traycer, Gemini, OpenCode, Google Antigravity, Cursor, Windsurf, and Cline / Roo Code.
-- Surgical managed region integration (`doccompile`) preserving user instruction files across installs/uninstalls.
-- Model provider integration: OpenAI-compatible, Anthropic (with prompt caching), DeepSeek (with reasoning streams), and OpenCode.
-- SCM integration supporting GitHub (with GitHub Checks API evidence publishing) and GitLab (pipelines and commit status).
-- High-performance Rust-based Native Workspace Viewer (`prumo-viewer`) with extension ecosystem.
-- Canonical Workforce registry & catalog with specialized engineering, architecture, low-level systems, UI/UX, brand identity, motion design, and rapid prototyping agents.
-- Machine-readable JSON envelopes for automation and harness integrations.
-- Conformance tests comparing Go behavior with golden specification baselines.
-- Portable installation state, connector ownership, setup, and safe uninstall.
+## What Prumo Provides
 
-## Quick start from source
+- **Deterministic Project Initialization**: Canonical profiles, capabilities, and repository metadata.
+- **Cryptographic Goal Lifecycle**: SHA-256 integrity locks and formal, non-bypassable amendments (`goal amend`).
+- **Lean Progressive Context (LPC)**: Smallest sufficient context, progressive expansion, and bounded outputs to prevent token exhaustion and hallucinations.
+- **Plan DAG Validation & Execution**: Graph-based task dependencies, gate evaluations, and automated evidence collection.
+- **Agent-Computer Interface (ACI)**: Sandboxed command runners, atomic file replacers, and multi-language AST inspection tools.
+- **Surgical Adapter Compilers (`doccompile`)**: Preserves user-maintained configuration regions across compile, install, and uninstall cycles.
+- **Repository Diagnostics (`prumo doctor`)**: Automated health checks for schemas, lock digests, DAG cycles, and toolchains.
+- **Deterministic Machine Interface**: Standard JSON envelope (`protocol_version: "1"`) for seamless CI/CD and automation scripting.
 
-Requirements:
+---
 
-- Go 1.22+;
-- Git.
-
-```bash
-git clone git@github.com:raillen/prumo.git
-cd prumo
-
-go run ./cmd/prumo version
-go run ./cmd/prumo --json version
-```
-
-Expected version output:
-
-```text
-0.6.0
-```
-
-Run `prumo --help` or `prumo <command> --help` to view all available commands, options, and quick examples. You can also consult the [CLI reference](docs/manual/usage.md#command-reference).
-
-## Initialize a project
-
-Create a profile with at least one preferred model, then initialize a project:
-
-```bash
-go run ./cmd/prumo init ./my-project \
-  --profile examples/brasa/project-profile.json \
-  --non-interactive
-
-go run ./cmd/prumo validate ./my-project
-go run ./cmd/prumo doctor ./my-project
-```
-
-`prumo init` creates canonical project files such as `prumo.json`, `.ai/`, `docs/PRUMO.md`, `PROJECT_STATE.md`, and `.prumo/history/`. It does not install a harness globally.
-
-## Work with Goals
-
-```bash
-go run ./cmd/prumo goal new P00-G01 "Foundation" \
-  --phase P00 \
-  --objective "Establish the project foundation." \
-  --path ./my-project
-
-go run ./cmd/prumo goal state P00-G01 PLANNED --path ./my-project
-go run ./cmd/prumo goal state P00-G01 LOCKED --path ./my-project
-go run ./cmd/prumo goal list --path ./my-project
-```
-
-Locked Goals must be changed through `goal amend`; direct edits are detected by the lock digest.
-
-## Compile a harness adapter
-
-```bash
-go run ./cmd/prumo compile --target generic --path ./my-project
-go run ./cmd/prumo compile --target codex --path ./my-project
-go run ./cmd/prumo compile --target claude-code --path ./my-project
-```
-
-Generated artifacts are derived. The canonical project files and workforce packages remain the source of truth.
-
-## One-Link Install (Linux, macOS & Windows)
+## One-Link Installation
 
 ### Linux & macOS
+
 Downloads the release binary, verifies SHA-256 checksums, installs to `~/.local/bin/prumo`, and configures your shell `PATH` automatically:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/raillen/prumo/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/poppy-team/prumo/main/scripts/install.sh | sh
 ```
 
 ### Windows (PowerShell)
+
 Downloads the Windows binary, verifies SHA-256 checksums, installs to `%LOCALAPPDATA%\Programs\prumo\prumo.exe`, and permanently configures user `PATH`:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/raillen/prumo/main/scripts/install.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/poppy-team/prumo/main/scripts/install.ps1 | iex"
 ```
 
+### Direct Binary Downloads (v0.6.0)
 
-For a reversible uninstall, review the script before running it:
+Precompiled release binaries are available on the [GitHub Release v0.6.0](https://github.com/poppy-team/prumo/releases/tag/v0.6.0):
+
+- **Linux x86_64**: [`prumo-0.6.0-linux-amd64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-linux-amd64.tar.gz)
+- **Linux ARM64**: [`prumo-0.6.0-linux-arm64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-linux-arm64.tar.gz)
+- **macOS Apple Silicon (ARM64)**: [`prumo-0.6.0-darwin-arm64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-darwin-arm64.tar.gz)
+- **macOS Intel (x86_64)**: [`prumo-0.6.0-darwin-amd64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-darwin-amd64.tar.gz)
+- **Windows x86_64**: [`prumo-0.6.0-windows-amd64.zip`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-windows-amd64.zip)
+
+---
+
+## Quick Start (5 Minutes)
+
+### 1. Build and verify from source (Optional)
 
 ```bash
-curl --fail --location https://raw.githubusercontent.com/raillen/prumo/main/scripts/uninstall.sh -o uninstall.sh
-sh uninstall.sh --mode pure --dry-run
-sh uninstall.sh --mode pure
+git clone https://github.com/poppy-team/prumo.git
+cd prumo
+go run ./cmd/prumo version
 ```
 
-Use a portable installation home when testing or working in CI:
+### 2. Initialize a project
 
 ```bash
-go run ./cmd/prumo --home ./prumo-home setup
-go run ./cmd/prumo --home ./prumo-home install connector opencode
-go run ./cmd/prumo --home ./prumo-home uninstall --connectors --purge-cache --purge-global-config
+prumo init ./my-project --profile ./examples/brasa/project-profile.json --non-interactive
+prumo validate ./my-project
+prumo doctor ./my-project
 ```
 
-Uninstall never removes project files, `.ai/`, docs, Goals, Plans, Evidence, or other repository data. Read the [installation manual](docs/manual/installation.md) and [uninstall manual](docs/manual/uninstallation.md).
+`prumo init` sets up canonical project files (`prumo.json`, `docs/PRUMO.md`, `.prumo/history/`).
 
-## Machine output
-
-Commands that support automation accept `--json`:
+### 3. Manage Goals with cryptographic locks
 
 ```bash
-go run ./cmd/prumo --json version
-go run ./cmd/prumo --json doctor ./my-project
-go run ./cmd/prumo --json framework-check
+# Create a new Goal
+prumo goal new P01-G01 "Core Systems" \
+  --phase P01 \
+  --objective "Implement foundation services" \
+  --path ./my-project
+
+# Transition state to PLANNED and then LOCKED
+prumo goal state P01-G01 PLANNED --path ./my-project
+prumo goal state P01-G01 LOCKED --path ./my-project
+prumo goal list --path ./my-project
 ```
 
-The envelope is:
+Locked Goals require formal amendments (`prumo goal amend`) to modify; direct manual edits break the SHA-256 lock digest.
+
+### 4. Compile harness adapters
+
+```bash
+prumo compile --target claude-code --path ./my-project
+prumo compile --target antigravity --path ./my-project
+prumo compile --target cursor --path ./my-project
+```
+
+### 5. Execute tasks with the Harness
+
+```bash
+prumo run --path ./my-project
+```
+
+---
+
+## Command Reference
+
+| Command | Action |
+|---|---|
+| `prumo init` | Initialize a new repository with a canonical profile |
+| `prumo goal` | Manage Goals (`new`, `state`, `amend`, `list`) with SHA-256 locks |
+| `prumo plan` | Formulate and validate task dependency DAGs |
+| `prumo run` | Execute directives and plans via sandboxed Harness |
+| `prumo compile` | Compile provider-neutral rules to harness adapters |
+| `prumo doctor` | Deep repository and harness health diagnostics |
+| `prumo validate` | Validate repository state against JSON Schemas |
+| `prumo agent` | Launch interactive TUI terminal agent (`pa`) |
+| `prumo docs audit` | Audit documentation authority, drift, and links |
+| `prumo docs authority` | Validate authority map and routing integrity |
+
+---
+
+## Machine Output (`--json`)
+
+Every automation-ready command accepts `--json`:
+
+```bash
+prumo --json doctor ./my-project
+prumo --json framework-check
+```
+
+Output envelope:
 
 ```json
 {
@@ -155,45 +174,60 @@ The envelope is:
 }
 ```
 
-stdout is reserved for JSON when `--json` is used. Diagnostics belong on stderr. JSON output contains no ANSI formatting.
+Standard output (`stdout`) is reserved strictly for JSON when `--json` is enabled. Diagnostics and logs are piped to `stderr` with zero ANSI formatting.
 
-## Development checks
+---
+
+## Running the Documentation Site Locally
+
+The documentation website is powered by VitePress:
 
 ```bash
-gofmt -l cmd internal embedded_assets.go
-go test ./... -race
-go vet ./...
+# Start development server
+pnpm run docs:dev
+
+# Build static website
+pnpm run docs:build
+
+# Preview static build
+pnpm run docs:preview
 ```
 
-The Go suite includes comprehensive tests for initialization, resolver behavior, Goals, Plans, Doctor, Explain, migration, snapshots, all seven compiler targets, connectors, and adoption engine.
+---
 
-## Documentation map
+## Documentation Map
 
-- [Install manual](docs/manual/installation.md)
-- [Uninstall manual](docs/manual/uninstallation.md)
-- [Usage manual](docs/manual/usage.md)
-- [CLI reference](docs/manual/usage.md#command-reference)
-- [First project](docs/getting-started/first-project.md)
-- [Core concepts](docs/getting-started/concepts.md)
-- [v0.4 boundary scope (historical)](docs/product/scope-v0.4.md)
-- [Architecture](docs/architecture/overview.md)
-- [ADR 001: Go Core](docs/adr/001-go-core.md)
-- [ADR 002: Retire Python Runtime](docs/adr/002-retire-python-runtime.md)
-- [Migration status](docs/migration/v0.3-to-v0.4-go.md)
-- [Conformance strategy](docs/migration/conformance-strategy.md)
-- [Development blueprint](docs/development/implementation-blueprint.md)
-- [Testing strategy](docs/development/testing-strategy.md)
-- [Security and trust model](docs/security/trust-model.md)
-- [Runtime Control Plane](docs/runtime/control-plane.md)
-- [Documentation System v2](docs/governance/documentation-system.md)
-- [Documentation source map](docs/SOURCE_MAP.json)
+- **[Documentation Site](https://prumo.vercel.app)**
+- **User Manuals**:
+  - [Installation Manual](docs/manual/installation.md)
+  - [Uninstallation Manual](docs/manual/uninstallation.md)
+  - [Usage Manual & CLI Reference](docs/manual/usage.md)
+  - [Connectors & Adapters](docs/manual/connectors.md)
+- **Getting Started**:
+  - [First Project Walkthrough](docs/getting-started/first-project.md)
+  - [Core Concepts](docs/getting-started/concepts.md)
+- **Architecture & Design**:
+  - [Product Vision](docs/product/vision.md)
+  - [Architecture Overview](docs/architecture/overview.md)
+  - [Dependency Rules](docs/architecture/dependency-rules.md)
+  - [ADR 001: Go Core](docs/adr/001-go-core.md)
+  - [ADR 002: Retire Python Runtime](docs/adr/002-retire-python-runtime.md)
+  - [ADR 016: Split Agent & Harness](docs/adr/016-product-split-agent-and-harness.md)
+- **Harness & Workforce**:
+  - [Harness Overview](docs/harness/index.md)
+  - [Workforce Catalog](docs/workforce/index.md)
+- **Governance & Methodology**:
+  - [Lean Progressive Context (LPC)](docs/governance/lpc.md)
+  - [Authority & Projection Policy](docs/governance/authority.md)
+  - [Testing Strategy](docs/development/testing-strategy.md)
+  - [Coding Standards](docs/development/coding-standards.md)
+  - [Development Blueprint](docs/development/implementation-blueprint.md)
+  - [Documentation Router](docs/PRUMO.md)
 
-Use `docs/PRUMO.md` as the repository documentation router. Do not load the entire documentation tree for a single task.
+---
 
-## License and contribution
+## License and Contribution
 
-Prumo is released under the [MIT License](LICENSE). Code derived from other
-projects, and the revisions it was taken from, are recorded in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Prumo is released under the [MIT License](LICENSE). Third-party code notices are cataloged in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Before contributing, read `AGENTS.md`, the [coding standards](docs/development/coding-standards.md), the [dependency rules](docs/architecture/dependency-rules.md), and the [testing strategy](docs/development/testing-strategy.md).
+Before contributing, review `AGENTS.md`, the [coding standards](docs/development/coding-standards.md), [dependency rules](docs/architecture/dependency-rules.md), and [testing strategy](docs/development/testing-strategy.md).

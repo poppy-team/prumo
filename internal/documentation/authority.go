@@ -148,7 +148,13 @@ func scanAuthorityFiles(root string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".md") {
+		if d.IsDir() {
+			if strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(d.Name(), ".md") {
 			return nil
 		}
 		rel, err := filepath.Rel(root, path)
