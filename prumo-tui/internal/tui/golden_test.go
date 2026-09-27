@@ -60,6 +60,13 @@ type builder struct {
 
 func newBuilder(t testing.TB, harness *stubHarness) *builder {
 	t.Helper()
+	prevCfg := *config.Get()
+	t.Cleanup(func() { config.Set(prevCfg) })
+	cfg := prevCfg
+	cfg.Onboarded = true
+	cfg.WorkingDir = "/home/raillen/Documentos/Projetos/prumo/prumo-tui/internal/tui"
+	config.Set(cfg)
+
 	application := app.New(app.Options{Client: harness})
 	model, _ := New(application).Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	return &builder{t: t, model: model, app: application}

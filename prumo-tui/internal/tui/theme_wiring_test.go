@@ -14,8 +14,10 @@ import (
 func TestTheConfiguredThemeIsTheOneDrawn(t *testing.T) {
 	previous := theme.CurrentThemeName()
 	t.Cleanup(func() { _ = theme.SetTheme(previous) })
+	prevCfg := *config.Get()
+	t.Cleanup(func() { config.Set(prevCfg) })
 
-	config.Set(config.Config{Theme: "gruvbox", Provider: "fake", MaxTurns: 5})
+	config.Set(config.Config{Theme: "gruvbox", Provider: "fake", MaxTurns: 5, Onboarded: true})
 	New(app.New(app.Options{Client: &stubHarness{}}))
 
 	if got := theme.CurrentThemeName(); got != "gruvbox" {
@@ -29,11 +31,13 @@ func TestTheConfiguredThemeIsTheOneDrawn(t *testing.T) {
 func TestAnUnknownThemeKeepsTheCurrentOne(t *testing.T) {
 	previous := theme.CurrentThemeName()
 	t.Cleanup(func() { _ = theme.SetTheme(previous) })
+	prevCfg := *config.Get()
+	t.Cleanup(func() { config.Set(prevCfg) })
 	if err := theme.SetTheme("prumo"); err != nil {
 		t.Fatalf("cannot select the default palette: %v", err)
 	}
 
-	config.Set(config.Config{Theme: "no-such-palette", Provider: "fake", MaxTurns: 5})
+	config.Set(config.Config{Theme: "no-such-palette", Provider: "fake", MaxTurns: 5, Onboarded: true})
 	model := New(app.New(app.Options{Client: &stubHarness{}}))
 
 	if got := theme.CurrentThemeName(); got != "prumo" {
