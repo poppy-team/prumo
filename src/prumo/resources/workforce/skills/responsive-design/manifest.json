@@ -1,0 +1,61 @@
+{
+  "id": "responsive-design",
+  "name": "Responsive Design Strategy & Implementation",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Implement adaptive, accessible, and performant user interfaces using fluid design, container queries, and content-first breakpoints.",
+  "risk_level": "low",
+  "modes": [
+    "design",
+    "implementation",
+    "review",
+    "testing"
+  ],
+  "inputs": [
+    "Design mockups",
+    "Content structure",
+    "Component specifications"
+  ],
+  "outputs": [
+    "Fluid CSS architectures",
+    "Responsive images implementation",
+    "Adaptive layout code"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "references": [
+    "references/responsive-design-guide.md"
+  ],
+  "templates": [
+    "templates/responsive-spec.md"
+  ],
+  "checks": [
+    "checks/responsive-design-checklist.md"
+  ],
+  "scripts": [
+    "scripts/verify.sh"
+  ],
+  "examples": [
+    "examples/fluid-responsive.css"
+  ],
+  "required_evidence": [
+    "review",
+    "test"
+  ],
+  "stop_conditions": [
+    "Layout validated at 400% zoom with no horizontal scroll",
+    "Container queries successfully reflow components"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}

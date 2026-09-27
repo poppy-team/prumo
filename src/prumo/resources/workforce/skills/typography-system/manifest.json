@@ -1,0 +1,34 @@
+{
+  "id": "typography-system",
+  "name": "Typography Systems for Digital Design",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Define modular scales, fluid typography, variable fonts, type hierarchy, vertical rhythm, and typographic tokens for digital design projects.",
+  "risk_level": "low",
+  "modes": ["design", "implementation", "review", "documentation", "testing"],
+  "inputs": ["brand-guidelines", "design-system-requirements", "target-viewports"],
+  "outputs": ["typographic-design-tokens", "css-custom-properties", "type-scale-specification"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/typography-guide.md"],
+  "templates": ["templates/typography-spec.md"],
+  "checks": ["checks/typography-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/type-scale.json"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Typographic system fails WCAG text contrast requirements", "Readability checks fail"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": []
+  },
+  "requires_any": [],
+  "tools": []
+}

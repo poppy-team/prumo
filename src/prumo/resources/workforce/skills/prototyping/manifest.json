@@ -1,0 +1,34 @@
+{
+  "id": "prototyping",
+  "name": "Prototyping",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Iteratively validate design assumptions through progressive fidelity prototyping.",
+  "risk_level": "medium",
+  "modes": ["design", "testing", "research"],
+  "inputs": ["user-requirements", "sketches"],
+  "outputs": ["wireframes", "interactive-prototypes", "handoff-specs"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/design-sprint.md"],
+  "templates": ["templates/handoff-spec.md"],
+  "checks": ["checks/fidelity-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/flow.md"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Core assumptions validated or invalidated."],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["design-sprints", "wireframing"]
+  },
+  "requires_any": [],
+  "tools": []
+}

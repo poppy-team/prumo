@@ -1,0 +1,87 @@
+/* Fluid Foundations */
+:root {
+  /* Fluid typography: scales from 16px to 20px between 320px and 1200px viewports */
+  --font-base: clamp(1rem, 0.909rem + 0.45vw, 1.25rem);
+  
+  /* Fluid spacing: scales from 16px to 32px */
+  --space-m: clamp(1rem, 0.636rem + 1.82vw, 2rem);
+}
+
+body {
+  font-size: var(--font-base);
+  margin: 0;
+  padding: 0;
+}
+
+/* Logical Properties and Grid Foundation */
+.page-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-m);
+  padding-inline: var(--space-m);
+  padding-block: var(--space-m);
+  max-inline-size: 1440px;
+  margin-inline: auto;
+}
+
+/* Content-first breakpoints */
+@media (min-width: 48rem) { /* ~768px */
+  .page-container {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+@media (min-width: 64rem) { /* ~1024px */
+  .page-container {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+/* Container Queries for Component Adaptivity */
+.card-wrapper {
+  container-type: inline-size;
+  container-name: card;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: var(--space-m);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+/* When the container is wider than 400px, switch to a row layout */
+@container card (min-width: 400px) {
+  .card {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* Touch vs Pointer */
+.button {
+  padding-block: 0.75rem;
+  padding-inline: 1.5rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  min-block-size: 44px; /* Minimum touch target */
+  min-inline-size: 44px;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    background: #0056b3;
+  }
+}
+
+/* Responsive Images */
+.responsive-img {
+  max-inline-size: 100%;
+  block-size: auto;
+  object-fit: cover;
+}

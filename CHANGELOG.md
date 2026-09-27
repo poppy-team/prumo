@@ -21,6 +21,9 @@
   - New GitLab adapter (`internal/scm/gitlab`) supporting project settings, labels, protected branches, and commit status publishing.
 - **Native Workspace Viewer (`prumo-viewer`)**:
   - Rust-based high-performance workspace viewer with extension architecture (ADR 021), unified command palette, diff viewer, git services, editor intelligence, terminal, follow mode, and run observability.
+- **Workforce System Expansion**:
+  - Expanded canonical workforce registry with 8 specialized visual, design, and UI agents (`advertising-designer`, `brand-designer`, `creative-director`, `motion-designer`, `prototyper`, `svg-artist`, `ui-component-engineer`, `visual-identity-auditor`).
+  - Added 16 new design and visual capability skills covering color science, design psychology, semiotics, motion libraries, generative SVG, responsive architecture, and typography systems conforming to schema v3 and DTCG design tokens.
 
 - **opencode is a model provider** (`--provider opencode`): the turn is delegated to the opencode CLI, which runs it with its own tools and its own authentication — including the models it serves for free — so a real agent runs with no api-key of ours. The delegation is declared (`ToolCalls: false`), never papered over. The wire format was read from the installed binary, not guessed (GAP-093).
 - **First-run offer**: the client checks for opencode once and, only when nothing is configured, offers to install it (automatic, via npm), configure an api-key (variables printed, no secret written), or wait (GAP-094).

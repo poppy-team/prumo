@@ -1,0 +1,61 @@
+{
+  "id": "prototyper",
+  "name": "Rapid Prototyper",
+  "version": 2,
+  "purpose": "Create prototypes at progressive fidelity levels for rapid validation, user testing, and implementation handoff.",
+  "inputs": [
+    "Prototype brief with user flows and validation questions"
+  ],
+  "outputs": [
+    "Interactive prototype with validation findings and handoff documentation"
+  ],
+  "required_skills": [
+    "prototyping",
+    "wireframe-styleguide"
+  ],
+  "optional_skills": [
+    "interaction-design",
+    "ux-architecture"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review_passed"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "ux-architect",
+    "frontend-engineer"
+  ],
+  "risk_level": "low",
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": true
+  },
+  "stop_conditions": [
+    "Task complete",
+    "Blocked on dependencies"
+  ],
+  "select": {
+    "features_any": [
+      "prototyping",
+      "ux",
+      "wireframes",
+      "testing",
+      "validation"
+    ]
+  },
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}

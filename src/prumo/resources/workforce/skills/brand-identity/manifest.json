@@ -1,0 +1,34 @@
+{
+  "id": "brand-identity",
+  "name": "Brand Identity Design & Governance",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design, document, and govern comprehensive brand visual identity systems, ensuring consistency and scalability across platforms.",
+  "risk_level": "medium",
+  "modes": ["design", "review", "audit", "documentation"],
+  "inputs": ["brand strategy", "creative brief", "existing assets"],
+  "outputs": ["brand guidelines", "logo system", "color palette", "typography system", "audit report"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/brand-identity-guide.md"],
+  "templates": ["templates/brand-guidelines-spec.md"],
+  "checks": ["checks/brand-identity-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/brand-audit-example.md"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["brand guidelines are approved", "audit finds zero critical violations"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["brand", "identity", "logo"]
+  },
+  "requires_any": [],
+  "tools": []
+}

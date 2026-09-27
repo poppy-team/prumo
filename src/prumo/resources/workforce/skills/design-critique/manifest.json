@@ -1,0 +1,34 @@
+{
+  "id": "design-critique",
+  "name": "Structured Design Critique & Review Methodology",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Provide structured frameworks, criteria-based evaluation, and actionable feedback protocols for formal design critiques and review sessions.",
+  "risk_level": "low",
+  "modes": ["review", "audit", "design"],
+  "inputs": ["Design Mockups", "Prototypes", "Design Specs", "Figma Links", "Context/Goals"],
+  "outputs": ["Critique Report", "Feedback Log", "Decision Log"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/design-critique-guide.md"],
+  "templates": ["templates/design-critique-report.md"],
+  "checks": ["checks/design-critique-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/critique-session-example.md"],
+  "required_evidence": ["review"],
+  "stop_conditions": ["Critique report completed", "Feedback delivered and documented"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["design-review", "feedback"]
+  },
+  "requires_any": [],
+  "tools": []
+}

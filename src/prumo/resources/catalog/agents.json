@@ -62,6 +62,67 @@
       ]
     },
     {
+      "id": "advertising-designer",
+      "name": "Advertising & Campaign Designer",
+      "version": 2,
+      "purpose": "Design advertising materials and marketing campaigns using AIDA model, visual persuasion, and conversion-optimized layouts across digital and print channels.",
+      "inputs": [
+        "Campaign brief with objectives, target audience, and media format specifications"
+      ],
+      "outputs": [
+        "Advertising designs with AIDA analysis and conversion optimization"
+      ],
+      "required_skills": [
+        "advertising-design",
+        "marketing-collateral"
+      ],
+      "optional_skills": [
+        "layout-patterns",
+        "visual-communication",
+        "brand-identity"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 1,
+      "handoff_to": [
+        "frontend-engineer",
+        "brand-designer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": false
+      },
+      "stop_conditions": [
+        "Campaign materials complete",
+        "Blocked on brand assets"
+      ],
+      "select": {
+        "features_any": [
+          "advertising",
+          "marketing",
+          "campaign",
+          "conversion"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
+    },
+    {
       "id": "architect",
       "name": "Architect",
       "version": 2,
@@ -177,6 +238,67 @@
       ]
     },
     {
+      "id": "brand-designer",
+      "name": "Brand Designer",
+      "version": 2,
+      "purpose": "Design and govern brand identity systems including logo architecture, color palettes, typography, imagery style, and cross-touchpoint consistency.",
+      "inputs": [
+        "Brand strategy with positioning, values, and personality attributes"
+      ],
+      "outputs": [
+        "Complete brand identity guidelines and asset specifications"
+      ],
+      "required_skills": [
+        "brand-identity",
+        "color-science",
+        "typography-system"
+      ],
+      "optional_skills": [
+        "visual-reference-research",
+        "design-research"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": true,
+      "max_delegation_depth": 2,
+      "handoff_to": [
+        "design-system-engineer",
+        "svg-artist"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": false,
+        "modify_docs": true,
+        "execute_tests": false
+      },
+      "stop_conditions": [
+        "Brand guidelines complete",
+        "Blocked on stakeholder approval"
+      ],
+      "select": {
+        "features_any": [
+          "branding",
+          "brand-identity",
+          "marketing",
+          "visual"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
+    },
+    {
       "id": "compiler-engineer",
       "name": "Compiler Engineer",
       "version": 2,
@@ -232,6 +354,69 @@
         "filesystem.write",
         "process.spawn"
       ]
+    },
+    {
+      "id": "creative-director",
+      "name": "Creative Director",
+      "version": 2,
+      "purpose": "Provide strategic creative direction through aesthetic analysis, structured design critique, cognitive science application, and visual communication strategy.",
+      "inputs": [
+        "Creative brief with project direction and strategic goals"
+      ],
+      "outputs": [
+        "Creative direction strategy with aesthetic analysis and communication hierarchy"
+      ],
+      "required_skills": [
+        "aesthetic-analysis",
+        "design-critique",
+        "design-psychology"
+      ],
+      "optional_skills": [
+        "visual-communication",
+        "brand-identity"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": true,
+      "max_delegation_depth": 3,
+      "handoff_to": [
+        "brand-designer",
+        "ux-architect",
+        "advertising-designer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": false,
+        "modify_docs": true,
+        "execute_tests": false
+      },
+      "stop_conditions": [
+        "Creative strategy approved",
+        "Blocked on stakeholder input"
+      ],
+      "select": {
+        "features_any": [
+          "design",
+          "creative",
+          "strategy",
+          "branding",
+          "ux"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
     },
     {
       "id": "database-engineer",
@@ -1020,6 +1205,67 @@
       ]
     },
     {
+      "id": "motion-designer",
+      "name": "Motion Designer",
+      "version": 2,
+      "purpose": "Design and implement motion systems including animation tokens, spring physics, choreography patterns, and reduced-motion accessibility.",
+      "inputs": [
+        "Motion requirements and interaction patterns requiring animation"
+      ],
+      "outputs": [
+        "Motion tokens, transition primitives, and reduced-motion implementations"
+      ],
+      "required_skills": [
+        "motion-library",
+        "interaction-design"
+      ],
+      "optional_skills": [
+        "responsive-design"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 1,
+      "handoff_to": [
+        "frontend-engineer",
+        "accessibility-reviewer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Motion system complete",
+        "Blocked on framework constraints"
+      ],
+      "select": {
+        "features_any": [
+          "motion",
+          "animation",
+          "interaction",
+          "transitions"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
+    },
+    {
       "id": "networking-engineer",
       "name": "Networking Engineer",
       "version": 2,
@@ -1144,6 +1390,68 @@
         "filesystem.write",
         "process.spawn"
       ]
+    },
+    {
+      "id": "prototyper",
+      "name": "Rapid Prototyper",
+      "version": 2,
+      "purpose": "Create prototypes at progressive fidelity levels for rapid validation, user testing, and implementation handoff.",
+      "inputs": [
+        "Prototype brief with user flows and validation questions"
+      ],
+      "outputs": [
+        "Interactive prototype with validation findings and handoff documentation"
+      ],
+      "required_skills": [
+        "prototyping",
+        "wireframe-styleguide"
+      ],
+      "optional_skills": [
+        "interaction-design",
+        "ux-architecture"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 1,
+      "handoff_to": [
+        "ux-architect",
+        "frontend-engineer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Prototype validated",
+        "Blocked on user feedback"
+      ],
+      "select": {
+        "features_any": [
+          "prototyping",
+          "ux",
+          "wireframes",
+          "testing",
+          "validation"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
     },
     {
       "id": "quality-reviewer",
@@ -1551,6 +1859,69 @@
       ]
     },
     {
+      "id": "svg-artist",
+      "name": "SVG Artist & Icon Engineer",
+      "version": 2,
+      "purpose": "Create, optimize, and govern SVG assets including icon libraries, generative art, and vector illustrations with accessibility and performance optimization.",
+      "inputs": [
+        "SVG/icon brief with grid constraints and visual specifications"
+      ],
+      "outputs": [
+        "Optimized, accessible SVG assets and icon library"
+      ],
+      "required_skills": [
+        "svg-engineering",
+        "icon-system"
+      ],
+      "optional_skills": [
+        "generative-svg-art",
+        "design-system"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "review",
+        "test"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 1,
+      "handoff_to": [
+        "frontend-engineer",
+        "design-system-engineer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": false
+      },
+      "stop_conditions": [
+        "SVG assets complete and optimized",
+        "Blocked on design source files"
+      ],
+      "select": {
+        "features_any": [
+          "svg",
+          "icons",
+          "graphics",
+          "vector",
+          "illustration"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
+    },
+    {
       "id": "systems-architect",
       "name": "Systems Architect",
       "version": 2,
@@ -1729,6 +2100,70 @@
       ]
     },
     {
+      "id": "ui-component-engineer",
+      "name": "UI Component Engineer",
+      "version": 2,
+      "purpose": "Design and implement reusable, accessible, token-bound UI components following Atomic Design, compound component patterns, and strict design system contracts.",
+      "inputs": [
+        "Component specification with props, states, and design tokens"
+      ],
+      "outputs": [
+        "Production-ready UI components with tests and documentation"
+      ],
+      "required_skills": [
+        "ui-implementation",
+        "component-specification",
+        "design-system"
+      ],
+      "optional_skills": [
+        "accessibility",
+        "responsive-design",
+        "motion-library"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.spawn"
+      ],
+      "required_evidence": [
+        "test",
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 1,
+      "handoff_to": [
+        "accessibility-reviewer",
+        "reviewer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": true,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Components pass all gates",
+        "Blocked on design tokens"
+      ],
+      "select": {
+        "features_any": [
+          "components",
+          "ui",
+          "design-system",
+          "frontend"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
+    },
+    {
       "id": "ux-architect",
       "name": "UX Architect",
       "version": 2,
@@ -1786,6 +2221,69 @@
         "filesystem.read",
         "filesystem.write"
       ]
+    },
+    {
+      "id": "visual-identity-auditor",
+      "name": "Visual Identity Auditor",
+      "version": 2,
+      "purpose": "Audit visual consistency across touchpoints, verifying brand compliance, color accuracy, typography usage, iconography coherence, and design token adherence.",
+      "inputs": [
+        "Audit scope covering touchpoints, brand assets, and interface materials"
+      ],
+      "outputs": [
+        "Visual identity audit report with findings and recommendations"
+      ],
+      "required_skills": [
+        "visual-qa",
+        "brand-identity",
+        "color-science"
+      ],
+      "optional_skills": [
+        "typography-system",
+        "design-critique",
+        "aesthetic-analysis"
+      ],
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+      "required_evidence": [
+        "review"
+      ],
+      "may_delegate": false,
+      "max_delegation_depth": 1,
+      "handoff_to": [
+        "brand-designer",
+        "design-system-engineer"
+      ],
+      "risk_level": "low",
+      "review_requirement": "none",
+      "permissions": {
+        "write_code": false,
+        "modify_docs": true,
+        "execute_tests": true
+      },
+      "stop_conditions": [
+        "Audit complete",
+        "Blocked on brand guidelines"
+      ],
+      "select": {
+        "features_any": [
+          "audit",
+          "visual",
+          "brand",
+          "quality",
+          "consistency"
+        ]
+      },
+      "provenance": {
+        "origin": "framework",
+        "license": "MIT",
+        "source": "prumo",
+        "version": "0.4.0",
+        "checksum": "",
+        "modified": "2026-09-27"
+      }
     }
   ]
 }

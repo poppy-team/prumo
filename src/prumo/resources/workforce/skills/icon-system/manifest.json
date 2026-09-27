@@ -1,0 +1,34 @@
+{
+  "id": "icon-system",
+  "name": "Icon System Design & Governance",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design, document, and govern a scalable, accessible, and optically balanced icon system.",
+  "risk_level": "low",
+  "modes": ["design", "implementation", "review", "documentation"],
+  "inputs": ["Design requirements", "Brand guidelines", "Platform constraints"],
+  "outputs": ["Icon grid specifications", "SVG assets", "Component library", "Governance rules"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write", "process.spawn"],
+  "references": ["references/icon-system-guide.md"],
+  "templates": ["templates/icon-spec.md"],
+  "checks": ["checks/icon-system-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/icon-grid-spec.md"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Icons are optically balanced, SVGO optimized, accessible, and versioned."],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["ui-design", "design-system", "iconography"]
+  },
+  "requires_any": [],
+  "tools": []
+}

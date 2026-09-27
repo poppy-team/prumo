@@ -11,8 +11,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
+
+var claimSeq uint64
 
 // LockRecord is what the lock file holds.
 //
@@ -74,7 +77,7 @@ func AcquireLock(storeDir string) (func(), error) {
 	// exists and is empty, and a second daemon arriving in that window reads an
 	// unreadable lock and takes it over — so two can win. link is atomic and
 	// fails when the target exists, so the lock never exists without its content.
-	staging := path + ".claim." + strconv.Itoa(os.Getpid())
+	staging := fmt.Sprintf("%s.claim.%d.%d", path, os.Getpid(), atomic.AddUint64(&claimSeq, 1))
 	if err := os.WriteFile(staging, data, 0o644); err != nil {
 		return nil, err
 	}
@@ -112,7 +115,7 @@ func AcquireLock(storeDir string) (func(), error) {
 // takeOver replaces a lock that is no longer held. The rename is atomic, so a
 // competing takeover cannot interleave into a half-written file.
 func takeOver(path string, data []byte) error {
-	tmp := path + ".takeover"
+	tmp := fmt.Sprintf("%s.takeover.%d.%d", path, os.Getpid(), atomic.AddUint64(&claimSeq, 1))
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
 		return err
 	}

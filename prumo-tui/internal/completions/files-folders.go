@@ -96,7 +96,6 @@ func (cg *filesAndFoldersContextGroup) getFiles(query string) ([]string, error) 
 
 		// Case 2: Only rg available
 	} else if cmdRg != nil {
-		logging.Debug("Using Ripgrep with fuzzy match fallback for file completions")
 		var rgOut bytes.Buffer
 		var rgErr bytes.Buffer
 		cmdRg.Stdout = &rgOut
@@ -129,7 +128,6 @@ func (cg *filesAndFoldersContextGroup) getFiles(query string) ([]string, error) 
 
 		// Case 3: Only fzf available
 	} else if cmdFzf != nil {
-		logging.Debug("Using FZF with doublestar fallback for file completions")
 		files, _, err := fileutil.GlobWithDoublestar("**/*", ".", 0)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list files for fzf: %w", err)
@@ -165,7 +163,6 @@ func (cg *filesAndFoldersContextGroup) getFiles(query string) ([]string, error) 
 
 		// Case 4: Fallback to doublestar with fuzzy match
 	} else {
-		logging.Debug("Using doublestar with fuzzy match for file completions")
 		allFiles, _, err := fileutil.GlobWithDoublestar("**/*", ".", 0)
 		if err != nil {
 			return nil, fmt.Errorf("failed to glob files: %w", err)

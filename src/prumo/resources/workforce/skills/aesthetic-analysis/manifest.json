@@ -1,0 +1,37 @@
+{
+  "id": "aesthetic-analysis",
+  "name": "Aesthetic Movement Analysis & Trend Evaluation",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Analyze digital design aesthetics history, movement characteristics, brand alignment evaluation, and accessibility implications.",
+  "risk_level": "low",
+  "modes": ["design", "review", "research"],
+  "inputs": ["ui_designs", "brand_guidelines", "target_audience_demographics"],
+  "outputs": ["aesthetic_evaluation_report", "brand_alignment_score", "accessibility_impact_analysis"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/aesthetic-analysis-guide.md"],
+  "templates": ["templates/aesthetic-evaluation.md"],
+  "checks": ["checks/aesthetic-analysis-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/aesthetic-comparison.md"],
+  "required_evidence": ["review", "documentation"],
+  "stop_conditions": [
+    "Aesthetic evaluation is complete and alignment scores are formulated",
+    "Clear accessibility blockers are identified for a given aesthetic trend"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["design_system", "brand_identity", "ui_overhaul"]
+  },
+  "requires_any": [],
+  "tools": []
+}

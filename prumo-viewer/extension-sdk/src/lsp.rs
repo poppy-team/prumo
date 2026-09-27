@@ -330,9 +330,22 @@ impl LspClient {
         if let Some(path) = std::env::var_os("PATH") {
             command.env("PATH", path);
         }
-        let mut child = command
-            .spawn()
-            .map_err(|error| format!("could not start language server: {error}"))?;
+        let mut child = {
+            let mut attempts = 0;
+            loop {
+                match command.spawn() {
+                    Ok(child) => break child,
+                    Err(error) => {
+                        if attempts < 10 && error.raw_os_error() == Some(26) {
+                            attempts += 1;
+                            thread::sleep(Duration::from_millis(10));
+                            continue;
+                        }
+                        return Err(format!("could not start language server: {error}"));
+                    }
+                }
+            }
+        };
         let stdin = child
             .stdin
             .take()
