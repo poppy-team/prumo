@@ -1,0 +1,34 @@
+{
+  "id": "motion-library",
+  "name": "Motion Design Library & Animation System",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Define and implement a comprehensive motion design library, focusing on spring physics, semantic easing, accessibility (reduced-motion), and performant animations.",
+  "risk_level": "medium",
+  "modes": ["design", "implementation", "review"],
+  "inputs": ["ui_components", "design_tokens", "interaction_specifications"],
+  "outputs": ["motion_tokens", "reusable_animation_primitives", "choreography_patterns", "performance_reports"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/motion-design-guide.md"],
+  "templates": ["templates/motion-spec.md"],
+  "checks": ["checks/motion-library-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/motion-tokens.json"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Motion tokens are fully defined", "All animations run at 60fps", "Reduced motion support is implemented for all animated components"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["ui", "animation", "motion", "design_system"]
+  },
+  "requires_any": [],
+  "tools": []
+}

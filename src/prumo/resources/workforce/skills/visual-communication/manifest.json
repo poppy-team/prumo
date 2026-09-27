@@ -1,0 +1,54 @@
+{
+  "id": "visual-communication",
+  "name": "Visual Communication Theory & Semiotics",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Apply visual hierarchy, semiotics, visual rhetoric, information design, and data visualization principles to communicate effectively through design.",
+  "risk_level": "low",
+  "modes": ["design", "review", "audit"],
+  "inputs": [
+    "Design mockups",
+    "Information architecture",
+    "Content strategy",
+    "Brand guidelines",
+    "Data sets for visualization"
+  ],
+  "outputs": [
+    "Visual hierarchy audits",
+    "Data visualization specifications",
+    "Iconography specifications",
+    "Visual communication strategy"
+  ],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/visual-communication-guide.md"],
+  "templates": ["templates/visual-strategy-spec.md"],
+  "checks": ["checks/visual-communication-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/visual-hierarchy-audit.md"],
+  "required_evidence": ["review"],
+  "stop_conditions": [
+    "Visual hierarchy is ambiguous",
+    "Data visualization misrepresents the data",
+    "Symbols/icons lack clear signifier-signified relationships"
+  ],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": [
+      "ui-design",
+      "ux-research",
+      "data-visualization",
+      "information-design"
+    ]
+  },
+  "requires_any": [],
+  "tools": []
+}

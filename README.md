@@ -30,6 +30,7 @@ Prumo v0.6 is a pure Go distribution (ADR 002).
 - Model provider integration: OpenAI-compatible, Anthropic (with prompt caching), DeepSeek (with reasoning streams), and OpenCode.
 - SCM integration supporting GitHub (with GitHub Checks API evidence publishing) and GitLab (pipelines and commit status).
 - High-performance Rust-based Native Workspace Viewer (`prumo-viewer`) with extension ecosystem.
+- Canonical Workforce registry & catalog with specialized engineering, architecture, low-level systems, UI/UX, brand identity, motion design, and rapid prototyping agents.
 - Machine-readable JSON envelopes for automation and harness integrations.
 - Conformance tests comparing Go behavior with golden specification baselines.
 - Portable installation state, connector ownership, setup, and safe uninstall.

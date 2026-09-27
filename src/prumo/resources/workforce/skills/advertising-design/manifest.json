@@ -1,0 +1,34 @@
+{
+  "id": "advertising-design",
+  "name": "Advertising Design & Visual Persuasion",
+  "version": 2,
+  "schema_version": 3,
+  "purpose": "Design visually persuasive, high-conversion advertising creatives and layouts applying the AIDA model, visual hierarchy, and rigorous A/B testing methodologies.",
+  "risk_level": "medium",
+  "modes": ["design", "review", "research"],
+  "inputs": ["Creative briefs", "Copy drafts", "Brand guidelines", "Target audience profiles"],
+  "outputs": ["Ad layout designs", "Design specifications", "A/B testing plans", "Visual assets (or specs)"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/advertising-design-guide.md"],
+  "templates": ["templates/ad-design-spec.md"],
+  "checks": ["checks/advertising-design-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/aida-campaign-example.md"],
+  "required_evidence": ["review", "test"],
+  "stop_conditions": ["Design violates brand guidelines", "CTA is obscured or low contrast", "Hypotheses for A/B testing lack clear single variables"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["advertising", "design", "conversion", "ab-testing", "marketing"]
+  },
+  "requires_any": [],
+  "tools": []
+}

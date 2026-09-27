@@ -1,0 +1,34 @@
+{
+  "id": "color-science",
+  "name": "Color Science for Design Systems",
+  "version": 1,
+  "schema_version": 3,
+  "purpose": "Apply scientifically rigorous, perceptually uniform color spaces (OKLCH, OKLAB) and contrast algorithms (APCA, WCAG 2.2) to generate, validate, and structure design system palettes and tokens.",
+  "risk_level": "low",
+  "modes": ["design", "audit", "implementation", "documentation"],
+  "inputs": ["brand colors", "target contrast ratios", "accessibility requirements", "UI requirements"],
+  "outputs": ["OKLCH palettes", "CSS custom properties", "color audit reports", "gamut mapping fallback strategies"],
+  "requires": [],
+  "conflicts": [],
+  "capabilities": ["filesystem.read", "filesystem.write"],
+  "references": ["references/color-science-guide.md"],
+  "templates": ["templates/color-audit-report.md"],
+  "checks": ["checks/color-science-checklist.md"],
+  "scripts": ["scripts/verify.sh"],
+  "examples": ["examples/oklch-palette.json"],
+  "required_evidence": ["audit", "testing"],
+  "stop_conditions": ["Palette generation is fully systematic", "All contrast ratios meet target WCAG/APCA levels", "Out-of-gamut fallbacks are handled"],
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  },
+  "select": {
+    "features_any": ["design-systems", "css-color-4", "accessibility"]
+  },
+  "requires_any": [],
+  "tools": []
+}

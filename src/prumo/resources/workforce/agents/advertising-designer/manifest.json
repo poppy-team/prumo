@@ -1,0 +1,61 @@
+{
+  "id": "advertising-designer",
+  "name": "Advertising & Campaign Designer",
+  "version": 2,
+  "purpose": "Design advertising materials and marketing campaigns using AIDA model, visual persuasion, and conversion-optimized layouts across digital and print channels.",
+  "inputs": [
+    "Campaign brief with objectives, target audience, and media format specifications"
+  ],
+  "outputs": [
+    "Advertising designs with AIDA analysis and conversion optimization"
+  ],
+  "required_skills": [
+    "advertising-design",
+    "marketing-collateral"
+  ],
+  "optional_skills": [
+    "layout-patterns",
+    "visual-communication",
+    "brand-identity"
+  ],
+  "allowed_capabilities": [
+    "filesystem.read",
+    "filesystem.write"
+  ],
+  "required_evidence": [
+    "review_passed"
+  ],
+  "may_delegate": false,
+  "max_delegation_depth": 0,
+  "handoff_to": [
+    "frontend-engineer",
+    "brand-designer"
+  ],
+  "risk_level": "low",
+  "review_requirement": "none",
+  "permissions": {
+    "write_code": true,
+    "modify_docs": true,
+    "execute_tests": false
+  },
+  "stop_conditions": [
+    "Task complete",
+    "Blocked on dependencies"
+  ],
+  "select": {
+    "features_any": [
+      "advertising",
+      "marketing",
+      "campaign",
+      "conversion"
+    ]
+  },
+  "provenance": {
+    "origin": "framework",
+    "license": "MIT",
+    "source": "prumo",
+    "version": "0.4.0",
+    "checksum": "",
+    "modified": "2026-09-27"
+  }
+}
