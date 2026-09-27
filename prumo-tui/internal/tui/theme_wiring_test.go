@@ -5,6 +5,7 @@ import (
 
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 )
 
@@ -33,6 +34,7 @@ func TestAnUnknownThemeKeepsTheCurrentOne(t *testing.T) {
 	t.Cleanup(func() { _ = theme.SetTheme(previous) })
 	prevCfg := *config.Get()
 	t.Cleanup(func() { config.Set(prevCfg) })
+	t.Cleanup(logging.Clear)
 	if err := theme.SetTheme("prumo"); err != nil {
 		t.Fatalf("cannot select the default palette: %v", err)
 	}

@@ -36,6 +36,12 @@ func (l *LogData) List() []LogMessage {
 	return l.messages
 }
 
+func (l *LogData) Clear() {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	l.messages = l.messages[:0]
+}
+
 var defaultLogData = &LogData{
 	messages: make([]LogMessage, 0),
 	Broker:   pubsub.NewBroker[LogMessage](),
@@ -101,4 +107,9 @@ func Subscribe(ctx context.Context) <-chan pubsub.Event[LogMessage] {
 
 func List() []LogMessage {
 	return defaultLogData.List()
+}
+
+// Clear removes all stored log messages.
+func Clear() {
+	defaultLogData.Clear()
 }

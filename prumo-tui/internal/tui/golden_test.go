@@ -18,6 +18,7 @@ import (
 	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/message"
 	"github.com/raillen/prumo-tui/internal/permission"
 	"github.com/raillen/prumo-tui/internal/pubsub"
@@ -60,6 +61,8 @@ type builder struct {
 
 func newBuilder(t testing.TB, harness *stubHarness) *builder {
 	t.Helper()
+	logging.Clear()
+	t.Cleanup(logging.Clear)
 	prevCfg := *config.Get()
 	t.Cleanup(func() { config.Set(prevCfg) })
 	cfg := prevCfg
