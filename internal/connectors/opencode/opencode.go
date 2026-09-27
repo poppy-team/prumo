@@ -181,7 +181,7 @@ export function onSessionStart(sessionID: string, projectRoot: string): { contex
 
   return {
     contextPrompt: [
-      '[Prumo v0.5] Native OpenCode Harness Active',
+      '[Prumo v0.6] Native OpenCode Harness Active',
       'Follow Lean Progressive Context: smallest sufficient context, pointer over payload.',
       'Treat Prumo as an external CLI utility available in PATH (\'prumo\'). Use \'prumo <command>\' for project operations. Do not inspect internal framework development source code.',
       'Active Entrypoint:',
