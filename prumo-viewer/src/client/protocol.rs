@@ -25,7 +25,10 @@ impl Display for ClientError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnsupportedPlatform => {
-                write!(formatter, "local Prumo protocol requires Unix sockets or TCP")
+                write!(
+                    formatter,
+                    "local Prumo protocol requires Unix sockets or TCP"
+                )
             }
             Self::Connect { path, message } => {
                 write!(formatter, "cannot connect to {}: {message}", path.display())
@@ -303,7 +306,11 @@ impl PrumoClient {
             .and_then(Value::as_str)
             .ok_or_else(|| ClientError::InvalidResponse("diff content is missing".to_string()))?
             .to_string();
-        Ok(DaemonDiff { path, kind, content })
+        Ok(DaemonDiff {
+            path,
+            kind,
+            content,
+        })
     }
 
     pub fn subscribe(
@@ -360,11 +367,12 @@ impl PrumoClient {
                 }
                 if let Ok(msg) = serde_json::from_str::<Value>(&line)
                     && msg.get("op").and_then(Value::as_str) == Some("event")
-                        && let Some(event_val) = msg.get("event")
-                            && let Ok(event) = serde_json::from_value::<DaemonEvent>(event_val.clone())
-                                && sender.send(event).is_err() {
-                                    break;
-                                }
+                    && let Some(event_val) = msg.get("event")
+                    && let Ok(event) = serde_json::from_value::<DaemonEvent>(event_val.clone())
+                    && sender.send(event).is_err()
+                {
+                    break;
+                }
                 line.clear();
             }
         });
@@ -389,9 +397,11 @@ impl PrumoClient {
         use std::io::{BufRead, BufReader, Read, Write};
 
         let mut stream =
-            connect_stream(&self.socket_path, Some(self.timeout)).map_err(|error| ClientError::Connect {
-                path: self.socket_path.clone(),
-                message: error.to_string(),
+            connect_stream(&self.socket_path, Some(self.timeout)).map_err(|error| {
+                ClientError::Connect {
+                    path: self.socket_path.clone(),
+                    message: error.to_string(),
+                }
             })?;
         stream
             .set_read_timeout(Some(self.timeout))
@@ -473,16 +483,23 @@ impl ProtocolStream {
     }
 }
 
-fn connect_stream(path: &Path, timeout: Option<Duration>) -> Result<ProtocolStream, std::io::Error> {
+fn connect_stream(
+    path: &Path,
+    timeout: Option<Duration>,
+) -> Result<ProtocolStream, std::io::Error> {
     let path_str = path.to_string_lossy();
     if path_str.contains(':') && !path_str.starts_with('/') {
         let addr = path_str.trim_start_matches("tcp://");
         let stream = if let Some(t) = timeout {
-            let addrs: Vec<std::net::SocketAddr> = std::net::ToSocketAddrs::to_socket_addrs(addr)?.collect();
+            let addrs: Vec<std::net::SocketAddr> =
+                std::net::ToSocketAddrs::to_socket_addrs(addr)?.collect();
             if let Some(first) = addrs.first() {
                 std::net::TcpStream::connect_timeout(first, t)?
             } else {
-                return Err(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no socket addresses"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::AddrNotAvailable,
+                    "no socket addresses",
+                ));
             }
         } else {
             std::net::TcpStream::connect(addr)?
@@ -504,11 +521,15 @@ fn connect_stream(path: &Path, timeout: Option<Duration>) -> Result<ProtocolStre
             "127.0.0.1:9099"
         };
         let stream = if let Some(t) = timeout {
-            let addrs: Vec<std::net::SocketAddr> = std::net::ToSocketAddrs::to_socket_addrs(addr)?.collect();
+            let addrs: Vec<std::net::SocketAddr> =
+                std::net::ToSocketAddrs::to_socket_addrs(addr)?.collect();
             if let Some(first) = addrs.first() {
                 std::net::TcpStream::connect_timeout(first, t)?
             } else {
-                return Err(std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "no socket addresses"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::AddrNotAvailable,
+                    "no socket addresses",
+                ));
             }
         } else {
             std::net::TcpStream::connect(addr)?
@@ -658,7 +679,9 @@ mod tests {
         });
 
         let client = PrumoClient::new(Some(socket_path), directory.path());
-        client.approve("R-1", "req-1", Some("fp-sha256-1234")).unwrap();
+        client
+            .approve("R-1", "req-1", Some("fp-sha256-1234"))
+            .unwrap();
         let diff = client.diff("R-1", "src/main.rs").unwrap();
         server.join().unwrap();
 

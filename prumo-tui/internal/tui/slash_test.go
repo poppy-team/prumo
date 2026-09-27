@@ -14,7 +14,7 @@ import (
 
 func newTestApp(t *testing.T) (*app.App, *appModel) {
 	t.Helper()
-	config.Set(config.Config{WorkingDir: t.TempDir(), Provider: "fake"})
+	config.Set(config.Config{WorkingDir: t.TempDir(), Provider: "fake", Onboarded: true})
 	t.Setenv("PRUMO_TUI_CONFIG_DIR", t.TempDir())
 
 	application := app.New(app.Options{

@@ -8,6 +8,7 @@ import (
 
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/commands"
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
 )
@@ -94,6 +95,7 @@ func TestACommandWithArgumentsAsksForThem(t *testing.T) {
 // the dialog existed for and never did.
 func TestSubmittingTheArgumentsSendsTheFilledPrompt(t *testing.T) {
 	t.Setenv("PRUMO_TUI_CONFIG_DIR", t.TempDir())
+	config.Set(config.Config{WorkingDir: t.TempDir(), Provider: "fake", Onboarded: true})
 	writeUserCommand(t, "review.md", "---\nargs: [area]\n---\nReview the {{area}} area.\n")
 
 	model, _ := New(app.New(app.Options{Client: &stubHarness{}})).(*appModel)
@@ -119,6 +121,7 @@ func TestSubmittingTheArgumentsSendsTheFilledPrompt(t *testing.T) {
 // prompt nobody finished is not a message.
 func TestADismissedDialogSendsNothing(t *testing.T) {
 	t.Setenv("PRUMO_TUI_CONFIG_DIR", t.TempDir())
+	config.Set(config.Config{WorkingDir: t.TempDir(), Provider: "fake", Onboarded: true})
 
 	model, _ := New(app.New(app.Options{Client: &stubHarness{}})).(*appModel)
 	_, cmd := model.Update(dialog.CloseMultiArgumentsDialogMsg{Submit: false, CommandID: "user:review"})

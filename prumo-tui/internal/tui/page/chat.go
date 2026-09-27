@@ -266,16 +266,16 @@ func NewChatPage(app *app.App) tea.Model {
 	)
 
 	return &chatPage{
-		app:                  app,
-		editor:               editorContainer,
-		editorCmp:            editorCmp,
-		messages:             messagesContainer,
-		sidebar:              sidebarContainer,
-		sidebarCmp:           sidebarCmp,
-		showSidebar:          false,
-		completionDialog:     completionDialog,
-		filesProvider:        filesProvider,
-		slashProvider:        slashProvider,
+		app:              app,
+		editor:           editorContainer,
+		editorCmp:        editorCmp,
+		messages:         messagesContainer,
+		sidebar:          sidebarContainer,
+		sidebarCmp:       sidebarCmp,
+		showSidebar:      false,
+		completionDialog: completionDialog,
+		filesProvider:    filesProvider,
+		slashProvider:    slashProvider,
 		layout: layout.NewSplitPane(
 			layout.WithLeftPanel(messagesContainer),
 			layout.WithBottomPanel(editorContainer),

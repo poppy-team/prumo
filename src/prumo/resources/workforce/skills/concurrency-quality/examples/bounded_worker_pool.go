@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrPoolClosed   = errors.New("worker pool is closed")
+	ErrPoolClosed     = errors.New("worker pool is closed")
 	ErrQueueSaturated = errors.New("queue is saturated (backpressure)")
 )
 
@@ -23,8 +23,8 @@ type WorkerMetrics struct {
 	TasksCompleted uint64
 	_pad1          [56]byte // 8 + 56 = 64 bytes (Cache Line 1)
 
-	TasksFailed    uint64
-	_pad2          [56]byte // 8 + 56 = 64 bytes (Cache Line 2)
+	TasksFailed uint64
+	_pad2       [56]byte // 8 + 56 = 64 bytes (Cache Line 2)
 
 	PanicsRecovered uint64
 	_pad3           [56]byte // 8 + 56 = 64 bytes (Cache Line 3)

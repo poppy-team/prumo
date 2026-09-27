@@ -254,76 +254,82 @@ impl Component for SettingsModal {
                                     .width(Size::flex(1.))
                                     .height(Size::fill())
                                     .padding(Gaps::new_all(16.))
-                                    .child(ScrollView::new().direction(torin::prelude::Direction::Vertical).child(
-                                        match *active_category.read() {
-                                            SettingsCategory::Editor => render_editor_tab(
-                                                whitespace_state,
-                                                line_numbers_state,
-                                                word_wrap_state,
-                                                font_size_state,
-                                                tab_size_state,
-                                                poll_state,
-                                                socket_state,
-                                                shell_state,
-                                            )
-                                            .into_element(),
-                                            SettingsCategory::Agent => render_agent_tab(
-                                                &colors,
-                                                state,
-                                                client.clone(),
-                                                provider_state,
-                                                model_state,
-                                                api_key_state,
-                                                base_url_state,
-                                                acf_token_state,
-                                                available_models,
-                                                &provider,
-                                            )
-                                            .into_element(),
-                                            SettingsCategory::Appearance => render_appearance_tab(
-                                                &colors,
-                                                state,
-                                                current_theme,
-                                                &config,
-                                                selected_theme,
-                                                show_create_theme,
-                                                new_theme_name,
-                                                new_theme_id,
-                                                new_theme_base,
-                                                new_theme_accent,
-                                                new_theme_bg,
-                                                new_theme_surface,
-                                                new_theme_border,
-                                                new_theme_text,
-                                            )
-                                            .into_element(),
-                                            SettingsCategory::Extensions => render_extensions_tab(
-                                                &colors,
-                                                state,
-                                                workspace_root.clone(),
-                                                extensions,
-                                                extension_errors,
-                                                extension_filter,
-                                                show_create_ext,
-                                                new_ext_id,
-                                                new_ext_name,
-                                                new_ext_desc,
-                                                new_ext_publisher,
-                                                new_ext_kind,
-                                            )
-                                            .into_element(),
-                                            SettingsCategory::Json => render_json_tab(
-                                                &colors,
-                                                state,
-                                                workspace_root.clone(),
-                                                json_scope,
-                                                raw_json_state,
-                                                user_json_path.clone(),
-                                                ws_json_path.clone(),
-                                            )
-                                            .into_element(),
-                                        },
-                                    )),
+                                    .child(
+                                        ScrollView::new()
+                                            .direction(torin::prelude::Direction::Vertical)
+                                            .child(match *active_category.read() {
+                                                SettingsCategory::Editor => render_editor_tab(
+                                                    whitespace_state,
+                                                    line_numbers_state,
+                                                    word_wrap_state,
+                                                    font_size_state,
+                                                    tab_size_state,
+                                                    poll_state,
+                                                    socket_state,
+                                                    shell_state,
+                                                )
+                                                .into_element(),
+                                                SettingsCategory::Agent => render_agent_tab(
+                                                    &colors,
+                                                    state,
+                                                    client.clone(),
+                                                    provider_state,
+                                                    model_state,
+                                                    api_key_state,
+                                                    base_url_state,
+                                                    acf_token_state,
+                                                    available_models,
+                                                    &provider,
+                                                )
+                                                .into_element(),
+                                                SettingsCategory::Appearance => {
+                                                    render_appearance_tab(
+                                                        &colors,
+                                                        state,
+                                                        current_theme,
+                                                        &config,
+                                                        selected_theme,
+                                                        show_create_theme,
+                                                        new_theme_name,
+                                                        new_theme_id,
+                                                        new_theme_base,
+                                                        new_theme_accent,
+                                                        new_theme_bg,
+                                                        new_theme_surface,
+                                                        new_theme_border,
+                                                        new_theme_text,
+                                                    )
+                                                    .into_element()
+                                                }
+                                                SettingsCategory::Extensions => {
+                                                    render_extensions_tab(
+                                                        &colors,
+                                                        state,
+                                                        workspace_root.clone(),
+                                                        extensions,
+                                                        extension_errors,
+                                                        extension_filter,
+                                                        show_create_ext,
+                                                        new_ext_id,
+                                                        new_ext_name,
+                                                        new_ext_desc,
+                                                        new_ext_publisher,
+                                                        new_ext_kind,
+                                                    )
+                                                    .into_element()
+                                                }
+                                                SettingsCategory::Json => render_json_tab(
+                                                    &colors,
+                                                    state,
+                                                    workspace_root.clone(),
+                                                    json_scope,
+                                                    raw_json_state,
+                                                    user_json_path.clone(),
+                                                    ws_json_path.clone(),
+                                                )
+                                                .into_element(),
+                                            }),
+                                    ),
                             ),
                     )
                     // --- MODAL FOOTER ---
@@ -494,24 +500,16 @@ fn render_editor_tab(
                 .width(Size::fill())
                 .horizontal()
                 .spacing(12.)
-                .child(
-                    rect()
-                        .width(Size::flex(1.))
-                        .child(SettingsInput {
-                            label: "Font Size (pt)",
-                            placeholder: "13.0",
-                            value: font_size_state,
-                        }),
-                )
-                .child(
-                    rect()
-                        .width(Size::flex(1.))
-                        .child(SettingsInput {
-                            label: "Tab Size (spaces)",
-                            placeholder: "4",
-                            value: tab_size_state,
-                        }),
-                ),
+                .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                    label: "Font Size (pt)",
+                    placeholder: "13.0",
+                    value: font_size_state,
+                }))
+                .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                    label: "Tab Size (spaces)",
+                    placeholder: "4",
+                    value: tab_size_state,
+                })),
         )
         .child(hairline())
         .child(section_label("Runtime & Terminal"))
@@ -688,27 +686,29 @@ fn render_agent_tab(
                             .border(Border::new().fill(colors.border).width(1.))
                             .corner_radius(CornerRadius::new_all(4.))
                             .padding(Gaps::new_all(4.))
-                            .child(ScrollView::new().direction(torin::prelude::Direction::Vertical).children(
-                                available_models.into_iter().map(|model_name| {
-                                    let m = model_name.clone();
-                                    let mut model_state = model_state;
-                                    Button::new()
-                                        .flat()
-                                        .expanded()
-                                        .height(Size::px(22.))
-                                        .padding(Gaps::new(0., 6., 0., 6.))
-                                        .on_press(move |_| {
-                                            model_state.set(m.clone());
-                                        })
-                                        .child(
-                                            label()
-                                                .color(colors.text_primary)
-                                                .font_size(10.5)
-                                                .text(model_name),
-                                        )
-                                        .into_element()
-                                }),
-                            )),
+                            .child(
+                                ScrollView::new()
+                                    .direction(torin::prelude::Direction::Vertical)
+                                    .children(available_models.into_iter().map(|model_name| {
+                                        let m = model_name.clone();
+                                        let mut model_state = model_state;
+                                        Button::new()
+                                            .flat()
+                                            .expanded()
+                                            .height(Size::px(22.))
+                                            .padding(Gaps::new(0., 6., 0., 6.))
+                                            .on_press(move |_| {
+                                                model_state.set(m.clone());
+                                            })
+                                            .child(
+                                                label()
+                                                    .color(colors.text_primary)
+                                                    .font_size(10.5)
+                                                    .text(model_name),
+                                            )
+                                            .into_element()
+                                    })),
+                            ),
                     )
                 }),
         )
@@ -777,16 +777,13 @@ fn render_appearance_tab(
                                 show_create_theme.set(!*show_create_theme.read());
                             }
                         })
-                        .child(
-                            label()
-                                .color(colors.primary)
-                                .font_size(11.)
-                                .text(if *show_create_theme.read() {
-                                    "Cancel Theme Creator"
-                                } else {
-                                    "+ Create Custom Theme"
-                                }),
-                        ),
+                        .child(label().color(colors.primary).font_size(11.).text(
+                            if *show_create_theme.read() {
+                                "Cancel Theme Creator"
+                            } else {
+                                "+ Create Custom Theme"
+                            },
+                        )),
                 ),
         )
         // THEME CREATOR DRAWER
@@ -814,24 +811,16 @@ fn render_appearance_tab(
                             .width(Size::fill())
                             .horizontal()
                             .spacing(8.)
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Theme Name",
-                                        placeholder: "e.g. Cyberpunk Neon",
-                                        value: new_theme_name,
-                                    }),
-                            )
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Theme ID (slug)",
-                                        placeholder: "e.g. cyberpunk-neon",
-                                        value: new_theme_id,
-                                    }),
-                            ),
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Theme Name",
+                                placeholder: "e.g. Cyberpunk Neon",
+                                value: new_theme_name,
+                            }))
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Theme ID (slug)",
+                                placeholder: "e.g. cyberpunk-neon",
+                                value: new_theme_id,
+                            })),
                     )
                     .child(
                         rect()
@@ -870,57 +859,37 @@ fn render_appearance_tab(
                             .width(Size::fill())
                             .horizontal()
                             .spacing(8.)
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Accent Hex",
-                                        placeholder: "#78a9e8",
-                                        value: new_theme_accent,
-                                    }),
-                            )
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Background Hex",
-                                        placeholder: "#1b1e24",
-                                        value: new_theme_bg,
-                                    }),
-                            )
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Surface Hex",
-                                        placeholder: "#282c35",
-                                        value: new_theme_surface,
-                                    }),
-                            ),
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Accent Hex",
+                                placeholder: "#78a9e8",
+                                value: new_theme_accent,
+                            }))
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Background Hex",
+                                placeholder: "#1b1e24",
+                                value: new_theme_bg,
+                            }))
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Surface Hex",
+                                placeholder: "#282c35",
+                                value: new_theme_surface,
+                            })),
                     )
                     .child(
                         rect()
                             .width(Size::fill())
                             .horizontal()
                             .spacing(8.)
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Border Hex",
-                                        placeholder: "#394152",
-                                        value: new_theme_border,
-                                    }),
-                            )
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Text Hex",
-                                        placeholder: "#dce0e6",
-                                        value: new_theme_text,
-                                    }),
-                            ),
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Border Hex",
+                                placeholder: "#394152",
+                                value: new_theme_border,
+                            }))
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Text Hex",
+                                placeholder: "#dce0e6",
+                                value: new_theme_text,
+                            })),
                     )
                     .child(
                         rect()
@@ -971,10 +940,7 @@ fn render_appearance_tab(
                                                 surface.clone(),
                                             );
                                             tokens.insert("border".to_string(), border.clone());
-                                            tokens.insert(
-                                                "text-primary".to_string(),
-                                                text.clone(),
-                                            );
+                                            tokens.insert("text-primary".to_string(), text.clone());
 
                                             let new_custom = CustomTheme {
                                                 id: tid.clone(),
@@ -1134,16 +1100,13 @@ fn render_extensions_tab(
                                         show_create_ext.set(!*show_create_ext.read());
                                     }
                                 })
-                                .child(
-                                    label()
-                                        .color(colors.primary)
-                                        .font_size(10.5)
-                                        .text(if *show_create_ext.read() {
-                                            "Close Wizard"
-                                        } else {
-                                            "+ New Extension"
-                                        }),
-                                ),
+                                .child(label().color(colors.primary).font_size(10.5).text(
+                                    if *show_create_ext.read() {
+                                        "Close Wizard"
+                                    } else {
+                                        "+ New Extension"
+                                    },
+                                )),
                         ),
                 ),
         )
@@ -1172,24 +1135,16 @@ fn render_extensions_tab(
                             .width(Size::fill())
                             .horizontal()
                             .spacing(8.)
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Extension Name",
-                                        placeholder: "e.g. Workspace Quick Actions",
-                                        value: new_ext_name,
-                                    }),
-                            )
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Extension ID",
-                                        placeholder: "e.g. quick-actions",
-                                        value: new_ext_id,
-                                    }),
-                            ),
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Extension Name",
+                                placeholder: "e.g. Workspace Quick Actions",
+                                value: new_ext_name,
+                            }))
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Extension ID",
+                                placeholder: "e.g. quick-actions",
+                                value: new_ext_id,
+                            })),
                     )
                     .child(SettingsInput {
                         label: "Description",
@@ -1201,15 +1156,11 @@ fn render_extensions_tab(
                             .width(Size::fill())
                             .horizontal()
                             .spacing(8.)
-                            .child(
-                                rect()
-                                    .width(Size::flex(1.))
-                                    .child(SettingsInput {
-                                        label: "Publisher",
-                                        placeholder: "e.g. my-team or local",
-                                        value: new_ext_publisher,
-                                    }),
-                            )
+                            .child(rect().width(Size::flex(1.)).child(SettingsInput {
+                                label: "Publisher",
+                                placeholder: "e.g. my-team or local",
+                                value: new_ext_publisher,
+                            }))
                             .child(
                                 rect()
                                     .width(Size::flex(1.))
@@ -1225,13 +1176,15 @@ fn render_extensions_tab(
                                                 Button::new()
                                                     .flat()
                                                     .compact()
-                                                    .background(if *new_ext_kind.read()
-                                                        == ExtensionTemplateKind::Theme
-                                                    {
-                                                        colors.surface_tertiary
-                                                    } else {
-                                                        Color::TRANSPARENT
-                                                    })
+                                                    .background(
+                                                        if *new_ext_kind.read()
+                                                            == ExtensionTemplateKind::Theme
+                                                        {
+                                                            colors.surface_tertiary
+                                                        } else {
+                                                            Color::TRANSPARENT
+                                                        },
+                                                    )
                                                     .on_press(move |_| {
                                                         new_ext_kind_mut
                                                             .set(ExtensionTemplateKind::Theme)
@@ -1246,13 +1199,15 @@ fn render_extensions_tab(
                                                 Button::new()
                                                     .flat()
                                                     .compact()
-                                                    .background(if *new_ext_kind.read()
-                                                        == ExtensionTemplateKind::Commands
-                                                    {
-                                                        colors.surface_tertiary
-                                                    } else {
-                                                        Color::TRANSPARENT
-                                                    })
+                                                    .background(
+                                                        if *new_ext_kind.read()
+                                                            == ExtensionTemplateKind::Commands
+                                                        {
+                                                            colors.surface_tertiary
+                                                        } else {
+                                                            Color::TRANSPARENT
+                                                        },
+                                                    )
                                                     .on_press(move |_| {
                                                         new_ext_kind_mut
                                                             .set(ExtensionTemplateKind::Commands)
@@ -1267,13 +1222,15 @@ fn render_extensions_tab(
                                                 Button::new()
                                                     .flat()
                                                     .compact()
-                                                    .background(if *new_ext_kind.read()
-                                                        == ExtensionTemplateKind::Process
-                                                    {
-                                                        colors.surface_tertiary
-                                                    } else {
-                                                        Color::TRANSPARENT
-                                                    })
+                                                    .background(
+                                                        if *new_ext_kind.read()
+                                                            == ExtensionTemplateKind::Process
+                                                        {
+                                                            colors.surface_tertiary
+                                                        } else {
+                                                            Color::TRANSPARENT
+                                                        },
+                                                    )
                                                     .on_press(move |_| {
                                                         new_ext_kind_mut
                                                             .set(ExtensionTemplateKind::Process)
@@ -1375,13 +1332,10 @@ fn render_extensions_tab(
             )
         })
         // EXTENSIONS CARDS LIST
-        .child(
-            rect()
-                .width(Size::fill())
-                .vertical()
-                .spacing(8.)
-                .children(if filtered_exts.is_empty() {
-                    vec![rect()
+        .child(rect().width(Size::fill()).vertical().spacing(8.).children(
+            if filtered_exts.is_empty() {
+                vec![
+                    rect()
                         .width(Size::fill())
                         .height(Size::px(60.))
                         .horizontal()
@@ -1393,14 +1347,15 @@ fn render_extensions_tab(
                                 .font_size(12.)
                                 .text("No extensions match the current search filter"),
                         )
-                        .into_element()]
-                } else {
-                    filtered_exts
-                        .into_iter()
-                        .map(|ext| ExtensionCard { record: ext }.into_element())
-                        .collect()
-                }),
-        )
+                        .into_element(),
+                ]
+            } else {
+                filtered_exts
+                    .into_iter()
+                    .map(|ext| ExtensionCard { record: ext }.into_element())
+                    .collect()
+            },
+        ))
 }
 
 // -----------------------------------------------------------------------------

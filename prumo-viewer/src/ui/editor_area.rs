@@ -1632,7 +1632,9 @@ mod tests {
         let spaces = " ".repeat(tab_size);
         let cursor_pos = 12; // after \n
         editor.place_cursor(cursor_pos);
-        let start_byte = editor.rope.char_to_byte(editor.rope.utf16_cu_to_char(cursor_pos));
+        let start_byte = editor
+            .rope
+            .char_to_byte(editor.rope.utf16_cu_to_char(cursor_pos));
         editor.replace_byte_range(start_byte, start_byte, &spaces);
         assert_eq!(editor.rope.to_string(), "fn test() {\n    }");
     }

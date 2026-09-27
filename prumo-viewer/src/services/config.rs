@@ -136,8 +136,7 @@ impl ViewerConfig {
         {
             config.base_url = Some(base_url);
         }
-        if let Some(acf_token) =
-            env_string("ACF_TOKEN").or_else(|| env_string("ANTIGRAVITY_TOKEN"))
+        if let Some(acf_token) = env_string("ACF_TOKEN").or_else(|| env_string("ANTIGRAVITY_TOKEN"))
         {
             config.acf_token = Some(acf_token);
         }
@@ -385,4 +384,3 @@ mod tests {
         assert_eq!(loaded.provider, "gemini");
     }
 }
-

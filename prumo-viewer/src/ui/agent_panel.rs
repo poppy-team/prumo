@@ -2275,7 +2275,15 @@ impl Component for QuickModelPill {
             } else {
                 colors.surface_primary
             })
-            .border(Border::new().fill(if is_open { colors.primary } else { colors.border }).width(1.))
+            .border(
+                Border::new()
+                    .fill(if is_open {
+                        colors.primary
+                    } else {
+                        colors.border
+                    })
+                    .width(1.),
+            )
             .on_press(move |_| {
                 let mut app_state = state.write();
                 let cur = app_state.agent_model_picker_open;
@@ -2379,7 +2387,8 @@ impl Component for ModelPickerPopover {
                 let rows: Vec<Element> = cat_models
                     .into_iter()
                     .map(|preset| {
-                        let is_selected = cur_provider == preset.provider && cur_model == preset.model;
+                        let is_selected =
+                            cur_provider == preset.provider && cur_model == preset.model;
                         let p = preset.provider.to_string();
                         let m = preset.model.to_string();
                         let name = preset.name.to_string();
@@ -2395,7 +2404,15 @@ impl Component for ModelPickerPopover {
                             } else {
                                 Color::TRANSPARENT
                             })
-                            .border(Border::new().fill(if is_selected { colors.primary } else { Color::TRANSPARENT }).width(1.))
+                            .border(
+                                Border::new()
+                                    .fill(if is_selected {
+                                        colors.primary
+                                    } else {
+                                        Color::TRANSPARENT
+                                    })
+                                    .width(1.),
+                            )
                             .horizontal()
                             .main_align(Alignment::space_between())
                             .cross_align(Alignment::center())
@@ -2409,7 +2426,10 @@ impl Component for ModelPickerPopover {
                                     session.model = m.clone();
                                 }
                                 app_state.agent_model_picker_open = false;
-                                app_state.show_notice(NoticeTone::Success, format!("Switched to {name} ({p}/{m})"));
+                                app_state.show_notice(
+                                    NoticeTone::Success,
+                                    format!("Switched to {name} ({p}/{m})"),
+                                );
                             })
                             .child(
                                 rect()
@@ -2422,7 +2442,11 @@ impl Component for ModelPickerPopover {
                                             .cross_align(Alignment::center())
                                             .child(
                                                 label()
-                                                    .color(if is_selected { colors.primary } else { colors.text_primary })
+                                                    .color(if is_selected {
+                                                        colors.primary
+                                                    } else {
+                                                        colors.text_primary
+                                                    })
                                                     .font_size(11.)
                                                     .font_weight(FontWeight::SEMI_BOLD)
                                                     .text(preset.name),
@@ -2501,82 +2525,91 @@ impl Component for ModelPickerPopover {
         // Custom models from workspace if not in presets
         let extra_models: Vec<String> = available_models
             .iter()
-            .filter(|m| !MODEL_PRESETS.iter().any(|p| p.model == *m || &format!("{}/{}", p.provider, p.model) == *m))
+            .filter(|m| {
+                !MODEL_PRESETS
+                    .iter()
+                    .any(|p| p.model == *m || &format!("{}/{}", p.provider, p.model) == *m)
+            })
             .filter(|m| q.is_empty() || m.to_lowercase().contains(&q))
             .cloned()
             .collect();
 
-        let custom_block: Option<Element> = if !extra_models.is_empty() && (tab == "all" || tab == "local") {
-            any_found = true;
-            let rows: Vec<Element> = extra_models
-                .into_iter()
-                .map(|m| {
-                    let is_selected = cur_model == m;
-                    let m_clone = m.clone();
-                    rect()
-                        .width(Size::fill())
-                        .padding(Gaps::new(6., 8., 6., 8.))
-                        .corner_radius(CornerRadius::new_all(5.))
-                        .background(if is_selected {
-                            colors.surface_secondary
-                        } else {
-                            Color::TRANSPARENT
-                        })
-                        .horizontal()
-                        .main_align(Alignment::space_between())
-                        .cross_align(Alignment::center())
-                        .on_press(move |_| {
-                            let mut app_state = state.write();
-                            app_state.config.model = m_clone.clone();
-                            let idx = app_state.active_session_index;
-                            if let Some(session) = app_state.agent_sessions.get_mut(idx) {
-                                session.model = m_clone.clone();
-                            }
-                            app_state.agent_model_picker_open = false;
-                        })
-                        .child(
-                            label()
-                                .color(if is_selected { colors.primary } else { colors.text_primary })
-                                .font_size(11.)
-                                .text(m),
-                        )
-                        .child(if is_selected {
-                            Element::from(
-                                SvgViewer::new(("check", icon("check")))
-                                    .color(colors.primary)
-                                    .width(Size::px(13.))
-                                    .height(Size::px(13.)),
-                            )
-                        } else {
-                            Element::from(label().text(""))
-                        })
-                        .into()
-                })
-                .collect();
-
-            Some(
-                rect()
-                    .width(Size::fill())
-                    .vertical()
-                    .spacing(2.)
-                    .child(
+        let custom_block: Option<Element> =
+            if !extra_models.is_empty() && (tab == "all" || tab == "local") {
+                any_found = true;
+                let rows: Vec<Element> = extra_models
+                    .into_iter()
+                    .map(|m| {
+                        let is_selected = cur_model == m;
+                        let m_clone = m.clone();
                         rect()
                             .width(Size::fill())
-                            .padding(Gaps::new(5., 6., 2., 6.))
+                            .padding(Gaps::new(6., 8., 6., 8.))
+                            .corner_radius(CornerRadius::new_all(5.))
+                            .background(if is_selected {
+                                colors.surface_secondary
+                            } else {
+                                Color::TRANSPARENT
+                            })
+                            .horizontal()
+                            .main_align(Alignment::space_between())
+                            .cross_align(Alignment::center())
+                            .on_press(move |_| {
+                                let mut app_state = state.write();
+                                app_state.config.model = m_clone.clone();
+                                let idx = app_state.active_session_index;
+                                if let Some(session) = app_state.agent_sessions.get_mut(idx) {
+                                    session.model = m_clone.clone();
+                                }
+                                app_state.agent_model_picker_open = false;
+                            })
                             .child(
                                 label()
-                                    .color(colors.text_placeholder)
-                                    .font_size(9.)
-                                    .font_weight(FontWeight::SEMI_BOLD)
-                                    .text("CUSTOM / WORKSPACE MODELS"),
-                            ),
-                    )
-                    .children(rows)
-                    .into(),
-            )
-        } else {
-            None
-        };
+                                    .color(if is_selected {
+                                        colors.primary
+                                    } else {
+                                        colors.text_primary
+                                    })
+                                    .font_size(11.)
+                                    .text(m),
+                            )
+                            .child(if is_selected {
+                                Element::from(
+                                    SvgViewer::new(("check", icon("check")))
+                                        .color(colors.primary)
+                                        .width(Size::px(13.))
+                                        .height(Size::px(13.)),
+                                )
+                            } else {
+                                Element::from(label().text(""))
+                            })
+                            .into()
+                    })
+                    .collect();
+
+                Some(
+                    rect()
+                        .width(Size::fill())
+                        .vertical()
+                        .spacing(2.)
+                        .child(
+                            rect()
+                                .width(Size::fill())
+                                .padding(Gaps::new(5., 6., 2., 6.))
+                                .child(
+                                    label()
+                                        .color(colors.text_placeholder)
+                                        .font_size(9.)
+                                        .font_weight(FontWeight::SEMI_BOLD)
+                                        .text("CUSTOM / WORKSPACE MODELS"),
+                                ),
+                        )
+                        .children(rows)
+                        .into(),
+                )
+            } else {
+                None
+            };
 
         rect()
             .width(Size::fill())
@@ -2599,17 +2632,15 @@ impl Component for ModelPickerPopover {
                             .font_weight(FontWeight::SEMI_BOLD)
                             .text("Select Model & Provider"),
                     )
-                    .child(
-                        IconButton {
-                            icon: "x",
-                            label: "Close picker",
-                            size: 11.,
-                            on_press: (move |_: Event<PressEventData>| {
-                                state.write().agent_model_picker_open = false;
-                            })
-                            .into(),
-                        }
-                    ),
+                    .child(IconButton {
+                        icon: "x",
+                        label: "Close picker",
+                        size: 11.,
+                        on_press: (move |_: Event<PressEventData>| {
+                            state.write().agent_model_picker_open = false;
+                        })
+                        .into(),
+                    }),
             )
             .child(
                 rect()
@@ -2629,16 +2660,13 @@ impl Component for ModelPickerPopover {
                             .height(Size::px(12.)),
                     )
                     .child(
-                        rect()
-                            .width(Size::flex(1.))
-                            .font_size(11.)
-                            .child(
-                                Input::new(search_query.into_writable())
-                                    .placeholder("Search models or providers…")
-                                    .width(Size::fill())
-                                    .flat()
-                                    .compact()
-                            ),
+                        rect().width(Size::flex(1.)).font_size(11.).child(
+                            Input::new(search_query.into_writable())
+                                .placeholder("Search models or providers…")
+                                .width(Size::fill())
+                                .flat()
+                                .compact(),
+                        ),
                     ),
             )
             .child(
@@ -2668,7 +2696,11 @@ impl Component for ModelPickerPopover {
                                         colors.text_secondary
                                     })
                                     .font_size(10.)
-                                    .font_weight(if is_tab_active { FontWeight::SEMI_BOLD } else { FontWeight::NORMAL })
+                                    .font_weight(if is_tab_active {
+                                        FontWeight::SEMI_BOLD
+                                    } else {
+                                        FontWeight::NORMAL
+                                    })
                                     .text(*title),
                             )
                             .into()
@@ -2696,7 +2728,7 @@ impl Component for ModelPickerPopover {
                                         .font_size(10.5)
                                         .text("No models match your search"),
                                 )
-                                .into()
+                                .into(),
                         ]
                     }),
             )
@@ -2776,7 +2808,9 @@ pub fn parse_markdown_blocks(text: &str) -> Vec<FormattedBlock> {
                 in_code = false;
             } else {
                 if !current_paragraph.trim().is_empty() {
-                    blocks.push(FormattedBlock::Paragraph(current_paragraph.trim().to_string()));
+                    blocks.push(FormattedBlock::Paragraph(
+                        current_paragraph.trim().to_string(),
+                    ));
                     current_paragraph.clear();
                 }
                 current_lang = trimmed.trim_start_matches('`').trim().to_string();
@@ -2803,7 +2837,9 @@ pub fn parse_markdown_blocks(text: &str) -> Vec<FormattedBlock> {
             code: current_code.trim_end().to_string(),
         });
     } else if !current_paragraph.trim().is_empty() {
-        blocks.push(FormattedBlock::Paragraph(current_paragraph.trim().to_string()));
+        blocks.push(FormattedBlock::Paragraph(
+            current_paragraph.trim().to_string(),
+        ));
     }
 
     if blocks.is_empty() && !text.trim().is_empty() {
@@ -2952,13 +2988,10 @@ impl Component for ChatMessageView {
                     )
                 },
             )
-            .child(
-                rect()
-                    .width(Size::fill())
-                    .vertical()
-                    .spacing(6.)
-                    .children(if blocks.is_empty() && is_streaming {
-                        vec![rect()
+            .child(rect().width(Size::fill()).vertical().spacing(6.).children(
+                if blocks.is_empty() && is_streaming {
+                    vec![
+                        rect()
                             .padding(Gaps::new(4., 0., 4., 0.))
                             .child(
                                 label()
@@ -2966,96 +2999,97 @@ impl Component for ChatMessageView {
                                     .font_size(10.5)
                                     .text("Thinking…"),
                             )
-                            .into()]
-                    } else {
-                        blocks
-                            .into_iter()
-                            .map(|block| match block {
-                                FormattedBlock::Paragraph(text) => rect()
-                                    .width(Size::fill())
-                                    .child(
-                                        label()
-                                            .width(Size::fill())
-                                            .color(colors.text_primary)
-                                            .font_size(11.)
-                                            .text(text),
-                                    )
-                                    .into(),
-                                FormattedBlock::CodeBlock { language, code } => {
-                                    let copy_snippet = code.clone();
-                                    rect()
+                            .into(),
+                    ]
+                } else {
+                    blocks
+                        .into_iter()
+                        .map(|block| match block {
+                            FormattedBlock::Paragraph(text) => rect()
+                                .width(Size::fill())
+                                .child(
+                                    label()
                                         .width(Size::fill())
-                                        .vertical()
-                                        .background(colors.background)
-                                        .border(Border::new().fill(colors.border).width(1.))
-                                        .corner_radius(CornerRadius::new_all(4.))
-                                        .child(
-                                            rect()
-                                                .width(Size::fill())
-                                                .height(Size::px(22.))
-                                                .horizontal()
-                                                .main_align(Alignment::space_between())
-                                                .cross_align(Alignment::center())
-                                                .padding(Gaps::new(0., 8., 0., 8.))
-                                                .background(colors.surface_secondary)
-                                                .border(Border::new().fill(colors.border).width(
-                                                    BorderWidth {
-                                                        top: 0.,
-                                                        right: 0.,
-                                                        bottom: 1.,
-                                                        left: 0.,
-                                                    },
-                                                ))
-                                                .child(
-                                                    label()
-                                                        .color(colors.text_secondary)
-                                                        .font_size(9.)
-                                                        .font_weight(FontWeight::BOLD)
-                                                        .text(language.to_uppercase()),
-                                                )
-                                                .child(
-                                                    Button::new()
-                                                        .flat()
-                                                        .compact()
-                                                        .height(Size::px(18.))
-                                                        .padding(Gaps::new(0., 6., 0., 6.))
-                                                        .on_press(move |_| {
-                                                            let mut app_state = state.write();
-                                                            app_state.show_notice(
-                                                                NoticeTone::Success,
-                                                                format!(
-                                                                    "Code snippet copied ({} lines)",
-                                                                    copy_snippet.lines().count()
-                                                                ),
-                                                            );
-                                                        })
-                                                        .child(
-                                                            label()
-                                                                .color(colors.primary)
-                                                                .font_size(9.)
-                                                                .text("Copy"),
-                                                        ),
-                                                ),
-                                        )
-                                        .child(
-                                            rect()
-                                                .width(Size::fill())
-                                                .padding(Gaps::new_all(6.))
-                                                .child(
-                                                    label()
-                                                        .width(Size::fill())
-                                                        .color(colors.text_primary)
-                                                        .font_size(10.5)
-                                                        .font_family("Jetbrains Mono")
-                                                        .text(code),
-                                                ),
-                                        )
-                                        .into()
-                                }
-                            })
-                            .collect::<Vec<Element>>()
-                    }),
-            )
+                                        .color(colors.text_primary)
+                                        .font_size(11.)
+                                        .text(text),
+                                )
+                                .into(),
+                            FormattedBlock::CodeBlock { language, code } => {
+                                let copy_snippet = code.clone();
+                                rect()
+                                    .width(Size::fill())
+                                    .vertical()
+                                    .background(colors.background)
+                                    .border(Border::new().fill(colors.border).width(1.))
+                                    .corner_radius(CornerRadius::new_all(4.))
+                                    .child(
+                                        rect()
+                                            .width(Size::fill())
+                                            .height(Size::px(22.))
+                                            .horizontal()
+                                            .main_align(Alignment::space_between())
+                                            .cross_align(Alignment::center())
+                                            .padding(Gaps::new(0., 8., 0., 8.))
+                                            .background(colors.surface_secondary)
+                                            .border(Border::new().fill(colors.border).width(
+                                                BorderWidth {
+                                                    top: 0.,
+                                                    right: 0.,
+                                                    bottom: 1.,
+                                                    left: 0.,
+                                                },
+                                            ))
+                                            .child(
+                                                label()
+                                                    .color(colors.text_secondary)
+                                                    .font_size(9.)
+                                                    .font_weight(FontWeight::BOLD)
+                                                    .text(language.to_uppercase()),
+                                            )
+                                            .child(
+                                                Button::new()
+                                                    .flat()
+                                                    .compact()
+                                                    .height(Size::px(18.))
+                                                    .padding(Gaps::new(0., 6., 0., 6.))
+                                                    .on_press(move |_| {
+                                                        let mut app_state = state.write();
+                                                        app_state.show_notice(
+                                                            NoticeTone::Success,
+                                                            format!(
+                                                                "Code snippet copied ({} lines)",
+                                                                copy_snippet.lines().count()
+                                                            ),
+                                                        );
+                                                    })
+                                                    .child(
+                                                        label()
+                                                            .color(colors.primary)
+                                                            .font_size(9.)
+                                                            .text("Copy"),
+                                                    ),
+                                            ),
+                                    )
+                                    .child(
+                                        rect()
+                                            .width(Size::fill())
+                                            .padding(Gaps::new_all(6.))
+                                            .child(
+                                                label()
+                                                    .width(Size::fill())
+                                                    .color(colors.text_primary)
+                                                    .font_size(10.5)
+                                                    .font_family("Jetbrains Mono")
+                                                    .text(code),
+                                            ),
+                                    )
+                                    .into()
+                            }
+                        })
+                        .collect::<Vec<Element>>()
+                },
+            ))
     }
 }
 
@@ -3069,9 +3103,13 @@ struct AgentEventCard {
 impl Component for AgentEventCard {
     fn render(&self) -> impl IntoElement {
         let colors = get_theme_or_default().read().colors.clone();
-        let is_tool = self.kind == "tool_call_ready" || self.kind == "tool.call" || self.kind.starts_with("tool");
+        let is_tool = self.kind == "tool_call_ready"
+            || self.kind == "tool.call"
+            || self.kind.starts_with("tool");
         let is_reasoning = self.kind == "reasoning_delta" || self.kind.contains("reasoning");
-        let is_file = self.kind == "file.changed" || self.kind == "file.patch" || self.message.contains("file");
+        let is_file = self.kind == "file.changed"
+            || self.kind == "file.patch"
+            || self.message.contains("file");
         let is_run = self.kind == "run.started" || self.kind == "run.finished";
         let is_usage = self.kind == "usage" || self.kind.starts_with("budget");
 
@@ -3112,7 +3150,11 @@ impl Component for AgentEventCard {
                 top: 0.,
                 right: 0.,
                 bottom: 0.,
-                left: if is_tool || is_reasoning || is_file { 2. } else { 0. },
+                left: if is_tool || is_reasoning || is_file {
+                    2.
+                } else {
+                    0.
+                },
             }))
             .vertical()
             .spacing(2.)
@@ -3152,7 +3194,11 @@ impl Component for AgentEventCard {
             )
             .child(
                 label()
-                    .color(if is_reasoning { colors.text_secondary } else { colors.text_primary })
+                    .color(if is_reasoning {
+                        colors.text_secondary
+                    } else {
+                        colors.text_primary
+                    })
                     .font_size(10.)
                     .text(self.message.clone()),
             )
@@ -3204,7 +3250,10 @@ impl Component for ApprovalCard {
                             .color(colors.warning)
                             .font_size(10.5)
                             .font_weight(FontWeight::MEDIUM)
-                            .text(format!("Approval: {}", if tool.is_empty() { "tool" } else { &tool })),
+                            .text(format!(
+                                "Approval: {}",
+                                if tool.is_empty() { "tool" } else { &tool }
+                            )),
                     )
                     .child(
                         label()
@@ -3288,13 +3337,14 @@ fn start_run(mut state: State<AppState>, client: PrumoClient, goal: String) {
         let mut app_state = state.write();
         let idx = app_state.active_session_index;
         if let Some(session) = app_state.agent_sessions.get_mut(idx)
-            && (session.title.starts_with("Chat ") || session.title.starts_with("Session ")) {
-                session.title = if goal.chars().count() > 22 {
-                    format!("{}…", goal.chars().take(22).collect::<String>())
-                } else {
-                    goal.clone()
-                };
-            }
+            && (session.title.starts_with("Chat ") || session.title.starts_with("Session "))
+        {
+            session.title = if goal.chars().count() > 22 {
+                format!("{}…", goal.chars().take(22).collect::<String>())
+            } else {
+                goal.clone()
+            };
+        }
         app_state.add_user_message(&goal);
         app_state.start_assistant_streaming_message();
     }
@@ -3478,10 +3528,7 @@ mod tests {
             friendly_model_name("gemini", "gemini-2.5-pro"),
             "Gemini 2.5 Pro"
         );
-        assert_eq!(
-            friendly_model_name("openai", "gpt-4o"),
-            "GPT-4o"
-        );
+        assert_eq!(friendly_model_name("openai", "gpt-4o"), "GPT-4o");
         assert_eq!(
             friendly_model_name("ollama", "deepseek-coder:6.7b"),
             "DeepSeek Coder 6.7B"

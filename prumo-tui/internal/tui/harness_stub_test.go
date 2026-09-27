@@ -5,8 +5,15 @@ import (
 
 	prumo "github.com/raillen/prumo/sdk/prumo"
 
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/runtime"
 )
+
+func init() {
+	cfg := config.Get()
+	cfg.Onboarded = true
+	config.Set(*cfg)
+}
 
 // stubHarness is a daemon that answers without being one. The view layer never
 // talks to a provider, so a test of the shell needs only the shape of the

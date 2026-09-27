@@ -235,7 +235,9 @@ pub fn apply_streaming_event(state: &mut AppState, event: &crate::client::protoc
                 path: path.clone(),
                 status,
             });
-            state.changed_files.sort_by(|left, right| left.path.cmp(&right.path));
+            state
+                .changed_files
+                .sort_by(|left, right| left.path.cmp(&right.path));
         }
     }
 
@@ -257,12 +259,14 @@ pub fn apply_streaming_event(state: &mut AppState, event: &crate::client::protoc
                     item.fingerprint = fingerprint;
                 }
             } else {
-                state.pending_permission_details.push(PendingPermissionItem {
-                    request_id,
-                    tool,
-                    fingerprint,
-                    arguments_preview,
-                });
+                state
+                    .pending_permission_details
+                    .push(PendingPermissionItem {
+                        request_id,
+                        tool,
+                        fingerprint,
+                        arguments_preview,
+                    });
             }
             state.agent_status = AgentStatus::AwaitingApproval;
         }
@@ -286,11 +290,16 @@ pub fn apply_streaming_event(state: &mut AppState, event: &crate::client::protoc
             .or_else(|| payload_f64(&event.payload, "total_cost_usd"));
 
         state.agent_metrics.input_tokens = state.agent_metrics.input_tokens.saturating_add(input);
-        state.agent_metrics.output_tokens = state.agent_metrics.output_tokens.saturating_add(output);
-        state.agent_metrics.cache_read_tokens =
-            state.agent_metrics.cache_read_tokens.saturating_add(cache_read);
-        state.agent_metrics.cache_write_tokens =
-            state.agent_metrics.cache_write_tokens.saturating_add(cache_write);
+        state.agent_metrics.output_tokens =
+            state.agent_metrics.output_tokens.saturating_add(output);
+        state.agent_metrics.cache_read_tokens = state
+            .agent_metrics
+            .cache_read_tokens
+            .saturating_add(cache_read);
+        state.agent_metrics.cache_write_tokens = state
+            .agent_metrics
+            .cache_write_tokens
+            .saturating_add(cache_write);
         if let Some(cost) = cost {
             state.agent_metrics.total_cost_usd += cost;
         }
@@ -329,9 +338,10 @@ pub fn apply_streaming_event(state: &mut AppState, event: &crate::client::protoc
                 state.start_assistant_streaming_message();
             }
             if let Some(session) = state.active_session_mut()
-                && session.title.starts_with("Chat ") {
-                    session.title = truncate(&goal, 20);
-                }
+                && session.title.starts_with("Chat ")
+            {
+                session.title = truncate(&goal, 20);
+            }
         }
     } else if event.kind == "run.paused" {
         state.agent_status = if state.pending_permissions.is_empty() {
@@ -574,14 +584,20 @@ mod tests {
                 status: "running".to_string(),
                 phase: "execute_tool".to_string(),
                 pending_permissions: vec!["permission-1".to_string()],
-                permission_fingerprints: HashMap::from([("permission-1".to_string(), "fp-123".to_string())]),
+                permission_fingerprints: HashMap::from([(
+                    "permission-1".to_string(),
+                    "fp-123".to_string(),
+                )]),
             }),
             runs: vec![DaemonRun {
                 run_id: "R-1".to_string(),
                 status: "running".to_string(),
                 phase: "execute_tool".to_string(),
                 pending_permissions: vec!["permission-1".to_string()],
-                permission_fingerprints: HashMap::from([("permission-1".to_string(), "fp-123".to_string())]),
+                permission_fingerprints: HashMap::from([(
+                    "permission-1".to_string(),
+                    "fp-123".to_string(),
+                )]),
             }],
             events: vec![
                 DaemonEvent {
@@ -655,8 +671,14 @@ mod tests {
         assert_eq!(state.pending_permissions, vec!["req-99"]);
         assert_eq!(state.pending_permission_details.len(), 1);
         assert_eq!(state.pending_permission_details[0].tool, "bash");
-        assert_eq!(state.pending_permission_details[0].fingerprint, "sha256-abc");
-        assert_eq!(state.pending_permission_details[0].arguments_preview, "cargo test");
+        assert_eq!(
+            state.pending_permission_details[0].fingerprint,
+            "sha256-abc"
+        );
+        assert_eq!(
+            state.pending_permission_details[0].arguments_preview,
+            "cargo test"
+        );
 
         // 3. file.changed
         apply_streaming_event(
@@ -709,7 +731,10 @@ mod tests {
             },
         );
         assert_eq!(state.agent_status, AgentStatus::Working);
-        assert_eq!(state.active_session().unwrap().title, "Refactor token coun…");
+        assert_eq!(
+            state.active_session().unwrap().title,
+            "Refactor token coun…"
+        );
 
         // 2. usage event
         apply_streaming_event(

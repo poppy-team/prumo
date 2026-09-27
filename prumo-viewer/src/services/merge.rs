@@ -76,8 +76,14 @@ pub fn three_way_merge(base: &str, mine: &str, theirs: &str) -> MergeOutcome {
     let mut line = 0usize;
 
     while line < base_lines.len() || !mine_queue.is_empty() || !theirs_queue.is_empty() {
-        let mine_starts = mine_queue.front().map(|c| c.base_start == line).unwrap_or(false);
-        let theirs_starts = theirs_queue.front().map(|c| c.base_start == line).unwrap_or(false);
+        let mine_starts = mine_queue
+            .front()
+            .map(|c| c.base_start == line)
+            .unwrap_or(false);
+        let theirs_starts = theirs_queue
+            .front()
+            .map(|c| c.base_start == line)
+            .unwrap_or(false);
 
         match (mine_starts, theirs_starts) {
             (true, true) => {
@@ -104,7 +110,9 @@ pub fn three_way_merge(base: &str, mine: &str, theirs: &str) -> MergeOutcome {
             }
             (true, false) => {
                 let m = mine_queue.pop_front().unwrap();
-                if let Some(t) = theirs_queue.pop_front_if(|t_front| t_front.base_start < m.base_end) {
+                if let Some(t) =
+                    theirs_queue.pop_front_if(|t_front| t_front.base_start < m.base_end)
+                {
                     let region = ConflictRegion {
                         base_line: line,
                         mine: m.replacement.clone(),
@@ -125,7 +133,8 @@ pub fn three_way_merge(base: &str, mine: &str, theirs: &str) -> MergeOutcome {
             }
             (false, true) => {
                 let t = theirs_queue.pop_front().unwrap();
-                if let Some(m) = mine_queue.pop_front_if(|m_front| m_front.base_start < t.base_end) {
+                if let Some(m) = mine_queue.pop_front_if(|m_front| m_front.base_start < t.base_end)
+                {
                     let region = ConflictRegion {
                         base_line: line,
                         mine: m.replacement.clone(),

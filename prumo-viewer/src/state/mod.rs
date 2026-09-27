@@ -607,7 +607,8 @@ impl AppState {
         let index = self.agent_sessions.len();
         let provider = self.config.provider.clone();
         let model = self.config.model.clone();
-        self.agent_sessions.push(AgentSession::new(index, &provider, &model));
+        self.agent_sessions
+            .push(AgentSession::new(index, &provider, &model));
         self.select_session(index);
     }
 
@@ -716,18 +717,20 @@ impl AppState {
             msg.content.push_str(text);
             let msg_id = msg.id.clone();
             if let Some(session) = self.active_session_mut()
-                && let Some(s_msg) = session.messages.iter_mut().rev().find(|m| m.id == msg_id) {
-                    s_msg.content.push_str(text);
-                }
+                && let Some(s_msg) = session.messages.iter_mut().rev().find(|m| m.id == msg_id)
+            {
+                s_msg.content.push_str(text);
+            }
         } else {
             self.start_assistant_streaming_message();
             if let Some(msg) = self.agent_messages.last_mut() {
                 msg.content.push_str(text);
             }
             if let Some(session) = self.active_session_mut()
-                && let Some(s_msg) = session.messages.last_mut() {
-                    s_msg.content.push_str(text);
-                }
+                && let Some(s_msg) = session.messages.last_mut()
+            {
+                s_msg.content.push_str(text);
+            }
         }
     }
 
@@ -745,13 +748,14 @@ impl AppState {
             }
             let msg_id = msg.id.clone();
             if let Some(session) = self.active_session_mut()
-                && let Some(s_msg) = session.messages.iter_mut().rev().find(|m| m.id == msg_id) {
-                    if let Some(reasoning) = &mut s_msg.reasoning {
-                        reasoning.push_str(text);
-                    } else {
-                        s_msg.reasoning = Some(text.to_string());
-                    }
+                && let Some(s_msg) = session.messages.iter_mut().rev().find(|m| m.id == msg_id)
+            {
+                if let Some(reasoning) = &mut s_msg.reasoning {
+                    reasoning.push_str(text);
+                } else {
+                    s_msg.reasoning = Some(text.to_string());
                 }
+            }
         }
     }
 
@@ -792,12 +796,17 @@ impl AppState {
         }
         self.active_run_id = run_id.clone();
         if let Some(ref r_id) = run_id {
-            if let Some(session) = self.agent_sessions.iter_mut().find(|s| s.run_id.as_deref() == Some(r_id)) {
+            if let Some(session) = self
+                .agent_sessions
+                .iter_mut()
+                .find(|s| s.run_id.as_deref() == Some(r_id))
+            {
                 session.status = self.agent_status;
             } else if let Some(session) = self.active_session_mut()
-                && session.run_id.is_none() {
-                    session.run_id = Some(r_id.clone());
-                }
+                && session.run_id.is_none()
+            {
+                session.run_id = Some(r_id.clone());
+            }
         }
     }
 

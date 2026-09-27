@@ -549,4 +549,3 @@ mod tests {
         assert_eq!(found.unwrap().status, ExtensionStatus::Ready);
     }
 }
-

@@ -23,9 +23,7 @@ use torin::prelude::Direction;
 use crate::client::protocol::PrumoClient;
 use crate::extensions::host::{ExtensionHost, ExtensionRequest, LspNotification, load_grants};
 use crate::extensions::registry::ExtensionStatus;
-use crate::projections::run::{
-    apply_client_error, apply_daemon_snapshot, apply_streaming_event,
-};
+use crate::projections::run::{apply_client_error, apply_daemon_snapshot, apply_streaming_event};
 use crate::services::config::ViewerConfig;
 use crate::services::document::{
     activate_path, file_uri_to_path, open_file, request_close_tab, save_active_tab,
@@ -1419,23 +1417,22 @@ fn app_with_extensions(
                     && is_active_status
                     && (active_subscription.as_ref().map(|(id, _)| id) != active_run_id.as_ref());
 
-                if should_subscribe
-                    && let Some(run_id) = active_run_id {
-                        let sub_client = polling_client.clone();
-                        let sub_run_id = run_id.clone();
-                        let sub_result = run_blocking(move || {
-                            sub_client.subscribe(&sub_run_id, event_count)
-                        })
-                        .await;
-                        if let Ok(Ok(rx)) = sub_result {
-                            active_subscription = Some((run_id, rx));
-                            poll_delay = Duration::from_millis(50);
-                            continue;
-                        }
+                if should_subscribe && let Some(run_id) = active_run_id {
+                    let sub_client = polling_client.clone();
+                    let sub_run_id = run_id.clone();
+                    let sub_result =
+                        run_blocking(move || sub_client.subscribe(&sub_run_id, event_count)).await;
+                    if let Ok(Ok(rx)) = sub_result {
+                        active_subscription = Some((run_id, rx));
+                        poll_delay = Duration::from_millis(50);
+                        continue;
                     }
+                }
 
                 // If currently subscribed, wait for stream events with fast tick, but periodically reconcile snapshot
-                if active_subscription.is_some() && last_snapshot_time.elapsed() < Duration::from_secs(3) {
+                if active_subscription.is_some()
+                    && last_snapshot_time.elapsed() < Duration::from_secs(3)
+                {
                     poll_delay = Duration::from_millis(50);
                     continue;
                 }

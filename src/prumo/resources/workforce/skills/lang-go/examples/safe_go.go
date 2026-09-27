@@ -13,7 +13,7 @@ import (
 
 // Sentinel errors compared with errors.Is
 var (
-	ErrTaskFailed    = errors.New("task execution failed")
+	ErrTaskFailed     = errors.New("task execution failed")
 	ErrQueueExhausted = errors.New("work queue exhausted")
 )
 

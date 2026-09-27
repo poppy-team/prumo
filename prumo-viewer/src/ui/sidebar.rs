@@ -655,7 +655,10 @@ impl Component for ChangeRow {
                             .find(|t| t.rel_path == file_path)
                             .map(|t| t.content.clone())
                             .unwrap_or_else(|| disk_tab.content.clone());
-                        let diff = crate::services::diff::compute_line_diff(&disk_tab.persisted_content, &active_content);
+                        let diff = crate::services::diff::compute_line_diff(
+                            &disk_tab.persisted_content,
+                            &active_content,
+                        );
                         app_state.diff_title = format!("Changes · {}", file_path);
                         app_state.diff_lines = diff.lines;
                         app_state.diff_open = true;
@@ -698,14 +701,19 @@ impl Component for ChangeRow {
                                     let mut app_state = state.write();
                                     let root = app_state.workspace_root.clone();
                                     let full_path = root.join(&file_path);
-                                    if let Ok(disk_tab) = crate::services::document::open_file(&root, &full_path) {
+                                    if let Ok(disk_tab) =
+                                        crate::services::document::open_file(&root, &full_path)
+                                    {
                                         let active_content = app_state
                                             .tabs
                                             .iter()
                                             .find(|t| t.rel_path == file_path)
                                             .map(|t| t.content.clone())
                                             .unwrap_or_else(|| disk_tab.content.clone());
-                                        let diff = crate::services::diff::compute_line_diff(&disk_tab.persisted_content, &active_content);
+                                        let diff = crate::services::diff::compute_line_diff(
+                                            &disk_tab.persisted_content,
+                                            &active_content,
+                                        );
                                         app_state.diff_title = format!("Changes · {}", file_path);
                                         app_state.diff_lines = diff.lines;
                                         app_state.diff_open = true;

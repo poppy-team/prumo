@@ -186,7 +186,17 @@ mod tests {
         assert!(!result.is_truncated);
         assert_eq!(result.deletions, 1);
         assert_eq!(result.additions, 2);
-        assert!(result.lines.iter().any(|(l, tag)| tag == &'+' && l.contains("new")));
-        assert!(result.lines.iter().any(|(l, tag)| tag == &'-' && l.contains("old")));
+        assert!(
+            result
+                .lines
+                .iter()
+                .any(|(l, tag)| tag == &'+' && l.contains("new"))
+        );
+        assert!(
+            result
+                .lines
+                .iter()
+                .any(|(l, tag)| tag == &'-' && l.contains("old"))
+        );
     }
 }
