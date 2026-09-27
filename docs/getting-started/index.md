@@ -14,7 +14,7 @@ No desenvolvimento de software auxiliado por inteligência artificial, o desafio
 2. **Lean Progressive Context (LPC)**: Os modelos LLM recebem apenas os fragmentos de contexto estritamente necessários para a tarefa atual, eliminando megaprompts custosos e alucinações.
 3. **Integrity Locks**: Metas (Goals) e Planos possuem digests SHA-256. Qualquer mutação arbitrária ou não autorizada quebra a verificação imediatamente.
 4. **Harness e ACI na Caixa**: Um ecossistema completo de ferramentas determinísticas (AST parsing, test gates, terminal com timeouts e bounded outputs).
-5. **Workforce Especializada**: 189 skills prontas, 39 agentes autônomos e 16 receitas cobrindo engenharia de sistemas, compiladores, arquitetura, design visual, UI/UX, SVG/motion e segurança.
+5. **Workforce Especializada**: 189 skills prontas, 39 agentes autônomos e 20 receitas cobrindo engenharia de sistemas, compiladores, arquitetura, design visual, UI/UX, SVG/motion e segurança.
 
 ## Trilha de Aprendizado
 

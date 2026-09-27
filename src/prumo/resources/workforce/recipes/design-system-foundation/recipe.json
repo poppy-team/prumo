@@ -1,0 +1,148 @@
+{
+  "id": "design-system-foundation",
+  "name": "Design System Foundation Architecture",
+  "version": 1,
+  "purpose": "Comprehensive engineering of an enterprise design system: W3C DTCG tokens, perceptual color spaces, modular typography, atomic primitives, and automated accessibility verification.",
+  "select": {
+    "features_any": [
+      "design-system",
+      "tokens",
+      "ui-components",
+      "frontend"
+    ]
+  },
+  "requires_skills_any": [
+    "design-system",
+    "design-tokens",
+    "color-science",
+    "typography-system"
+  ],
+  "inputs": [
+    "Brand vision & aesthetic guidelines",
+    "Target technology stack & UI framework",
+    "Accessibility targets (WCAG 2.2 AA / AAA)"
+  ],
+  "agents": [
+    "creative-director",
+    "brand-designer",
+    "design-system-engineer",
+    "ui-component-engineer",
+    "accessibility-reviewer"
+  ],
+  "skills": [
+    "design-system",
+    "design-tokens",
+    "color-science",
+    "typography-system",
+    "component-specification",
+    "ui-implementation",
+    "visual-regression"
+  ],
+  "gates": [
+    "token-validation",
+    "component-test",
+    "wcag-aaa"
+  ],
+  "artifacts": [
+    "W3C DTCG Design Tokens Package (JSON/CSS/SCSS)",
+    "Core Atomic Component Library (Button, Input, Card, Modal)",
+    "Living Styleguide & Interactive Documentation",
+    "Comprehensive Accessibility & Conformance Report"
+  ],
+  "stop_conditions": [
+    "Tokens compile cleanly to all target formats, components pass 100% unit and visual tests, and accessibility audit completes with zero critical defects"
+  ],
+  "steps": [
+    {
+      "id": "token-architecture",
+      "name": "Define Multi-Tier W3C Design Tokens",
+      "agent_role": "design-system-engineer",
+      "skills": [
+        "design-tokens",
+        "color-science",
+        "typography-system"
+      ],
+      "input": "Brand aesthetic guidelines",
+      "output": "Global, semantic, and component tokens JSON",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "token-validation"
+      ]
+    },
+    {
+      "id": "primitive-specification",
+      "name": "Specify Atomic UI Component Contracts",
+      "agent_role": "design-system-engineer",
+      "skills": [
+        "component-specification",
+        "design-system"
+      ],
+      "depends_on": [
+        "token-architecture"
+      ],
+      "input": "Semantic tokens",
+      "output": "Component props, states, and variant specifications",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "component-implementation",
+      "name": "Build Headless / Accessible UI Component Primitives",
+      "agent_role": "ui-component-engineer",
+      "skills": [
+        "ui-implementation",
+        "clean-code"
+      ],
+      "depends_on": [
+        "primitive-specification"
+      ],
+      "input": "Component specifications and tokens",
+      "output": "Component source code and test suite",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "component-test"
+      ]
+    },
+    {
+      "id": "living-styleguide",
+      "name": "Author Living Styleguide & Documentation",
+      "agent_role": "creative-director",
+      "skills": [
+        "design-system",
+        "visual-communication"
+      ],
+      "depends_on": [
+        "component-implementation"
+      ],
+      "input": "Components and token manifests",
+      "output": "Interactive documentation website & playground",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "accessibility-conformance",
+      "name": "Exhaustive WCAG & Keyboard Navigation Audit",
+      "agent_role": "accessibility-reviewer",
+      "skills": [
+        "visual-regression"
+      ],
+      "depends_on": [
+        "living-styleguide"
+      ],
+      "input": "Rendered components and documentation views",
+      "output": "WCAG conformance audit report",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "wcag-aaa"
+      ]
+    }
+  ]
+}

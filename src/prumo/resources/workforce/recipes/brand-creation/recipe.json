@@ -1,0 +1,164 @@
+{
+  "id": "brand-creation",
+  "name": "Brand Creation & Identity System",
+  "version": 1,
+  "purpose": "End-to-end brand identity engineering: market positioning, aesthetic definition, vector logo marks, OKLCH color tokenization, typography systems, and brand guidelines manual.",
+  "select": {
+    "features_any": [
+      "branding",
+      "brand-identity",
+      "design-system",
+      "marketing"
+    ]
+  },
+  "requires_skills_any": [
+    "brand-identity",
+    "color-science",
+    "typography-system",
+    "svg-engineering"
+  ],
+  "inputs": [
+    "Brand brief & company charter",
+    "Target audience profile",
+    "Market positioning strategy"
+  ],
+  "agents": [
+    "creative-director",
+    "brand-designer",
+    "svg-artist",
+    "visual-identity-auditor"
+  ],
+  "skills": [
+    "aesthetic-analysis",
+    "visual-communication",
+    "brand-identity",
+    "color-science",
+    "typography-system",
+    "svg-engineering",
+    "design-critique"
+  ],
+  "gates": [
+    "brand-critique",
+    "contrast-audit",
+    "vector-conformance"
+  ],
+  "artifacts": [
+    "Brand Strategy & Positioning Spec",
+    "OKLCH Color Palette & Semantic Tokens",
+    "Fluid Typography Scale Spec",
+    "SVG Logo Family (Light, Dark, Monochrome)",
+    "Brand Guidelines Manual"
+  ],
+  "stop_conditions": [
+    "Brand guidelines and vector assets pass critique and contrast audits with zero violations"
+  ],
+  "steps": [
+    {
+      "id": "aesthetic-strategy",
+      "name": "Aesthetic Research & Semiotic Positioning",
+      "agent_role": "creative-director",
+      "skills": [
+        "aesthetic-analysis",
+        "visual-communication"
+      ],
+      "input": "Brand brief & company charter",
+      "output": "Aesthetic strategy & moodboard spec",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "color-foundation",
+      "name": "OKLCH Color Science & Accessible Palette Generation",
+      "agent_role": "brand-designer",
+      "skills": [
+        "color-science",
+        "brand-identity"
+      ],
+      "depends_on": [
+        "aesthetic-strategy"
+      ],
+      "input": "Aesthetic strategy",
+      "output": "OKLCH color palette tokens JSON",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "contrast-audit"
+      ]
+    },
+    {
+      "id": "typography-architecture",
+      "name": "Fluid Typography Hierarchy & Variable Fonts Spec",
+      "agent_role": "brand-designer",
+      "skills": [
+        "typography-system",
+        "brand-identity"
+      ],
+      "depends_on": [
+        "aesthetic-strategy"
+      ],
+      "input": "Aesthetic strategy",
+      "output": "Typography system tokens JSON",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "logo-engineering",
+      "name": "Mathematical SVG Vector Logo & Mark Crafting",
+      "agent_role": "svg-artist",
+      "skills": [
+        "svg-engineering"
+      ],
+      "depends_on": [
+        "color-foundation",
+        "typography-architecture"
+      ],
+      "input": "Brand tokens and aesthetic direction",
+      "output": "Responsive SVG logo pack",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "vector-conformance"
+      ]
+    },
+    {
+      "id": "guidelines-compilation",
+      "name": "Compile Formal Brand Identity Guidelines",
+      "agent_role": "brand-designer",
+      "skills": [
+        "brand-identity",
+        "visual-communication"
+      ],
+      "depends_on": [
+        "logo-engineering"
+      ],
+      "input": "Vector logo assets and token manifests",
+      "output": "Brand guidelines manual markdown",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "identity-audit",
+      "name": "Comprehensive Visual Identity & Multi-surface Audit",
+      "agent_role": "visual-identity-auditor",
+      "skills": [
+        "design-critique"
+      ],
+      "depends_on": [
+        "guidelines-compilation"
+      ],
+      "input": "Brand guidelines and vector assets",
+      "output": "Brand audit scorecard and sign-off",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "brand-critique"
+      ]
+    }
+  ]
+}

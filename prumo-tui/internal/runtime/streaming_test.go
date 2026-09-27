@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,24 +18,41 @@ import (
 // timelineClient serves a run's log the way the daemon does: one file per run,
 // appended to, read whole.
 type timelineClient struct {
+	mu     sync.RWMutex
 	log    []Event
 	status string
 	err    error
 }
 
-func (c *timelineClient) append(events ...Event) { c.log = append(c.log, events...) }
+func (c *timelineClient) setStatus(s string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.status = s
+}
+
+func (c *timelineClient) append(events ...Event) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.log = append(c.log, events...)
+}
 
 func (c *timelineClient) Start(context.Context, StartRequest) (string, error) { return "S1", nil }
 func (c *timelineClient) Status(context.Context, string) (RunStatus, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.err != nil {
 		return RunStatus{}, c.err
 	}
 	return RunStatus{Status: c.status}, nil
 }
-func (c *timelineClient) Events(context.Context, string) ([]Event, error) { return c.log, nil }
-func (c *timelineClient) Cancel(context.Context, string) error            { return nil }
-func (c *timelineClient) Steer(context.Context, string, string) error     { return nil }
-func (c *timelineClient) Jobs(context.Context) ([]prumo.Job, error)       { return nil, nil }
+func (c *timelineClient) Events(context.Context, string) ([]Event, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return append([]Event(nil), c.log...), nil
+}
+func (c *timelineClient) Cancel(context.Context, string) error        { return nil }
+func (c *timelineClient) Steer(context.Context, string, string) error { return nil }
+func (c *timelineClient) Jobs(context.Context) ([]prumo.Job, error)   { return nil, nil }
 func (c *timelineClient) ModelInfo(context.Context, prumo.ModelsRequest) ([]prumo.ModelInfo, error) {
 	return nil, nil
 }
