@@ -8,8 +8,8 @@ jobs:
   go-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           # The toolchain is whatever go.mod requires. Pinning it here instead
           # meant CI ran on a version the module does not support and quietly
@@ -76,7 +76,7 @@ jobs:
       run:
         working-directory: prumo-viewer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Linux GUI dependencies
         run: |
           sudo apt-get update
@@ -104,8 +104,8 @@ jobs:
       run:
         working-directory: prumo-tui
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: prumo-tui/go.mod
       - name: Go vet
