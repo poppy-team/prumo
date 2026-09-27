@@ -14,7 +14,7 @@ The repository is the durable source of truth. Prumo stores canonical project st
 
 ## Documentation Website
 
-The full documentation website, inspired by modern developer documentation portals, is available at **[prumo-framework.vercel.app](https://prumo-framework.vercel.app)** (or browseable locally via `pnpm` docs server).
+The full documentation website, inspired by modern developer documentation portals, is available at **[prumo-framework.vercel.app](https://prumo-framework.vercel.app)** (or browseable locally via local documentation server).
 
 ---
 
