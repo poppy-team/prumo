@@ -154,7 +154,7 @@ func TestAttachKeepsFollowingALiveRun(t *testing.T) {
 	}
 
 	// And the run finishing closes the follow out.
-	client.status = "complete"
+	client.setStatus("complete")
 	waitUntilNotBusy(t, r, "S1")
 	if last := messagesOf(t, r)[0]; last.Role != message.Assistant {
 		t.Fatalf("the follow ended on something other than the answer: %+v", last)
