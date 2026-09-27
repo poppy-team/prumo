@@ -31,9 +31,9 @@ Snapshot: `2026-09-11-d41f18bb65f5`. ACCEPTED != implemented. Truth table:
 - [x] HA3 Tool/Permission integration
 - [x] HA4 checkpoint/restart/resume
 - [~] HA5 Coding ACI + Sandbox baseline (baseline usable, hardening continues)
-- [x] headless coding Run end-to-end (`prumo-agent agent run` → tool → checkpoint)
-- [~] versioned public protocol (envelope + 3 schemas + negotiation kernel v0.2.0 + `prumo-agent agent protocol` + checked-in IDL manifest with code-conformance tests; typed public SDK `sdk/prumo` with boundary test; v0.2.0 added the `approve`/`deny` ops and a run waiting for a decision is observable as `awaiting_approval`; generated bindings for other languages pending)
-- [~] reconnect/replay (resume+handoff CLI done; JSONL event replay via `prumo-agent agent events` done; local daemon `serve/ps/logs` with restart-safe reconnect done; remote TCP+TLS+token done nos limites — CA corporativa e hardening futuro)
+- [x] headless coding Run end-to-end (`prumo agent run` → tool → checkpoint)
+- [~] versioned public protocol (envelope + 3 schemas + negotiation kernel v0.4.0 + `prumo agent protocol` + checked-in IDL manifest with code-conformance tests; typed public SDK `sdk/prumo` with boundary test; v0.2.0 added the `approve`/`deny` ops and a run waiting for a decision is observable as `awaiting_approval`; generated bindings for other languages pending)
+- [~] reconnect/replay (resume+handoff CLI done; JSONL event replay via `prumo agent events` done; local daemon `serve/ps/logs` with restart-safe reconnect done; remote TCP+TLS+token done nos limites — CA corporativa e hardening futuro)
 
 Verdict: NOT READY for split — see `HARNESS_IMPLEMENTATION_REPORT.md`.
 The first Prumo Code must build with zero `internal/` imports; that
@@ -53,9 +53,9 @@ Markdown AST, DOC-GAP-026) · **⬜ none**. W21.2/W21.3 (query/intent telemetry)
 **refused by ADR 011** because the trust model forbids collecting what users
 retrieve; the refusal is recorded, not left as an open gap.
 TUI gate: every P0/P1 contract wave is complete and
-`prumo-agent docs verify --strict` passes.
+`prumo docs verify --strict` passes.
 
-Gate evidence: `conformance/schema-runtime` (W1), `prumo-agent docs authority` (W0),
+Gate evidence: `conformance/schema-runtime` (W1), `prumo docs authority` (W0),
 `internal/knowledge`, `internal/gauntlet`, W12 client-facing reconnect/replay
 conformance, `evals/documentation` (W13, 13 cases), semantic readiness v2
 (W15: `internal/documentation/semantic.go`, `TestSemanticReadinessDogfood`),

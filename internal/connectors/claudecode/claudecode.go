@@ -71,7 +71,7 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	// 1. CLAUDE.md entrypoint in project root using managed region
 	claudeMD := `# CLAUDE.md
-This project uses Prumo v0.5 with Anthropic Claude Code.
+This project uses Prumo v0.6 with Anthropic Claude Code.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.

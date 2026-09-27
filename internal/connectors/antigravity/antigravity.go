@@ -75,7 +75,7 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	// 1. GEMINI.md entrypoint in project root using managed region
 	geminiMD := `# GEMINI.md
-This project uses Prumo v0.5 with Google Antigravity.
+This project uses Prumo v0.6 with Google Antigravity.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal before taking any actions.

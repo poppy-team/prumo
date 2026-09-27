@@ -71,7 +71,7 @@ description: Prumo AI harness guidelines for Cursor
 globs: **
 ---
 # Prumo Guidelines for Cursor
-This project uses Prumo v0.5 with Cursor IDE.
+This project uses Prumo v0.6 with Cursor IDE.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.
