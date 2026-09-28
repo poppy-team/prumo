@@ -127,6 +127,8 @@ description: Historical milestones and evolutionary projection of the Prumo Fram
 
 ---
 
+> **Detailed Granular Plan**: For the complete patch-by-patch technical specification, file-level deliverables, and competitive analysis against Claude Code, OpenCode, Aider, and Cline, see the [**Granular Patch Implementation Plan**](/en/granular-plan).
+
 ## Implementation Comparison Matrix
 
 | Version | Target Date | Primary Focus | Technology Stack | Key Deliverables | Exit Gate / DoD |
@@ -137,7 +139,20 @@ description: Historical milestones and evolutionary projection of the Prumo Fram
 | **v0.4.0** | 2026-09-09 | Go Core Migration | Go 1.22+ | M1–M4 complete, single binary CLI, push `subscribe`, on-demand `diff` | 100% contract parity Go vs Python fixtures |
 | **v0.5.0** | 2026-09-10 | Doc Control Plane | Go 1.22+ | Rebrand to Prumo, Waves W0–W21, Semantic Doc Plane (W15), Docs Gauntlet | Semantic validator passes with verified report |
 | **v0.6.0** | 2026-09-27 | CLI Unification (Current) | Go 1.26 | Unified binary `prumo` (ADR 016), Adoption v3 (`prumo adopt`), Connectors, Dynamic Models | Single binary harness; 0 hardcoded models; CI green |
-| **v0.7.0** | 2026-10-15 | Complete TUI Client | Go, Bubble Tea v2 | Self-contained `prumo-tui`, multi-session folding, command palette, diff dialog (`ctrl+g`), full A11y | Complete TUI pairing verified across 22 UI states |
-| **v0.8.0** | 2026-11-15 | Resilient Gateway & Quota Router | Go 1.26 | Honest exit codes (GAP-097), sandboxing containment (GAP-110–112), Gateway active (GAP-102/103/108) | Failed tests exit != 0; circuits recover |
-| **v0.9.0** | 2026-12-15 | Multi-Agent DAGs & Teams | Go 1.26, Git Worktrees | Team execution (GAP-003/101), 1-level delegation (ADR 017), isolated worktree merges (GAP-008/168) | Multi-agent DAG execution passes with bounded depth |
-| **v1.0.0** | 2027-Q1 | Production Release & IDE | Rust 2024 (Freya 0.4+, Skia), Go Core | **Prumo IDE / Native Workspace Viewer** (`prumo-viewer`), Tree-sitter, Extension SDK, Living Plan (M6), Traceability (M8) | Native IDE compiles and runs on 3 OSes; official packages live |
+| **v0.6.1** | 2026-09-28 | CLI Ergonomics | Go 1.26 | Stack autodetect, zero-arg `prumo init` cognitive dashboard, autoupdate fix | Zero-ceremony init and dashboard verified |
+| **v0.6.2** | 2026-10-05 | Onda 0: Real Exit Codes | Go 1.26 | Honest process exit codes (GAP-097), honest session resume (GAP-123) | Broken tests exit != 0; resume does not mark complete |
+| **v0.6.3** | 2026-10-10 | Onda 1: Security Bounds | Go 1.26 | Symlink resolution (GAP-110), provider allowlist (GAP-111), safepath (GAP-112) | Sandbox escape tests fail closed |
+| **v0.7.0** | 2026-10-15 | Complete TUI Client | Go, Bubble Tea v2 | `prumo-tui` standalone, multi-session, files diff dialog (`ctrl+g`), full A11y (WCAG 4.5:1) | 22 UI states verified; screen reader attestation |
+| **v0.7.1** | 2026-10-25 | TUI Ergonomics | Go, Bubble Tea v2 | Collapsible `<think>` accordions (`Ctrl+O`), paginated tools, cache hit % gauge | Frame snapshot tests green |
+| **v0.7.2** | 2026-11-05 | Git & Web in TUI | Go, Git CLI | Atomic `/undo`, dirty tree protection, Conventional auto-commits, `/web <url>` | `/undo` restores previous commit cleanly |
+| **v0.7.3** | 2026-11-15 | Tree-sitter Repo Map | Go, Tree-sitter | Tree-sitter symbol graph + Personalized PageRank within LPC budget | 40% navigation precision boost under 2048 tokens |
+| **v0.8.0** | 2026-11-25 | Resilient Gateway | Go 1.26 | Gateway active in production (GAP-102/103/108), budget caps (GAP-098/100), atomic lock (GAP-104) | Circuits auto-recover; budget limits enforced |
+| **v0.8.1** | 2026-12-05 | Provider Failover | Go 1.26 | Dynamic priority routing (Local/Free → Cloud) with seamless failover | Provider failover with zero session drop |
+| **v0.8.2** | 2026-12-15 | Local Intel & Offline | Go, llama/vLLM | Connectors for Ollama, vLLM, llama-server with search/replace diff fallback | End-to-end execution offline |
+| **v0.9.0** | 2026-12-22 | Multi-Agent Teams | Go 1.26, Worktrees | Team execution in prod (GAP-003/101), 1-level subagents (ADR 017), worktrees (GAP-008/168) | Distributed DAG execution with 3-way merge |
+| **v0.9.1** | 2027-01-10 | Dual Architect/Editor | Go 1.26 | Architect mode (`/architect`, read-only) + Editor mode (`/code`, write tools) | >50% token cost reduction on refactoring |
+| **v0.9.2** | 2027-01-20 | Verification Loop | Go 1.26 | Automated test-and-lint error feedback with bounded $K$-retry auto-repair | Autonomous repair of induced syntax bugs |
+| **v1.0.0-alpha**| 2027-01-30 | Freya Desktop IDE | Rust 2024 (Freya 0.4+) | Prumo Native Workspace Viewer (`prumo-viewer`), Skia, Torin, Tree-sitter, PTY | Sub-100ms startup; real-time agent observability |
+| **v1.0.0-beta** | 2027-02-15 | Extension SDK & Plan | Rust, Go | `prumo-extension-sdk` (LSP/DAP), Living Plan interview engine (Phase M6) | Extension conformance suite 100% green |
+| **v1.0.0-rc1/2**| 2027-03-01 | Daemon & Traceability | Go, Rust | Global user daemon (ADR 018), Traceability Graph (Phase M8), Docs Gauntlet strict | Strict Gauntlet pass with zero warnings |
+| **v1.0.0** | 2027-03-15 | General Availability | Multi-platform | Signed universal binaries, Homebrew, WinGet, Scoop, Arch AUR packages | Official enterprise distribution live |
