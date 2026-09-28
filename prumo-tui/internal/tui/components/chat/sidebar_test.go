@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/raillen/prumo-tui/internal/app"
+	"github.com/raillen/prumo-tui/internal/runtime"
 	"github.com/raillen/prumo-tui/internal/session"
 )
 
@@ -15,10 +16,20 @@ func TestSidebarRendersSessionAndShortcuts(t *testing.T) {
 	})
 
 	sidebar := NewSidebarCmp(appInst)
-	_ = sidebar.SetSize(35, 25)
+	_ = sidebar.SetSize(35, 40)
 	sidebar.UpdateSession(session.Session{
-		ID:    "test-sess-1",
-		Title: "My Test Session",
+		ID:               "test-sess-1",
+		Title:            "My Test Session",
+		PromptTokens:     1500,
+		CompletionTokens: 500,
+		Cost:             0.005,
+	})
+
+	// Record a subagent
+	appInst.Runner.RecordSubagent("test-sess-1", runtime.SubagentInfo{
+		ID:     "sub-1",
+		Role:   "researcher",
+		Status: "running",
 	})
 
 	view := sidebar.View().Content
@@ -28,14 +39,20 @@ func TestSidebarRendersSessionAndShortcuts(t *testing.T) {
 	if !strings.Contains(view, "My Test Session") {
 		t.Fatalf("expected session title in view:\n%s", view)
 	}
+	if !strings.Contains(view, "CONTEXT TOKENS") {
+		t.Fatalf("expected CONTEXT TOKENS in view:\n%s", view)
+	}
+	if !strings.Contains(view, "WORKFORCE") {
+		t.Fatalf("expected WORKFORCE in view:\n%s", view)
+	}
+	if !strings.Contains(view, "researcher") {
+		t.Fatalf("expected subagent researcher in view:\n%s", view)
+	}
 	if !strings.Contains(view, "CHANGED FILES") {
 		t.Fatalf("expected CHANGED FILES in view:\n%s", view)
 	}
 	if !strings.Contains(view, "None in this run") {
 		t.Fatalf("expected 'None in this run' in view:\n%s", view)
-	}
-	if !strings.Contains(view, "QUICK SHORTCUTS") {
-		t.Fatalf("expected QUICK SHORTCUTS in view:\n%s", view)
 	}
 	if !strings.Contains(view, "ctrl+b") {
 		t.Fatalf("expected ctrl+b in view:\n%s", view)

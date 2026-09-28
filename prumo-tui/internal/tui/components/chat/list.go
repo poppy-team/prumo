@@ -487,7 +487,7 @@ func (m *messagesCmp) help() string {
 
 	text := ""
 
-	if m.app.CoderAgent.IsBusy() {
+	if m.app != nil && m.app.CoderAgent != nil && m.app.CoderAgent.IsBusy() {
 		// A run in flight accepts a follow-up, so the hint says so rather than
 		// leaving the reader to find out by trying.
 		text += lipgloss.JoinHorizontal(

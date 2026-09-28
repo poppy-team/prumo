@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/raillen/prumo/internal/autoupdate"
 	"github.com/raillen/prumo/internal/protocol"
@@ -24,6 +25,9 @@ func runUpgrade(asJSON bool, explicitHome string, args []string) int {
 	}
 
 	repo := autoupdate.DefaultRepository
+	if envRepo := os.Getenv("PRUMO_UPDATE_REPO"); envRepo != "" {
+		repo = envRepo
+	}
 	if customRepo != "" {
 		repo = customRepo
 	}

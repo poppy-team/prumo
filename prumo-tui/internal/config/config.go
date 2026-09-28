@@ -36,6 +36,8 @@ type Config struct {
 	// Provider and Model name what the client asks the harness to run with.
 	Provider string
 	Model    string
+	// ShowSidebar records whether the sidebar is open, persisted across sessions.
+	ShowSidebar bool
 	// Onboarded records that the first-run offer was answered. It is written
 	// after the answer, so an answer that never reached disk is asked again
 	// rather than assumed.
@@ -121,7 +123,8 @@ type persisted struct {
 	Provider string `json:"provider,omitempty"`
 	Model    string `json:"model,omitempty"`
 
-	Onboarded bool `json:"onboarded,omitempty"`
+	Onboarded   bool  `json:"onboarded,omitempty"`
+	ShowSidebar *bool `json:"show_sidebar,omitempty"`
 }
 
 // ConfigPath is where the client's own settings live.
@@ -172,6 +175,9 @@ func Load() error {
 		current.Model = saved.Model
 		current.chosenModel = true
 	}
+	if saved.ShowSidebar != nil {
+		current.ShowSidebar = *saved.ShowSidebar
+	}
 	current.Onboarded = saved.Onboarded
 	return nil
 }
@@ -186,8 +192,9 @@ func save() error {
 	}
 	mu.RLock()
 	saved := persisted{
-		Theme:     current.Theme,
-		Onboarded: current.Onboarded,
+		Theme:       current.Theme,
+		Onboarded:   current.Onboarded,
+		ShowSidebar: &current.ShowSidebar,
 	}
 	if current.chosenProvider {
 		saved.Provider = current.Provider
@@ -201,6 +208,15 @@ func save() error {
 		return err
 	}
 	return os.WriteFile(path, append(data, '\n'), 0o644)
+}
+
+// UpdateSidebarVisibility records whether the sidebar is visible and writes it down,
+// so restarting the client preserves the user's preference.
+func UpdateSidebarVisibility(visible bool) error {
+	mu.Lock()
+	current.ShowSidebar = visible
+	mu.Unlock()
+	return save()
 }
 
 // UpdateOnboarded records that the first-run offer was answered.

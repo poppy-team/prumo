@@ -147,6 +147,11 @@ func Get(id string) (Connector, error) {
 	defer registryMu.RUnlock()
 	c, ok := registry[id]
 	if !ok {
+		if id == "claude" {
+			if c, ok = registry["claude-code"]; ok {
+				return c, nil
+			}
+		}
 		return nil, fmt.Errorf("unknown connector: %q", id)
 	}
 	return c, nil

@@ -1,40 +1,66 @@
 # Conectores & Adapters de Harness
 
-O Prumo adota uma arquitetura de conectores e adaptadores agnóstica de provedor. Nenhum ambiente de execução ou provedor de LLM possui autoridade direta sobre a verdade canônica do projeto.
+O Prumo adota uma arquitetura agnóstica de provedor. Nenhum ambiente de execução ou fornecedor de LLM possui autoridade direta sobre a verdade canônica do projeto.
 
-## O que são Conectores?
+---
 
-Os **Conectores** são pontes bidirecionais entre o plano de controle canônico do Prumo e os ambientes onde os agentes operam no dia a dia. Ao usar o comando `prumo compile`, o Prumo gera ou atualiza cirurgicamente as configurações exigidas por cada ferramenta, sem sobrescrever instruções customizadas mantidas por desenvolvedores humanos.
+## Conectores Globais vs. Adaptadores de Projeto
 
-## Plataformas Suportadas
+É fundamental distinguir os dois níveis de integração do Prumo:
 
-| Plataforma / Ferramenta | Identificador `--target` | Arquivo / Diretório Gerado | Estratégia de Atualização |
-|---|---|---|---|
-| **Google Antigravity** | `antigravity` | `.gemini/` e regras de contexto | Injeção cirúrgica de contexto |
-| **Claude Code** | `claude-code` | `CLAUDE.md` | Regiões gerenciadas `doccompile` |
-| **OpenAI Codex** | `codex` | `CODEX.md` / `.codex/` | Regiões gerenciadas |
-| **Cursor** | `cursor` | `.cursorrules` | Injeção de regras de arquitetura |
-| **Windsurf** | `windsurf` | `.windsurfrules` | Injeção de regras de arquitetura |
-| **OpenCode** | `opencode` | `.opencode/` | Manifesto nativo e skills |
-| **Cline / Roo Code** | `cline` | `.clinerules` | Regras de orquestração e contexto |
-| **Generic (Padrão)** | `generic` | `AGENTS.md` | Padrão canônico neutro |
+1. **Conector Global (`prumo connector ...`)**: 
+   Opera no seu computador (`~/.prumo/connectors/`). Gerencia a instalação, status de disponibilidade da ferramenta no `$PATH` e capacidades negociadas com o executável daquele agente (ex: Claude Code, OpenCode CLI, Antigravity).
+2. **Adaptador de Projeto (`prumo compile --target ...`)**: 
+   Opera no repositório ativo (`./`). Gera ou injeta cirurgicamente regras de contexto, skills e instruções que aquele agente lerá ao ser aberto nesta pasta (ex: `CLAUDE.md`, `.gemini/`, `.opencode/`, `.cursorrules`).
 
-## Exemplo de Compilação
+---
 
-Para compilar e sincronizar os adaptadores para seu ambiente preferido:
+## Gerenciamento de Conectores (`prumo connector`)
 
+### Listar Conectores Disponíveis e Registrados
 ```bash
-# Sincronizar regras para Claude Code
-prumo compile --target claude-code
-
-# Sincronizar regras para Google Antigravity
-prumo compile --target antigravity
-
-# Sincronizar para múltiplos ambientes
-prumo compile --target generic --target cursor
+prumo connector list
 ```
 
-## Regiões Gerenciadas (`doccompile`)
+### Inspecionar o Status e Saúde de um Conector
+```bash
+prumo connector status claude
+prumo connector status opencode
+prumo connector status antigravity
+```
+O comando informa:
+- Versão e modelo de imposição (strict vs standard).
+- Se está instalado em `~/.prumo/connectors/`.
+- Se o binário da ferramenta foi detectado no seu `$PATH`.
+- Lista completa de capacidades suportadas (advise, restrict_tools, session_hooks, etc.).
+
+### Instalar um Conector Globalmente
+```bash
+prumo connector install opencode
+prumo connector install claude-code
+```
+
+---
+
+## Compilação de Adaptadores de Projeto (`prumo compile`)
+
+Para sincronizar as regras de contexto do seu projeto ativo com seus agentes preferidos:
+
+```bash
+# Compilar adaptadores para todos os conectores suportados
+prumo compile --all
+
+# Sincronizar regras específicas para o Claude Code (gera CLAUDE.md)
+prumo compile --target claude-code
+
+# Sincronizar regras para o Google Antigravity (gera .gemini/)
+prumo compile --target antigravity
+
+# Sincronizar para o Cursor (gera .cursorrules)
+prumo compile --target cursor
+```
+
+### Regiões Gerenciadas (`doccompile`)
 
 Quando o Prumo atualiza um arquivo de instruções (como `CLAUDE.md` ou `AGENTS.md`), ele utiliza marcadores delimitadores:
 

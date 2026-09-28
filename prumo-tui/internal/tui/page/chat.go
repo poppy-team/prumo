@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -9,14 +10,22 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/completions"
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
+	"github.com/raillen/prumo-tui/internal/tui/styles"
+	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/tui/util"
 )
 
 var ChatPage PageID = "chat"
+
+type SessionTab struct {
+	ID    string
+	Title string
+}
 
 type chatPage struct {
 	app                  *app.App
@@ -32,6 +41,11 @@ type chatPage struct {
 	filesProvider        dialog.CompletionProvider
 	slashProvider        dialog.CompletionProvider
 	showCompletionDialog bool
+
+	tabs           []SessionTab
+	activeTabIndex int
+	width          int
+	height         int
 }
 
 type ChatKeyMap struct {
@@ -39,6 +53,10 @@ type ChatKeyMap struct {
 	ShowCommandsCompletion key.Binding
 	ToggleSidebar          key.Binding
 	NewSession             key.Binding
+	NewTab                 key.Binding
+	CloseTab               key.Binding
+	NextTab                key.Binding
+	PrevTab                key.Binding
 	Cancel                 key.Binding
 }
 
@@ -59,6 +77,22 @@ var keyMap = ChatKeyMap{
 		key.WithKeys("ctrl+n"),
 		key.WithHelp("ctrl+n", "new session"),
 	),
+	NewTab: key.NewBinding(
+		key.WithKeys("ctrl+t"),
+		key.WithHelp("ctrl+t", "new tab"),
+	),
+	CloseTab: key.NewBinding(
+		key.WithKeys("ctrl+w"),
+		key.WithHelp("ctrl+w", "close tab"),
+	),
+	NextTab: key.NewBinding(
+		key.WithKeys("alt+]", "ctrl+pgdown"),
+		key.WithHelp("alt+]", "next tab"),
+	),
+	PrevTab: key.NewBinding(
+		key.WithKeys("alt+[", "ctrl+pgup"),
+		key.WithHelp("alt+[", "prev tab"),
+	),
 	Cancel: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "cancel"),
@@ -78,57 +112,104 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		cmd := p.layout.SetSize(msg.Width, msg.Height)
-		cmds = append(cmds, cmd)
+		p.width = msg.Width
+		p.height = msg.Height
+		cmds = append(cmds, p.updateLayoutSize())
+
 	case dialog.CompletionDialogCloseMsg:
 		p.showCompletionDialog = false
+
 	case layout.FocusMsg:
-		// The composer is the surface that carries a border, so it is the one
-		// that shows whether the keyboard is on the page or on a dialog.
 		p.editor.SetFocused(msg.Focused)
 		return p, nil
+
 	case chat.ToggleSidebarMsg:
 		return p, p.toggleSidebar()
+
+	case chat.NewTabMsg:
+		return p, p.newTab(msg.Title)
+
+	case chat.SwitchTabMsg:
+		return p, p.switchTab(msg.Index)
+
+	case chat.NextTabMsg:
+		return p, p.nextTab()
+
+	case chat.PrevTabMsg:
+		return p, p.prevTab()
+
+	case chat.CloseTabMsg:
+		return p, p.closeTab(msg.Index)
+
 	case chat.SendMsg:
 		return p, p.sendMessage(msg.Text)
+
 	case chat.SessionSelectedMsg:
 		p.session = msg
 		p.sidebarCmp.UpdateSession(p.session)
+		if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) {
+			p.tabs[p.activeTabIndex].ID = msg.ID
+			if msg.Title != "" {
+				p.tabs[p.activeTabIndex].Title = msg.Title
+			}
+		}
+
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.ShowCompletionDialog):
 			p.completionDialog.SetProvider(p.filesProvider)
 			p.showCompletionDialog = true
-			// Continue sending keys to layout->chat
+
 		case key.Matches(msg, keyMap.ShowCommandsCompletion):
 			val := strings.TrimSpace(p.editorCmp.Value())
 			if val == "" || val == "/" || strings.HasSuffix(val, "\n") {
 				p.completionDialog.SetProvider(p.slashProvider)
 				p.showCompletionDialog = true
 			}
+
 		case key.Matches(msg, keyMap.ToggleSidebar):
 			return p, p.toggleSidebar()
+
+		case key.Matches(msg, keyMap.NewTab):
+			return p, p.newTab("")
+
+		case key.Matches(msg, keyMap.CloseTab):
+			return p, p.closeTab(p.activeTabIndex)
+
+		case key.Matches(msg, keyMap.NextTab):
+			return p, p.nextTab()
+
+		case key.Matches(msg, keyMap.PrevTab):
+			return p, p.prevTab()
+
 		case key.Matches(msg, keyMap.NewSession):
 			p.session = session.Session{}
 			p.sidebarCmp.UpdateSession(p.session)
+			if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) {
+				ws := ""
+				if p.app != nil {
+					ws = p.app.Workspace
+				}
+				p.tabs[p.activeTabIndex].ID = ""
+				p.tabs[p.activeTabIndex].Title = util.DefaultSessionTitle(ws)
+			}
 			return p, tea.Batch(
 				util.CmdHandler(chat.SessionClearedMsg{}),
 			)
+
 		case key.Matches(msg, keyMap.Cancel):
 			if p.session.ID != "" {
-				// Cancelling is a protocol call: the daemon owns the loop and
-				// stops it. The client only asks.
 				p.app.CoderAgent.Cancel(p.session.ID)
 				return p, nil
 			}
 		}
 	}
+
 	if p.showCompletionDialog {
 		context, contextCmd := p.completionDialog.Update(msg)
 		p.completionDialog = context.(dialog.CompletionDialog)
 		cmds = append(cmds, contextCmd)
 
-		// Enter closes the dialog rather than also sending what it selected.
 		if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
 			if keyMsg.String() == "enter" {
 				return p, tea.Batch(cmds...)
@@ -143,8 +224,102 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, tea.Batch(cmds...)
 }
 
+func (p *chatPage) newTab(title string) tea.Cmd {
+	if title == "" {
+		title = fmt.Sprintf("Tab %d", len(p.tabs)+1)
+	}
+	p.tabs = append(p.tabs, SessionTab{
+		ID:    "",
+		Title: title,
+	})
+	p.activeTabIndex = len(p.tabs) - 1
+	p.session = session.Session{Title: title}
+	p.sidebarCmp.UpdateSession(p.session)
+	return tea.Batch(
+		util.CmdHandler(chat.SessionClearedMsg{}),
+		p.updateLayoutSize(),
+	)
+}
+
+func (p *chatPage) switchTab(index int) tea.Cmd {
+	if len(p.tabs) == 0 {
+		return nil
+	}
+	if index < 0 {
+		index = 0
+	}
+	if index >= len(p.tabs) {
+		index = len(p.tabs) - 1
+	}
+	p.activeTabIndex = index
+	tab := p.tabs[index]
+	if tab.ID != "" && p.app != nil && p.app.Sessions != nil {
+		sess, err := p.app.Sessions.Get(context.Background(), tab.ID)
+		if err == nil {
+			p.session = sess
+		} else {
+			p.session = session.Session{ID: tab.ID, Title: tab.Title}
+		}
+		p.sidebarCmp.UpdateSession(p.session)
+		return tea.Batch(
+			util.CmdHandler(chat.SessionSelectedMsg(p.session)),
+			p.updateLayoutSize(),
+		)
+	}
+
+	p.session = session.Session{Title: tab.Title}
+	p.sidebarCmp.UpdateSession(p.session)
+	return tea.Batch(
+		util.CmdHandler(chat.SessionClearedMsg{}),
+		p.updateLayoutSize(),
+	)
+}
+
+func (p *chatPage) nextTab() tea.Cmd {
+	if len(p.tabs) > 1 {
+		return p.switchTab((p.activeTabIndex + 1) % len(p.tabs))
+	}
+	return nil
+}
+
+func (p *chatPage) prevTab() tea.Cmd {
+	if len(p.tabs) > 1 {
+		return p.switchTab((p.activeTabIndex + len(p.tabs) - 1) % len(p.tabs))
+	}
+	return nil
+}
+
+func (p *chatPage) closeTab(index int) tea.Cmd {
+	if len(p.tabs) <= 1 {
+		ws := ""
+		if p.app != nil {
+			ws = p.app.Workspace
+		}
+		p.tabs[0] = SessionTab{Title: util.DefaultSessionTitle(ws)}
+		p.activeTabIndex = 0
+		p.session = session.Session{Title: p.tabs[0].Title}
+		p.sidebarCmp.UpdateSession(p.session)
+		return tea.Batch(util.CmdHandler(chat.SessionClearedMsg{}), p.updateLayoutSize())
+	}
+
+	p.tabs = append(p.tabs[:index], p.tabs[index+1:]...)
+	if p.activeTabIndex >= len(p.tabs) {
+		p.activeTabIndex = len(p.tabs) - 1
+	}
+	return p.switchTab(p.activeTabIndex)
+}
+
+func (p *chatPage) updateLayoutSize() tea.Cmd {
+	h := p.height
+	if len(p.tabs) > 1 {
+		h = max(0, p.height-1)
+	}
+	return p.layout.SetSize(p.width, h)
+}
+
 func (p *chatPage) toggleSidebar() tea.Cmd {
 	p.showSidebar = !p.showSidebar
+	_ = config.UpdateSidebarVisibility(p.showSidebar)
 	if p.showSidebar {
 		return p.setSidebar()
 	}
@@ -160,31 +335,28 @@ func (p *chatPage) clearSidebar() tea.Cmd {
 	return p.layout.ClearRightPanel()
 }
 
-// sendMessage starts a run for what was typed.
-//
-// It returns a command rather than doing the work inline because starting a run
-// crosses a socket: a view that called it directly would freeze on every
-// message it sent. What the run produces does not come back through this
-// command either — the runner publishes it and the stream bridge carries it to
-// the program, which is the only path the conversation travels.
 func (p *chatPage) sendMessage(text string) tea.Cmd {
 	app := p.app
 	session := p.session
 	return func() tea.Msg {
 		ctx := context.Background()
 		if session.ID == "" {
-			created, err := app.Sessions.Create(ctx, "New Session")
+			title := session.Title
+			if title == "" {
+				ws := ""
+				if app != nil {
+					ws = app.Workspace
+				}
+				title = util.DefaultSessionTitle(ws)
+			}
+			created, err := app.Sessions.Create(ctx, title)
 			if err != nil {
-				// Failures name the operation and the next action, so the reader
-				// is not left to work out what the client was trying to do.
 				return util.ReportFailure("Starting the session", "press enter to try again", err)()
 			}
 			session = created
 		}
 
 		if app.CoderAgent.IsSessionBusy(session.ID) {
-			// A run is already going, so this is not a new goal: it is something
-			// said to the run that is running.
 			if err := app.CoderAgent.Steer(ctx, session.ID, text); err != nil {
 				return util.ReportFailure("Adding to the run in flight", "wait for it to finish, or press esc to cancel it", err)()
 			}
@@ -194,24 +366,73 @@ func (p *chatPage) sendMessage(text string) tea.Cmd {
 		if _, err := app.CoderAgent.Run(ctx, session.ID, text); err != nil {
 			return util.ReportFailure("Starting the run", "press enter to try again, or read the log with ctrl+l", err)()
 		}
-		// Selecting the session is what tells the view which conversation it is
-		// now drawing, and it is what the editor keys off to know a run exists.
 		return chat.SessionSelectedMsg(session)
 	}
 }
 
 func (p *chatPage) SetSize(width, height int) tea.Cmd {
-	return p.layout.SetSize(width, height)
+	p.width = width
+	p.height = height
+	return p.updateLayoutSize()
 }
 
 func (p *chatPage) GetSize() (int, int) {
 	return p.layout.GetSize()
 }
 
+func (p *chatPage) renderTabBar() string {
+	t := theme.CurrentTheme()
+	baseStyle := styles.BaseStyle()
+
+	var tabElements []string
+	for i, tab := range p.tabs {
+		tabTitle := tab.Title
+		if tabTitle == "" {
+			tabTitle = fmt.Sprintf("Tab %d", i+1)
+		}
+		if len(tabTitle) > 18 {
+			tabTitle = tabTitle[:15] + "..."
+		}
+		label := fmt.Sprintf(" %d: %s ", i+1, tabTitle)
+		var style lipgloss.Style
+		if i == p.activeTabIndex {
+			style = baseStyle.
+				Background(t.Primary()).
+				Foreground(t.Background()).
+				Bold(true)
+		} else {
+			style = baseStyle.
+				Background(t.BackgroundSecondary()).
+				Foreground(t.TextMuted())
+		}
+		tabElements = append(tabElements, style.Render(label))
+	}
+
+	tabBarContent := lipgloss.JoinHorizontal(lipgloss.Left, tabElements...)
+	totalWidth, _ := p.layout.GetSize()
+	if totalWidth <= 0 {
+		totalWidth = p.width
+	}
+	if totalWidth <= 0 {
+		totalWidth = 80
+	}
+	remaining := max(0, totalWidth-lipgloss.Width(tabBarContent))
+	filler := baseStyle.
+		Background(t.BackgroundDarker()).
+		Render(strings.Repeat(" ", remaining))
+
+	return lipgloss.JoinHorizontal(lipgloss.Left, tabBarContent, filler)
+}
+
 // View renders the component for the terminal.
 func (p *chatPage) View() tea.View { return tea.NewView(p.viewString()) }
 func (p *chatPage) viewString() string {
 	layoutView := p.layout.View().Content
+
+	if len(p.tabs) > 1 {
+		tabBar := p.renderTabBar()
+		layoutView = lipgloss.JoinVertical(lipgloss.Left, tabBar, layoutView)
+	}
 
 	if p.showCompletionDialog {
 		_, layoutHeight := p.layout.GetSize()
@@ -254,8 +475,6 @@ func NewChatPage(app *app.App) tea.Model {
 		editorCmp,
 		layout.WithBorder(true, false, false, false),
 	)
-	// The composer holds the keyboard when the page is first drawn; a dialog
-	// opening is what takes it away.
 	editorContainer.SetFocused(true)
 
 	sidebarCmp := chat.NewSidebarCmp(app)
@@ -265,6 +484,21 @@ func NewChatPage(app *app.App) tea.Model {
 		layout.WithPadding(0, 1, 0, 1),
 	)
 
+	initShowSidebar := config.Get().ShowSidebar
+	var splitOpts []layout.SplitPaneOption
+	splitOpts = append(splitOpts,
+		layout.WithLeftPanel(messagesContainer),
+		layout.WithBottomPanel(editorContainer),
+	)
+	if initShowSidebar {
+		splitOpts = append(splitOpts, layout.WithRightPanel(sidebarContainer))
+	}
+
+	initTitle := "project"
+	if app != nil {
+		initTitle = util.DefaultSessionTitle(app.Workspace)
+	}
+
 	return &chatPage{
 		app:              app,
 		editor:           editorContainer,
@@ -272,13 +506,17 @@ func NewChatPage(app *app.App) tea.Model {
 		messages:         messagesContainer,
 		sidebar:          sidebarContainer,
 		sidebarCmp:       sidebarCmp,
-		showSidebar:      false,
+		showSidebar:      initShowSidebar,
 		completionDialog: completionDialog,
 		filesProvider:    filesProvider,
 		slashProvider:    slashProvider,
-		layout: layout.NewSplitPane(
-			layout.WithLeftPanel(messagesContainer),
-			layout.WithBottomPanel(editorContainer),
-		),
+		layout:           layout.NewSplitPane(splitOpts...),
+		tabs: []SessionTab{
+			{
+				ID:    "",
+				Title: initTitle,
+			},
+		},
+		activeTabIndex: 0,
 	}
 }

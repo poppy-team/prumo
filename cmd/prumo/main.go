@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/raillen/prumo/internal/cliops"
 	"github.com/raillen/prumo/internal/harness/guitest"
 	"github.com/raillen/prumo/internal/project"
 	"github.com/raillen/prumo/internal/protocol"
+	"github.com/raillen/prumo/internal/resolver"
 )
 
 const (
@@ -146,16 +148,27 @@ func main() {
 
 func run(args []string) int {
 	asJSON := false
+	home := ""
 	rest := make([]string, 0, len(args))
-	for _, arg := range args {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
 		if arg == "--json" {
 			asJSON = true
+			continue
+		}
+		if arg == "--home" {
+			if i+1 >= len(args) {
+				fmt.Fprintf(os.Stderr, "error: --home requires a value\n")
+				return exitUsage
+			}
+			home = args[i+1]
+			i++
 			continue
 		}
 		rest = append(rest, arg)
 	}
 	if len(rest) == 0 {
-		return usage()
+		return runDashboard(asJSON, home)
 	}
 	if rest[0] == "--help" || rest[0] == "-h" {
 		return PrintGeneralHelp(asJSON)
@@ -169,21 +182,6 @@ func run(args []string) int {
 	if hasFlag(rest[1:], "--help") || hasFlag(rest[1:], "-h") {
 		return PrintCommandHelp(rest[0], asJSON)
 	}
-	home := ""
-	cleaned := make([]string, 0, len(rest))
-	for i := 0; i < len(rest); i++ {
-		if rest[i] == "--home" {
-			if i+1 >= len(rest) {
-				fmt.Fprintf(os.Stderr, "error: --home requires a value\n")
-				return exitUsage
-			}
-			home = rest[i+1]
-			i++
-			continue
-		}
-		cleaned = append(cleaned, rest[i])
-	}
-	rest = cleaned
 	svc := cliops.New(repoRoot())
 	switch rest[0] {
 	case "repo":
@@ -198,7 +196,7 @@ func run(args []string) int {
 		return runAgentServe(asJSON, rest[1:])
 	case "agent":
 		return runAgent(asJSON, rest[1:])
-	case "tui":
+	case "tui", "code-agent":
 		return runTui(asJSON, rest[1:])
 	case "native", "viewer":
 		return runNative(asJSON, rest[1:])
@@ -257,10 +255,26 @@ func run(args []string) int {
 			fmt.Fprintf(os.Stderr, "error: --profile requires a value\n")
 			return exitUsage
 		}
+		preset, restArgs, ok := flag(restArgs, "--preset")
+		if !ok {
+			fmt.Fprintf(os.Stderr, "error: --preset requires a value\n")
+			return exitUsage
+		}
+		stack, restArgs, ok := flag(restArgs, "--stack")
+		if !ok {
+			fmt.Fprintf(os.Stderr, "error: --stack requires a value\n")
+			return exitUsage
+		}
+		name, restArgs, ok := flag(restArgs, "--name")
+		if !ok {
+			fmt.Fprintf(os.Stderr, "error: --name requires a value\n")
+			return exitUsage
+		}
+		printProfile := hasFlag(restArgs, "--print-profile")
 		nonInteractive := hasFlag(restArgs, "--non-interactive")
 		positional := []string{}
 		for _, arg := range restArgs {
-			if arg != "--non-interactive" {
+			if arg != "--non-interactive" && arg != "--print-profile" {
 				positional = append(positional, arg)
 			}
 		}
@@ -268,23 +282,60 @@ func run(args []string) int {
 		if len(positional) > 0 {
 			path = positional[0]
 		}
-		if profile == "" {
-			if nonInteractive {
-				fmt.Fprintf(os.Stderr, "error: --profile is required with --non-interactive\n")
-				return exitUsage
-			}
-			fmt.Fprintf(os.Stderr, "error: --profile is required\n")
-			return exitUsage
+		if preset == "" {
+			preset = "standard"
 		}
-		resolution, err := svc.Init(path, profile)
+
+		det := cliops.DetectProject(path)
+		if name != "" {
+			det.Name = name
+		}
+		if stack != "" {
+			det.Languages = []string{stack}
+			det.BuildTools = []string{stack}
+		}
+
+		if !nonInteractive && !asJSON && !printProfile && det.IsExistingCodebase {
+			fmt.Printf("Notice: Detected existing codebase (%d source files). Running smart initialization for %s...\n\n", det.SourceFileCount, det.Name)
+		}
+
+		if printProfile {
+			profileObj := cliops.BuildDefaultProfile(det, preset)
+			data, _ := json.MarshalIndent(profileObj.Raw, "", "  ")
+			fmt.Println(string(data))
+			return exitOK
+		}
+
+		var resolution resolver.Resolution
+		var err error
+		if profile != "" {
+			resolution, err = svc.Init(path, profile)
+		} else {
+			profileObj := cliops.BuildDefaultProfile(det, preset)
+			resolution, err = svc.InitWithProfile(path, profileObj)
+		}
 		if err != nil {
 			return serviceError(asJSON, err)
 		}
 		if asJSON {
-			return printEnvelope(protocol.OkEnvelope(map[string]any{"agents": resolution.Agents, "skills": resolution.Skills, "recipes": resolution.Recipes}))
+			return printEnvelope(protocol.OkEnvelope(map[string]any{
+				"version": protocol.CLIVersion,
+				"project": det.Name,
+				"path":    path,
+				"preset":  preset,
+				"stack":   det.Languages,
+				"agents":  resolution.Agents,
+				"skills":  resolution.Skills,
+				"recipes": resolution.Recipes,
+			}))
 		}
-		fmt.Printf("Initialized Prumo v0.5 in %s\n", path)
-		fmt.Printf("Agents: %d | Skills: %d | Recipes: %d\n", len(resolution.Agents), len(resolution.Skills), len(resolution.Recipes))
+		fmt.Printf("Initialized Prumo v%s in %s\n", protocol.CLIVersion, path)
+		fmt.Printf("Project: %s | Stack: %s | Preset: %s\n", det.Name, strings.Join(det.Languages, ", "), preset)
+		fmt.Printf("Workforce: %d agents | %d skills | %d recipes\n\n", len(resolution.Agents), len(resolution.Skills), len(resolution.Recipes))
+		fmt.Println("Next steps:")
+		fmt.Println("  prumo doctor          # Verify harness health")
+		fmt.Println("  prumo compile --all   # Compile agent adapters (AGENTS.md, CLAUDE.md, etc.)")
+		fmt.Println("  prumo agent           # Start interactive terminal agent")
 		return exitOK
 	case "resolve":
 		if len(rest) != 2 {

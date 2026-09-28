@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	DefaultRepository = "raillen/prumo"
+	DefaultRepository = "poppy-team/prumo"
 	DefaultCacheTTL   = 4 * time.Hour
 )
 

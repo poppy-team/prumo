@@ -307,3 +307,27 @@ func TestInitProducesPrumoIdentity(t *testing.T) {
 		t.Fatalf("doctor: %v %v", findings, err)
 	}
 }
+
+func TestInitDefaultProfileZeroArgs(t *testing.T) {
+	root := repoRoot(t)
+	svc := New(root)
+	dir := t.TempDir()
+
+	resolution, err := svc.Init(dir, "")
+	if err != nil {
+		t.Fatalf("init with zero args failed: %v", err)
+	}
+	if len(resolution.Agents) == 0 {
+		t.Fatalf("expected resolved agents, got 0")
+	}
+	if len(resolution.Skills) == 0 {
+		t.Fatalf("expected resolved skills, got 0")
+	}
+
+	if errors := svc.Validate(dir); len(errors) != 0 {
+		t.Fatalf("validation failed on default init: %v", errors)
+	}
+	if findings, err := svc.Doctor(dir); err != nil || len(findings) != 0 {
+		t.Fatalf("doctor reported errors on default init: %v %v", findings, err)
+	}
+}

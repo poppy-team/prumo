@@ -27,6 +27,22 @@ type ToggleSidebarMsg struct{}
 
 type EditorFocusMsg bool
 
+// Multi-tab conversation message types
+type NewTabMsg struct {
+	Title string
+}
+
+type SwitchTabMsg struct {
+	Index int
+}
+
+type NextTabMsg struct{}
+type PrevTabMsg struct{}
+
+type CloseTabMsg struct {
+	Index int
+}
+
 func header(width int) string {
 	return lipgloss.JoinVertical(
 		lipgloss.Top,

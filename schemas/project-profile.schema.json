@@ -25,13 +25,11 @@
     "quality": {"type": "object"},
     "ai": {
       "type": "object",
-      "required": ["preferred_models"],
       "properties": {
         "orchestrator": {"type": "string"},
         "autonomy": {"enum": ["controlled", "agentic", "autonomous"]},
         "preferred_models": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "type": "object",
             "required": ["id"],

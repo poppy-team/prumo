@@ -130,6 +130,9 @@ func (f *FakeProvider) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 // PRUMO_MODEL_BASE_URL for openai-compat; apiKey falls back to
 // PRUMO_MODEL_API_KEY for network adapters.
 func ForName(name, baseURL, apiKey, mdl string) (Provider, error) {
+	if mdl == "" {
+		mdl = envOr("PRUMO_MODEL", "")
+	}
 	switch name {
 	case "", "fake":
 		return NewFake(map[string][]ScriptStep{"*": {{Kind: "text", Text: "hello"}, {Kind: "complete"}}}), nil

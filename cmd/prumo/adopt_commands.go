@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/raillen/prumo/internal/adoption"
+	"github.com/raillen/prumo/internal/cliops"
 	"github.com/raillen/prumo/internal/protocol"
 )
 
@@ -19,6 +20,17 @@ func runAdopt(asJSON bool, args []string) int {
 	proposeMigration := false
 	dryRun := false
 	apply := false
+	subcommand := ""
+
+	// Check for leading positional subcommand (scan, facts, classify, scaffold, apply)
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		candidate := strings.ToLower(args[0])
+		switch candidate {
+		case "scan", "facts", "classify", "scaffold", "apply":
+			subcommand = candidate
+			args = args[1:]
+		}
+	}
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -51,6 +63,12 @@ func runAdopt(asJSON bool, args []string) int {
 		}
 	}
 
+	if subcommand == "apply" {
+		apply = true
+	} else if subcommand == "scaffold" {
+		dryRun = true
+	}
+
 	_ = auditOnly
 
 	opts := adoption.ScanOptions{
@@ -67,7 +85,59 @@ func runAdopt(asJSON bool, args []string) int {
 		return exitInternal
 	}
 
-	// F-G07: Handle uncertainty resolution
+	// Handle specific subcommands
+	if subcommand == "scan" {
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(map[string]any{
+				"root":            report.Repository.Root,
+				"files_scanned":   report.FactsSummary.FilesScanned,
+				"total_facts":     report.FactsSummary.TotalFacts,
+				"prumo_artifacts": report.PrumoArtifacts,
+			}))
+		}
+		fmt.Printf("=== ADOPTION SCAN: %s ===\n", report.Repository.Root)
+		fmt.Printf("Files scanned: %d | Total facts: %d\n\n",
+			report.FactsSummary.FilesScanned, report.FactsSummary.TotalFacts)
+		if len(report.PrumoArtifacts) > 0 {
+			fmt.Println("Existing Prumo Artifacts:")
+			for _, art := range report.PrumoArtifacts {
+				fmt.Printf("  • %s\n", art)
+			}
+		} else {
+			fmt.Println("No existing Prumo artifacts detected (fresh adoption target).")
+		}
+		return exitOK
+	}
+
+	if subcommand == "facts" {
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(map[string]any{
+				"summary": report.Ledger.Summary,
+				"entries": report.Ledger.Entries,
+			}))
+		}
+		fmt.Printf("=== OBSERVED TECHNICAL FACTS (%d entries) ===\n\n", len(report.Ledger.Entries))
+		for _, entry := range report.Ledger.Entries {
+			conf := string(entry.Confidence)
+			fmt.Printf("  • [%s] %s (confidence: %s, score: %.2f)\n", entry.Category, entry.Claim, conf, entry.Score)
+		}
+		return exitOK
+	}
+
+	if subcommand == "classify" {
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(report.Classification))
+		}
+		fmt.Printf("=== REPOSITORY CLASSIFICATION ===\n\n")
+		fmt.Printf("App Types:    %s\n", strings.Join(report.Classification.AppTypes, ", "))
+		fmt.Printf("Languages:    %s\n", strings.Join(report.Classification.Languages, ", "))
+		fmt.Printf("Frameworks:   %s\n", strings.Join(report.Classification.Frameworks, ", "))
+		fmt.Printf("Toolchains:   %s\n", strings.Join(report.Classification.Toolchains, ", "))
+		fmt.Printf("Capabilities: %s\n", strings.Join(report.Classification.Capabilities, ", "))
+		return exitOK
+	}
+
+	// Uncertainty resolution
 	if nonInteractive {
 		session := adoption.ResolveNonInteractive(&report.Ledger)
 		if !asJSON && session.ResolvedCount > 0 {
@@ -181,6 +251,13 @@ func runAdopt(asJSON bool, args []string) int {
 			}
 			applied = append(applied, res)
 		}
+
+		// Ensure complete Protocol v3 workspace (.ai manifests, docs/PRUMO.md, PROJECT_STATE.md, etc.)
+		svc := cliops.New(repoRoot())
+		det := cliops.DetectProject(path)
+		profile := cliops.BuildDefaultProfile(det, "standard")
+		_, _ = svc.InitWithProfile(path, profile)
+
 		if asJSON {
 			return printEnvelope(protocol.OkEnvelope(ApplySummary{Applied: applied}))
 		}
@@ -188,6 +265,11 @@ func runAdopt(asJSON bool, args []string) int {
 		for _, app := range applied {
 			fmt.Printf("✓ Proposal %s applied successfully (Journal hash: %s)\n", app.ProposalID, app.JournalEntry.Hash)
 		}
+		fmt.Printf("\n✓ Project adopted into Prumo Protocol v3 in %s\n", path)
+		fmt.Println("\nNext steps:")
+		fmt.Println("  prumo validate        # Verify workspace conformance")
+		fmt.Println("  prumo doctor          # Verify harness and connector health")
+		fmt.Println("  prumo compile --all   # Compile agent adapters")
 		return exitOK
 	}
 
@@ -214,5 +296,7 @@ func runAdopt(asJSON bool, args []string) int {
 	}
 
 	fmt.Print(adoption.RenderHumanReport(report))
+	fmt.Println("\nTo apply this adoption and configure Prumo Protocol v3, run:")
+	fmt.Printf("  prumo adopt --apply %s   # or: prumo adopt apply %s\n", path, path)
 	return exitOK
 }

@@ -47,10 +47,24 @@ var availableProviders = []ProviderOption{
 		RequiresKey: false,
 	},
 	{
+		ID:          "gemini",
+		Name:        "Google Gemini",
+		Description: "Gemini 2.5 Pro / Flash models with multimodal & thinking support",
+		EnvVar:      "GEMINI_API_KEY (or PRUMO_MODEL_API_KEY)",
+		RequiresKey: true,
+	},
+	{
 		ID:          "anthropic",
 		Name:        "Anthropic Claude",
-		Description: "Claude 3.5 Sonnet / Haiku / Opus models",
-		EnvVar:      "PRUMO_MODEL_API_KEY (or ANTHROPIC_API_KEY)",
+		Description: "Claude 3.7 Sonnet / 3.5 Haiku / Opus models",
+		EnvVar:      "ANTHROPIC_API_KEY (or PRUMO_MODEL_API_KEY)",
+		RequiresKey: true,
+	},
+	{
+		ID:          "deepseek",
+		Name:        "DeepSeek",
+		Description: "DeepSeek-V3 and DeepSeek-R1 reasoning models",
+		EnvVar:      "DEEPSEEK_API_KEY (or PRUMO_MODEL_API_KEY)",
 		RequiresKey: true,
 	},
 	{
@@ -141,10 +155,14 @@ func hasEnvKey(opt ProviderOption) bool {
 		return true
 	}
 	switch opt.ID {
+	case "gemini":
+		return os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("PRUMO_MODEL_API_KEY") != ""
+	case "deepseek":
+		return os.Getenv("DEEPSEEK_API_KEY") != "" || os.Getenv("PRUMO_MODEL_API_KEY") != ""
 	case "anthropic":
-		return os.Getenv("PRUMO_MODEL_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != ""
+		return os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("PRUMO_MODEL_API_KEY") != ""
 	case "openai-compat":
-		return os.Getenv("PRUMO_MODEL_API_KEY") != "" || os.Getenv("OPENAI_API_KEY") != ""
+		return os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("PRUMO_MODEL_API_KEY") != ""
 	default:
 		return os.Getenv("PRUMO_MODEL_API_KEY") != ""
 	}
@@ -279,8 +297,7 @@ func (p *providerDialogCmp) viewString() string {
 		Padding(1, 2).
 		Border(lipgloss.RoundedBorder()).
 		BorderBackground(t.Background()).
-		BorderForeground(t.TextMuted()).
-		Width(lipgloss.Width(content) + 4).
+		BorderForeground(t.Primary()).
 		Render(content)
 }
 

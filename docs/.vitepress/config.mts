@@ -197,6 +197,7 @@ export default defineConfig({
                 { text: 'Visão Geral', link: '/getting-started/' },
                 { text: 'Instalação Rápida', link: '/getting-started/installation' },
                 { text: 'Primeiro Projeto (5 min)', link: '/getting-started/first-project' },
+                { text: 'Adoção Brownfield', link: '/getting-started/adoption' },
                 { text: 'Conceitos Fundamentais', link: '/getting-started/concepts' }
               ]
             }

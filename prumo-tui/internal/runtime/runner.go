@@ -96,6 +96,18 @@ type Runner struct {
 	// second run in a session appends to the same log, so folding from zero
 	// would re-read what was already drawn and counted.
 	cursors map[string]int
+
+	activeAgent string
+	subagents   map[string][]SubagentInfo
+}
+
+// SubagentInfo describes an agent or subagent running in a session.
+type SubagentInfo struct {
+	ID        string `json:"id"`
+	Role      string `json:"role"`
+	Status    string `json:"status"` // "idle", "running", "done", "failed"
+	Goal      string `json:"goal"`
+	StartedAt int64  `json:"started_at"`
 }
 
 // Options configures a runner.
@@ -131,6 +143,7 @@ func NewRunner(opts Options) *Runner {
 		active:      map[string]context.CancelFunc{},
 		changes:     map[string][]Change{},
 		cursors:     map[string]int{},
+		subagents:   map[string][]SubagentInfo{},
 	}
 }
 
@@ -180,6 +193,49 @@ func (r *Runner) recordChange(sessionID string, change Change) {
 		r.changes = map[string][]Change{}
 	}
 	r.changes[sessionID] = append(r.changes[sessionID], change)
+}
+
+// ActiveAgent returns the name of the currently active primary agent.
+func (r *Runner) ActiveAgent() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.activeAgent == "" {
+		return "coder"
+	}
+	return r.activeAgent
+}
+
+// SetActiveAgent changes the active agent.
+func (r *Runner) SetActiveAgent(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.activeAgent = name
+}
+
+// Subagents returns the list of subagents active or recorded for a session.
+func (r *Runner) Subagents(sessionID string) []SubagentInfo {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.subagents == nil {
+		return nil
+	}
+	return append([]SubagentInfo(nil), r.subagents[sessionID]...)
+}
+
+// RecordSubagent records or updates a subagent's status for a session.
+func (r *Runner) RecordSubagent(sessionID string, info SubagentInfo) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.subagents == nil {
+		r.subagents = map[string][]SubagentInfo{}
+	}
+	for i, existing := range r.subagents[sessionID] {
+		if existing.ID == info.ID {
+			r.subagents[sessionID][i] = info
+			return
+		}
+	}
+	r.subagents[sessionID] = append(r.subagents[sessionID], info)
 }
 
 // recordUsage adds one report of what a run spent to the session it belongs to.
@@ -572,6 +628,49 @@ func (r *Runner) fold(ev Event, sessionID string, current *turn) bool {
 		r.recordUsage(sessionID, ev.Payload)
 		return false
 	}
+	if ev.Kind == "subagent.started" || ev.Kind == "agent.delegate" {
+		role := stringOf(ev.Payload, "role")
+		id := stringOf(ev.Payload, "subagent_id")
+		goal := stringOf(ev.Payload, "goal")
+		if id == "" {
+			id = fmt.Sprintf("sub-%d", time.Now().UnixNano()%10000)
+		}
+		if role == "" {
+			role = "researcher"
+		}
+		r.RecordSubagent(sessionID, SubagentInfo{
+			ID:        id,
+			Role:      role,
+			Status:    "running",
+			Goal:      goal,
+			StartedAt: time.Now().Unix(),
+		})
+		return true
+	}
+	if ev.Kind == "subagent.completed" {
+		id := stringOf(ev.Payload, "subagent_id")
+		role := stringOf(ev.Payload, "role")
+		if id != "" {
+			r.RecordSubagent(sessionID, SubagentInfo{
+				ID:     id,
+				Role:   role,
+				Status: "done",
+			})
+		}
+		return true
+	}
+	if ev.Kind == "subagent.failed" {
+		id := stringOf(ev.Payload, "subagent_id")
+		role := stringOf(ev.Payload, "role")
+		if id != "" {
+			r.RecordSubagent(sessionID, SubagentInfo{
+				ID:     id,
+				Role:   role,
+				Status: "failed",
+			})
+		}
+		return true
+	}
 	if current.id == "" {
 		msg, err := r.messages.Create(context.Background(), sessionID, message.CreateMessageParams{Role: message.Assistant})
 		if err != nil {
@@ -773,29 +872,124 @@ type ModelCapabilities struct {
 	Features []string
 }
 
-// ModelCatalogue asks the harness what the provider serves and what each model
-// declares, in one call: the two questions are answered by the same operation.
-func (r *Runner) ModelCatalogue(ctx context.Context, provider string) ([]string, map[string]ModelCapabilities, error) {
-	if r.client == nil {
-		return nil, nil, errors.New("no harness attached")
+// DefaultModelsFor returns curated models for common providers so the user
+// can immediately select a model even before daemon discovery finishes or if offline.
+func DefaultModelsFor(provider string) []string {
+	switch strings.ToLower(provider) {
+	case "opencode":
+		return []string{
+			"opencode/nemotron-3.5-lightning-free",
+			"opencode/mimo-v2.5-free",
+			"opencode/gemini-2.5-free",
+			"opencode/deepseek-free",
+			"opencode/llama-3.3-70b-free",
+			"opencode/gpt-4o-mini-free",
+			"opencode/claude-3-7-sonnet",
+			"opencode/claude-3-5-sonnet",
+			"opencode/gpt-4o",
+		}
+	case "gemini", "google":
+		return []string{
+			"gemini-2.5-pro",
+			"gemini-2.5-flash",
+			"gemini-2.0-flash-exp",
+			"gemini-1.5-pro",
+			"gemini-1.5-flash",
+		}
+	case "anthropic":
+		return []string{
+			"claude-3-7-sonnet-latest",
+			"claude-3-5-sonnet-latest",
+			"claude-3-5-haiku-latest",
+			"claude-3-opus-latest",
+		}
+	case "deepseek":
+		return []string{
+			"deepseek-chat",
+			"deepseek-reasoner",
+			"deepseek-coder",
+		}
+	case "openai", "openai-compat":
+		return []string{
+			"gpt-4o",
+			"gpt-4o-mini",
+			"o3-mini",
+			"o1",
+			"gpt-4-turbo",
+		}
+	case "fake", "fake-tools":
+		return []string{
+			"fake-default",
+			"fake-fast",
+		}
+	default:
+		return []string{"default"}
 	}
-	ids, err := r.client.Models(ctx, prumo.ModelsRequest{Provider: provider})
-	if err != nil {
-		return nil, nil, err
-	}
-	infos, err := r.client.ModelInfo(ctx, prumo.ModelsRequest{Provider: provider})
-	if err != nil {
-		return nil, nil, err
-	}
+}
 
-	capabilities := make(map[string]ModelCapabilities, len(infos))
-	for _, info := range infos {
-		capabilities[info.ID] = ModelCapabilities{
-			Declared: info.Declared,
-			Features: featuresOf(info.Capabilities),
+// DefaultCapabilitiesFor returns declared features for default models.
+func DefaultCapabilitiesFor(provider string) map[string]ModelCapabilities {
+	models := DefaultModelsFor(provider)
+	caps := make(map[string]ModelCapabilities, len(models))
+	for _, m := range models {
+		features := []string{"text"}
+		lower := strings.ToLower(m)
+		if strings.Contains(lower, "vision") || strings.Contains(lower, "gemini") || strings.Contains(lower, "4o") || strings.Contains(lower, "sonnet") {
+			features = append(features, "vision")
+		}
+		if strings.Contains(lower, "reasoner") || strings.Contains(lower, "o1") || strings.Contains(lower, "o3") || strings.Contains(lower, "thinking") {
+			features = append(features, "reasoning")
+		}
+		features = append(features, "tools")
+		caps[m] = ModelCapabilities{
+			Declared: true,
+			Features: features,
 		}
 	}
-	return ids, capabilities, nil
+	return caps
+}
+
+// ModelCatalogue asks the harness what the provider serves and what each model
+// declares, in one call: the two questions are answered by the same operation.
+// If the harness is slow or unattached, curated defaults are returned so the UI
+// remains immediately responsive.
+func (r *Runner) ModelCatalogue(ctx context.Context, provider string) ([]string, map[string]ModelCapabilities, error) {
+	if r.client == nil {
+		return DefaultModelsFor(provider), DefaultCapabilitiesFor(provider), nil
+	}
+
+	queryCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+
+	infos, err := r.client.ModelInfo(queryCtx, prumo.ModelsRequest{Provider: provider})
+	if err == nil && len(infos) > 0 {
+		ids := make([]string, 0, len(infos))
+		capabilities := make(map[string]ModelCapabilities, len(infos))
+		for _, info := range infos {
+			ids = append(ids, info.ID)
+			capabilities[info.ID] = ModelCapabilities{
+				Declared: info.Declared,
+				Features: featuresOf(info.Capabilities),
+			}
+		}
+		return ids, capabilities, nil
+	}
+
+	// Fallback to plain Models call if ModelInfo returned empty
+	ids, err := r.client.Models(queryCtx, prumo.ModelsRequest{Provider: provider})
+	if err == nil && len(ids) > 0 {
+		capabilities := make(map[string]ModelCapabilities, len(ids))
+		for _, id := range ids {
+			capabilities[id] = ModelCapabilities{
+				Declared: false,
+				Features: []string{"text", "tools"},
+			}
+		}
+		return ids, capabilities, nil
+	}
+
+	// Curated defaults fallback
+	return DefaultModelsFor(provider), DefaultCapabilitiesFor(provider), nil
 }
 
 // featuresOf names what a model declares, in a fixed order so the same model

@@ -1,4 +1,4 @@
-# digest sha256:7df245eb5ca1e4fe
+# digest sha256:0c5e7df2144d83fd
                                                                                                     
  ┃ row 0 of the conversation                                                                        
                                                                                                     
@@ -7,21 +7,21 @@
  ┃ row 2 of the conversation                                                                        
                                                                                                     
  ┃ row 3 of the conversation                                                                        
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                 ╭────────────────────────────────╮                                 
-                                 │                                │░                                
-                                 │  Are you sure you want to      │░                                
-                                 │  quit?                         │░                                
-                                 │                                │░                                
-                                 │                      Yes       │░                                
-                                 │  No                            │░                                
-                                 │                                │░                                
-                                 ╰────────────────────────────────╯░                                
-                                  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                
-                                                                                                    
-                                                                                                    
+                        ╭──────────────────────────────────────────────────╮                        
+                        │                                                  │░                       
+                        │  Quit Session                                    │░                       
+                        │                                                  │░                       
+                        │  Save conversation before quitting?              │░                       
+                        │                                                  │░                       
+                        │  Session name (editable):                        │░                       
+                        │  ╭──────────────────────────────────────────╮    │░                       
+                        │  │ > S1                                     │    │░                       
+                        │  ╰──────────────────────────────────────────╯    │░                       
+                        │                                                  │░                       
+                        │                  Save & Quit    Quit    Cancel   │░                       
+                        │                                                  │░                       
+                        ╰──────────────────────────────────────────────────╯░                       
+                         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                       
                                                                                                     
                                                                                                     
  press enter to send the message, write \ and enter to add a new line                               

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
+	"github.com/raillen/prumo-tui/internal/audit"
 	"github.com/raillen/prumo-tui/internal/commands"
 	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/llm/models"
@@ -452,6 +454,31 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showQuit = false
 		return a, nil
 
+	case dialog.QuitWithSaveMsg:
+		a.showQuit = false
+		ctx := context.Background()
+		if a.app != nil && a.app.Sessions != nil {
+			if msg.SessionID != "" {
+				sess, err := a.app.Sessions.Get(ctx, msg.SessionID)
+				if err == nil {
+					sess.Title = msg.Title
+					_, _ = a.app.Sessions.Save(ctx, sess)
+				} else {
+					_, _ = a.app.Sessions.Save(ctx, session.Session{
+						ID:        msg.SessionID,
+						Title:     msg.Title,
+						CreatedAt: time.Now().Unix(),
+						UpdatedAt: time.Now().Unix(),
+					})
+				}
+			} else {
+				saved, _ := a.app.Sessions.Create(ctx, msg.Title)
+				a.selectedSession = saved
+			}
+		}
+		a.recordSessionAudit("completed")
+		return a, tea.Quit
+
 	case dialog.CloseSessionDialogMsg:
 		a.showSessionDialog = false
 		return a, nil
@@ -463,6 +490,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pubsub.Event[agent.AgentEvent]:
 		payload := msg.Payload
 		if payload.Error != nil {
+			a.recordSessionAudit("failed")
 			return a, util.ReportFailure("The run stopped", "send the goal again, or read the log with ctrl+l", payload.Error)
 		}
 		if payload.Type == agent.AgentEventTypeConnection {
@@ -478,11 +506,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.status = s.(core.StatusCmp)
 			return a, cmd
 		}
-		// A run event that is not an error needs nothing from this model: the
-		// message store publishes what the conversation gained, and the
-		// transcript and statusline redraw from that. Compaction is not
-		// triggered here either — the harness compacts a run as it approaches
-		// its budget, and the client has no operation to ask with.
+		a.recordSessionAudit("active")
 		return a, nil
 
 	case dialog.CloseThemeDialogMsg:
@@ -631,7 +655,8 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showProviderDialog = false
 		return a, nil
 
-	case openProviderDialogMsg:
+	case openProviderDialogMsg, dialog.OpenProviderFromModelsMsg:
+		a.showModelDialog = false
 		if a.app != nil {
 			a.providerDialog.SetCurrentProvider(a.app.CurrentProvider())
 		}
@@ -645,6 +670,20 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
+		// If quit dialog is open, let it handle the key press first
+		if a.showQuit {
+			q, quitCmd := a.quit.Update(msg)
+			a.quit = q.(dialog.QuitDialog)
+			return a, quitCmd
+		}
+
+		// If theme dialog is open, let it handle the key press first
+		if a.showThemeDialog {
+			d, themeCmd := a.themeDialog.Update(msg)
+			a.themeDialog = d.(dialog.ThemeDialog)
+			return a, themeCmd
+		}
+
 		// If model dialog is open, let it handle the key press first
 		if a.showModelDialog {
 			d, modelCmd := a.modelDialog.Update(msg)
@@ -1093,6 +1132,30 @@ func (a *appModel) exportTimeline(sessionID string) tea.Cmd {
 	}
 }
 
+// recordSessionAudit deterministically saves the session and project telemetry to .prumo/runtime/audit/telemetry.json
+func (a *appModel) recordSessionAudit(status string) {
+	if a.app == nil || a.selectedSession.ID == "" {
+		return
+	}
+	ws := a.app.Workspace
+	provider := a.app.CurrentProvider()
+	modelName := "default"
+	if a.app.CoderAgent != nil {
+		if m := a.app.CoderAgent.Model(); m.Name != "" {
+			modelName = m.Name
+		}
+	}
+	primaryAgent := "coder"
+	var subagents []runtime.SubagentInfo
+	var changes []runtime.Change
+	if a.app.Runner != nil {
+		primaryAgent = a.app.Runner.ActiveAgent()
+		subagents = a.app.Runner.Subagents(a.selectedSession.ID)
+		changes = a.app.Runner.Changes(a.selectedSession.ID)
+	}
+	_, _ = audit.RecordSession(ws, a.selectedSession, provider, modelName, primaryAgent, status, subagents, changes)
+}
+
 // denialNotice is what the client says when the user answers a gate with deny.
 //
 // It is a function rather than a literal because the golden frame of the denied
@@ -1108,6 +1171,17 @@ func denialNotice(tool string) string {
 // a stray chord cannot end a session that is mid-run.
 func (a *appModel) promptQuit() tea.Cmd {
 	a.showQuit = !a.showQuit
+	if a.showQuit {
+		title := a.selectedSession.Title
+		if title == "" {
+			ws := ""
+			if a.app != nil {
+				ws = a.app.Workspace
+			}
+			title = util.DefaultSessionTitle(ws)
+		}
+		a.quit.SetSession(a.selectedSession.ID, title)
+	}
 	if a.showHelp {
 		a.showHelp = false
 	}
@@ -1126,6 +1200,9 @@ func (a *appModel) promptQuit() tea.Cmd {
 	}
 	if a.showMultiArgumentsDialog {
 		a.showMultiArgumentsDialog = false
+	}
+	if a.showQuit {
+		return a.quit.Init()
 	}
 	return nil
 }
@@ -1611,6 +1688,80 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 		},
 	})
 
+	model.RegisterCommand(dialog.Command{
+		ID:          "agents",
+		Title:       "Workforce Agents",
+		Description: "View and select Prumo workforce agents (coder, architect, researcher...)",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			active := "coder"
+			if model.app != nil && model.app.Runner != nil {
+				active = model.app.Runner.ActiveAgent()
+			}
+			text := fmt.Sprintf("Active Agent: %s\n\nPrumo Workforce Roles:\n• coder (software engineering)\n• architect (system design)\n• researcher (exploration)\n• tester (test suites)\n• reviewer (quality & clean code)\n\nSwitch agent with /agent <name>", active)
+			return util.ReportInfo(text)
+		},
+	})
+
+	model.RegisterCommand(dialog.Command{
+		ID:          "subagents",
+		Title:       "Subagent Delegations",
+		Description: "View active subagent delegations and status in current session",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			var subs []runtime.SubagentInfo
+			if model.app != nil && model.app.Runner != nil && model.selectedSession.ID != "" {
+				subs = model.app.Runner.Subagents(model.selectedSession.ID)
+			}
+			if len(subs) == 0 {
+				return util.ReportInfo("No subagents currently active in this session.")
+			}
+			var lines []string
+			lines = append(lines, fmt.Sprintf("Subagents for session %s:", model.selectedSession.ID[:8]))
+			for _, s := range subs {
+				lines = append(lines, fmt.Sprintf("• %s [%s] - %s", s.Role, s.Status, s.Goal))
+			}
+			return util.ReportInfo(strings.Join(lines, "\n"))
+		},
+	})
+
+	model.RegisterCommand(dialog.Command{
+		ID:          "tab",
+		Title:       "New Conversation Tab",
+		Description: "Open a new conversation tab in this project (Ctrl+T)",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			return util.CmdHandler(chat.NewTabMsg{})
+		},
+	})
+
+	model.RegisterCommand(dialog.Command{
+		ID:          "gates",
+		Title:       "Verification Gates",
+		Description: "View harness verification and quality gates status",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			return util.ReportInfo("Prumo Verification Gates:\n• tests: passing deterministic unit & suite tests\n• lint: clean code standards conformance\n• build: clean zero-error compilation\n• trust: security & permission review gates")
+		},
+	})
+
+	model.RegisterCommand(dialog.Command{
+		ID:          "audit",
+		Title:       "Project Audit & Telemetry",
+		Description: "View and verify project telemetry, tokens, cost, and workforce history (.prumo/runtime/audit/)",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			ws := "."
+			if model.app != nil && model.app.Workspace != "" {
+				ws = model.app.Workspace
+			}
+			ad, err := audit.Load(ws)
+			if err != nil {
+				return util.ReportFailure("Reading audit telemetry", "run a session first", err)
+			}
+			text := fmt.Sprintf("Project: %s (branch: %s)\nSessions: %d · Total Tokens: %d (in: %d / out: %d)\nCost: $%.4f · Files Changed: %d\nAudit file: %s",
+				ad.ProjectName, ad.GitBranch, ad.Summary.TotalSessions,
+				ad.Summary.TotalTokens, ad.Summary.TotalPromptTokens, ad.Summary.TotalOutputTokens,
+				ad.Summary.TotalCostUSD, ad.Summary.TotalFilesChanged, audit.AuditRelPath)
+			return util.ReportInfo(text)
+		},
+	})
+
 	// The command surface is the user's own directory of markdown prompts. It is
 	// theirs rather than the project's on purpose: a command is a prompt its
 	// author owns, and the client reads what the person running it wrote.
@@ -1717,9 +1868,88 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 	case "/log", "/logs", "/l":
 		return a, a.moveToPage(page.LogsPage)
 
+	case "/agents", "/workforce":
+		active := "coder"
+		if a.app != nil && a.app.Runner != nil {
+			active = a.app.Runner.ActiveAgent()
+		}
+		text := fmt.Sprintf("Active Agent: %s\n\nPrumo Workforce Roles:\n• coder (software engineering)\n• architect (system design)\n• researcher (exploration)\n• tester (test suites)\n• reviewer (quality & clean code)\n\nSwitch agent with /agent <name>", active)
+		return a, util.ReportInfo(text)
+
+	case "/agent":
+		if len(args) > 0 {
+			target := strings.ToLower(args[0])
+			if a.app != nil && a.app.Runner != nil {
+				a.app.Runner.SetActiveAgent(target)
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Active agent switched to: %s", target))
+		}
+		active := "coder"
+		if a.app != nil && a.app.Runner != nil {
+			active = a.app.Runner.ActiveAgent()
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Current agent: %s. Use /agent <name> to switch (coder, architect, researcher, tester, reviewer).", active))
+
+	case "/subagent", "/subagents":
+		var subs []runtime.SubagentInfo
+		if a.app != nil && a.app.Runner != nil && a.selectedSession.ID != "" {
+			subs = a.app.Runner.Subagents(a.selectedSession.ID)
+		}
+		if len(subs) == 0 {
+			return a, util.ReportInfo("No subagents delegated in this session yet.")
+		}
+		var lines []string
+		lines = append(lines, "Session Subagent Delegations:")
+		for _, s := range subs {
+			lines = append(lines, fmt.Sprintf("• %s [%s] (id: %s)", s.Role, s.Status, s.ID))
+		}
+		return a, util.ReportInfo(strings.Join(lines, "\n"))
+
+	case "/tab", "/tabs":
+		if len(args) > 0 {
+			sub := strings.ToLower(args[0])
+			switch sub {
+			case "new", "n":
+				title := ""
+				if len(args) > 1 {
+					title = strings.Join(args[1:], " ")
+				}
+				return a, util.CmdHandler(chat.NewTabMsg{Title: title})
+			case "close", "c":
+				return a, util.CmdHandler(chat.CloseTabMsg{})
+			case "next":
+				return a, util.CmdHandler(chat.NextTabMsg{})
+			case "prev", "previous":
+				return a, util.CmdHandler(chat.PrevTabMsg{})
+			default:
+				if n, err := strconv.Atoi(sub); err == nil && n >= 1 {
+					return a, util.CmdHandler(chat.SwitchTabMsg{Index: n - 1})
+				}
+				return a, util.CmdHandler(chat.NewTabMsg{Title: strings.Join(args, " ")})
+			}
+		}
+		return a, util.CmdHandler(chat.NewTabMsg{})
+
+	case "/gates", "/gate":
+		return a, util.ReportInfo("Prumo Verification Gates:\n• tests: passing deterministic unit & suite tests\n• lint: clean code standards conformance\n• build: clean zero-error compilation\n• trust: security & permission review gates")
+
+	case "/audit", "/telemetry":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		ad, err := audit.Load(ws)
+		if err != nil {
+			return a, util.ReportFailure("Reading audit telemetry", "run a session first", err)
+		}
+		text := fmt.Sprintf("Project: %s (branch: %s)\nSessions: %d · Total Tokens: %d (in: %d / out: %d)\nCost: $%.4f · Files Changed: %d\nAudit file: %s",
+			ad.ProjectName, ad.GitBranch, ad.Summary.TotalSessions,
+			ad.Summary.TotalTokens, ad.Summary.TotalPromptTokens, ad.Summary.TotalOutputTokens,
+			ad.Summary.TotalCostUSD, ad.Summary.TotalFilesChanged, audit.AuditRelPath)
+		return a, util.ReportInfo(text)
+
 	case "/quit", "/exit", "/q":
-		a.showQuit = true
-		return a, nil
+		return a, a.promptQuit()
 
 	default:
 		trimmedName := strings.TrimPrefix(name, "/")

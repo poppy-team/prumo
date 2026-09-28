@@ -14,7 +14,7 @@
     "selection_rule": { "type": "string" },
     "cross_provider_review": { "type": ["boolean", "string"] },
     "context_aware_routing": { "type": ["boolean", "string"] },
-    "roster": { "type": "array", "minItems": 1 },
+    "roster": { "type": "array" },
     "profiles": {
       "type": "object",
       "additionalProperties": {

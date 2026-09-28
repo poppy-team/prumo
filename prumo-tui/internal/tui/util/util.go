@@ -2,6 +2,9 @@ package util
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -71,4 +74,55 @@ func Clamp(v, low, high int) int {
 		low, high = high, low
 	}
 	return min(high, max(low, v))
+}
+
+// GitBranch inspects the workspace directory for the active Git branch.
+// It reads .git/HEAD directly without shelling out to git CLI.
+func GitBranch(dir string) string {
+	if dir == "" {
+		dir = "."
+	}
+	headPath := filepath.Join(dir, ".git", "HEAD")
+	data, err := os.ReadFile(headPath)
+	if err != nil {
+		parentHead := filepath.Join(dir, "..", ".git", "HEAD")
+		if d, err := os.ReadFile(parentHead); err == nil {
+			data = d
+		} else {
+			return ""
+		}
+	}
+	content := strings.TrimSpace(string(data))
+	if strings.HasPrefix(content, "ref: refs/heads/") {
+		return strings.TrimPrefix(content, "ref: refs/heads/")
+	}
+	if len(content) >= 7 {
+		return content[:7]
+	}
+	return content
+}
+
+// DefaultSessionTitle generates the title for an initial session:
+// - Named after the active Git branch if present.
+// - If no branch exists, named `<YYYY-MM-DD> - <project_name>`.
+func DefaultSessionTitle(workspace string) string {
+	if branch := GitBranch(workspace); branch != "" {
+		return branch
+	}
+	projName := "project"
+	if workspace != "" {
+		abs, err := filepath.Abs(workspace)
+		if err == nil {
+			projName = filepath.Base(abs)
+		} else {
+			projName = filepath.Base(workspace)
+		}
+	} else if cwd, err := os.Getwd(); err == nil {
+		projName = filepath.Base(cwd)
+	}
+	if projName == "" || projName == "." || projName == "/" {
+		projName = "project"
+	}
+	dateStr := time.Now().Format("2006-01-02")
+	return fmt.Sprintf("%s - %s", dateStr, projName)
 }
