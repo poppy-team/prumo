@@ -37,6 +37,8 @@ type chatPage struct {
 	editor               layout.Container
 	editorCmp            chat.EditorCmp
 	messages             layout.Container
+	messagesCmp          chat.MessagesCmp
+	lastVimChord         rune
 	sidebar              layout.Container
 	sidebarCmp           chat.SidebarCmp
 	showSidebar          bool
@@ -126,6 +128,10 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case layout.FocusMsg:
 		p.editor.SetFocused(msg.Focused)
+		if msg.Focused {
+			return p, p.editorCmp.Focus()
+		}
+		p.editorCmp.Blur()
 		return p, nil
 
 	case chat.ToggleSidebarMsg:
@@ -181,6 +187,57 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
+		// Modal Vim navigation when composer is unfocused/unblurred
+		if !p.editorCmp.Focused() {
+			switch msg.String() {
+			case "i", "a", "enter":
+				p.lastVimChord = 0
+				p.editor.SetFocused(true)
+				return p, p.editorCmp.Focus()
+			case "j", "down":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollDown(1)
+				}
+				return p, nil
+			case "k", "up":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollUp(1)
+				}
+				return p, nil
+			case "g":
+				if p.lastVimChord == 'g' {
+					p.lastVimChord = 0
+					if p.messagesCmp != nil {
+						p.messagesCmp.ScrollToTop()
+					}
+				} else {
+					p.lastVimChord = 'g'
+				}
+				return p, nil
+			case "G":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollToBottom()
+				}
+				return p, nil
+			case "ctrl+d":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollDown(10)
+				}
+				return p, nil
+			case "ctrl+u":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollUp(10)
+				}
+				return p, nil
+			}
+			p.lastVimChord = 0
+		}
+
 		switch {
 		case key.Matches(msg, keyMap.ShowCompletionDialog):
 			p.completionDialog.SetProvider(p.filesProvider)
@@ -224,8 +281,13 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			)
 
 		case key.Matches(msg, keyMap.Cancel):
-			if p.session.ID != "" {
+			if p.session.ID != "" && p.app != nil && p.app.CoderAgent != nil && p.app.CoderAgent.IsSessionBusy(p.session.ID) {
 				p.app.CoderAgent.Cancel(p.session.ID)
+				return p, nil
+			}
+			if p.editorCmp.Focused() {
+				p.editorCmp.Blur()
+				p.editor.SetFocused(false)
 				return p, nil
 			}
 		}
@@ -559,8 +621,10 @@ func NewChatPage(app *app.App) tea.Model {
 	slashProvider := completions.NewSlashCommandContextGroup()
 	completionDialog := dialog.NewCompletionDialogCmp(filesProvider)
 
+	messagesModel := chat.NewMessagesCmp(app)
+	messagesCmp, _ := messagesModel.(chat.MessagesCmp)
 	messagesContainer := layout.NewContainer(
-		chat.NewMessagesCmp(app),
+		messagesModel,
 		layout.WithPadding(1, 1, 0, 1),
 	)
 
@@ -608,6 +672,7 @@ func NewChatPage(app *app.App) tea.Model {
 		editor:           editorContainer,
 		editorCmp:        editorCmp,
 		messages:         messagesContainer,
+		messagesCmp:      messagesCmp,
 		sidebar:          sidebarContainer,
 		sidebarCmp:       sidebarCmp,
 		showSidebar:      initShowSidebar,

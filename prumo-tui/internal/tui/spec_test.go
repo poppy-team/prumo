@@ -82,6 +82,7 @@ var componentChords = map[string]string{
 	"f":         "components/chat/list.go: scroll down a page",
 	"ctrl+u":    "components/chat/list.go: half a page up",
 	"ctrl+d":    "components/chat/list.go: half a page down",
+	"g":         "components/chat/list.go: scroll to top or bottom (Vim mode)",
 	"esc":       "page/chat.go, dialogs: dismiss the topmost layer",
 	"q":         "shell: leave the log page",
 	"a":         "components/dialog/permission.go: approve",

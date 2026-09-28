@@ -97,6 +97,18 @@ func (a *App) CurrentModel() models.Model {
 	return models.Model{}
 }
 
+// ModelContextLength returns the active model context window limit in tokens, or 0 if unknown.
+func (a *App) ModelContextLength() int64 {
+	if a == nil || a.Runner == nil {
+		return 0
+	}
+	mdl := a.Runner.Model()
+	if mdl.ContextWindow > 0 {
+		return mdl.ContextWindow
+	}
+	return a.Runner.ModelContextLength(string(mdl.ID))
+}
+
 // SetReasoningEffort changes the active reasoning effort level on the runner.
 func (a *App) SetReasoningEffort(effort string) {
 	if a.Runner != nil {

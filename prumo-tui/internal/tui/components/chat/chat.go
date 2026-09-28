@@ -16,7 +16,8 @@ import (
 // It carries text and nothing else: a file is *named* in the goal rather than
 // attached to it, because what a model can see is the harness's decision.
 type SendMsg struct {
-	Text string
+	Text             string
+	PreflightChecked bool
 }
 
 type SessionSelectedMsg = session.Session

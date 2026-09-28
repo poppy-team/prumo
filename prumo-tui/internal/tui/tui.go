@@ -191,6 +191,9 @@ type appModel struct {
 	showProviderDialog bool
 	providerDialog     dialog.ProviderDialog
 
+	showDirtyDialog bool
+	dirtyDialog     dialog.DirtyDialog
+
 	// composerFocused is the focus the page was last told about, kept so the
 	// shell tells it when the answer changes rather than on every message.
 	composerFocused bool
@@ -285,7 +288,8 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a appModel) dialogOpen() bool {
 	return a.showQuit || a.showOnboard || a.showPermissions || a.showHelp || a.showSessionDialog ||
 		a.showCommandDialog || a.showModelDialog || a.showInitDialog || a.showFilepicker ||
-		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs || a.showProviderDialog
+		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs || a.showProviderDialog ||
+		a.showDirtyDialog
 }
 
 func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -352,6 +356,12 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		prov, provCmd := a.providerDialog.Update(msg)
 		a.providerDialog = prov.(dialog.ProviderDialog)
 		cmds = append(cmds, provCmd)
+
+		if a.dirtyDialog != nil {
+			dirty, dirtyCmd := a.dirtyDialog.Update(msg)
+			a.dirtyDialog = dirty.(dialog.DirtyDialog)
+			cmds = append(cmds, dirtyCmd)
+		}
 
 		a.initDialog.SetSize(msg.Width, msg.Height)
 
@@ -675,6 +685,26 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showProviderDialog = true
 		return a, nil
 
+	case dialog.CloseDirtyDialogMsg:
+		a.showDirtyDialog = false
+		switch msg.Action {
+		case "stash":
+			return a, tea.Batch(
+				util.ReportInfo("Working tree changes stashed. Resuming goal..."),
+				util.CmdHandler(chat.SendMsg{Text: msg.Prompt, PreflightChecked: true}),
+			)
+		case "commit":
+			return a, tea.Batch(
+				util.ReportInfo("Working tree changes committed. Resuming goal..."),
+				util.CmdHandler(chat.SendMsg{Text: msg.Prompt, PreflightChecked: true}),
+			)
+		case "proceed":
+			return a, util.CmdHandler(chat.SendMsg{Text: msg.Prompt, PreflightChecked: true})
+		case "abort":
+			return a, util.ReportInfo("Pre-flight check aborted. Working tree preserved.")
+		}
+		return a, nil
+
 	case chat.SendMsg:
 		trimmed := strings.TrimSpace(msg.Text)
 		if strings.HasPrefix(trimmed, "/") {
@@ -683,8 +713,26 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if strings.HasPrefix(trimmed, "!") {
 			return a.handleShellCommand(trimmed[1:])
 		}
+		if !msg.PreflightChecked {
+			ws := "."
+			if a.app != nil && a.app.Workspace != "" {
+				ws = a.app.Workspace
+			}
+			if isDirty, summary, err := dialog.CheckDirtyStatus(ws); err == nil && isDirty {
+				a.dirtyDialog.SetDirty(msg.Text, ws, summary)
+				a.showDirtyDialog = true
+				return a, nil
+			}
+		}
 
 	case tea.KeyPressMsg:
+		// If dirty dialog is open, let it handle the key press first
+		if a.showDirtyDialog {
+			d, dirtyCmd := a.dirtyDialog.Update(msg)
+			a.dirtyDialog = d.(dialog.DirtyDialog)
+			return a, dirtyCmd
+		}
+
 		// If quit dialog is open, let it handle the key press first
 		if a.showQuit {
 			q, quitCmd := a.quit.Update(msg)
@@ -1008,6 +1056,15 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if a.showDirtyDialog {
+		d, dirtyCmd := a.dirtyDialog.Update(msg)
+		a.dirtyDialog = d.(dialog.DirtyDialog)
+		cmds = append(cmds, dirtyCmd)
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
 	s, _ := a.status.Update(msg)
 	a.status = s.(core.StatusCmp)
 	a.pages[a.currentPage], cmd = a.pages[a.currentPage].Update(msg)
@@ -1262,6 +1319,9 @@ func (a *appModel) promptQuit() tea.Cmd {
 	}
 	if a.showMultiArgumentsDialog {
 		a.showMultiArgumentsDialog = false
+	}
+	if a.showDirtyDialog {
+		a.showDirtyDialog = false
 	}
 	if a.showQuit {
 		return a.quit.Init()
@@ -1574,6 +1634,21 @@ func (a appModel) viewString() string {
 		)
 	}
 
+	if a.showDirtyDialog {
+		overlay := a.dirtyDialog.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(
+			col,
+			row,
+			overlay,
+			appView,
+			true,
+		)
+	}
+
 	// The frame is fitted last so overlays are subject to it too: a dialog that
 	// runs past the terminal is exactly the surface a user cannot dismiss.
 	return fitToTerminal(appView, a.width)
@@ -1662,6 +1737,7 @@ func New(app *app.App) tea.Model {
 		files:           dialog.NewFilesDialogCmp(),
 		jobs:            dialog.NewJobsDialogCmp(),
 		providerDialog:  dialog.NewProviderDialogCmp(app.CurrentProvider()),
+		dirtyDialog:     dialog.NewDirtyDialog(),
 		app:             app,
 		commands:        []dialog.Command{},
 		pages: map[page.PageID]tea.Model{

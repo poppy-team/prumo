@@ -26,6 +26,16 @@ type cacheItem struct {
 	width   int
 	content []uiMessage
 }
+
+// MessagesCmp is the transcript message list surface.
+type MessagesCmp interface {
+	tea.Model
+	ScrollDown(lines int)
+	ScrollUp(lines int)
+	ScrollToTop()
+	ScrollToBottom()
+}
+
 type messagesCmp struct {
 	app           *app.App
 	width, height int
@@ -199,6 +209,28 @@ func (m *messagesCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *messagesCmp) IsAgentWorking() bool {
 	return m.app.CoderAgent.IsSessionBusy(m.session.ID)
+}
+
+func (m *messagesCmp) ScrollDown(lines int) {
+	m.viewport.ScrollDown(lines)
+}
+
+func (m *messagesCmp) ScrollUp(lines int) {
+	m.viewport.ScrollUp(lines)
+	if m.viewport.YOffset() == 0 {
+		m.renderMore()
+	}
+}
+
+func (m *messagesCmp) ScrollToTop() {
+	for m.renderedFrom > 0 {
+		m.renderMore()
+	}
+	m.viewport.GotoTop()
+}
+
+func (m *messagesCmp) ScrollToBottom() {
+	m.viewport.GotoBottom()
 }
 
 func formatTimeDifference(unixTime1, unixTime2 int64) string {

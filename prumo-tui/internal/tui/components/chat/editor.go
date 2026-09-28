@@ -24,6 +24,9 @@ type EditorCmp interface {
 	layout.Sizeable
 	layout.Bindings
 	Value() string
+	Focused() bool
+	Focus() tea.Cmd
+	Blur()
 }
 
 type editorCmp struct {
@@ -36,6 +39,18 @@ type editorCmp struct {
 
 func (m *editorCmp) Value() string {
 	return m.textarea.Value()
+}
+
+func (m *editorCmp) Focused() bool {
+	return m.textarea.Focused()
+}
+
+func (m *editorCmp) Focus() tea.Cmd {
+	return m.textarea.Focus()
+}
+
+func (m *editorCmp) Blur() {
+	m.textarea.Blur()
 }
 
 type EditorKeyMaps struct {

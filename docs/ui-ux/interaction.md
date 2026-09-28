@@ -58,6 +58,7 @@ binding is listed here; a surface that adds a binding adds a row.
 | `PgUp` / `b` | Scroll the transcript up a page | Transcript |
 | `PgDn` / `f` | Scroll the transcript down a page | Transcript |
 | `Ctrl+U` / `Ctrl+D` | Scroll the transcript half a page | Transcript |
+| `g` / `G` | Scroll the transcript to top or bottom (Vim mode) | Transcript |
 | `h` / `Backspace` | Go up a directory | Files |
 | `l` | Enter the selected directory | Files |
 | `i` | Show or hide hidden files | Files |

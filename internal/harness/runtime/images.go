@@ -9,12 +9,17 @@ import (
 	"strings"
 
 	"github.com/raillen/prumo/internal/harness/agent"
+	"github.com/raillen/prumo/internal/harness/safepath"
 )
 
-// MaxImageSize is the upper limit for an image reference (10MB).
+// MaxImageSize is the upper limit for an individual image reference (10MB).
 // Files exceeding this limit are rejected with an explicit error rather than
 // sent truncated.
 const MaxImageSize = 10 * 1024 * 1024
+
+// MaxAggregateImageSize is the aggregate upper limit for all image references
+// in a single turn/request (25MB).
+const MaxAggregateImageSize = 25 * 1024 * 1024
 
 var (
 	refRegex = regexp.MustCompile(`@([^\s,;:"'<>\(\)\[\]\{\}]+)`)
@@ -54,10 +59,13 @@ type refMatch struct {
 // When the model declares vision, referenced image files are read, encoded to
 // base64, and attached as ContentPart blocks alongside the text. If the model
 // does not declare vision, references remain plain text in the prompt.
-// Files exceeding MaxImageSize are rejected with a clear error.
+// Files exceeding MaxImageSize (10MB) or aggregate MaxAggregateImageSize (25MB),
+// or referencing paths outside the workspace, are rejected with a clear error.
 func ResolveReferences(msgs []agent.Message, workspace string, hasVision bool) ([]agent.Message, error) {
 	out := make([]agent.Message, len(msgs))
 	copy(out, msgs)
+
+	var totalImageBytes int64
 
 	for i, m := range out {
 		if m.Role != agent.RoleUser {
@@ -87,10 +95,15 @@ func ResolveReferences(msgs []agent.Message, workspace string, hasVision bool) (
 			}
 
 			target := path
-			if !filepath.IsAbs(target) && workspace != "" {
-				target = filepath.Join(workspace, path)
+			if workspace != "" {
+				resolved, err := safepath.Resolve(workspace, path, false)
+				if err != nil {
+					return nil, fmt.Errorf("image reference @%s escapes workspace: %w", path, err)
+				}
+				target = resolved
+			} else {
+				target = filepath.Clean(target)
 			}
-			target = filepath.Clean(target)
 
 			fi, err := os.Stat(target)
 			if err != nil || fi.IsDir() {
@@ -101,6 +114,11 @@ func ResolveReferences(msgs []agent.Message, workspace string, hasVision bool) (
 			if fi.Size() > MaxImageSize {
 				return nil, fmt.Errorf("image reference @%s exceeds 10MB limit (%d bytes)", path, fi.Size())
 			}
+
+			if totalImageBytes+fi.Size() > MaxAggregateImageSize {
+				return nil, fmt.Errorf("aggregate image payload exceeds 25MB limit (%d bytes)", totalImageBytes+fi.Size())
+			}
+			totalImageBytes += fi.Size()
 
 			validRefs = append(validRefs, refMatch{
 				start: fullStart,

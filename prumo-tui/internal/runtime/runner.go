@@ -99,8 +99,9 @@ type Runner struct {
 	// would re-read what was already drawn and counted.
 	cursors map[string]int
 
-	activeAgent string
-	subagents   map[string][]SubagentInfo
+	activeAgent       string
+	subagents         map[string][]SubagentInfo
+	modelCapabilities map[string]ModelCapabilities
 }
 
 // SubagentInfo describes an agent or subagent running in a session.
@@ -133,22 +134,27 @@ func NewRunner(opts Options) *Runner {
 	if opts.MaxTurns <= 0 {
 		opts.MaxTurns = 5
 	}
-	return &Runner{
-		agentEvents:     newAgentEvents(),
-		client:          opts.Client,
-		sessions:        opts.Sessions,
-		messages:        opts.Messages,
-		permissions:     opts.Permissions,
-		model:           opts.Model,
-		provider:        opts.Provider,
-		maxTurns:        opts.MaxTurns,
-		workspace:       opts.Workspace,
-		reasoningEffort: opts.ReasoningEffort,
-		active:          map[string]context.CancelFunc{},
-		changes:         map[string][]Change{},
-		cursors:         map[string]int{},
-		subagents:       map[string][]SubagentInfo{},
+	r := &Runner{
+		agentEvents:       newAgentEvents(),
+		client:            opts.Client,
+		sessions:          opts.Sessions,
+		messages:          opts.Messages,
+		permissions:       opts.Permissions,
+		model:             opts.Model,
+		provider:          opts.Provider,
+		maxTurns:          opts.MaxTurns,
+		workspace:         opts.Workspace,
+		reasoningEffort:   opts.ReasoningEffort,
+		active:            map[string]context.CancelFunc{},
+		changes:           map[string][]Change{},
+		cursors:           map[string]int{},
+		subagents:         map[string][]SubagentInfo{},
+		modelCapabilities: make(map[string]ModelCapabilities),
 	}
+	if r.model.ContextWindow <= 0 {
+		r.model.ContextWindow = knownModelContextLength(string(r.model.ID))
+	}
+	return r
 }
 
 // cursor reports how far into a run's timeline the client has already folded.
@@ -294,7 +300,13 @@ func (r *Runner) Model() models.Model {
 func (r *Runner) Update(modelID models.ModelID) (models.Model, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.model = models.Model{ID: modelID, Name: string(modelID)}
+	ctxLen := int64(0)
+	if cap, ok := r.modelCapabilities[string(modelID)]; ok && cap.ContextTokens > 0 {
+		ctxLen = int64(cap.ContextTokens)
+	} else {
+		ctxLen = knownModelContextLength(string(modelID))
+	}
+	r.model = models.Model{ID: modelID, Name: string(modelID), ContextWindow: ctxLen}
 	return r.model, nil
 }
 
@@ -920,8 +932,9 @@ func describePayload(payload map[string]any) string {
 // ModelCapabilities is what one model declares it can do, as the view layer
 // reads it: a list of words, and whether anyone declared them at all.
 type ModelCapabilities struct {
-	Declared bool
-	Features []string
+	Declared      bool
+	Features      []string
+	ContextTokens int
 }
 
 // DefaultModelsFor returns curated models for common providers so the user
@@ -1020,10 +1033,19 @@ func (r *Runner) ModelCatalogue(ctx context.Context, provider string) ([]string,
 		for _, info := range infos {
 			ids = append(ids, info.ID)
 			capabilities[info.ID] = ModelCapabilities{
-				Declared: info.Declared,
-				Features: featuresOf(info.Capabilities),
+				Declared:      info.Declared,
+				Features:      featuresOf(info.Capabilities),
+				ContextTokens: info.Capabilities.ContextTokens,
 			}
 		}
+		r.mu.Lock()
+		if r.modelCapabilities == nil {
+			r.modelCapabilities = make(map[string]ModelCapabilities)
+		}
+		for k, v := range capabilities {
+			r.modelCapabilities[k] = v
+		}
+		r.mu.Unlock()
 		return ids, capabilities, nil
 	}
 
@@ -1037,11 +1059,46 @@ func (r *Runner) ModelCatalogue(ctx context.Context, provider string) ([]string,
 				Features: []string{"text", "tools"},
 			}
 		}
+		r.mu.Lock()
+		if r.modelCapabilities == nil {
+			r.modelCapabilities = make(map[string]ModelCapabilities)
+		}
+		for k, v := range capabilities {
+			r.modelCapabilities[k] = v
+		}
+		r.mu.Unlock()
 		return ids, capabilities, nil
 	}
 
 	// Curated defaults fallback
 	return DefaultModelsFor(provider), DefaultCapabilitiesFor(provider), nil
+}
+
+func knownModelContextLength(modelID string) int64 {
+	m := strings.ToLower(modelID)
+	switch {
+	case strings.Contains(m, "claude-3-7") || strings.Contains(m, "claude-3-5") || strings.Contains(m, "claude-3"):
+		return 200_000
+	case strings.Contains(m, "gpt-4o") || strings.Contains(m, "o1") || strings.Contains(m, "o3"):
+		return 128_000
+	case strings.Contains(m, "gemini-2") || strings.Contains(m, "gemini-1.5"):
+		return 1_048_576
+	case strings.Contains(m, "deepseek"):
+		return 128_000
+	case strings.Contains(m, "qwen") || strings.Contains(m, "llama-3") || strings.Contains(m, "nemotron") || strings.Contains(m, "mimo"):
+		return 131_072
+	}
+	return 0
+}
+
+// ModelContextLength returns the context window in tokens for a given model, or 0 if unknown.
+func (r *Runner) ModelContextLength(modelID string) int64 {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if cap, ok := r.modelCapabilities[modelID]; ok && cap.ContextTokens > 0 {
+		return int64(cap.ContextTokens)
+	}
+	return knownModelContextLength(modelID)
 }
 
 // featuresOf names what a model declares, in a fixed order so the same model

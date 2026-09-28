@@ -237,6 +237,46 @@ func (m statusCmp) workspaceInfo() string {
 		Render(label)
 }
 
+// contextGauge returns the context pressure badge (e.g. "ctx: 35%") when the model
+// limit is known.
+func (m statusCmp) contextGauge() string {
+	if m.session.ID == "" {
+		return ""
+	}
+	limit := m.contextLimit()
+	if limit <= 0 {
+		return ""
+	}
+	used := m.session.PromptTokens + m.session.CompletionTokens
+	if used <= 0 {
+		return ""
+	}
+	pct := int((float64(used) / float64(limit)) * 100)
+	if pct > 100 {
+		pct = 100
+	}
+	t := theme.CurrentTheme()
+	bg := t.BackgroundDarker()
+	fg := t.TextMuted()
+	if pct >= 85 {
+		fg = t.Error()
+	} else if pct >= 65 {
+		fg = t.Warning()
+	}
+	label := fmt.Sprintf("ctx: %d%%", pct)
+	return styles.Padded().
+		Background(bg).
+		Foreground(fg).
+		Render(label)
+}
+
+func (m statusCmp) contextLimit() int64 {
+	if m.app == nil {
+		return 0
+	}
+	return m.app.ModelContextLength()
+}
+
 // View renders the component for the terminal.
 func (m statusCmp) View() tea.View { return tea.NewView(m.viewString()) }
 func (m statusCmp) viewString() string {
@@ -265,6 +305,10 @@ func (m statusCmp) viewString() string {
 	} else if spend := m.spend(); spend != "" && lipgloss.Width(spend) <= available {
 		status += spend
 		available -= lipgloss.Width(spend)
+	}
+	if ctxGauge := m.contextGauge(); ctxGauge != "" && lipgloss.Width(ctxGauge) <= available {
+		status += ctxGauge
+		available -= lipgloss.Width(ctxGauge)
 	}
 	if changed := m.changeCount(); changed != "" && lipgloss.Width(changed) <= available {
 		status += changed
