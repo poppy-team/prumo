@@ -48,6 +48,7 @@ type keyMap struct {
 	SwitchTheme   key.Binding
 	ChangedFiles  key.Binding
 	Sidebar       key.Binding
+	Leader        key.Binding
 }
 
 const (
@@ -109,6 +110,11 @@ var keys = keyMap{
 		key.WithKeys("ctrl+b"),
 		key.WithHelp("ctrl+b", "toggle sidebar"),
 	),
+
+	Leader: key.NewBinding(
+		key.WithKeys("ctrl+x"),
+		key.WithHelp("ctrl+x", "leader key prefix"),
+	),
 }
 
 var helpEsc = key.NewBinding(
@@ -135,6 +141,7 @@ type appModel struct {
 	status          core.StatusCmp
 	app             *app.App
 	selectedSession session.Session
+	leaderPending   bool
 
 	showPermissions bool
 	permissions     dialog.PermissionDialogCmp
@@ -706,6 +713,48 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			args, cmd := a.multiArgumentsDialog.Update(msg)
 			a.multiArgumentsDialog = args.(dialog.MultiArgumentsDialogCmp)
 			return a, cmd
+		}
+
+		if a.leaderPending {
+			a.leaderPending = false
+			if key.Matches(msg, keys.Cancel) || msg.String() == "esc" {
+				return a, util.ReportInfo("Leader mode cancelled.")
+			}
+			switch strings.ToLower(msg.String()) {
+			case "n":
+				a.selectedSession = session.Session{}
+				return a, tea.Batch(
+					util.CmdHandler(chat.SessionClearedMsg{}),
+					util.ReportInfo("Leader: Started new session"),
+				)
+			case "l", "s":
+				sessions, err := a.app.Sessions.List(context.Background())
+				if err != nil {
+					return a, util.ReportFailure("Listing the runs", "send a goal to start a new one", err)
+				}
+				if len(sessions) == 0 {
+					return a, util.ReportWarn("No sessions available")
+				}
+				a.sessionDialog.SetSessions(sessions)
+				a.showSessionDialog = true
+				return a, nil
+			case "u":
+				return a.handleSlashCommand("/undo")
+			case "m":
+				a.showModelDialog = true
+				return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
+			case "c":
+				return a.handleSlashCommand("/compact")
+			case "q":
+				return a, a.promptQuit()
+			default:
+				return a, util.ReportWarn(fmt.Sprintf("Unknown leader chord: %q. Available: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [q]uit, [esc]", msg.String()))
+			}
+		}
+
+		if key.Matches(msg, keys.Leader) {
+			a.leaderPending = true
+			return a, util.ReportInfo("Leader key (Ctrl+X) active: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [q]uit")
 		}
 
 		switch {

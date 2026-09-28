@@ -55,6 +55,7 @@ func shellChords() map[string]string {
 	add("shell: logs", keys.Logs.Keys()...)
 	add("shell: changed files", keys.ChangedFiles.Keys()...)
 	add("shell: sidebar", keys.Sidebar.Keys()...)
+	add("shell: leader key", keys.Leader.Keys()...)
 	add("shell: dismiss", returnKey.Keys()...)
 	add("shell: leave the log page", logsKeyReturnKey.Keys()...)
 	add("shell: toggle the keymap", helpEsc.Keys()...)

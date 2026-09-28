@@ -119,9 +119,48 @@ func TestEverySurfaceHasAChord(t *testing.T) {
 		"themes":   keys.SwitchTheme.Keys(),
 		"files":    keys.Filepicker.Keys(),
 		"help":     keys.Help.Keys(),
+		"leader":   keys.Leader.Keys(),
 	} {
 		if len(binding) == 0 {
 			t.Errorf("%s has no keyboard route", name)
 		}
 	}
 }
+
+func TestLeaderKeyChords(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// Step 1: Press Ctrl+X
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
+	model := updated.(appModel)
+	if !model.leaderPending {
+		t.Fatal("expected leaderPending to be true after ctrl+x")
+	}
+	if cmd == nil {
+		t.Fatal("expected feedback command after activating leader key")
+	}
+
+	// Step 2: Press 'n' (new session)
+	model.selectedSession.ID = "test-session"
+	updated, _ = model.Update(tea.KeyPressMsg{Code: 'n'})
+	model = updated.(appModel)
+	if model.leaderPending {
+		t.Fatal("expected leaderPending to be cleared after sub-key")
+	}
+	if model.selectedSession.ID != "" {
+		t.Fatalf("expected empty session id, got %q", model.selectedSession.ID)
+	}
+
+	// Step 3: Test cancellation with Esc
+	updated, _ = model.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
+	model = updated.(appModel)
+	if !model.leaderPending {
+		t.Fatal("expected leaderPending to be true after second ctrl+x")
+	}
+	updated, cmd = model.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	model = updated.(appModel)
+	if model.leaderPending {
+		t.Fatal("expected leaderPending to be false after esc")
+	}
+}
+
