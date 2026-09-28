@@ -116,6 +116,7 @@ func renderAssistantMessage(
 	messagesService message.Service, // We need this to get the task tool messages
 	focusedUIMessageId string,
 	isSummary bool,
+	showThinking bool,
 	width int,
 	position int,
 ) []uiMessage {
@@ -160,6 +161,70 @@ func renderAssistantMessage(
 			)
 		}
 	}
+
+	// Thinking / Reasoning Accordion
+	if thinkingContent != "" {
+		if thinking && content == "" && !finished {
+			// Streaming / live thinking
+			header := baseStyle.Foreground(t.Secondary()).Italic(true).Render("💭 Thinking...")
+			body := styles.ForceReplaceBackgroundWithLipgloss(toMarkdown(thinkingContent, false, width-2), t.Background())
+			block := lipgloss.JoinVertical(lipgloss.Left, header, body)
+			rendered := baseStyle.
+				Width(width - 1).
+				BorderLeft(true).
+				Foreground(t.TextMuted()).
+				BorderForeground(t.Secondary()).
+				BorderStyle(lipgloss.ThickBorder()).
+				Render(block)
+
+			messages = append(messages, uiMessage{
+				ID:          msg.ID + "-thinking",
+				messageType: assistantMessageType,
+				position:    position,
+				height:      lipgloss.Height(rendered),
+				content:     rendered,
+			})
+			position += messages[len(messages)-1].height + 1
+		} else if showThinking {
+			// Expanded thinking accordion
+			header := baseStyle.Foreground(t.Secondary()).Italic(true).Render("💭 Thought process (expanded · Ctrl+X t to collapse)")
+			body := styles.ForceReplaceBackgroundWithLipgloss(toMarkdown(thinkingContent, false, width-2), t.Background())
+			block := lipgloss.JoinVertical(lipgloss.Left, header, body)
+			rendered := baseStyle.
+				Width(width - 1).
+				BorderLeft(true).
+				Foreground(t.TextMuted()).
+				BorderForeground(t.TextMuted()).
+				BorderStyle(lipgloss.ThickBorder()).
+				Render(block)
+
+			messages = append(messages, uiMessage{
+				ID:          msg.ID + "-thinking",
+				messageType: assistantMessageType,
+				position:    position,
+				height:      lipgloss.Height(rendered),
+				content:     rendered,
+			})
+			position += messages[len(messages)-1].height + 1
+		} else {
+			// Collapsed thinking accordion
+			badge := baseStyle.
+				Width(width - 1).
+				Foreground(t.TextMuted()).
+				Italic(true).
+				Render("💭 Thought process (collapsed · Ctrl+X t to expand)")
+
+			messages = append(messages, uiMessage{
+				ID:          msg.ID + "-thinking",
+				messageType: assistantMessageType,
+				position:    position,
+				height:      lipgloss.Height(badge),
+				content:     badge,
+			})
+			position += messages[len(messages)-1].height + 1
+		}
+	}
+
 	if content != "" || (finished && finishData.Reason == message.FinishReasonEndTurn) {
 		if content == "" {
 			content = "*Finished without output*"
@@ -176,11 +241,8 @@ func renderAssistantMessage(
 			height:      lipgloss.Height(content),
 			content:     content,
 		})
-		position += messages[0].height
+		position += messages[len(messages)-1].height
 		position++ // for the space
-	} else if thinking && thinkingContent != "" {
-		// Render the thinking content
-		content = renderMessage(thinkingContent, false, msg.ID == focusedUIMessageId, width)
 	}
 
 	for i, toolCall := range msg.ToolCalls() {

@@ -25,6 +25,8 @@ type SessionClearedMsg struct{}
 
 type ToggleSidebarMsg struct{}
 
+type ToggleThinkingMsg struct{}
+
 type EditorFocusMsg bool
 
 // Multi-tab conversation message types

@@ -43,7 +43,7 @@ binding is listed here; a surface that adds a binding adds a row.
 | `Ctrl+L` | Show the client's own log | App shell |
 | `Ctrl+G` | Show the files this run changed | App shell |
 | `Ctrl+B` | Toggle the sidebar panel | App shell |
-| `Ctrl+X` | Leader key prefix (chords: n, l, u, m, c, q) | App shell |
+| `Ctrl+X` | Leader key prefix (chords: n, l, u, m, c, t, q) | App shell |
 | `Ctrl+N` | Start a new session | Composer |
 | `Ctrl+C` | Cancel the run in flight; with nothing running, ask before quitting | Any (reserved) |
 | `Ctrl+Q` | Ask before quitting | Any (reserved) |

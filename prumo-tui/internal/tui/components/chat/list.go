@@ -44,6 +44,7 @@ type messagesCmp struct {
 	// renderedFrom is the index of the oldest message that is drawn. Everything
 	// before it is in the conversation and not on screen yet.
 	renderedFrom int
+	showThinking bool
 }
 type renderFinishedMsg struct{}
 
@@ -88,6 +89,10 @@ func (m *messagesCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.SetSession(msg)
 			return m, cmd
 		}
+		return m, nil
+	case ToggleThinkingMsg:
+		m.showThinking = !m.showThinking
+		m.rerender()
 		return m, nil
 	case SessionClearedMsg:
 		m.session = session.Session{}
@@ -279,6 +284,7 @@ func (m *messagesCmp) rendered(msg message.Message, index int) []uiMessage {
 			m.app.Messages,
 			m.currentMsgID,
 			m.session.SummaryMessageID == msg.ID,
+			m.showThinking,
 			m.width,
 			index,
 		)
@@ -532,6 +538,15 @@ func (m *messagesCmp) rerender() {
 		delete(m.cachedContent, msg.ID)
 	}
 	m.renderView()
+}
+
+func (m *messagesCmp) ToggleThinking() {
+	m.showThinking = !m.showThinking
+	m.rerender()
+}
+
+func (m *messagesCmp) ShowThinking() bool {
+	return m.showThinking
 }
 
 // resizeSettle is how long a width change waits for the terminal to stop moving.

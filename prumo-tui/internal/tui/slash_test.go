@@ -179,3 +179,27 @@ func TestSlashCommandUndo(t *testing.T) {
 	}
 }
 
+func TestSlashCommandThink(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, cmd := m.Update(chat.SendMsg{Text: "/think"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on /think command")
+	}
+}
+
+func TestSlashCommandDirty(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, cmd := m.Update(chat.SendMsg{Text: "/dirty"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on /dirty command")
+	}
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("expected non-nil response for /dirty")
+	}
+}
+

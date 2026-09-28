@@ -162,5 +162,17 @@ func TestLeaderKeyChords(t *testing.T) {
 	if model.leaderPending {
 		t.Fatal("expected leaderPending to be false after esc")
 	}
+
+	// Step 4: Test leader 't' (toggle thinking)
+	updated, _ = model.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
+	model = updated.(appModel)
+	updated, cmd = model.Update(tea.KeyPressMsg{Code: 't'})
+	model = updated.(appModel)
+	if model.leaderPending {
+		t.Fatal("expected leaderPending to be false after leader 't'")
+	}
+	if cmd == nil {
+		t.Fatal("expected cmd after leader 't'")
+	}
 }
 

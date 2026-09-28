@@ -745,16 +745,21 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
 			case "c":
 				return a.handleSlashCommand("/compact")
+			case "t":
+				return a, tea.Batch(
+					util.CmdHandler(chat.ToggleThinkingMsg{}),
+					util.ReportInfo("Toggled reasoning/thinking visibility"),
+				)
 			case "q":
 				return a, a.promptQuit()
 			default:
-				return a, util.ReportWarn(fmt.Sprintf("Unknown leader chord: %q. Available: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [q]uit, [esc]", msg.String()))
+				return a, util.ReportWarn(fmt.Sprintf("Unknown leader chord: %q. Available: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [t]hink, [q]uit, [esc]", msg.String()))
 			}
 		}
 
 		if key.Matches(msg, keys.Leader) {
 			a.leaderPending = true
-			return a, util.ReportInfo("Leader key (Ctrl+X) active: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [q]uit")
+			return a, util.ReportInfo("Leader key (Ctrl+X) active: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [t]hink, [q]uit")
 		}
 
 		switch {
@@ -1916,6 +1921,30 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			return a, util.ReportFailure("Reverting last commit (/undo)", "ensure repository has commits to undo", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
 		}
 		return a, util.ReportInfo(fmt.Sprintf("Git commit reverted (/undo):\n%s", strings.TrimSpace(string(out))))
+
+	case "/think", "/thinking":
+		return a, tea.Batch(
+			util.CmdHandler(chat.ToggleThinkingMsg{}),
+			util.ReportInfo("Toggled reasoning/thinking visibility"),
+		)
+
+	case "/dirty":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		cmd := exec.Command("git", "status", "--porcelain")
+		cmd.Dir = ws
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return a, util.ReportFailure("Checking git status (/dirty)", "ensure workspace is a Git repository", err)
+		}
+		trimmed := strings.TrimSpace(string(out))
+		if trimmed == "" {
+			return a, util.ReportInfo("Git working tree is clean. Ready for agent operations.")
+		}
+		lines := strings.Split(trimmed, "\n")
+		return a, util.ReportWarn(fmt.Sprintf("Dirty working tree (%d uncommitted changes):\n%s\nActions: !git stash, !git commit, or /undo", len(lines), trimmed))
 
 	case "/export":
 		return a, util.CmdHandler(exportTimelineMsg{})

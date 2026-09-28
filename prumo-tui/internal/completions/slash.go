@@ -29,6 +29,8 @@ var defaultSlashCommands = []SlashCommand{
 	{Name: "/logs", Description: "View runtime logs"},
 	{Name: "/init", Description: "Initialize AGENTS.md memory file"},
 	{Name: "/undo", Description: "Revert the last turn's changes via Git"},
+	{Name: "/dirty", Description: "Check for uncommitted workspace modifications"},
+	{Name: "/think", Description: "Toggle visibility of model thinking/reasoning blocks"},
 	{Name: "/agents", Description: "List and switch workforce agent personas"},
 	{Name: "/export", Description: "Export session timeline"},
 	{Name: "/compact", Description: "Session compaction information"},
