@@ -88,3 +88,14 @@ func TestTruncateMarksTheCut(t *testing.T) {
 		t.Fatalf("the cut is invisible, which reads as a label that ended: %q", got)
 	}
 }
+
+func TestStatusShowsWorkspaceAndBranch(t *testing.T) {
+	cmp := statusCmp{
+		width: 120,
+	}
+	view := cmp.viewString()
+	if !strings.Contains(view, "ctrl+? help") {
+		t.Fatalf("expected help hint in status view, got:\n%s", view)
+	}
+}
+

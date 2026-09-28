@@ -114,3 +114,33 @@ func TestTheAnswerIsRecorded(t *testing.T) {
 		t.Fatal("the client would ask again")
 	}
 }
+
+func TestSidebarVisibilitySurvivesARestart(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PRUMO_TUI_CONFIG_DIR", dir)
+	Set(defaultConfig())
+
+	if err := UpdateSidebarVisibility(true); err != nil {
+		t.Fatalf("updating sidebar visibility failed: %v", err)
+	}
+
+	Set(defaultConfig())
+	if err := Load(); err != nil {
+		t.Fatalf("loading failed: %v", err)
+	}
+	if !Get().ShowSidebar {
+		t.Fatal("expected ShowSidebar to be true after restart")
+	}
+
+	if err := UpdateSidebarVisibility(false); err != nil {
+		t.Fatalf("updating sidebar visibility to false failed: %v", err)
+	}
+	Set(defaultConfig())
+	if err := Load(); err != nil {
+		t.Fatalf("loading failed: %v", err)
+	}
+	if Get().ShowSidebar {
+		t.Fatal("expected ShowSidebar to be false after restart")
+	}
+}
+

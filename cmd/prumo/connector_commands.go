@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/raillen/prumo/internal/connectors"
@@ -14,6 +15,7 @@ import (
 	_ "github.com/raillen/prumo/internal/connectors/gemini"
 	_ "github.com/raillen/prumo/internal/connectors/opencode"
 	_ "github.com/raillen/prumo/internal/connectors/windsurf"
+	"github.com/raillen/prumo/internal/install"
 	"github.com/raillen/prumo/internal/protocol"
 )
 
@@ -26,6 +28,12 @@ func runConnector(asJSON bool, home string, args []string) int {
 	switch sub {
 	case "list":
 		return runConnectorList(asJSON)
+	case "status":
+		if len(args) < 2 {
+			err := fmt.Errorf("usage: prumo connector status <name>")
+			return serviceError(asJSON, err)
+		}
+		return runConnectorStatus(asJSON, home, args[1])
 	case "install":
 		if len(args) < 2 {
 			err := fmt.Errorf("usage: prumo connector install <name>")
@@ -90,6 +98,61 @@ func runConnectorList(asJSON bool) int {
 	return exitOK
 }
 
+func runConnectorStatus(asJSON bool, home, id string) int {
+	c, err := connectors.Get(id)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+
+	contract := c.Contract()
+	manifest, _ := install.LoadManifest(home)
+	installed := false
+	if manifest.Connectors != nil {
+		if _, ok := manifest.Connectors[c.ID()]; ok {
+			installed = true
+		}
+	}
+	connDir := filepath.Join(home, "connectors", c.ID())
+	if _, err := os.Stat(connDir); err == nil {
+		installed = true
+	}
+
+	toolOnPath := onPath(c.ID())
+
+	result := map[string]any{
+		"id":           c.ID(),
+		"name":         c.Name(),
+		"version":      contract.Version,
+		"enforcement":  contract.Enforcement,
+		"capabilities": contract.Capabilities,
+		"installed":    installed,
+		"tool_on_path": toolOnPath,
+		"home":         home,
+	}
+
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(result))
+	}
+
+	fmt.Printf("Connector: %s (%s)\n", c.Name(), c.ID())
+	fmt.Printf("  Version:      v%s\n", contract.Version)
+	fmt.Printf("  Enforcement:  %s\n", contract.Enforcement)
+	fmt.Printf("  Installed:    %v (in %s)\n", installed, connDir)
+	fmt.Printf("  Tool on PATH: %v (%s)\n", toolOnPath, c.ID())
+	if len(contract.Capabilities) > 0 {
+		fmt.Printf("  Capabilities: %s\n", strings.Join(contract.Capabilities, ", "))
+	}
+	fmt.Println()
+	fmt.Println("Commands:")
+	if !installed {
+		fmt.Printf("  Install globally:    prumo connector install %s\n", c.ID())
+	} else {
+		fmt.Printf("  Uninstall:           prumo connector uninstall %s\n", c.ID())
+	}
+	fmt.Printf("  Compile for project: prumo compile --target %s\n", c.ID())
+	return exitOK
+}
+
 func runConnectorInstall(asJSON bool, home, id string, args []string) int {
 	c, err := connectors.Get(id)
 	if err != nil {
@@ -117,7 +180,9 @@ func runConnectorInstall(asJSON bool, home, id string, args []string) int {
 
 	fmt.Printf("Connector %s (%s) installed successfully.\n", c.Name(), c.ID())
 	fmt.Printf("Created %d artifacts in project.\n", len(res.CreatedPaths))
-	fmt.Printf("Cleanup manifest: %s\n", res.CleanupPath)
+	fmt.Printf("Cleanup manifest: %s\n\n", res.CleanupPath)
+	fmt.Printf("Tip: To compile or refresh project-level instructions for this connector, run:\n")
+	fmt.Printf("  prumo compile --target %s\n", c.ID())
 	return exitOK
 }
 

@@ -1,47 +1,72 @@
-# Installing Prumo
+# Instalação do Prumo
 
-Prumo distributes a single static binary. Python is not required to run the Go CLI.
+O Prumo é distribuído como um executável estático único compilado em Go, sem dependências externas de runtime (não exige Python, Node.js ou compiladores instalados).
 
-## Development Build
+## Instalação Rápida (Recomendada)
 
-```bash
-go build -o /tmp/prumo ./cmd/prumo
-/tmp/prumo-agent --json version
-```
-
-## Release Build
+### Linux & macOS
 
 ```bash
-VERSION=0.4.0 sh scripts/release.sh
-ls dist/
-cat dist/checksums.txt
+# Baixar o executável oficial v0.6.0
+curl -fsSL https://github.com/poppy-team/prumo/releases/latest/download/prumo-linux-amd64 -o /usr/local/bin/prumo
+chmod +x /usr/local/bin/prumo
+
+# Verificar instalação
+prumo version
 ```
 
-## Setup and Portable Home
+### Inicialização do Ambiente Global
+
+Ao instalar pela primeira vez, execute o `setup` para registrar o manifesto do sistema e detectar ferramentas de IA no seu `$PATH`:
 
 ```bash
-prumo-agent --home ~/.prumo setup
-prumo-agent --home ./project-home setup
-PRUMO_HOME=./project-home prumo setup
+prumo setup
 ```
 
-Setup records the installation manifest and detects available harnesses. Running setup twice converges to the same manifest.
+O comando inicializará o diretório global `~/.prumo`, contendo o registro de conectores e o cache de atualizações.
 
-## Install Connectors
+---
+
+## Verificação de Integridade e Diagnóstico
+
+Para auditar o ambiente host, ferramentas de IA detectadas e integridade do executável:
 
 ```bash
-prumo-agent --home ~/.prumo install connector opencode
+prumo doctor
 ```
 
-Connector state lives under `PRUMO_HOME/connectors/<id>/cleanup.json`.
+Se executado fora de um projeto, o `prumo doctor` analisa o ambiente global; dentro de um projeto, analisa também a conformidade dos esquemas e metas do repositório.
 
-## Uninstall Safely
+---
+
+## Autoupdate (Atualização Contínua)
+
+O Prumo inclui um subsistema de auto-atualização integrado com verificação criptográfica SHA-256 diretamente dos lançamentos oficiais do GitHub:
 
 ```bash
-prumo-agent --home ~/.prumo uninstall
-prumo-agent --home ~/.prumo uninstall --connectors
-prumo-agent --home ~/.prumo uninstall --purge-cache
-prumo-agent --home ~/.prumo uninstall --purge-global-config
+# Verificar se há novas versões disponíveis
+prumo upgrade --check
+
+# Atualizar para a versão mais recente
+prumo upgrade
+
+# Atualizar para uma versão específica
+prumo upgrade --version v0.6.1
 ```
 
-Uninstall never deletes repository data: `.ai/`, docs, goals, plans, evidence, and all project files remain untouched. Purge flags only remove cache, derived runtime state, or global configuration.
+---
+
+## Desinstalação Reversível e Segura
+
+Caso precise remover a instalação global ou redefinir caches:
+
+```bash
+# Remove conectores e binários globais
+prumo uninstall
+
+# Limpa caches sem afetar dados do projeto
+prumo uninstall --purge-cache
+```
+
+> [!IMPORTANT]
+> A desinstalação **nunca** muta ou remove diretórios de repositórios locais (`prumo.json`, `.ai/`, `docs/` e arquivos de metas permanecem 100% intactos).

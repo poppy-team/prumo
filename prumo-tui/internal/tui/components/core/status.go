@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -200,21 +201,48 @@ func (m statusCmp) connectionState() string {
 	return style.Render(label)
 }
 
+// workspaceInfo displays the project folder name and git branch.
+func (m statusCmp) workspaceInfo() string {
+	t := theme.CurrentTheme()
+	ws := ""
+	if m.app != nil {
+		ws = m.app.Workspace
+	}
+	if ws == "" {
+		return ""
+	}
+	proj := util.DefaultSessionTitle(ws)
+	branch := util.GitBranch(ws)
+	label := proj
+	if branch != "" {
+		projName := "project"
+		abs, err := filepath.Abs(ws)
+		if err == nil {
+			projName = filepath.Base(abs)
+		} else {
+			projName = filepath.Base(ws)
+		}
+		label = projName + ":" + branch
+	}
+
+	return styles.Padded().
+		Background(t.BackgroundDarker()).
+		Foreground(t.Text()).
+		Bold(true).
+		Render(label)
+}
+
 // View renders the component for the terminal.
 func (m statusCmp) View() tea.View { return tea.NewView(m.viewString()) }
 func (m statusCmp) viewString() string {
 	t := theme.CurrentTheme()
 
-	// The model and the help hint are what the statusline always says. The
-	// accounting and the change count take what is left, in that order, and are
-	// dropped when the terminal cannot hold them: a row that runs past the
-	// screen is a row nobody can read, and the parts that were dropped are the
-	// ones a user can find elsewhere.
 	model := m.model()
 	help := getHelpWidget()
-	available := max(0, m.width-lipgloss.Width(help)-lipgloss.Width(model))
+	wsInfo := m.workspaceInfo()
+	available := max(0, m.width-lipgloss.Width(help)-lipgloss.Width(wsInfo)-lipgloss.Width(model))
 
-	status := help
+	status := help + wsInfo
 
 	// A link that is not healthy comes before what the run spent: a user who
 	// cannot see the daemon needs to know that first.

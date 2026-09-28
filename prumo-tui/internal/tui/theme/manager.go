@@ -61,6 +61,21 @@ func SetTheme(name string) error {
 	return nil
 }
 
+// PreviewTheme changes the active in-memory theme without persisting to config.
+// Useful for live preview during theme browsing.
+func PreviewTheme(name string) error {
+	globalManager.mu.Lock()
+	defer globalManager.mu.Unlock()
+
+	delete(styles.Registry, "charm")
+	if _, exists := globalManager.themes[name]; !exists {
+		return fmt.Errorf("theme '%s' not found", name)
+	}
+
+	globalManager.currentName = name
+	return nil
+}
+
 // CurrentTheme returns the currently active theme.
 // If no theme is set, it returns nil.
 func CurrentTheme() Theme {

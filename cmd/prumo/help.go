@@ -25,20 +25,27 @@ var commandRegistry = map[string]CommandInfo{
 	"init": {
 		Name:     "init",
 		Category: "Project Lifecycle",
-		Summary:  "Initialize a new Prumo project workspace",
-		Usage:    "prumo init [path] --profile <profile.json> [--non-interactive]",
+		Summary:  "Initialize a new Prumo workspace (zero-config, presets, or custom profile)",
+		Usage:    "prumo init [path] [flags]",
 		Description: "Scaffolds a new Prumo project at the given path (default: current directory).\n" +
-			"Resolves the workforce from the specified project profile and generates prumo.json,\n" +
-			".ai/ directory, docs/PRUMO.md, PROJECT_STATE.md, and initial derived state.",
+			"Automatically detects project stack (Go, TypeScript/JavaScript, Rust, Python) or uses built-in presets.\n" +
+			"Generates prumo.json (Protocol v3), .ai/ workforce manifests, docs/PRUMO.md, and PROJECT_STATE.md.",
 		Flags: []string{
-			"--profile <path>       Path to project-profile.json declaring preferred models and stack (required)",
-			"--non-interactive      Execute without interactive prompts (fails if profile missing)",
+			"--preset <name>        Built-in workforce preset: standard|cli|web|service|library|minimal (default: standard)",
+			"--stack <lang>         Override target stack language: go|python|node|rust|general",
+			"--name <name>          Override project name (default: directory or manifest name)",
+			"--profile <path>       Custom project-profile.json for advanced custom configuration",
+			"--print-profile        Print the resolved profile JSON to stdout and exit",
+			"--non-interactive      Execute without interactive prompts",
 			"--home <path>          Custom Prumo home directory",
 			"--json                 Output structured JSON response",
 		},
 		Examples: []string{
-			"prumo init ./my-project --profile examples/brasa/project-profile.json",
-			"prumo init . --profile ./profile.json --non-interactive",
+			"prumo init",
+			"prumo init ./my-project",
+			"prumo init --preset web --name my-app",
+			"prumo init --stack go",
+			"prumo init --print-profile",
 		},
 	},
 	"status": {
@@ -296,19 +303,27 @@ var commandRegistry = map[string]CommandInfo{
 		Name:     "adopt",
 		Category: "Adoption & Migration",
 		Summary:  "Brownfield project scanner and adoption engine",
-		Usage:    "prumo adopt <subcommand> [path]",
-		Description: "Scans non-Prumo codebases, discovers technical facts, classifies tech stacks,\n" +
-			"and generates a non-destructive migration ledger and candidate Prumo configuration.",
+		Usage:    "prumo adopt [subcommand] [path] [flags]",
+		Description: "Scans existing non-Prumo codebases, discovers technical facts, classifies tech stacks,\n" +
+			"and generates a non-destructive migration ledger and candidate Prumo Protocol v3 configuration.",
 		Subcommands: []string{
 			"scan [path]        Scan directory tree and index project artifacts",
 			"facts [path]       Extract observed facts (languages, frameworks, build systems)",
 			"classify [path]    Classify project architecture and capability profile",
-			"scaffold [path]    Generate candidate prumo.json without overwriting user files",
+			"scaffold [path]    Generate candidate prumo.json dry-run preview",
+			"apply [path]       Apply adoption, write Protocol v3 prumo.json and workforce files",
 		},
 		Flags: []string{
+			"--apply            Apply adoption proposals immediately",
+			"--dry-run          Preview proposed changes without mutating disk",
+			"--interactive      Run interactive interview for ambiguous inferences",
+			"--non-interactive  Accept automatic resolutions for all inferences",
+			"--strict           Fail if contradictions or unconfirmed inferences remain",
 			"--json             Output scan results as JSON envelope",
 		},
 		Examples: []string{
+			"prumo adopt ./legacy-app",
+			"prumo adopt --apply ./legacy-app",
 			"prumo adopt scan ./legacy-app",
 			"prumo adopt facts ./legacy-app --json",
 			"prumo adopt classify ./legacy-app",
@@ -539,7 +554,7 @@ var commandRegistry = map[string]CommandInfo{
 			"--version <v>      Install a specific version or release tag",
 			"--force            Force reinstall even if already on the latest version",
 			"--dry-run          Simulate update procedure without modifying binaries",
-			"--repo <owner/repo> Custom GitHub repository (default: raillen/prumo)",
+			"--repo <owner/repo> Custom GitHub repository (default: poppy-team/prumo)",
 			"--token <token>    GitHub API token to avoid rate limiting",
 			"--no-cache         Bypass local update check cache",
 			"--json             Output update result as structured JSON envelope",
@@ -554,19 +569,28 @@ var commandRegistry = map[string]CommandInfo{
 	"connector": {
 		Name:        "connector",
 		Category:    "Environment & Connectors",
-		Summary:     "Manage and inspect harness connectors",
+		Summary:     "Manage and inspect harness connectors (Claude, Antigravity, OpenCode, Codex...)",
 		Usage:       "prumo connector <subcommand> [args]",
-		Description: "Inspects status, capabilities, and health of installed AI harness connectors.",
+		Description: "Inspects status, capabilities, and health of installed AI harness connectors.\n" +
+			"Note: 'connector install' registers global bridges; use 'prumo compile --target <name>' to generate project-level adapter files.",
 		Subcommands: []string{
 			"list               List all supported and installed connectors",
-			"status <name>      Check status of a specific connector",
+			"status <name>      Check status, capabilities, and tool availability of a connector",
+			"install <name>     Install and configure global harness connector in ~/.prumo",
+			"uninstall <name>   Remove connector from ~/.prumo/connectors/",
+			"validate <name>    Validate connector protocol implementation",
+			"negotiate <name>   Test capability negotiation with harness",
 		},
 		Flags: []string{
-			"--json             Output connector data as JSON",
+			"--path <dir>       Target workspace directory for connector configuration",
+			"--json             Output connector data as JSON envelope",
 		},
 		Examples: []string{
 			"prumo connector list",
+			"prumo connector status claude",
 			"prumo connector status opencode",
+			"prumo connector install claude",
+			"prumo connector validate opencode",
 		},
 	},
 	"run": {

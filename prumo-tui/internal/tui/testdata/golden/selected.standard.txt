@@ -1,16 +1,12 @@
-# digest sha256:5714b0e70ca9580b
+# digest sha256:2f83e529ecee35ae
                                                                                                     
  ┃ row 0 of the conversation                                                                        
                                                                                                     
- ┃ row 1 of the conversation                                                                        
-                                                                                                    
- ┃ row 2 of the conversation                                                                        
-                                                                                                    
- ┃ row 3╭───────────────────────────────────────────────────────────────────────────────────╮       
+ ┃ row 1╭───────────────────────────────────────────────────────────────────────────────────╮       
         │                                                                                   │░      
-        │   Commands                                                                        │░      
+ ┃ row 2│   Commands                                                                        │░      
         │                                                                                   │░      
-        │   Initialize Project                                                              │░      
+ ┃ row 3│   Initialize Project                                                              │░      
         │   Create or update AGENTS.md, the agent memory file                               │░      
         │   Scheduled runs                                                                  │░      
         │   See what the daemon repeats on a schedule, and stop one                         │░      
@@ -20,12 +16,16 @@
         │   Who compacts this session's history                                             │░      
         │   Configure Provider                                                              │░      
         │   Switch or view active LLM provider (opencode, anthropic, openai-compat, fake)   │░      
-        │                                                                                   │░      
-        │                                                                                   │░      
-        ╰───────────────────────────────────────────────────────────────────────────────────╯░      
+        │   Workforce Agents                                                                │░      
+        │   View and select Prumo workforce agents (coder, architect, researcher...)        │░      
+        │   Subagent Delegations                                                            │░      
+        │   View active subagent delegations and status in current session                  │░      
+        │   New Conversation Tab                                                            │░      
+        │   Open a new conversation tab in this project (Ctrl+T)                            │░      
+        │   Verification Gates                                                              │░      
+        │   View harness verification and quality gates status                              │░      
+ press e│                                                                                   │░      
+────────│                                                                                   │░──────
+ >      ╰───────────────────────────────────────────────────────────────────────────────────╯░      
          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░      
- press enter to send the message, write \ and enter to add a new line                               
-────────────────────────────────────────────────────────────────────────────────────────────────────
- >                                                                                                  
-                                                                                                    
  ctrl+? help  in 0 · out 0 · $0.0000                                                         fake   

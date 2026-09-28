@@ -31,6 +31,9 @@ type ModelsLoadedMsg struct {
 	Err    error
 }
 
+// OpenProviderFromModelsMsg is sent when the user wants to switch from models to provider selection.
+type OpenProviderFromModelsMsg struct{}
+
 // ModelDialog chooses which model the harness should run with.
 //
 // The list is not the client's. It comes from the harness, which asked the
@@ -39,12 +42,14 @@ type ModelsLoadedMsg struct {
 type ModelDialog interface {
 	tea.Model
 	SetSize(width, height int) tea.Cmd
+	SetActiveModel(model string)
 }
 
 type modelDialogCmp struct {
 	width, height int
 	models        []string
 	filtered      []string
+	activeModel   string
 	// info is what each model declares it can do, by id. A model with no entry
 	// is one nobody declared — not one that was measured and found wanting.
 	info    map[string]runtime.ModelCapabilities
@@ -133,6 +138,10 @@ func (m *modelDialogCmp) applyFilter() {
 	}
 }
 
+func (m *modelDialogCmp) SetActiveModel(model string) {
+	m.activeModel = model
+}
+
 func (m *modelDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case LoadingModelsMsg:
@@ -152,6 +161,9 @@ func (m *modelDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 	case tea.KeyPressMsg:
+		if msg.String() == "tab" {
+			return m, util.CmdHandler(OpenProviderFromModelsMsg{})
+		}
 		switch {
 		case key.Matches(msg, modelKeysEsc):
 			return m, util.CmdHandler(CloseModelDialogMsg{})
@@ -283,8 +295,13 @@ func (m *modelDialogCmp) viewString() string {
 				freeBadge = " [FREE]"
 			}
 
+			activeBadge := ""
+			if m.activeModel != "" && (m.activeModel == model || strings.EqualFold(m.activeModel, model)) {
+				activeBadge = " (active)"
+			}
+
 			feat := features(m.info[model])
-			lineText := model + freeBadge + " " + feat
+			lineText := model + activeBadge + freeBadge + " " + feat
 
 			row := baseStyle.Width(width).Padding(0, 1)
 			if i == m.cursor {
@@ -304,16 +321,16 @@ func (m *modelDialogCmp) viewString() string {
 	if len(items) > 0 {
 		cursorPos := fmt.Sprintf("[%d/%d]", m.cursor+1, len(items))
 		if freeCount > 0 {
-			hintText = fmt.Sprintf("%s (%d free) · ↑/↓ navigate · Enter select · Esc close", cursorPos, freeCount)
+			hintText = fmt.Sprintf("%s (%d free) · Tab provider · ↑/↓ navigate · Enter select · Esc close", cursorPos, freeCount)
 		} else {
-			hintText = fmt.Sprintf("%s · ↑/↓ navigate · Enter select · Esc close", cursorPos)
+			hintText = fmt.Sprintf("%s · Tab provider · ↑/↓ navigate · Enter select · Esc close", cursorPos)
 		}
 	} else {
 		hintText = "Esc to close"
 	}
 
 	hint := baseStyle.Foreground(t.TextMuted()).Width(width).Render(hintText)
-	divider := baseStyle.Foreground(t.TextMuted()).Width(width).Render(strings.Repeat("─", width))
+	divider := baseStyle.Foreground(t.TextMuted()).Render(strings.Repeat("─", width))
 
 	contentList := []string{
 		title,
@@ -329,7 +346,7 @@ func (m *modelDialogCmp) viewString() string {
 
 	return baseStyle.Padding(1, 2).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(t.TextMuted()).
-		Width(width + 4).
+		BorderBackground(t.Background()).
+		BorderForeground(t.Primary()).
 		Render(content)
 }
