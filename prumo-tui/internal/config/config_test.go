@@ -143,4 +143,3 @@ func TestSidebarVisibilitySurvivesARestart(t *testing.T) {
 		t.Fatal("expected ShowSidebar to be false after restart")
 	}
 }
-

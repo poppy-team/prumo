@@ -567,10 +567,10 @@ var commandRegistry = map[string]CommandInfo{
 		},
 	},
 	"connector": {
-		Name:        "connector",
-		Category:    "Environment & Connectors",
-		Summary:     "Manage and inspect harness connectors (Claude, Antigravity, OpenCode, Codex...)",
-		Usage:       "prumo connector <subcommand> [args]",
+		Name:     "connector",
+		Category: "Environment & Connectors",
+		Summary:  "Manage and inspect harness connectors (Claude, Antigravity, OpenCode, Codex...)",
+		Usage:    "prumo connector <subcommand> [args]",
 		Description: "Inspects status, capabilities, and health of installed AI harness connectors.\n" +
 			"Note: 'connector install' registers global bridges; use 'prumo compile --target <name>' to generate project-level adapter files.",
 		Subcommands: []string{

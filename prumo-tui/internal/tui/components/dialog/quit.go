@@ -211,7 +211,7 @@ func (q *quitDialogCmp) viewString() string {
 	inputBox := baseStyle.
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(inputBorderColor).
-		Width(dialogWidth - 4).
+		Width(dialogWidth-4).
 		Padding(0, 1).
 		Render(q.input.View())
 

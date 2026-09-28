@@ -98,4 +98,3 @@ func TestStatusShowsWorkspaceAndBranch(t *testing.T) {
 		t.Fatalf("expected help hint in status view, got:\n%s", view)
 	}
 }
-
