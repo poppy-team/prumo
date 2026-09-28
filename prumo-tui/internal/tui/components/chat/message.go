@@ -331,7 +331,8 @@ func renderToolParams(paramWidth int, toolCall message.ToolCall) string {
 func truncateHeight(content string, height int) string {
 	lines := strings.Split(content, "\n")
 	if len(lines) > height {
-		return strings.Join(lines[:height], "\n")
+		hidden := len(lines) - height
+		return fmt.Sprintf("%s\n... (+%d lines collapsed)", strings.Join(lines[:height], "\n"), hidden)
 	}
 	return content
 }

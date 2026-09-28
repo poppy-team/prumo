@@ -21,7 +21,7 @@ func TestTheAccountingShowsEveryKindOfToken(t *testing.T) {
 	}}
 
 	text := cmp.accountingText()
-	for _, want := range []string{"in 19.2K", "cache 8.1K", "out 760", "$0.0412", "~$0.0137/req"} {
+	for _, want := range []string{"in 19.2K", "cache 8.1K", "30% hit", "out 760", "$0.0412", "~$0.0137/req"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("the accounting lost %q: %q", want, text)
 		}

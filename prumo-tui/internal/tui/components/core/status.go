@@ -121,7 +121,12 @@ func (m statusCmp) accountingText() string {
 		fmt.Sprintf("in %s", formatTokens(m.session.PromptTokens)),
 	}
 	if m.session.CacheReadTokens > 0 || m.session.CacheWriteTokens > 0 {
-		parts = append(parts, fmt.Sprintf("cache %s", formatTokens(m.session.CacheReadTokens+m.session.CacheWriteTokens)))
+		cacheLabel := fmt.Sprintf("cache %s", formatTokens(m.session.CacheReadTokens+m.session.CacheWriteTokens))
+		if m.session.PromptTokens+m.session.CacheReadTokens > 0 {
+			hitRatio := float64(m.session.CacheReadTokens) / float64(m.session.PromptTokens+m.session.CacheReadTokens) * 100.0
+			cacheLabel += fmt.Sprintf(" (%.0f%% hit)", hitRatio)
+		}
+		parts = append(parts, cacheLabel)
 	}
 	parts = append(parts, fmt.Sprintf("out %s", formatTokens(m.session.CompletionTokens)))
 	parts = append(parts, fmt.Sprintf("$%.4f", m.session.Cost))
