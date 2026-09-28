@@ -108,10 +108,18 @@ O Prumo v0.6 é distribuído como um binário compilado único em Go, sem depend
 
 <div class="tool-card">
   <div>
-    <h3>🤖 Agente TUI Interativo</h3>
-    <p>Terminal interativo com prumo-agent (pa) para conduzir sessões assistidas por IA com preservação de memória.</p>
+    <h3>🤖 Prumo Code Agent (TUI)</h3>
+    <p>Terminal interativo avançado com multi-tabs, telemetria detalhada de tokens e custos, preview de temas em tempo real e auditoria determinística.</p>
   </div>
-  <div class="tool-cmd">prumo agent</div>
+  <div class="tool-cmd">prumo code-agent</div>
+</div>
+
+<div class="tool-card">
+  <div>
+    <h3>🖥️ Prumo IDE (GUI Desktop)</h3>
+    <p>Ambiente gráfico nativo de alta velocidade para visualização de repositórios, planos e grafos de dependências.</p>
+  </div>
+  <div class="tool-cmd">prumo native</div>
 </div>
 
 <div class="tool-card">

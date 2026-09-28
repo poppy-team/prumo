@@ -1,6 +1,6 @@
 # Prumo
 
-[![Release](https://img.shields.io/github/v/release/poppy-team/prumo?color=2563eb&label=release)](https://github.com/poppy-team/prumo/releases/tag/v0.6.0)
+[![Release](https://img.shields.io/github/v/release/poppy-team/prumo?color=2563eb&label=release)](https://github.com/poppy-team/prumo/releases/tag/v0.6.1)
 [![Go Version](https://img.shields.io/badge/go-1.22+-blue.svg)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Workforce](https://img.shields.io/badge/workforce-189%20skills%20%7C%2039%20agents%20%7C%2020%20recipes-blueviolet)](docs/workforce/index.md)
@@ -18,20 +18,19 @@ The full documentation website, inspired by modern developer documentation porta
 
 ---
 
-## Names & Architecture
+## Names & Ecosystem
 
-- **Framework**: **Prumo**.
-- **CLI & Core Harness**: **`prumo`** (built from `cmd/prumo`).
-- **Interactive TUI Client**: Launched by **`prumo agent`** — installed as **`prumo-agent`** (alias **`pa`**). See [ADR 016](docs/adr/016-product-split-agent-and-harness.md).
-- **Native Workspace Viewer**: High-performance Rust-based visualizer **`prumo-viewer`** for navigating massive repositories and task DAGs.
+- **Framework & CLI**: **`Prumo`** (binary/command: `prumo`, built from `cmd/prumo`).
+- **Interactive Coding Agent (TUI)**: **`Prumo Agent`** (launched via `prumo agent` or `prumo tui`).
+- **Desktop Graphical IDE (GUI)**: **`Prumo IDE`** (launched via `prumo native` or `prumo-viewer`).
 
 ---
 
-## Release Line v0.6.0
+## Release Line v0.6.1
 
 Prumo v0.6 is a pure Go distribution ([ADR 002](docs/adr/002-retire-python-runtime.md)).
 
-- **Go v0.6** is the official single-binary CLI and Core implementation.
+- **Go v0.6.1** is the official single-binary CLI and Core implementation.
 - **Zero External Runtime Dependencies**: No Python, pip, or virtualenv required.
 - **Embedded Assets**: All canonical schemas, catalog, workforce packages, and adapter templates are embedded directly into the binary.
 - **Headless Harness & ACI**: Deterministic sandboxed tool gateway, process execution with hard timeouts, output boundaries, and AST syntax parsing.
@@ -71,15 +70,15 @@ Downloads the Windows binary, verifies SHA-256 checksums, installs to `%LOCALAPP
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/poppy-team/prumo/main/scripts/install.ps1 | iex"
 ```
 
-### Direct Binary Downloads (v0.6.0)
+### Direct Binary Downloads (v0.6.1)
 
-Precompiled release binaries are available on the [GitHub Release v0.6.0](https://github.com/poppy-team/prumo/releases/tag/v0.6.0):
+Precompiled release binaries are available on the [GitHub Release v0.6.1](https://github.com/poppy-team/prumo/releases/tag/v0.6.1):
 
-- **Linux x86_64**: [`prumo-0.6.0-linux-amd64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-linux-amd64.tar.gz)
-- **Linux ARM64**: [`prumo-0.6.0-linux-arm64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-linux-arm64.tar.gz)
-- **macOS Apple Silicon (ARM64)**: [`prumo-0.6.0-darwin-arm64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-darwin-arm64.tar.gz)
-- **macOS Intel (x86_64)**: [`prumo-0.6.0-darwin-amd64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-darwin-amd64.tar.gz)
-- **Windows x86_64**: [`prumo-0.6.0-windows-amd64.zip`](https://github.com/poppy-team/prumo/releases/download/v0.6.0/prumo-0.6.0-windows-amd64.zip)
+- **Linux x86_64**: [`prumo-0.6.1-linux-amd64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.1/prumo-0.6.1-linux-amd64.tar.gz)
+- **Linux ARM64**: [`prumo-0.6.1-linux-arm64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.1/prumo-0.6.1-linux-arm64.tar.gz)
+- **macOS Apple Silicon (ARM64)**: [`prumo-0.6.1-darwin-arm64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.1/prumo-0.6.1-darwin-arm64.tar.gz)
+- **macOS Intel (x86_64)**: [`prumo-0.6.1-darwin-amd64.tar.gz`](https://github.com/poppy-team/prumo/releases/download/v0.6.1/prumo-0.6.1-darwin-amd64.tar.gz)
+- **Windows x86_64**: [`prumo-0.6.1-windows-amd64.zip`](https://github.com/poppy-team/prumo/releases/download/v0.6.1/prumo-0.6.1-windows-amd64.zip)
 
 ---
 
@@ -147,7 +146,8 @@ prumo run --path ./my-project
 | `prumo compile` | Compile provider-neutral rules to harness adapters |
 | `prumo doctor` | Deep repository and harness health diagnostics |
 | `prumo validate` | Validate repository state against JSON Schemas |
-| `prumo agent` | Launch interactive TUI terminal agent (`pa`) |
+| `prumo agent` | Launch interactive Prumo Agent TUI (alias: `prumo tui`) |
+| `prumo native` | Launch Prumo IDE desktop GUI |
 | `prumo docs audit` | Audit documentation authority, drift, and links |
 | `prumo docs authority` | Validate authority map and routing integrity |
 

@@ -18,7 +18,9 @@ O executável `prumo` aceita comandos e flags estruturadas. Para automação em 
 | `prumo doctor` | Executa bateria de diagnósticos de integridade do projeto. | `prumo doctor` |
 | `prumo validate` | Valida todos os arquivos canônicos contra JSON Schemas. | `prumo validate` |
 | `prumo adopt` | Executa motor de adoção em repositórios legados. | `prumo adopt --path ./legado --scan` |
-| `prumo agent` | Dispara o cliente interativo prumo-agent (ou `pa`). | `prumo agent` |
+| `prumo code-agent` | Inicia o Prumo Code Agent (TUI interativo com multi-tabs e telemetria). | `prumo code-agent` |
+| `prumo agent` | Alias para iniciar o Prumo Code Agent. | `prumo agent` |
+| `prumo native` | Inicia a interface gráfica desktop Prumo IDE. | `prumo native` |
 | `prumo docs audit` | Audita conformidade e integridade da documentação. | `prumo docs audit` |
 | `prumo docs authority` | Valida hierarquia de autoridade e links de roteamento. | `prumo docs authority` |
 

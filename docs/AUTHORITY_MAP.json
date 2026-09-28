@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "current_version": "0.6.0",
+  "current_version": "0.6.1",
   "generated_from": [
     "internal/protocol/protocol.go (CLIVersion)",
     "docs/governance/authority.md"
@@ -12,6 +12,7 @@
     { "path": "README.md", "role": "projection", "owner": "prumo-maintained", "canonical_source": "docs/product/vision.md" },
     { "path": "CONTRIBUTING.md", "role": "canonical", "owner": "human-maintained" },
     { "path": "SECURITY.md", "role": "canonical", "owner": "human-maintained" },
+    { "path": "ROADMAP.md", "role": "canonical", "owner": "prumo-maintained", "note": "product and architecture roadmap v0.1.0 to v1.0.0" },
     { "path": "CHANGELOG.md", "role": "historical", "note": "release record; entries are never rewritten" },
     { "path": "HARNESS_IMPLEMENTATION_REPORT.md", "role": "historical" },
     { "path": "docs/PRUMO.md", "role": "projection", "owner": "prumo-maintained", "canonical_source": "docs/product/vision.md", "note": "intent router" },

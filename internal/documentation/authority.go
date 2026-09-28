@@ -71,7 +71,7 @@ var routingFiles = []string{"AGENTS.md", "ENTRYPOINT.md", "README.md", "FRAMEWOR
 var rootDocs = []string{
 	"AGENTS.md", "ENTRYPOINT.md", "README.md", "FRAMEWORK.md",
 	"CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md",
-	"HARNESS_IMPLEMENTATION_REPORT.md",
+	"ROADMAP.md", "HARNESS_IMPLEMENTATION_REPORT.md",
 }
 
 // driftExemptAnnotations mark a line as an intentional historical reference.

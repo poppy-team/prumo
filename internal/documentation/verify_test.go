@@ -1,9 +1,12 @@
 package docengine
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/raillen/prumo/internal/protocol"
 )
 
 func verifyFixture(t *testing.T, files map[string]string) string {
@@ -27,7 +30,7 @@ func TestVerifyFindsBrokenLinks(t *testing.T) {
 		"docs/present.md":              "# Present\n\nBack to [agents](../AGENTS.md).\n",
 		"docs/contracts/builtin.json":  `[]`,
 		"docs/contracts/bindings.json": `[]`,
-		"docs/AUTHORITY_MAP.json":      `{"version":1,"current_version":"0.6.0","documents":[{"path":"docs/**","role":"canonical"}]}`,
+		"docs/AUTHORITY_MAP.json":      fmt.Sprintf(`{"version":1,"current_version":%q,"documents":[{"path":"docs/**","role":"canonical"}]}`, protocol.CLIVersion),
 	})
 	report, err := VerifyDocs(root)
 	if err != nil {
@@ -51,7 +54,7 @@ func TestVerifyFindsClaimDrift(t *testing.T) {
 		"internal/harness/x/x.go":      "package x\n\n// regions.go is implemented here.\nvar Regions = 1\n",
 		"docs/contracts/builtin.json":  `[]`,
 		"docs/contracts/bindings.json": `[]`,
-		"docs/AUTHORITY_MAP.json":      `{"version":1,"current_version":"0.6.0","documents":[{"path":"docs/**","role":"canonical"}]}`,
+		"docs/AUTHORITY_MAP.json":      fmt.Sprintf(`{"version":1,"current_version":%q,"documents":[{"path":"docs/**","role":"canonical"}]}`, protocol.CLIVersion),
 	})
 	report, err := VerifyDocs(root)
 	if err != nil {
@@ -66,7 +69,7 @@ func TestVerifyFindsClaimDrift(t *testing.T) {
 		"docs/plan.md":                 "# Plan\n\n`NotImplementedThing` remains future work.\n",
 		"docs/contracts/builtin.json":  `[]`,
 		"docs/contracts/bindings.json": `[]`,
-		"docs/AUTHORITY_MAP.json":      `{"version":1,"current_version":"0.6.0","documents":[{"path":"docs/**","role":"canonical"}]}`,
+		"docs/AUTHORITY_MAP.json":      fmt.Sprintf(`{"version":1,"current_version":%q,"documents":[{"path":"docs/**","role":"canonical"}]}`, protocol.CLIVersion),
 	})
 	controlReport, err := VerifyDocs(control)
 	if err != nil {
@@ -82,7 +85,7 @@ func TestVerifyFindsManagedRegionProblems(t *testing.T) {
 		"AGENTS.md":                    "# AGENTS\n\n<!-- prumo:begin agents-core -->\n- rule\n",
 		"docs/contracts/builtin.json":  `[]`,
 		"docs/contracts/bindings.json": `[]`,
-		"docs/AUTHORITY_MAP.json":      `{"version":1,"current_version":"0.6.0","documents":[{"path":"docs/**","role":"canonical"}]}`,
+		"docs/AUTHORITY_MAP.json":      fmt.Sprintf(`{"version":1,"current_version":%q,"documents":[{"path":"docs/**","role":"canonical"}]}`, protocol.CLIVersion),
 	})
 	report, err := VerifyDocs(root)
 	if err != nil {
@@ -120,7 +123,7 @@ func TestVerifyStrictRequiresSemanticReadiness(t *testing.T) {
 		"docs/profiles/builtin.json":   `[{"id":"core-software","version":1,"capabilities":["core"],"contracts":["product.vision"]}]`,
 		"docs/contracts/bindings.json": `[{"contract_id":"product.vision","sources":["docs/vision.md"],"answered_questions":["Why?"]}]`,
 		"docs/vision.md":               "# Vision\n",
-		"docs/AUTHORITY_MAP.json":      `{"version":1,"current_version":"0.6.0","documents":[{"path":"docs/**","role":"canonical"},{"path":"*.md","role":"canonical"}]}`,
+		"docs/AUTHORITY_MAP.json":      fmt.Sprintf(`{"version":1,"current_version":%q,"documents":[{"path":"docs/**","role":"canonical"},{"path":"*.md","role":"canonical"}]}`, protocol.CLIVersion),
 	})
 	lenient, err := VerifyDocs(root)
 	if err != nil {
