@@ -203,11 +203,7 @@ func BuildDefaultProfile(det DetectionResult, preset string) resolver.Profile {
 		features = appendUnique(features, "clean-code", "deterministic-testing")
 	}
 
-	preferredModels := []any{
-		map[string]any{"id": "anthropic/claude-3-7-sonnet", "provider": "anthropic"},
-		map[string]any{"id": "google/gemini-2.5-pro", "provider": "google"},
-		map[string]any{"id": "openai/gpt-4o", "provider": "openai"},
-	}
+	preferredModels := []any{}
 
 	raw := map[string]any{
 		"version": 2,

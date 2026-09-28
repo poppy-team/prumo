@@ -842,11 +842,11 @@ var commandRegistry = map[string]CommandInfo{
 	"tui": {
 		Name:     "tui",
 		Category: "Harness",
-		Summary:  "Terminal client for the Agent Protocol (palette → goal → run → stream → evidence)",
-		Usage:    "prumo tui [flags]",
-		Description: "Supervises a `prumo agent serve` daemon and drives it over the public Agent Protocol. " +
-			"Palette-first navigation, live AgentEvent timeline, and a terminal evidence panel. " +
-			"Imports only the public SDK — never prumo/internal. Interactive: no --json output.",
+		Summary:  "Launch Prumo Code Agent (interactive terminal user interface)",
+		Usage:    "prumo tui [flags] (or prumo code-agent, prumo agent)",
+		Description: "Launches Prumo Code Agent, supervising a `prumo agent serve` daemon and driving it over the public Agent Protocol. " +
+			"Features multi-tab conversations, live theme preview, OpenCode v2-style sidebar with context tokens, cost tracking, and workforce tree. " +
+			"All session telemetry is saved deterministically to .prumo/runtime/audit/telemetry.json for post-run audits.",
 		Flags: []string{
 			"--path <dir>         Workspace root (default: .)",
 			"--socket <path>      Attach to an existing daemon instead of starting one",
@@ -854,24 +854,25 @@ var commandRegistry = map[string]CommandInfo{
 			"--token <t>          Remote token (or --token-file / PRUMO_DAEMON_TOKEN)",
 			"--token-file <p>     File holding the remote token",
 			"--remote-tls-cert <p> CA cert pinning the remote server",
-			"--provider <name>    fake|fake-tools|openai-compat|anthropic|opencode (default: fake)",
+			"--provider <name>    fake|fake-tools|openai-compat|anthropic|opencode|gemini|deepseek (default: fake)",
 			"--model <id>         Model id for real providers",
 			"--max-turns <n>      Max turns (default: 5)",
-			"--theme <id>         theme.default|theme.high-contrast|theme.no-color|theme.reduced-motion",
+			"--theme <id>         theme name with live preview (default: prumo)",
 		},
 		Examples: []string{
 			"prumo tui --path .",
-			"prumo tui --theme theme.no-color",
+			"prumo code-agent",
+			"prumo agent",
+			"prumo tui --theme catppuccin",
 			"prumo tui --socket .prumo/runtime/harness/agentd.sock",
-			"prumo tui --remote 127.0.0.1:7777 --token-file .prumo/agentd.token",
 		},
 	},
 	"native": {
 		Name:     "native",
 		Category: "Harness",
-		Summary:  "Native desktop agent-aware Workspace Viewer and light editor (Rust + Freya)",
+		Summary:  "Prumo IDE - Native desktop agent-aware Workspace environment",
 		Usage:    "prumo native [--workspace <dir>] [--socket <path>]",
-		Description: "Launches the Prumo Native Workspace Viewer built with Rust and Freya. " +
+		Description: "Launches Prumo IDE, the native desktop agent-aware environment built with Rust and Freya. " +
 			"Provides an IDE-style Explorer, multi-tab editing, Quick Open, working-copy diff, daemon timeline, " +
 			"run start, and permission approval over the local Agent Protocol. " +
 			"Interactive: no --json output.",

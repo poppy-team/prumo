@@ -48,8 +48,8 @@ require (
 	}
 
 	profile := BuildDefaultProfile(det, "standard")
-	if len(profile.PreferredModels()) == 0 {
-		t.Errorf("expected preferred models to be populated")
+	if len(profile.PreferredModels()) != 0 {
+		t.Errorf("expected preferred models to be empty by default, got %v", profile.PreferredModels())
 	}
 }
 

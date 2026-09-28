@@ -2,7 +2,6 @@ package cliops
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,9 +71,6 @@ func (s *Service) Resolve(profilePath string) (resolver.Resolution, error) {
 }
 func (s *Service) ModelPolicy(profile resolver.Profile) (map[string]any, error) {
 	models := profile.PreferredModels()
-	if len(models) == 0 {
-		return nil, errors.New("No preferred LLM roster configured. Prumo requires model preferences to be explicitly selected for every new project.")
-	}
 	roster := []map[string]any{}
 	ids := []string{}
 	for _, m := range models {
@@ -90,7 +86,11 @@ func (s *Service) ModelPolicy(profile resolver.Profile) (map[string]any, error) 
 	for _, role := range []string{"architect", "debugger", "documentation-maintainer", "implementer", "release-verifier", "reviewer", "security-reviewer", "tester", "ux-reviewer"} {
 		roles[role] = map[string]any{"preferred": append([]string{}, ids...), "fallback": []string{}}
 	}
-	return map[string]any{"version": 2, "selection_rule": "cheapest-reliable-model-that-passes-gates", "cross_provider_review": true, "context_aware_routing": true, "roster": roster, "roles": roles}, nil
+	selectionRule := "cheapest-reliable-model-that-passes-gates"
+	if len(roster) == 0 {
+		selectionRule = "current-runtime"
+	}
+	return map[string]any{"version": 2, "selection_rule": selectionRule, "cross_provider_review": true, "context_aware_routing": true, "roster": roster, "roles": roles}, nil
 }
 func contextPolicy() map[string]any {
 	profiles := map[string]any{}
@@ -116,9 +116,6 @@ func (s *Service) Init(root, profilePath string) (resolver.Resolution, error) {
 }
 
 func (s *Service) InitWithProfile(root string, profile resolver.Profile) (resolver.Resolution, error) {
-	if len(profile.PreferredModels()) == 0 {
-		return resolver.Resolution{}, errors.New("Preferred LLMs/providers are required per project. Add ai.preferred_models to the profile.")
-	}
 	catalog, err := resolver.LoadCatalog(s.repoRoot)
 	if err != nil {
 		return resolver.Resolution{}, err

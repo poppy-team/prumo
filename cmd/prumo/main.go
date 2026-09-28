@@ -196,7 +196,7 @@ func run(args []string) int {
 		return runAgentServe(asJSON, rest[1:])
 	case "agent":
 		return runAgent(asJSON, rest[1:])
-	case "tui":
+	case "tui", "code-agent":
 		return runTui(asJSON, rest[1:])
 	case "native", "viewer":
 		return runNative(asJSON, rest[1:])

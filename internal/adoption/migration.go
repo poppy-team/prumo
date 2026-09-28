@@ -227,13 +227,9 @@ func GenerateMigrationProposals(report AdoptionReport) []AdoptionMigrationPropos
 				"active_goal":  nil,
 			},
 			"ai": map[string]interface{}{
-				"orchestrator": "native",
-				"autonomy":     "agentic",
-				"preferred_models": []interface{}{
-					map[string]interface{}{"id": "anthropic/claude-3-7-sonnet", "provider": "anthropic"},
-					map[string]interface{}{"id": "google/gemini-2.5-pro", "provider": "google"},
-					map[string]interface{}{"id": "openai/gpt-4o", "provider": "openai"},
-				},
+				"orchestrator":     "native",
+				"autonomy":         "agentic",
+				"preferred_models": []interface{}{},
 			},
 		}
 		contentBytes, _ := json.MarshalIndent(manifestData, "", "  ")

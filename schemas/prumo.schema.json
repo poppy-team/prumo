@@ -232,13 +232,9 @@
     },
     "ai": {
       "type": "object",
-      "required": [
-        "preferred_models"
-      ],
       "properties": {
         "preferred_models": {
-          "type": "array",
-          "minItems": 1
+          "type": "array"
         }
       },
       "additionalProperties": true

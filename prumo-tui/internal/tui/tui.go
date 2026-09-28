@@ -16,6 +16,7 @@ import (
 
 	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
+	"github.com/raillen/prumo-tui/internal/audit"
 	"github.com/raillen/prumo-tui/internal/commands"
 	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/llm/models"
@@ -471,9 +472,11 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					})
 				}
 			} else {
-				_, _ = a.app.Sessions.Create(ctx, msg.Title)
+				saved, _ := a.app.Sessions.Create(ctx, msg.Title)
+				a.selectedSession = saved
 			}
 		}
+		a.recordSessionAudit("completed")
 		return a, tea.Quit
 
 	case dialog.CloseSessionDialogMsg:
@@ -487,6 +490,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pubsub.Event[agent.AgentEvent]:
 		payload := msg.Payload
 		if payload.Error != nil {
+			a.recordSessionAudit("failed")
 			return a, util.ReportFailure("The run stopped", "send the goal again, or read the log with ctrl+l", payload.Error)
 		}
 		if payload.Type == agent.AgentEventTypeConnection {
@@ -502,11 +506,7 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.status = s.(core.StatusCmp)
 			return a, cmd
 		}
-		// A run event that is not an error needs nothing from this model: the
-		// message store publishes what the conversation gained, and the
-		// transcript and statusline redraw from that. Compaction is not
-		// triggered here either — the harness compacts a run as it approaches
-		// its budget, and the client has no operation to ask with.
+		a.recordSessionAudit("active")
 		return a, nil
 
 	case dialog.CloseThemeDialogMsg:
@@ -1132,6 +1132,30 @@ func (a *appModel) exportTimeline(sessionID string) tea.Cmd {
 	}
 }
 
+// recordSessionAudit deterministically saves the session and project telemetry to .prumo/runtime/audit/telemetry.json
+func (a *appModel) recordSessionAudit(status string) {
+	if a.app == nil || a.selectedSession.ID == "" {
+		return
+	}
+	ws := a.app.Workspace
+	provider := a.app.CurrentProvider()
+	modelName := "default"
+	if a.app.CoderAgent != nil {
+		if m := a.app.CoderAgent.Model(); m.Name != "" {
+			modelName = m.Name
+		}
+	}
+	primaryAgent := "coder"
+	var subagents []runtime.SubagentInfo
+	var changes []runtime.Change
+	if a.app.Runner != nil {
+		primaryAgent = a.app.Runner.ActiveAgent()
+		subagents = a.app.Runner.Subagents(a.selectedSession.ID)
+		changes = a.app.Runner.Changes(a.selectedSession.ID)
+	}
+	_, _ = audit.RecordSession(ws, a.selectedSession, provider, modelName, primaryAgent, status, subagents, changes)
+}
+
 // denialNotice is what the client says when the user answers a gate with deny.
 //
 // It is a function rather than a literal because the golden frame of the denied
@@ -1717,6 +1741,27 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 		},
 	})
 
+	model.RegisterCommand(dialog.Command{
+		ID:          "audit",
+		Title:       "Project Audit & Telemetry",
+		Description: "View and verify project telemetry, tokens, cost, and workforce history (.prumo/runtime/audit/)",
+		Handler: func(cmd dialog.Command) tea.Cmd {
+			ws := "."
+			if model.app != nil && model.app.Workspace != "" {
+				ws = model.app.Workspace
+			}
+			ad, err := audit.Load(ws)
+			if err != nil {
+				return util.ReportFailure("Reading audit telemetry", "run a session first", err)
+			}
+			text := fmt.Sprintf("Project: %s (branch: %s)\nSessions: %d · Total Tokens: %d (in: %d / out: %d)\nCost: $%.4f · Files Changed: %d\nAudit file: %s",
+				ad.ProjectName, ad.GitBranch, ad.Summary.TotalSessions,
+				ad.Summary.TotalTokens, ad.Summary.TotalPromptTokens, ad.Summary.TotalOutputTokens,
+				ad.Summary.TotalCostUSD, ad.Summary.TotalFilesChanged, audit.AuditRelPath)
+			return util.ReportInfo(text)
+		},
+	})
+
 	// The command surface is the user's own directory of markdown prompts. It is
 	// theirs rather than the project's on purpose: a command is a prompt its
 	// author owns, and the client reads what the person running it wrote.
@@ -1887,6 +1932,21 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 
 	case "/gates", "/gate":
 		return a, util.ReportInfo("Prumo Verification Gates:\n• tests: passing deterministic unit & suite tests\n• lint: clean code standards conformance\n• build: clean zero-error compilation\n• trust: security & permission review gates")
+
+	case "/audit", "/telemetry":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		ad, err := audit.Load(ws)
+		if err != nil {
+			return a, util.ReportFailure("Reading audit telemetry", "run a session first", err)
+		}
+		text := fmt.Sprintf("Project: %s (branch: %s)\nSessions: %d · Total Tokens: %d (in: %d / out: %d)\nCost: $%.4f · Files Changed: %d\nAudit file: %s",
+			ad.ProjectName, ad.GitBranch, ad.Summary.TotalSessions,
+			ad.Summary.TotalTokens, ad.Summary.TotalPromptTokens, ad.Summary.TotalOutputTokens,
+			ad.Summary.TotalCostUSD, ad.Summary.TotalFilesChanged, audit.AuditRelPath)
+		return a, util.ReportInfo(text)
 
 	case "/quit", "/exit", "/q":
 		return a, a.promptQuit()
