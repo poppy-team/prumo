@@ -61,33 +61,52 @@ var editorMaps = EditorKeyMaps{
 }
 
 func (m *editorCmp) openEditor() tea.Cmd {
-	editor := os.Getenv("EDITOR")
+	editor := os.Getenv("VISUAL")
 	if editor == "" {
-		editor = "nvim"
+		editor = os.Getenv("EDITOR")
+	}
+	if editor == "" {
+		for _, candidate := range []string{"nvim", "vim", "nano", "vi"} {
+			if _, err := exec.LookPath(candidate); err == nil {
+				editor = candidate
+				break
+			}
+		}
+	}
+	if editor == "" {
+		editor = "nano"
 	}
 
-	tmpfile, err := os.CreateTemp("", "msg_*.md")
+	tmpfile, err := os.CreateTemp("", "prumo_msg_*.md")
 	if err != nil {
 		return util.ReportError(err)
 	}
+	currentVal := m.textarea.Value()
+	if currentVal != "" {
+		_ = os.WriteFile(tmpfile.Name(), []byte(currentVal), 0600)
+	}
+	tmpfilePath := tmpfile.Name()
 	tmpfile.Close()
-	c := exec.Command(editor, tmpfile.Name()) //nolint:gosec
+
+	c := exec.Command(editor, tmpfilePath) //nolint:gosec
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	return tea.ExecProcess(c, func(err error) tea.Msg {
+		defer os.Remove(tmpfilePath)
 		if err != nil {
 			return util.ReportError(err)
 		}
-		content, err := os.ReadFile(tmpfile.Name())
+		content, err := os.ReadFile(tmpfilePath)
 		if err != nil {
 			return util.ReportError(err)
 		}
-		if len(content) == 0 {
+		trimmed := strings.TrimSpace(string(content))
+		if len(trimmed) == 0 {
 			return util.ReportWarn("Message is empty")
 		}
-		os.Remove(tmpfile.Name())
-		return SendMsg{Text: string(content)}
+		m.textarea.Reset()
+		return SendMsg{Text: trimmed}
 	})
 }
 

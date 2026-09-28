@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +31,7 @@ import (
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/core"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
+	"github.com/raillen/prumo-tui/internal/tui/image"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/page"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
@@ -86,7 +89,7 @@ var keys = keyMap{
 	),
 
 	Commands: key.NewBinding(
-		key.WithKeys("ctrl+k"),
+		key.WithKeys("ctrl+k", "ctrl+p"),
 		key.WithHelp("ctrl+k", "commands"),
 	),
 	Filepicker: key.NewBinding(
@@ -2217,6 +2220,60 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			ad.Summary.TotalTokens, ad.Summary.TotalPromptTokens, ad.Summary.TotalOutputTokens,
 			ad.Summary.TotalCostUSD, ad.Summary.TotalFilesChanged, audit.AuditRelPath)
 		return a, util.ReportInfo(text)
+
+	case "/paste", "/image":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		mediaDir := filepath.Join(ws, ".prumo", "cache", "media")
+		savedPath, err := image.CaptureClipboardImage(mediaDir)
+		if err != nil {
+			return a, util.ReportFailure("Capturing clipboard image (/paste)", "ensure clipboard contains a PNG/JPEG image", err)
+		}
+		preview, previewErr := image.ImagePreview(40, savedPath)
+		previewText := ""
+		if previewErr == nil && preview != "" {
+			previewText = "\n" + preview
+		}
+		relPath, errRel := filepath.Rel(ws, savedPath)
+		if errRel != nil {
+			relPath = savedPath
+		}
+		prompt := fmt.Sprintf("@%s", relPath)
+		return a, tea.Batch(
+			util.CmdHandler(chat.SendMsg{Text: prompt}),
+			util.ReportInfo(fmt.Sprintf("Pasted image: %s%s", relPath, previewText)),
+		)
+
+	case "/editor", "/e":
+		return a, util.CmdHandler(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+
+	case "/diagnostics", "/lint":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		var cmd *exec.Cmd
+		if _, err := os.Stat(filepath.Join(ws, "go.mod")); err == nil {
+			cmd = exec.Command("go", "vet", "./...")
+		} else if _, err := os.Stat(filepath.Join(ws, "Cargo.toml")); err == nil {
+			cmd = exec.Command("cargo", "check", "--message-format=short")
+		} else if _, err := os.Stat(filepath.Join(ws, "package.json")); err == nil {
+			cmd = exec.Command("npm", "run", "lint", "--if-present")
+		} else {
+			return a, util.ReportInfo("No recognized language project file (go.mod, Cargo.toml, package.json) for automatic diagnostics.")
+		}
+		cmd.Dir = ws
+		out, err := cmd.CombinedOutput()
+		trimmed := strings.TrimSpace(string(out))
+		if err != nil {
+			return a, util.ReportWarn(fmt.Sprintf("Diagnostics found issues:\n%s", trimmed))
+		}
+		if trimmed == "" {
+			return a, util.ReportInfo("Diagnostics clean: no compiler or linter issues detected.")
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Diagnostics output:\n%s", trimmed))
 
 	case "/quit", "/exit", "/q":
 		return a, a.promptQuit()

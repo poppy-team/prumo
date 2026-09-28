@@ -35,7 +35,7 @@ binding is listed here; a surface that adds a binding adds a row.
 
 | Chord | Action | Scope |
 |-------|--------|-------|
-| `Ctrl+K` | Open the command menu | App shell |
+| `Ctrl+K` or `Ctrl+P` | Open the command menu | App shell |
 | `Ctrl+S` | List the runs the daemon knows, to re-attach to one | App shell |
 | `Ctrl+O` | Ask the harness which models the provider serves | App shell |
 | `Ctrl+T` | Switch the palette | App shell |

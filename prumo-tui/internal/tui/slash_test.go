@@ -454,3 +454,52 @@ func TestSlashCommandAgent(t *testing.T) {
 		t.Fatalf("expected confirmation of tester agent, got: %v", msg)
 	}
 }
+
+func TestSlashCommandEditor(t *testing.T) {
+	_, m := newTestApp(t)
+
+	_, cmd := m.Update(chat.SendMsg{Text: "/editor"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /editor")
+	}
+	keyMsg, ok := cmd().(tea.KeyPressMsg)
+	if !ok || keyMsg.Code != 'e' || keyMsg.Mod != tea.ModCtrl {
+		t.Fatalf("expected ctrl+e KeyPressMsg, got: %v", cmd())
+	}
+}
+
+func TestSlashCommandDiagnostics(t *testing.T) {
+	_, m := newTestApp(t)
+
+	_, cmd := m.Update(chat.SendMsg{Text: "/diagnostics"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /diagnostics")
+	}
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("expected non-nil response for /diagnostics")
+	}
+}
+
+func TestSlashCommandPaste(t *testing.T) {
+	_, m := newTestApp(t)
+
+	_, cmd := m.Update(chat.SendMsg{Text: "/paste"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /paste")
+	}
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("expected non-nil response for /paste")
+	}
+}
+
+func TestCtrlPOpensCommands(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
+	model := updated.(appModel)
+	if !model.showCommandDialog {
+		t.Fatal("expected ctrl+p to open commands dialog")
+	}
+}
