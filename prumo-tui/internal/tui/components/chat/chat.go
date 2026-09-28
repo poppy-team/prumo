@@ -31,7 +31,19 @@ type EditorFocusMsg bool
 
 // Multi-tab conversation message types
 type NewTabMsg struct {
-	Title string
+	Title           string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
+}
+
+type UpdateActiveTabMsg struct {
+	Title           string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
 }
 
 type SwitchTabMsg struct {

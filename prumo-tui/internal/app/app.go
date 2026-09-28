@@ -81,3 +81,49 @@ func (a *App) CurrentProvider() string {
 	}
 	return a.Provider
 }
+
+// SetModel changes the active model across app and runner.
+func (a *App) SetModel(modelID models.ModelID) {
+	if a.Runner != nil {
+		_, _ = a.Runner.Update(modelID)
+	}
+}
+
+// CurrentModel returns the currently active model.
+func (a *App) CurrentModel() models.Model {
+	if a.Runner != nil {
+		return a.Runner.Model()
+	}
+	return models.Model{}
+}
+
+// SetReasoningEffort changes the active reasoning effort level on the runner.
+func (a *App) SetReasoningEffort(effort string) {
+	if a.Runner != nil {
+		a.Runner.SetReasoningEffort(effort)
+	}
+}
+
+// CurrentReasoningEffort returns the active reasoning effort level.
+func (a *App) CurrentReasoningEffort() string {
+	if a.Runner != nil {
+		return a.Runner.ReasoningEffort()
+	}
+	return ""
+}
+
+// SetWorkspace changes the active workspace directory or Git worktree path.
+func (a *App) SetWorkspace(ws string) {
+	a.Workspace = ws
+	if a.Runner != nil {
+		a.Runner.SetWorkspace(ws)
+	}
+}
+
+// CurrentWorkspace returns the currently active workspace directory.
+func (a *App) CurrentWorkspace() string {
+	if a.Runner != nil {
+		return a.Runner.Workspace()
+	}
+	return a.Workspace
+}

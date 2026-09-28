@@ -261,13 +261,30 @@ func TestSlashCommandEffort(t *testing.T) {
 		t.Fatalf("expected current effort info, got: %v", msg)
 	}
 
+	findInfo := func(m tea.Msg) (util.InfoMsg, bool) {
+		if info, ok := m.(util.InfoMsg); ok {
+			return info, true
+		}
+		if batch, ok := m.(tea.BatchMsg); ok {
+			for _, cmd := range batch {
+				if cmd != nil {
+					res := cmd()
+					if info, ok := res.(util.InfoMsg); ok {
+						return info, true
+					}
+				}
+			}
+		}
+		return util.InfoMsg{}, false
+	}
+
 	// 2. Set valid effort level: "high"
 	_, cmd = m.Update(chat.SendMsg{Text: "/effort high"})
 	if cmd == nil {
 		t.Fatal("expected cmd on /effort high")
 	}
 	msg = cmd()
-	infoMsg, ok = msg.(util.InfoMsg)
+	infoMsg, ok = findInfo(msg)
 	if !ok || !strings.Contains(infoMsg.Msg, "Reasoning effort set to: high") {
 		t.Fatalf("expected confirmation of high effort, got: %v", msg)
 	}
@@ -278,7 +295,7 @@ func TestSlashCommandEffort(t *testing.T) {
 		t.Fatal("expected cmd on /effort 4096")
 	}
 	msg = cmd()
-	infoMsg, ok = msg.(util.InfoMsg)
+	infoMsg, ok = findInfo(msg)
 	if !ok || !strings.Contains(infoMsg.Msg, "Reasoning budget set to: 4096 tokens") {
 		t.Fatalf("expected confirmation of 4096 token budget, got: %v", msg)
 	}
@@ -289,8 +306,151 @@ func TestSlashCommandEffort(t *testing.T) {
 		t.Fatal("expected cmd on invalid effort")
 	}
 	msg = cmd()
-	infoMsg, ok = msg.(util.InfoMsg)
+	infoMsg, ok = findInfo(msg)
 	if !ok || infoMsg.Type != util.InfoTypeWarn {
 		t.Fatalf("expected warning on invalid effort, got: %v", msg)
+	}
+}
+
+func TestSlashCommandTab(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// 1. /tab new with flags
+	_, cmd := m.Update(chat.SendMsg{Text: "/tab new task-auth --provider anthropic --model claude-3-7-sonnet --effort high --worktree /tmp/wt"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /tab new")
+	}
+	msg := cmd()
+	newMsg, ok := msg.(chat.NewTabMsg)
+	if !ok {
+		t.Fatalf("expected NewTabMsg, got: %T", msg)
+	}
+	if newMsg.Title != "task-auth" {
+		t.Errorf("expected Title 'task-auth', got %q", newMsg.Title)
+	}
+	if newMsg.Provider != "anthropic" {
+		t.Errorf("expected Provider 'anthropic', got %q", newMsg.Provider)
+	}
+	if newMsg.Model != "claude-3-7-sonnet" {
+		t.Errorf("expected Model 'claude-3-7-sonnet', got %q", newMsg.Model)
+	}
+	if newMsg.ReasoningEffort != "high" {
+		t.Errorf("expected ReasoningEffort 'high', got %q", newMsg.ReasoningEffort)
+	}
+	if newMsg.Workspace != "/tmp/wt" {
+		t.Errorf("expected Workspace '/tmp/wt', got %q", newMsg.Workspace)
+	}
+
+	// 2. /tab close
+	_, cmd = m.Update(chat.SendMsg{Text: "/tab close"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /tab close")
+	}
+	if _, ok := cmd().(chat.CloseTabMsg); !ok {
+		t.Fatalf("expected CloseTabMsg, got: %T", cmd())
+	}
+
+	// 3. /tab next
+	_, cmd = m.Update(chat.SendMsg{Text: "/tab next"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /tab next")
+	}
+	if _, ok := cmd().(chat.NextTabMsg); !ok {
+		t.Fatalf("expected NextTabMsg, got: %T", cmd())
+	}
+
+	// 4. /tab prev
+	_, cmd = m.Update(chat.SendMsg{Text: "/tab prev"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /tab prev")
+	}
+	if _, ok := cmd().(chat.PrevTabMsg); !ok {
+		t.Fatalf("expected PrevTabMsg, got: %T", cmd())
+	}
+
+	// 5. /tab 2 (switch to tab 2, index 1)
+	_, cmd = m.Update(chat.SendMsg{Text: "/tab 2"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /tab 2")
+	}
+	switchMsg, ok := cmd().(chat.SwitchTabMsg)
+	if !ok || switchMsg.Index != 1 {
+		t.Fatalf("expected SwitchTabMsg with Index 1, got: %v", cmd())
+	}
+}
+
+func TestSlashCommandWorktree(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// 1. /worktree without args (lists worktrees or returns error if not a git repo)
+	_, cmd := m.Update(chat.SendMsg{Text: "/worktree"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /worktree")
+	}
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("expected non-nil response for /worktree")
+	}
+
+	// 2. /worktree new without branch args (warning)
+	_, cmd = m.Update(chat.SendMsg{Text: "/worktree new"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /worktree new without branch")
+	}
+	msg = cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || infoMsg.Type != util.InfoTypeWarn {
+		t.Fatalf("expected warning for /worktree new without branch, got: %v", msg)
+	}
+
+	// 3. /worktree switch without target (warning)
+	_, cmd = m.Update(chat.SendMsg{Text: "/worktree switch"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /worktree switch without args")
+	}
+	msg = cmd()
+	infoMsg, ok = msg.(util.InfoMsg)
+	if !ok || infoMsg.Type != util.InfoTypeWarn {
+		t.Fatalf("expected warning for /worktree switch without args, got: %v", msg)
+	}
+}
+
+func TestSlashCommandGates(t *testing.T) {
+	_, m := newTestApp(t)
+
+	_, cmd := m.Update(chat.SendMsg{Text: "/gates"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /gates")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "Prumo Verification Gates") {
+		t.Fatalf("expected verification gates info, got: %v", msg)
+	}
+}
+
+func TestSlashCommandAgent(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// 1. /agents (list roles)
+	_, cmd := m.Update(chat.SendMsg{Text: "/agents"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /agents")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "Prumo Workforce Roles") {
+		t.Fatalf("expected workforce roles info, got: %v", msg)
+	}
+
+	// 2. /agent tester (switch active agent)
+	_, cmd = m.Update(chat.SendMsg{Text: "/agent tester"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /agent tester")
+	}
+	msg = cmd()
+	infoMsg, ok = msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "Active agent switched to: tester") {
+		t.Fatalf("expected confirmation of tester agent, got: %v", msg)
 	}
 }

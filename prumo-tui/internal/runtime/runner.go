@@ -329,6 +329,20 @@ func (r *Runner) SetReasoningEffort(effort string) {
 	r.reasoningEffort = effort
 }
 
+// Workspace reports the active workspace or worktree directory.
+func (r *Runner) Workspace() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.workspace
+}
+
+// SetWorkspace updates the active workspace or worktree directory for subsequent runs.
+func (r *Runner) SetWorkspace(ws string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.workspace = ws
+}
+
 // IsBusy reports whether any run is in flight.
 func (r *Runner) IsBusy() bool {
 	r.mu.Lock()

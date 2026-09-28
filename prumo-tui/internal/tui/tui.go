@@ -35,6 +35,7 @@ import (
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/tui/util"
 	"github.com/raillen/prumo-tui/internal/web"
+	"github.com/raillen/prumo-tui/internal/worktree"
 )
 
 type keyMap struct {
@@ -1849,7 +1850,10 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 				return a, util.ReportFailure("Choosing the model", "pick another one with /models or ctrl+o", err)
 			}
 			_ = config.UpdateModel(targetModel)
-			return a, util.ReportInfo(fmt.Sprintf("Model switched to: %s", model.Name))
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Model: targetModel}),
+				util.ReportInfo(fmt.Sprintf("Model switched to: %s", model.Name)),
+			)
 		}
 		a.showModelDialog = true
 		return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
@@ -1863,7 +1867,10 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			if a.app != nil {
 				a.app.SetProvider(targetProvider)
 			}
-			return a, util.ReportInfo(fmt.Sprintf("Provider switched to: %s", targetProvider))
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Provider: targetProvider}),
+				util.ReportInfo(fmt.Sprintf("Provider switched to: %s", targetProvider)),
+			)
 		}
 		if a.app != nil {
 			a.providerDialog.SetCurrentProvider(a.app.CurrentProvider())
@@ -1946,17 +1953,29 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			if err := config.UpdateReasoningEffort(target); err != nil {
 				return a, util.ReportFailure("Updating reasoning effort", "check configuration permissions", err)
 			}
+			if a.app != nil {
+				a.app.SetReasoningEffort(target)
+			}
 			disp := target
 			if disp == "" {
 				disp = "default"
 			}
-			return a, util.ReportInfo(fmt.Sprintf("Reasoning effort set to: %s", disp))
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{ReasoningEffort: target}),
+				util.ReportInfo(fmt.Sprintf("Reasoning effort set to: %s", disp)),
+			)
 		default:
 			if n, err := strconv.Atoi(target); err == nil && n > 0 {
 				if err := config.UpdateReasoningEffort(target); err != nil {
 					return a, util.ReportFailure("Updating reasoning effort", "check configuration permissions", err)
 				}
-				return a, util.ReportInfo(fmt.Sprintf("Reasoning budget set to: %d tokens", n))
+				if a.app != nil {
+					a.app.SetReasoningEffort(target)
+				}
+				return a, tea.Batch(
+					util.CmdHandler(chat.UpdateActiveTabMsg{ReasoningEffort: target}),
+					util.ReportInfo(fmt.Sprintf("Reasoning budget set to: %d tokens", n)),
+				)
 			}
 			return a, util.ReportWarn("Invalid effort level. Use: low, medium, high, max, <number-of-tokens>, or off")
 		}
@@ -2075,11 +2094,29 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			sub := strings.ToLower(args[0])
 			switch sub {
 			case "new", "n":
-				title := ""
-				if len(args) > 1 {
-					title = strings.Join(args[1:], " ")
+				newMsg := chat.NewTabMsg{}
+				var titleParts []string
+				for i := 1; i < len(args); i++ {
+					arg := args[i]
+					switch {
+					case (arg == "--provider" || arg == "-p") && i+1 < len(args):
+						i++
+						newMsg.Provider = args[i]
+					case (arg == "--model" || arg == "-m") && i+1 < len(args):
+						i++
+						newMsg.Model = args[i]
+					case (arg == "--effort" || arg == "-e") && i+1 < len(args):
+						i++
+						newMsg.ReasoningEffort = args[i]
+					case (arg == "--worktree" || arg == "--wt") && i+1 < len(args):
+						i++
+						newMsg.Workspace = args[i]
+					default:
+						titleParts = append(titleParts, arg)
+					}
 				}
-				return a, util.CmdHandler(chat.NewTabMsg{Title: title})
+				newMsg.Title = strings.Join(titleParts, " ")
+				return a, util.CmdHandler(newMsg)
 			case "close", "c":
 				return a, util.CmdHandler(chat.CloseTabMsg{})
 			case "next":
@@ -2094,6 +2131,74 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			}
 		}
 		return a, util.CmdHandler(chat.NewTabMsg{})
+
+	case "/worktree", "/worktrees", "/wt":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		if len(args) == 0 || args[0] == "list" {
+			list, err := worktree.List(context.Background(), ws)
+			if err != nil {
+				return a, util.ReportFailure("Listing Git worktrees", "ensure workspace is a Git repository", err)
+			}
+			if len(list) == 0 {
+				return a, util.ReportInfo(fmt.Sprintf("Active workspace: %s (no additional worktrees)", ws))
+			}
+			var lines []string
+			lines = append(lines, fmt.Sprintf("Git Worktrees (Active: %s):", ws))
+			for i, wt := range list {
+				curr := " "
+				if wt.Path == ws {
+					curr = "●"
+				}
+				lines = append(lines, fmt.Sprintf(" %s %d. branch: %s · path: %s", curr, i+1, wt.Branch, wt.Path))
+			}
+			lines = append(lines, "\nCommands: /worktree new <branch> [path], /worktree switch <path-or-index>")
+			return a, util.ReportInfo(strings.Join(lines, "\n"))
+		}
+		sub := strings.ToLower(args[0])
+		switch sub {
+		case "new", "create", "add":
+			if len(args) < 2 {
+				return a, util.ReportWarn("Usage: /worktree new <branch-name> [custom-path]")
+			}
+			branch := args[1]
+			targetPath := worktree.DefaultWorktreePath(ws, branch)
+			if len(args) > 2 {
+				targetPath = args[2]
+			}
+			if err := worktree.Create(context.Background(), ws, targetPath, branch); err != nil {
+				return a, util.ReportFailure("Creating Git worktree", "verify branch and destination", err)
+			}
+			if a.app != nil {
+				a.app.SetWorkspace(targetPath)
+			}
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Workspace: targetPath, Title: "wt:" + branch}),
+				util.ReportInfo(fmt.Sprintf("Worktree created at: %s (branch: %s)\nActive tab bound to worktree.", targetPath, branch)),
+			)
+		case "switch", "cd":
+			if len(args) < 2 {
+				return a, util.ReportWarn("Usage: /worktree switch <path-or-index>")
+			}
+			target := args[1]
+			list, err := worktree.List(context.Background(), ws)
+			if err == nil {
+				if idx, errConv := strconv.Atoi(target); errConv == nil && idx >= 1 && idx <= len(list) {
+					target = list[idx-1].Path
+				}
+			}
+			if a.app != nil {
+				a.app.SetWorkspace(target)
+			}
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Workspace: target}),
+				util.ReportInfo(fmt.Sprintf("Active tab workspace switched to: %s", target)),
+			)
+		default:
+			return a, util.ReportWarn("Usage: /worktree [list|new <branch>|switch <path>]")
+		}
 
 	case "/gates", "/gate":
 		return a, util.ReportInfo("Prumo Verification Gates:\n• tests: passing deterministic unit & suite tests\n• lint: clean code standards conformance\n• build: clean zero-error compilation\n• trust: security & permission review gates")

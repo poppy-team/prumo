@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -179,6 +180,21 @@ func (s *sidebarCmp) viewString() string {
 		effort = e
 	}
 	lines = append(lines, labelStyle.Render("Effort: "+effort))
+
+	ws := ""
+	if s.app != nil {
+		ws = s.app.CurrentWorkspace()
+	}
+	if ws != "" {
+		wsLabel := filepath.Base(ws)
+		if strings.Contains(ws, "worktrees") {
+			wsLabel = "wt:" + filepath.Base(ws)
+		}
+		if len(wsLabel) > s.width-4 && s.width > 4 {
+			wsLabel = wsLabel[:s.width-7] + "..."
+		}
+		lines = append(lines, labelStyle.Render("Workspace: "+wsLabel))
+	}
 
 	lines = append(lines, "")
 

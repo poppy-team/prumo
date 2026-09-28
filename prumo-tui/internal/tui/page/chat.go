@@ -11,6 +11,7 @@ import (
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/completions"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/llm/models"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
@@ -23,8 +24,12 @@ import (
 var ChatPage PageID = "chat"
 
 type SessionTab struct {
-	ID    string
-	Title string
+	ID              string
+	Title           string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
 }
 
 type chatPage struct {
@@ -127,7 +132,28 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return p, p.toggleSidebar()
 
 	case chat.NewTabMsg:
-		return p, p.newTab(msg.Title)
+		return p, p.newTab(msg)
+
+	case chat.UpdateActiveTabMsg:
+		if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) {
+			if msg.Title != "" {
+				p.tabs[p.activeTabIndex].Title = msg.Title
+			}
+			if msg.Provider != "" {
+				p.tabs[p.activeTabIndex].Provider = msg.Provider
+			}
+			if msg.Model != "" {
+				p.tabs[p.activeTabIndex].Model = msg.Model
+			}
+			if msg.ReasoningEffort != "" {
+				p.tabs[p.activeTabIndex].ReasoningEffort = msg.ReasoningEffort
+			}
+			if msg.Workspace != "" {
+				p.tabs[p.activeTabIndex].Workspace = msg.Workspace
+			}
+			p.sidebarCmp.UpdateSession(p.session)
+		}
+		return p, nil
 
 	case chat.SwitchTabMsg:
 		return p, p.switchTab(msg.Index)
@@ -171,7 +197,7 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, p.toggleSidebar()
 
 		case key.Matches(msg, keyMap.NewTab):
-			return p, p.newTab("")
+			return p, p.newTab(chat.NewTabMsg{})
 
 		case key.Matches(msg, keyMap.CloseTab):
 			return p, p.closeTab(p.activeTabIndex)
@@ -224,15 +250,41 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, tea.Batch(cmds...)
 }
 
-func (p *chatPage) newTab(title string) tea.Cmd {
+func (p *chatPage) newTab(msg chat.NewTabMsg) tea.Cmd {
+	title := msg.Title
 	if title == "" {
 		title = fmt.Sprintf("Tab %d", len(p.tabs)+1)
 	}
+	provider := msg.Provider
+	if provider == "" && p.app != nil {
+		provider = p.app.CurrentProvider()
+	}
+	model := msg.Model
+	if model == "" && p.app != nil && p.app.CoderAgent != nil {
+		model = string(p.app.CoderAgent.Model().ID)
+	}
+	effort := msg.ReasoningEffort
+	if effort == "" && p.app != nil {
+		effort = p.app.CurrentReasoningEffort()
+	}
+	ws := msg.Workspace
+	if ws == "" && p.app != nil {
+		ws = p.app.CurrentWorkspace()
+	}
+
+	p.saveActiveTabState()
+
 	p.tabs = append(p.tabs, SessionTab{
-		ID:    "",
-		Title: title,
+		ID:              "",
+		Title:           title,
+		Provider:        provider,
+		Model:           model,
+		ReasoningEffort: effort,
+		Workspace:       ws,
 	})
 	p.activeTabIndex = len(p.tabs) - 1
+	p.applyTabState(p.tabs[p.activeTabIndex])
+
 	p.session = session.Session{Title: title}
 	p.sidebarCmp.UpdateSession(p.session)
 	return tea.Batch(
@@ -251,8 +303,13 @@ func (p *chatPage) switchTab(index int) tea.Cmd {
 	if index >= len(p.tabs) {
 		index = len(p.tabs) - 1
 	}
+
+	p.saveActiveTabState()
+
 	p.activeTabIndex = index
 	tab := p.tabs[index]
+	p.applyTabState(tab)
+
 	if tab.ID != "" && p.app != nil && p.app.Sessions != nil {
 		sess, err := p.app.Sessions.Get(context.Background(), tab.ID)
 		if err == nil {
@@ -292,10 +349,16 @@ func (p *chatPage) prevTab() tea.Cmd {
 func (p *chatPage) closeTab(index int) tea.Cmd {
 	if len(p.tabs) <= 1 {
 		ws := ""
+		prov := "fake"
 		if p.app != nil {
 			ws = p.app.Workspace
+			prov = p.app.CurrentProvider()
 		}
-		p.tabs[0] = SessionTab{Title: util.DefaultSessionTitle(ws)}
+		p.tabs[0] = SessionTab{
+			Title:     util.DefaultSessionTitle(ws),
+			Provider:  prov,
+			Workspace: ws,
+		}
 		p.activeTabIndex = 0
 		p.session = session.Session{Title: p.tabs[0].Title}
 		p.sidebarCmp.UpdateSession(p.session)
@@ -306,7 +369,38 @@ func (p *chatPage) closeTab(index int) tea.Cmd {
 	if p.activeTabIndex >= len(p.tabs) {
 		p.activeTabIndex = len(p.tabs) - 1
 	}
+	tab := p.tabs[p.activeTabIndex]
+	p.applyTabState(tab)
 	return p.switchTab(p.activeTabIndex)
+}
+
+func (p *chatPage) saveActiveTabState() {
+	if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) && p.app != nil {
+		p.tabs[p.activeTabIndex].Provider = p.app.CurrentProvider()
+		if p.app.CoderAgent != nil {
+			p.tabs[p.activeTabIndex].Model = string(p.app.CoderAgent.Model().ID)
+		}
+		p.tabs[p.activeTabIndex].ReasoningEffort = p.app.CurrentReasoningEffort()
+		p.tabs[p.activeTabIndex].Workspace = p.app.CurrentWorkspace()
+	}
+}
+
+func (p *chatPage) applyTabState(tab SessionTab) {
+	if p.app == nil {
+		return
+	}
+	if tab.Provider != "" {
+		p.app.SetProvider(tab.Provider)
+	}
+	if tab.Model != "" {
+		p.app.SetModel(models.ModelID(tab.Model))
+	}
+	if tab.ReasoningEffort != "" {
+		p.app.SetReasoningEffort(tab.ReasoningEffort)
+	}
+	if tab.Workspace != "" {
+		p.app.SetWorkspace(tab.Workspace)
+	}
 }
 
 func (p *chatPage) updateLayoutSize() tea.Cmd {
@@ -495,8 +589,18 @@ func NewChatPage(app *app.App) tea.Model {
 	}
 
 	initTitle := "project"
+	initProvider := "fake"
+	initModel := ""
+	initEffort := ""
+	initWorkspace := ""
 	if app != nil {
 		initTitle = util.DefaultSessionTitle(app.Workspace)
+		initProvider = app.CurrentProvider()
+		if app.CoderAgent != nil {
+			initModel = string(app.CoderAgent.Model().ID)
+		}
+		initEffort = app.CurrentReasoningEffort()
+		initWorkspace = app.CurrentWorkspace()
 	}
 
 	return &chatPage{
@@ -513,8 +617,12 @@ func NewChatPage(app *app.App) tea.Model {
 		layout:           layout.NewSplitPane(splitOpts...),
 		tabs: []SessionTab{
 			{
-				ID:    "",
-				Title: initTitle,
+				ID:              "",
+				Title:           initTitle,
+				Provider:        initProvider,
+				Model:           initModel,
+				ReasoningEffort: initEffort,
+				Workspace:       initWorkspace,
 			},
 		},
 		activeTabIndex: 0,

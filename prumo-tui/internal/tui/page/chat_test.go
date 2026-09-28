@@ -85,3 +85,58 @@ func TestChatPageSidebarPersistence(t *testing.T) {
 		t.Fatalf("expected config.Get().ShowSidebar to be false after toggle")
 	}
 }
+
+func TestChatPageTabIndependence(t *testing.T) {
+	fakeApp := app.New(app.Options{
+		Provider:  "fake",
+		Workspace: "/tmp/main-repo",
+	})
+
+	model := NewChatPage(fakeApp)
+	page := model.(*chatPage)
+
+	// Tab 0 starts with app defaults
+	if page.tabs[0].Provider != "fake" || page.tabs[0].Workspace != "/tmp/main-repo" {
+		t.Fatalf("tab 0 unexpected initial state: %+v", page.tabs[0])
+	}
+
+	// Create Tab 1 with independent provider, effort, worktree
+	page.Update(chat.NewTabMsg{
+		Title:           "Feature Auth",
+		Provider:        "anthropic",
+		Model:           "claude-3-7-sonnet",
+		ReasoningEffort: "high",
+		Workspace:       "/tmp/main-repo/.prumo/worktrees/feat-auth",
+	})
+
+	if len(page.tabs) != 2 || page.activeTabIndex != 1 {
+		t.Fatalf("expected 2 tabs, activeTabIndex 1, got %d", page.activeTabIndex)
+	}
+
+	// App should now reflect Tab 1's isolated configuration
+	if fakeApp.CurrentProvider() != "anthropic" {
+		t.Fatalf("expected provider 'anthropic' on tab 1, got %q", fakeApp.CurrentProvider())
+	}
+	if fakeApp.CurrentReasoningEffort() != "high" {
+		t.Fatalf("expected effort 'high' on tab 1, got %q", fakeApp.CurrentReasoningEffort())
+	}
+	if fakeApp.CurrentWorkspace() != "/tmp/main-repo/.prumo/worktrees/feat-auth" {
+		t.Fatalf("expected workspace on tab 1 to be worktree, got %q", fakeApp.CurrentWorkspace())
+	}
+
+	// Switch back to Tab 0
+	page.Update(chat.SwitchTabMsg{Index: 0})
+	if fakeApp.CurrentProvider() != "fake" {
+		t.Fatalf("expected provider 'fake' after switching to tab 0, got %q", fakeApp.CurrentProvider())
+	}
+	if fakeApp.CurrentWorkspace() != "/tmp/main-repo" {
+		t.Fatalf("expected workspace '/tmp/main-repo' after switching to tab 0, got %q", fakeApp.CurrentWorkspace())
+	}
+
+	// Switch forward to Tab 1 again
+	page.Update(chat.SwitchTabMsg{Index: 1})
+	if fakeApp.CurrentProvider() != "anthropic" || fakeApp.CurrentReasoningEffort() != "high" {
+		t.Fatalf("expected tab 1 settings preserved on switch, got prov=%q effort=%q",
+			fakeApp.CurrentProvider(), fakeApp.CurrentReasoningEffort())
+	}
+}
