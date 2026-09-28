@@ -175,4 +175,3 @@ func TestLeaderKeyChords(t *testing.T) {
 		t.Fatal("expected cmd after leader 't'")
 	}
 }
-

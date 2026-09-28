@@ -203,3 +203,46 @@ func TestSlashCommandDirty(t *testing.T) {
 	}
 }
 
+func TestSlashCommandCommit(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// Without message: usage warning
+	updated, cmd := m.Update(chat.SendMsg{Text: "/commit"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on empty /commit")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || infoMsg.Type != util.InfoTypeWarn {
+		t.Fatalf("expected InfoTypeWarn for empty /commit, got: %v", msg)
+	}
+
+	// With message: attempts git commit in workspace
+	_, cmd = m.Update(chat.SendMsg{Text: "/commit feat(test): sample commit"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /commit with message")
+	}
+}
+
+func TestSlashCommandWeb(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// Without URL: usage warning
+	updated, cmd := m.Update(chat.SendMsg{Text: "/web"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on empty /web")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || infoMsg.Type != util.InfoTypeWarn {
+		t.Fatalf("expected InfoTypeWarn for empty /web, got: %v", msg)
+	}
+
+	// With URL: triggers async fetch
+	_, cmd = m.Update(chat.SendMsg{Text: "/web https://example.com"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /web with url")
+	}
+}

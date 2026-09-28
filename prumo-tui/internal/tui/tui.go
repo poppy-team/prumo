@@ -34,6 +34,7 @@ import (
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/tui/util"
+	"github.com/raillen/prumo-tui/internal/web"
 )
 
 type keyMap struct {
@@ -1946,6 +1947,44 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 		lines := strings.Split(trimmed, "\n")
 		return a, util.ReportWarn(fmt.Sprintf("Dirty working tree (%d uncommitted changes):\n%s\nActions: !git stash, !git commit, or /undo", len(lines), trimmed))
 
+	case "/commit":
+		if len(args) == 0 {
+			return a, util.ReportWarn("Usage: /commit <message> (e.g. /commit feat(core): update parser)")
+		}
+		commitMsg := strings.Join(args, " ")
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		addCmd := exec.Command("git", "add", "-A")
+		addCmd.Dir = ws
+		if out, err := addCmd.CombinedOutput(); err != nil {
+			return a, util.ReportFailure("Staging changes (/commit)", "ensure workspace is a Git repository", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
+		}
+		commitCmd := exec.Command("git", "commit", "-m", commitMsg)
+		commitCmd.Dir = ws
+		out, err := commitCmd.CombinedOutput()
+		if err != nil {
+			return a, util.ReportFailure("Committing changes (/commit)", "check git status or provide a valid message", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Git commit successful:\n%s", strings.TrimSpace(string(out))))
+
+	case "/web":
+		if len(args) == 0 {
+			return a, util.ReportWarn("Usage: /web <url> (fetches and distills web page into conversation)")
+		}
+		targetURL := args[0]
+		return a, func() tea.Msg {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			distilled, err := web.FetchAndDistill(ctx, targetURL)
+			if err != nil {
+				return util.ReportFailure("Fetching web content (/web)", "check URL and internet connection", err)()
+			}
+			prompt := fmt.Sprintf("Web page context from %s:\n\n%s", targetURL, distilled)
+			return chat.SendMsg{Text: prompt}
+		}
+
 	case "/export":
 		return a, util.CmdHandler(exportTimelineMsg{})
 
@@ -2085,4 +2124,3 @@ func (a appModel) handleShellCommand(raw string) (tea.Model, tea.Cmd) {
 	msg := fmt.Sprintf("! %s\n%s", cmdStr, outputStr)
 	return a, util.ReportInfo(msg)
 }
-
