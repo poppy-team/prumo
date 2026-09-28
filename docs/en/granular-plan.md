@@ -69,6 +69,12 @@ v0.6.x (Hardening)      v0.7.x (Production TUI)       v0.8.x (Gateway & Resilien
 
 - **v0.7.0 (Target: 15 Oct 2026) — Canonical TUI Release**:
   - Dedicated self-contained `prumo-tui` binary launched transparently via `prumo agent` / `prumo tui`.
+  - **Leader Key System (`Ctrl+X`)**: OpenCode-inspired mnemonic sub-chords (`Ctrl+X N` new session, `Ctrl+X L` list, `Ctrl+X U` undo, `Ctrl+X M` model) avoiding GNU Readline terminal collisions.
+  - **Composer Input Prefixes**:
+    - `@`: Fuzzy file and folder attachment autocomplete.
+    - `!`: Immediate shell pass-through command execution without calling LLM (e.g., `!git status`).
+    - `/`: Slash commands (`/help`, `/model`, `/provider`, `/sidebar`, `/init`).
+  - **Unified Trinity of Operating Modes**: Full interactive TUI (`prumo tui`), quiet scriptable CLI one-shot (`prumo agent "<prompt>" -q` / `prumo run`), and headless daemon (`prumo daemon`).
   - Collision-free socket supervision (GAP-086).
   - Persistent multi-session switching with constant-memory timeline folding (GAP-052, GAP-080).
   - Touched files inspector (`Ctrl+G`) with syntax diffs (GAP-084).
@@ -76,7 +82,8 @@ v0.6.x (Hardening)      v0.7.x (Production TUI)       v0.8.x (Gateway & Resilien
   - Model capabilities badges (`[text reasoning vision tools audio]`, GAP-089).
   - Full WCAG accessibility: 9 themes with 4.5:1 contrast floor (GAP-070), reduced motion mode (GAP-065), glyph focus indicators (GAP-062), and linear screen-reader mode (`--prompt`, `--plain`, `--json`, GAP-074).
   - Plaintext timeline export with separated token, cache, and cost metrics (GAP-067, GAP-087).
-- **v0.7.1 (Target: 25 Oct 2026) — Advanced TUI Ergonomics**:
+- **v0.7.1 (Target: 25 Oct 2026) — Advanced TUI Ergonomics & LSP**:
+  - **Semantic LSP Tooling**: Native integration of `internal/harness/lsp` (`goToDefinition`, `findReferences`, and `getDiagnostics`), catching compiler diagnostics before running slow test suites.
   - Collapsible `<think>` reasoning accordions with duration timer and `Ctrl+O` toggle.
   - Paginated tool execution cards (collapse outputs > 10 lines with modal viewer).
   - Real-time Cache Hit Ratio % and Context Window gauge on statusline.

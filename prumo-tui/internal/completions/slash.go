@@ -28,6 +28,8 @@ var defaultSlashCommands = []SlashCommand{
 	{Name: "/new", Description: "Start a new conversation session"},
 	{Name: "/logs", Description: "View runtime logs"},
 	{Name: "/init", Description: "Initialize AGENTS.md memory file"},
+	{Name: "/undo", Description: "Revert the last turn's changes via Git"},
+	{Name: "/agents", Description: "List and switch workforce agent personas"},
 	{Name: "/export", Description: "Export session timeline"},
 	{Name: "/compact", Description: "Session compaction information"},
 	{Name: "/quit", Description: "Exit Prumo TUI"},

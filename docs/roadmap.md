@@ -59,6 +59,9 @@ TUI Completo             Gateway Resiliente        DAGs Multi-Agente         Rel
 *Meta: Outubro de 2026*
 
 - **Supervisão Transparente**: O comando oficial `prumo agent` (ou `prumo tui`) detecta sockets locais existentes e inicializa o daemon em segundo plano apenas quando necessário, evitando conflitos de processos (GAP-086).
+- **Sistema de Tecla Líder (`Ctrl+X`)**: Convenção mnemônica inspirada no OpenCode/tmux (`Ctrl+X N` nova sessão, `Ctrl+X L` listar, `Ctrl+X U` undo, `Ctrl+X M` modelo) prevenindo colisões com atalhos de terminal GNU Readline.
+- **Prefixos Rápidos de Entrada**: Autocomplete fuzzy de arquivos (`@`), pass-through shell imediato sem acionar o LLM (`!comando`) e comandos integrados (`/comando`).
+- **Trindade Operacional**: Paridade total entre TUI interativo (`prumo tui`), execução pontual não-interativa (`prumo agent "<prompt>" -q` / `prumo run`) e daemon de segundo plano (`prumo daemon`).
 - **Gestão de Múltiplas Sessões**: Navegação entre sessões históricas, retomada contínua e dobra inteligente de timeline com consumo constante de memória (GAP-052, GAP-080).
 - **Inspetor de Arquivos e Diffs**: Diálogo interativo de arquivos tocados (`ctrl+g`) com visualização de diffs colorizados sob demanda usando a operação `diff` do protocolo (GAP-084).
 - **Paleta de Comandos Customizáveis**: Biblioteca de comandos do usuário em Markdown (`$XDG_CONFIG_HOME/prumo-tui/commands/*.md`) com suporte a preenchimento de variáveis `{{arg}}` (GAP-082).

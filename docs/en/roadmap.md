@@ -59,6 +59,9 @@ description: Historical milestones and evolutionary projection of the Prumo Fram
 *Target: October 2026*
 
 - **Transparent TUI Supervision**: Official `prumo agent` / `prumo tui` launcher automatically connects to existing daemons or spawns managed instances without port/socket collisions (GAP-086).
+- **Leader Key System (`Ctrl+X`)**: OpenCode/tmux mnemonic sub-chords (`Ctrl+X N` new session, `Ctrl+X L` list, `Ctrl+X U` undo, `Ctrl+X M` model) preventing collisions with standard GNU Readline shortcuts.
+- **Fast Input Prefixes**: Fuzzy file completion (`@`), immediate shell pass-through without invoking LLM (`!command`), and slash commands (`/command`).
+- **Operating Trinity**: Unified behavior across full interactive TUI (`prumo tui`), quiet scriptable CLI (`prumo agent "<prompt>" -q` / `prumo run`), and headless daemon (`prumo daemon`).
 - **Multi-Session Management & Conversation Folding**: Persistent session switching and timeline fold resume with constant-memory tail rendering (GAP-052, GAP-080).
 - **Touched Files & Diff Viewer**: Interactive files dialog (`ctrl+g`) with colorized syntax diffs via the `diff` protocol op (GAP-084).
 - **Dynamic User Command Palette**: User-defined Markdown commands (`commands/*.md`) with argument placeholders `{{arg}}` (GAP-082).

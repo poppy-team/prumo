@@ -123,15 +123,22 @@ v0.6.x (Hardening)      v0.7.x (Production TUI)       v0.8.x (Gateway & Resilien
 
 - **Surface**: `prumo-tui` (built from `prumo-tui/cmd/prumo-tui`, launched transparently via `prumo agent` or `prumo tui`).
 - **Key Features (v0.7.0)**:
-  1. **Unified TUI Supervision**: `prumo agent` / `prumo tui` automatically checks local socket availability, spawning or connecting to the headless daemon transparently without double-daemon collisions (GAP-086).
-  2. **Multi-Session Management & Conversation Folding**: Full persistent session browsing, resumption, and timeline compaction with constant-memory rendering of message tails (GAP-052, GAP-080).
-  3. **Interactive Touched Files & Diff Viewer**: `ctrl+g` / files dialog with syntax highlighting and side-by-side or unified diff viewing powered by the `diff` protocol operation (GAP-084).
-  4. **Dynamic User Command Palette**: User-defined prompt library (`$XDG_CONFIG_HOME/prumo-tui/commands/*.md`) with frontmatter metadata and interactive placeholder prompts (`{{arg}}`) (GAP-082).
-  5. **Model Capabilities & Badges**: Dynamic inspection badges (`[text reasoning vision tools audio]`) displaying capabilities declared in `.prumo/models.json` (GAP-089).
-  6. **A11y & Cognitive Clarity Compliance**: 9 verified built-in themes with WCAG 4.5:1 contrast (GAP-070), reduced motion mode (GAP-065), glyph-based focus indicators (GAP-062), and linear screen-reader outputs (`--prompt`, `--plain`, `--json`, GAP-074).
-  7. **Timeline Plaintext Export**: Export complete session logs to `.prumo/runtime/exports/<run>.txt` with deterministic key ordering and separated token/cache cost metrics (GAP-067, GAP-087).
+  1. **Leader Key System (`Ctrl+X`)**: OpenCode-inspired mnemonic sub-chords (`Ctrl+X N` new session, `Ctrl+X L` list, `Ctrl+X U` undo, `Ctrl+X M` model) avoiding GNU Readline terminal collisions.
+  2. **Composer Input Prefixes**:
+     - `@`: Fuzzy file and folder attachment autocomplete.
+     - `!`: Immediate shell pass-through command execution without calling LLM (e.g., `!git status`).
+     - `/`: Slash commands (`/help`, `/model`, `/provider`, `/sidebar`, `/init`).
+  3. **Unified Trinity of Operating Modes**: Full interactive TUI (`prumo tui`), quiet scriptable CLI one-shot (`prumo agent "<prompt>" -q` / `prumo run`), and headless daemon (`prumo daemon`).
+  4. **Unified TUI Supervision**: `prumo agent` / `prumo tui` automatically checks local socket availability, spawning or connecting to the headless daemon transparently without double-daemon collisions (GAP-086).
+  5. **Multi-Session Management & Conversation Folding**: Full persistent session browsing, resumption, and timeline compaction with constant-memory rendering of message tails (GAP-052, GAP-080).
+  6. **Interactive Touched Files & Diff Viewer**: `ctrl+g` / files dialog with syntax highlighting and side-by-side or unified diff viewing powered by the `diff` protocol operation (GAP-084).
+  7. **Dynamic User Command Palette**: User-defined prompt library (`$XDG_CONFIG_HOME/prumo-tui/commands/*.md`) with frontmatter metadata and interactive placeholder prompts (`{{arg}}`) (GAP-082).
+  8. **Model Capabilities & Badges**: Dynamic inspection badges (`[text reasoning vision tools audio]`) displaying capabilities declared in `.prumo/models.json` (GAP-089).
+  9. **A11y & Cognitive Clarity Compliance**: 9 verified built-in themes with WCAG 4.5:1 contrast (GAP-070), reduced motion mode (GAP-065), glyph-based focus indicators (GAP-062), and linear screen-reader outputs (`--prompt`, `--plain`, `--json`, GAP-074).
+  10. **Timeline Plaintext Export**: Export complete session logs to `.prumo/runtime/exports/<run>.txt` with deterministic key ordering and separated token/cache cost metrics (GAP-067, GAP-087).
 
-- **v0.7.1 (Target: 25 Oct 2026) — TUI Ergonomics & Real-Time Telemetry**:
+- **v0.7.1 (Target: 25 Oct 2026) — TUI Ergonomics, LSP & Real-Time Telemetry**:
+  - **Semantic LSP Tooling**: Native integration of `internal/harness/lsp` (`goToDefinition`, `findReferences`, and `getDiagnostics`), catching compiler diagnostics before running slow test suites.
   - Interactive collapsible `<think>` reasoning accordions with duration timer and `Ctrl+O` toggle.
   - Paginated tool execution cards (auto-fold outputs > 10 lines with modal viewer).
   - Real-time Cache Hit Ratio % and Context Window gauge on statusline (`ctx: 35%`).

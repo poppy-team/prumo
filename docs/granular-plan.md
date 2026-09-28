@@ -61,31 +61,60 @@ Para garantir que o **Prumo TUI (`prumo-tui`)** e o **Harness Core (`prumo`)** o
 5. **Multimodalidade & Colar Imagens (`Ctrl+V` / `/paste`)**:
    - Captura direta da área de transferência do sistema via utilitários nativos (`wl-paste` no Wayland, `xclip` no X11, `pbpaste` no macOS).
    - Armazenamento em `.prumo/cache/media/<hash>.png` e renderização de prévia visual no terminal em meio-bloco ANSI de 24-bit (`▀`).
+6. **Sistema de Tecla Líder (*Leader Key* — `Ctrl+X`)**:
+   - Para erradicar conflitos com atalhos padrão de terminal GNU Readline (`Ctrl+A`, `Ctrl+E`, `Ctrl+K`), o `prumo-tui` adota a convenção de Tecla Líder do OpenCode/tmux:
+     - `Ctrl+X` seguido de `N`: Iniciar Nova Sessão.
+     - `Ctrl+X` seguido de `L`: Listar e alternar entre sessões ativas.
+     - `Ctrl+X` seguido de `U`: Desfazer (*undo*) a última mutação do agente via checkpoint Git.
+     - `Ctrl+X` seguido de `R`: Refazer (*redo*).
+     - `Ctrl+X` seguido de `C`: Compactar contexto manualmente (*rolling capsule*).
+     - `Ctrl+X` seguido de `M`: Troca dinâmica de modelo/provedor.
+     - `Ctrl+P` / `Ctrl+K`: Paleta global de comandos com busca fuzzy.
+7. **Prefixos Rápidos de Entrada no Composer**:
+   - `@<caminho>`: Gatilho de fuzzy completion para anexar caminhos de arquivos e pastas diretamente no prompt.
+   - `!<comando>`: Pass-through shell imediato executado no workspace sem disparar inferência LLM (ex: `!git status`, `!go test ./...`), exibindo o resultado em card formatado.
+   - `/<comando>`: Execução direta de slash commands integrados (`/undo`, `/model`, `/provider`, `/sidebar`, `/help`).
 
-### B. Ferramentas & Engenharia Git-Nativa
-1. **Comando `/undo` Atômico**:
+### B. Ferramentas, Inteligência & Engenharia de Runtime
+1. **Pipeline de Ferramentas em 6 Estágios**:
+   - `Registry Lookup`: Validação de assinatura e schema de parâmetros.
+   - `Permission Gate (Human-in-the-Loop)`: Verificação estrita de políticas declaradas (`internal/harness/perm`), exigindo aprovação prévia para comandos mutantes ou destrutivos com preview de diff.
+   - `Pre-Tool Hooks`: Registro de auditoria e interceptores de plugins.
+   - `Execution`: Execução contida com captura assíncrona de streams stdout/stderr.
+   - `Post-Tool Hooks`: Verificação de exit codes e emissão de eventos para a timeline.
+   - `Output Compaction`: Truncamento inteligente e paginação de saídas volumosas para evitar context blowouts.
+2. **Inteligência Semântica via LSP Nativo (`internal/harness/lsp`)**:
+   - Acoplamento do agente aos Language Servers instalados no ambiente (`gopls`, `rust-analyzer`, `tsserver`, `pyright`).
+   - Fornece operações semânticas: `goToDefinition`, `findReferences` e `getDiagnostics` (capturando alertas e erros do compilador antes mesmo da execução de suítes de testes lentas).
+3. **Persistência Multi-Sessão & Branching em SQLite**:
+   - Armazenamento em `.prumo/state/sessions.db` com recuperação instantânea de checkpoints, histórico completo de turnos e bifurcação (*branching*) de conversas a partir de qualquer ponto do histórico.
+4. **Trindade Unificada de Modos Operacionais**:
+   - **TUI Interativo**: `prumo tui` (interface full-screen rica em Bubble Tea v2).
+   - **One-Shot CLI**: `prumo agent "<prompt>" -q` ou `prumo run "<prompt>"` (para scripts, pipes UNIX e automações CI/CD).
+   - **Daemon / RPC Server**: `prumo daemon` (supervisão de background servindo TUI, IDEs e UIs remotas).
+5. **Comando `/undo` Atômico**:
    - Desfaz de forma limpa o último turno executado pelo agente, revertendo as alterações no sistema de arquivos e restaurando o commit anterior via Git (`git reset --hard HEAD~1`).
-2. **Proteção de Repositório Sujo (*Dirty Working Tree*)**:
+6. **Proteção de Repositório Sujo (*Dirty Working Tree*)**:
    - Se o usuário tiver modificações manuais não salvas antes de o agente iniciar o trabalho, o TUI apresenta um aviso de segurança imediato com opções: `[s] Criar Stash temporário | [c] Realizar Commit prévio | [a] Abortar`.
-3. **Auto-Commit Convencional**:
+7. **Auto-Commit Convencional**:
    - Conclusão de metas com commit automático estruturado conforme `internal/repositorypolicy` (`feat(escopo): resumo da meta`).
-4. **Repo Map com Tree-sitter & PageRank**:
+8. **Repo Map com Tree-sitter & PageRank**:
    - Extração estrutural de definições e assinaturas via AST do Tree-sitter sem corpos de funções.
    - Aplicação de PageRank personalizado para ordenar os arquivos centrais do projeto e encaixá-los de forma ótima dentro de um orçamento estrito de tokens (1024 a 2048 tokens).
-5. **Modo Dual Architect / Editor (`Ctrl+M`)**:
+9. **Modo Dual Architect / Editor (`Ctrl+M`)**:
    - **Modo Arquiteto**: Modelo de alto raciocínio (Claude 3.7 / o1 / DeepSeek R1) opera estritamente em modo somente-leitura, analisando o repo map e emitindo um plano estruturado de tarefas.
    - **Modo Editor**: Modelo econômico e rápido (Claude Haiku / Qwen 2.5 Coder) assume o plano e executa as edições cirúrgicas no código.
-6. **Loop de Reparo Guiado por Verificação (Lints & Testes)**:
-   - Configuração de comandos de validação (`test_cmd`, `lint_cmd`). O TUI exibe o progresso:
-     ```
-     ● Verificando alterações...
-       ✔ Linter (golangci-lint): Passou (0.4s)
-       ✖ Testes (go test ./...): Falhou (2 falhas)
-       ◌ Auto-reparando com o agente: Tentativa 1 de 3...
-     ```
-   - O erro do teste é reinjetado como observação sintética em até $K$ tentativas limitadas.
-7. **Destilação Web (`/web <url>`)**:
-   - Comando `/web <url>` busca a página externa, extrai o conteúdo limpo via Readability (eliminando menus, anúncios e scripts) e injeta uma cápsula Markdown imutável no contexto.
+10. **Loop de Reparo Guiado por Verificação (Lints & Testes)**:
+    - Configuração de comandos de validação (`test_cmd`, `lint_cmd`). O TUI exibe o progresso:
+      ```
+      ● Verificando alterações...
+        ✔ Linter (golangci-lint): Passou (0.4s)
+        ✖ Testes (go test ./...): Falhou (2 falhas)
+        ◌ Auto-reparando com o agente: Tentativa 1 de 3...
+      ```
+    - O erro do teste é reinjetado como observação sintética em até $K$ tentativas limitadas.
+11. **Destilação Web (`/web <url>`)**:
+    - Comando `/web <url>` busca a página externa, extrai o conteúdo limpo via Readability (eliminando menus, anúncios e scripts) e injeta uma cápsula Markdown imutável no contexto.
 
 ---
 
@@ -133,27 +162,34 @@ v0.6.x (Hardening)      v0.7.x (TUI de Produção)      v0.8.x (Gateway & Resili
 ### Linha v0.7.x — O Cliente de Terminal Completo (`prumo-tui`)
 
 #### v0.7.0 (15/10/2026) — Entrega Canônica do Prumo TUI
-- **Foco**: Lançamento oficial do `prumo-tui` como cliente de terminal autocontido e padronizado.
+- **Foco**: Lançamento oficial do `prumo-tui` como cliente de terminal autocontido, padronizado e com ergonomia inspirada no OpenCode.
 - **Entregáveis**:
-  - Binário dedicado `prumo-tui` empacotado em `prumo-tui/cmd/prumo-tui`, inicializado de forma transparente via `prumo agent` ou `prumo tui`.
+  - Binário dedicado `prumo-tui` empacotado em `prumo-tui/cmd/prumo-tui`, inicializado de forma transparente via `prumo agent` ou `prumo tui` (com resolução canônica de caminho de executável).
+  - **Sistema de Tecla Líder (`Ctrl+X`)**: Ativação de atalhos mnemônicos do OpenCode (`Ctrl+X N` nova sessão, `Ctrl+X L` listar, `Ctrl+X U` undo, `Ctrl+X M` modelo) sem conflitos com GNU Readline.
+  - **Prefixos de Entrada no Composer**:
+    - `@`: Autocomplete fuzzy de arquivos e diretórios integrado ao input.
+    - `!`: Pass-through shell imediato sem acionar o modelo (ex: `!git status`), exibindo a saída em card limpo.
+    - `/`: Slash commands rápidos (`/help`, `/model`, `/provider`, `/sidebar`, `/init`).
+  - **Trindade Operacional**: Paridade total entre modo interativo (`prumo tui`), CLI one-shot com silenciamento de animações (`prumo agent "<prompt>" -q` / `prumo run`) e daemon em background (`prumo daemon`).
   - Supervisão sem colisão de daemons locais existentes (GAP-086).
-  - Gestão de múltiplas sessões (`Ctrl+S`) com dobra de timeline em memória constante (GAP-052, GAP-080).
+  - Gestão de múltiplas sessões com dobra de timeline em memória constante (GAP-052, GAP-080).
   - Inspetor de arquivos tocados (`Ctrl+G`) com visualização de diffs colorizados via operação `diff` (GAP-084).
   - Paleta de comandos do usuário em Markdown (`commands/*.md`) com placeholders `{{arg}}` (GAP-082).
   - Emblemas dinâmicos de capacidade de modelo (`[text reasoning vision tools audio]`, GAP-089).
   - Acessibilidade WCAG completa: 9 temas com contraste mínimo de 4.5:1 (GAP-070), modo de movimento reduzido (GAP-065), indicadores de foco por glifo (GAP-062) e modo de tela linear para leitores de tela (`--prompt`, `--plain`, `--json`, GAP-074).
   - Exportação de histórico em texto puro com divisão de tokens de cache e custos monetários (GAP-067, GAP-087).
-- **DoD**: Navegação verificada ponta a ponta nos 22 estados de interface documentados em `docs/ui-ux/state-matrix.json`.
+- **DoD**: Navegação verificada ponta a ponta nos 22 estados de interface documentados em `docs/ui-ux/state-matrix.json` e execução de comandos `!` e `/` comprovada por testes unitários.
 
-#### v0.7.1 (25/10/2026) — Ergonomia Avançada de Terminal & Telemetria
-- **Foco**: Experiência visual refinada e monitoramento de desempenho e custos em tempo real.
+#### v0.7.1 (25/10/2026) — Ergonomia Avançada de Terminal, LSP & Telemetria
+- **Foco**: Experiência visual refinada, monitoramento em tempo real e inteligência semântica via LSP.
 - **Entregáveis**:
+  - **Inteligência Semântica com LSP**: Integração do `internal/harness/lsp` no loop do TUI (`goToDefinition`, `findReferences` e `getDiagnostics`), exibindo diagnósticos do compilador antes da execução.
   - **Accordions de Pensamento (`<think>`)**: Componente colapsável interativo no `message.go` com cálculo de tempo decorrido e atalho `Ctrl+O`.
   - **Cards de Ferramenta Paginados**: Rodapé interativo `[Enter para expandir]` em saídas com mais de 10 linhas.
   - **Telemetria de Cache Hit Ratio**: Exibição da porcentagem de acerto de cache (`cache 82%`) na statusline.
   - **Gauge de Contexto**: Indicador visual de ocupação do contexto do modelo (`ctx: 35%`).
   - **Navegação Vim**: Modo normal opcional com teclas `j`/`k`/`gg`/`G` para navegação fluida no histórico de mensagens.
-- **DoD**: Testes de frame snapshot atualizados confirmando renderização dos novos widgets colapsáveis.
+- **DoD**: Testes de frame snapshot atualizados confirmando renderização dos novos widgets colapsáveis e ferramenta de diagnóstico LSP validada em Go e Rust.
 
 #### v0.7.2 (05/11/2026) — Ferramental Git-Nativo & Web no Terminal
 - **Foco**: Operações de Git integradas e captura de contexto externo.

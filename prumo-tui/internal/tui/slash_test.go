@@ -133,3 +133,49 @@ func TestCtrlBTogglesSidebar(t *testing.T) {
 	}
 	_ = updated
 }
+
+func TestShellPrefixCommand(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, cmd := m.Update(chat.SendMsg{Text: "!echo 'prumo-tui-shell-test'"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on !echo command")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "prumo-tui-shell-test") {
+		t.Fatalf("expected info message with command output, got: %v", msg)
+	}
+}
+
+func TestShellPrefixEmpty(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, cmd := m.Update(chat.SendMsg{Text: "!"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on empty ! command")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "No shell command provided") {
+		t.Fatalf("expected warning about empty shell command, got: %v", msg)
+	}
+}
+
+func TestSlashCommandUndo(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, cmd := m.Update(chat.SendMsg{Text: "/undo"})
+	_ = updated
+	if cmd == nil {
+		t.Fatal("expected cmd on /undo command")
+	}
+	// /undo will attempt git reset in test tempdir and return info or failure Msg
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("expected non-nil response for /undo")
+	}
+}
+

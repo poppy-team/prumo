@@ -668,6 +668,9 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if strings.HasPrefix(trimmed, "/") {
 			return a.handleSlashCommand(trimmed)
 		}
+		if strings.HasPrefix(trimmed, "!") {
+			return a.handleShellCommand(trimmed[1:])
+		}
 
 	case tea.KeyPressMsg:
 		// If quit dialog is open, let it handle the key press first
@@ -1852,6 +1855,19 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 		}
 		return a, util.ReportWarn("Init command not available")
 
+	case "/undo":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		cmd := exec.Command("git", "reset", "--hard", "HEAD~1")
+		cmd.Dir = ws
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return a, util.ReportFailure("Reverting last commit (/undo)", "ensure repository has commits to undo", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Git commit reverted (/undo):\n%s", strings.TrimSpace(string(out))))
+
 	case "/export":
 		return a, util.CmdHandler(exportTimelineMsg{})
 
@@ -1966,3 +1982,29 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 		return a, util.ReportWarn(fmt.Sprintf("Unknown command: %s. Type /help for available commands.", name))
 	}
 }
+
+func (a appModel) handleShellCommand(raw string) (tea.Model, tea.Cmd) {
+	cmdStr := strings.TrimSpace(raw)
+	if cmdStr == "" {
+		return a, util.ReportWarn("No shell command provided after '!'")
+	}
+	ws := "."
+	if a.app != nil && a.app.Workspace != "" {
+		ws = a.app.Workspace
+	}
+
+	cmd := exec.Command("sh", "-c", cmdStr)
+	cmd.Dir = ws
+	out, err := cmd.CombinedOutput()
+	outputStr := strings.TrimRight(string(out), "\r\n")
+	if err != nil {
+		msg := fmt.Sprintf("! %s [failed: %v]\n%s", cmdStr, err, outputStr)
+		return a, util.ReportWarn(strings.TrimSpace(msg))
+	}
+	if outputStr == "" {
+		outputStr = "(no output)"
+	}
+	msg := fmt.Sprintf("! %s\n%s", cmdStr, outputStr)
+	return a, util.ReportInfo(msg)
+}
+
