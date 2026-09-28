@@ -33,6 +33,7 @@ var defaultSlashCommands = []SlashCommand{
 	{Name: "/dirty", Description: "Check for uncommitted workspace modifications"},
 	{Name: "/web", Description: "Fetch and distill web page into conversation"},
 	{Name: "/think", Description: "Toggle visibility of model thinking/reasoning blocks"},
+	{Name: "/effort", Description: "Set model reasoning effort (low, medium, high, max, or tokens)"},
 	{Name: "/agents", Description: "List and switch workforce agent personas"},
 	{Name: "/export", Description: "Export session timeline"},
 	{Name: "/compact", Description: "Session compaction information"},

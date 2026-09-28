@@ -67,6 +67,15 @@ TUI Completo             Gateway Resiliente        DAGs Multi-Agente         Rel
 - **Paleta de Comandos Customizáveis**: Biblioteca de comandos do usuário em Markdown (`$XDG_CONFIG_HOME/prumo-tui/commands/*.md`) com suporte a preenchimento de variáveis `{{arg}}` (GAP-082).
 - **Inspeção de Recursos de Modelos**: Emblemas visuais dinâmicos (`[text reasoning vision tools audio]`) informando exatamente as capacidades de cada modelo registrado (GAP-089).
 - **Acessibilidade Plena (WCAG)**: 9 temas com contraste medido acima de 4.5:1 (GAP-070), modo de movimento reduzido (GAP-065), indicadores de foco por glifo (GAP-062) e saída linear acessível para leitores de tela (`--prompt`, `--plain`, `--json`) (GAP-074).
+- **Controle de Esforço de Raciocínio (`ReasoningEffort`)**:
+  - Comando `/effort [low|medium|high|max|<tokens>|off]` com persistência em configuração e exibição na barra lateral.
+  - Adaptação provedor-neutra entre Anthropic (`thinking: {budget_tokens: N}` e balanceamento dinâmico de `max_tokens`), OpenAI (`reasoning_effort`), OpenRouter (`reasoning: {effort: ...}`), DeepSeek (`thinking: {type: enabled}`) e Gemini (`thinking_config` / `thinking_level`).
+  - Blocos de pensamento recolhíveis (`<think>`) com alternância via atalho `Ctrl+X t` ou `/think`.
+- **Fluxos Nativos do Desenvolvedor no Terminal**:
+  - `/dirty`: verificação imediata de modificações pendentes no repositório.
+  - `/commit <msg>`: stage atômico e commit convencional direto do compositor.
+  - `/undo`: reversão atômica do último turno via rollback do Git.
+  - `/web <url>`: busca e destilação de páginas web limpas de scripts/estilos injetadas diretamente no contexto da conversa.
 - **Exportação de Timeline**: Exportação determinística da sessão para `.prumo/runtime/exports/<run>.txt` com métricas detalhadas de tokens, cache e custos (GAP-067, GAP-087).
 
 ---

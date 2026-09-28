@@ -22,6 +22,7 @@ func TestSidebarRendersSessionAndShortcuts(t *testing.T) {
 		Title:            "My Test Session",
 		PromptTokens:     1500,
 		CompletionTokens: 500,
+		ReasoningTokens:  250,
 		Cost:             0.005,
 	})
 
@@ -35,6 +36,12 @@ func TestSidebarRendersSessionAndShortcuts(t *testing.T) {
 	view := sidebar.View().Content
 	if !strings.Contains(view, "SESSION STATUS") {
 		t.Fatalf("expected SESSION STATUS in view:\n%s", view)
+	}
+	if !strings.Contains(view, "Effort:") {
+		t.Fatalf("expected Effort in view:\n%s", view)
+	}
+	if !strings.Contains(view, "reasoning: 250") {
+		t.Fatalf("expected reasoning tokens in view:\n%s", view)
 	}
 	if !strings.Contains(view, "My Test Session") {
 		t.Fatalf("expected session title in view:\n%s", view)

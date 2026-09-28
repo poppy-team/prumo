@@ -275,3 +275,80 @@ func TestOpenAICompatStreamsReasoningDelta(t *testing.T) {
 		t.Errorf("event 2 mismatch: %+v", events[2])
 	}
 }
+
+func TestOpenAICompatReasoningEffort(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedBody = make(map[string]any)
+		_ = json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	policy := LocalDevelopmentDestinationPolicy()
+	p := NewOpenAICompatWithPolicy(srv.URL, "key", "o3-mini", policy)
+
+	// Test 1: high effort
+	ch, err := p.Stream(context.Background(), agent.ModelRequest{
+		RequestID:       "req-effort-1",
+		ReasoningEffort: "high",
+	})
+	if err != nil {
+		t.Fatalf("Stream() err = %v", err)
+	}
+	for range ch {
+	}
+	if receivedBody["reasoning_effort"] != "high" {
+		t.Errorf("expected reasoning_effort 'high', got: %v", receivedBody["reasoning_effort"])
+	}
+
+	// Test 2: numeric effort token mapping
+	ch, err = p.Stream(context.Background(), agent.ModelRequest{
+		RequestID:       "req-effort-2",
+		ReasoningEffort: "1024",
+	})
+	if err != nil {
+		t.Fatalf("Stream() err = %v", err)
+	}
+	for range ch {
+	}
+	if receivedBody["reasoning_effort"] != "low" {
+		t.Errorf("expected reasoning_effort 'low' for 1024 tokens, got: %v", receivedBody["reasoning_effort"])
+	}
+
+	// Test 3: disabled effort ("off")
+	ch, err = p.Stream(context.Background(), agent.ModelRequest{
+		RequestID:       "req-effort-3",
+		ReasoningEffort: "off",
+	})
+	if err != nil {
+		t.Fatalf("Stream() err = %v", err)
+	}
+	for range ch {
+	}
+	if _, ok := receivedBody["reasoning_effort"]; ok {
+		t.Errorf("expected no reasoning_effort when off, got: %v", receivedBody["reasoning_effort"])
+	}
+
+	// Test 4: DeepSeek provider enables thinking mode
+	pDeepSeek := NewOpenAICompatWithPolicy(srv.URL, "key", "deepseek-chat", policy)
+	pDeepSeek.Provider = "deepseek"
+	ch, err = pDeepSeek.Stream(context.Background(), agent.ModelRequest{
+		RequestID:       "req-effort-4",
+		ReasoningEffort: "medium",
+	})
+	if err != nil {
+		t.Fatalf("Stream() err = %v", err)
+	}
+	for range ch {
+	}
+	if receivedBody["reasoning_effort"] != "medium" {
+		t.Errorf("expected reasoning_effort 'medium', got: %v", receivedBody["reasoning_effort"])
+	}
+	thinking, _ := receivedBody["thinking"].(map[string]any)
+	if thinking == nil || thinking["type"] != "enabled" {
+		t.Errorf("expected thinking.type='enabled' for DeepSeek, got: %v", receivedBody["thinking"])
+	}
+}

@@ -29,6 +29,7 @@ type Session struct {
 	CompletionTokens int64
 	CacheReadTokens  int64
 	CacheWriteTokens int64
+	ReasoningTokens  int64
 	Cost             float64
 	// UsageReports is how many times the harness reported usage, which is how
 	// many model requests this session has made — the denominator of the average

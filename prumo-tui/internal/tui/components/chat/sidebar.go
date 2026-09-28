@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/runtime"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
@@ -169,6 +170,16 @@ func (s *sidebarCmp) viewString() string {
 	}
 	lines = append(lines, labelStyle.Render("Model: "+modelName))
 
+	effort := "default"
+	if s.app != nil && s.app.Runner != nil {
+		if e := s.app.Runner.ReasoningEffort(); e != "" {
+			effort = e
+		}
+	} else if e := config.Get().ReasoningEffort; e != "" {
+		effort = e
+	}
+	lines = append(lines, labelStyle.Render("Effort: "+effort))
+
 	lines = append(lines, "")
 
 	// Section 2: Context & Token Occupancy (OpenCode v2 Telemetry)
@@ -191,6 +202,10 @@ func (s *sidebarCmp) viewString() string {
 
 	tokensDetail := fmt.Sprintf("in: %s  out: %s", formatTokens(s.session.PromptTokens), formatTokens(s.session.CompletionTokens))
 	lines = append(lines, labelStyle.Render(tokensDetail))
+
+	if s.session.ReasoningTokens > 0 {
+		lines = append(lines, labelStyle.Render(fmt.Sprintf("reasoning: %s", formatTokens(s.session.ReasoningTokens))))
+	}
 
 	if s.session.CacheReadTokens > 0 {
 		lines = append(lines, labelStyle.Render(fmt.Sprintf("cache read: %s", formatTokens(s.session.CacheReadTokens))))

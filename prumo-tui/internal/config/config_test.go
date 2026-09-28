@@ -143,3 +143,21 @@ func TestSidebarVisibilitySurvivesARestart(t *testing.T) {
 		t.Fatal("expected ShowSidebar to be false after restart")
 	}
 }
+
+func TestReasoningEffortSurvivesARestart(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PRUMO_TUI_CONFIG_DIR", dir)
+	Set(defaultConfig())
+
+	if err := UpdateReasoningEffort("high"); err != nil {
+		t.Fatalf("updating reasoning effort failed: %v", err)
+	}
+
+	Set(defaultConfig())
+	if err := Load(); err != nil {
+		t.Fatalf("loading failed: %v", err)
+	}
+	if got := Get().ReasoningEffort; got != "high" {
+		t.Fatalf("expected ReasoningEffort 'high' after restart, got %q", got)
+	}
+}

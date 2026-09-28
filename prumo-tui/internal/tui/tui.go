@@ -1929,6 +1929,38 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			util.ReportInfo("Toggled reasoning/thinking visibility"),
 		)
 
+	case "/effort", "/reasoning":
+		if len(args) == 0 {
+			currentEffort := config.Get().ReasoningEffort
+			if currentEffort == "" {
+				currentEffort = "default (model decides)"
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Current reasoning effort: %s\nUsage: /effort [low|medium|high|max|<tokens>|off]", currentEffort))
+		}
+		target := strings.ToLower(strings.TrimSpace(args[0]))
+		switch target {
+		case "low", "medium", "high", "max", "off", "none", "disable", "default":
+			if target == "default" {
+				target = ""
+			}
+			if err := config.UpdateReasoningEffort(target); err != nil {
+				return a, util.ReportFailure("Updating reasoning effort", "check configuration permissions", err)
+			}
+			disp := target
+			if disp == "" {
+				disp = "default"
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Reasoning effort set to: %s", disp))
+		default:
+			if n, err := strconv.Atoi(target); err == nil && n > 0 {
+				if err := config.UpdateReasoningEffort(target); err != nil {
+					return a, util.ReportFailure("Updating reasoning effort", "check configuration permissions", err)
+				}
+				return a, util.ReportInfo(fmt.Sprintf("Reasoning budget set to: %d tokens", n))
+			}
+			return a, util.ReportWarn("Invalid effort level. Use: low, medium, high, max, <number-of-tokens>, or off")
+		}
+
 	case "/dirty":
 		ws := "."
 		if a.app != nil && a.app.Workspace != "" {

@@ -246,3 +246,51 @@ func TestSlashCommandWeb(t *testing.T) {
 		t.Fatal("expected cmd on /web with url")
 	}
 }
+
+func TestSlashCommandEffort(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// 1. Without args: reports current effort
+	_, cmd := m.Update(chat.SendMsg{Text: "/effort"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /effort without args")
+	}
+	msg := cmd()
+	infoMsg, ok := msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "Current reasoning effort") {
+		t.Fatalf("expected current effort info, got: %v", msg)
+	}
+
+	// 2. Set valid effort level: "high"
+	_, cmd = m.Update(chat.SendMsg{Text: "/effort high"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /effort high")
+	}
+	msg = cmd()
+	infoMsg, ok = msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "Reasoning effort set to: high") {
+		t.Fatalf("expected confirmation of high effort, got: %v", msg)
+	}
+
+	// 3. Set token budget: "4096"
+	_, cmd = m.Update(chat.SendMsg{Text: "/effort 4096"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /effort 4096")
+	}
+	msg = cmd()
+	infoMsg, ok = msg.(util.InfoMsg)
+	if !ok || !strings.Contains(infoMsg.Msg, "Reasoning budget set to: 4096 tokens") {
+		t.Fatalf("expected confirmation of 4096 token budget, got: %v", msg)
+	}
+
+	// 4. Invalid effort: warning
+	_, cmd = m.Update(chat.SendMsg{Text: "/effort invalid_level"})
+	if cmd == nil {
+		t.Fatal("expected cmd on invalid effort")
+	}
+	msg = cmd()
+	infoMsg, ok = msg.(util.InfoMsg)
+	if !ok || infoMsg.Type != util.InfoTypeWarn {
+		t.Fatalf("expected warning on invalid effort, got: %v", msg)
+	}
+}

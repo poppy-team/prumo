@@ -22,6 +22,7 @@ import (
 	prumo "github.com/raillen/prumo/sdk/prumo"
 
 	"github.com/raillen/prumo-tui/internal/agent"
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/llm/models"
 	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/message"
@@ -83,12 +84,13 @@ type Runner struct {
 	messages    *message.Store
 	permissions *permission.Service
 
-	mu        sync.Mutex
-	model     models.Model
-	provider  string
-	maxTurns  int
-	workspace string
-	active    map[string]context.CancelFunc
+	mu              sync.Mutex
+	model           models.Model
+	provider        string
+	maxTurns        int
+	workspace       string
+	reasoningEffort string
+	active          map[string]context.CancelFunc
 	// changes is what the harness reported per session, kept so the view can
 	// ask without re-reading the timeline on every frame.
 	changes map[string][]Change
@@ -112,14 +114,15 @@ type SubagentInfo struct {
 
 // Options configures a runner.
 type Options struct {
-	Client      Client
-	Sessions    *session.Store
-	Messages    *message.Store
-	Permissions *permission.Service
-	Provider    string
-	Model       models.Model
-	MaxTurns    int
-	Workspace   string
+	Client          Client
+	Sessions        *session.Store
+	Messages        *message.Store
+	Permissions     *permission.Service
+	Provider        string
+	Model           models.Model
+	MaxTurns        int
+	Workspace       string
+	ReasoningEffort string
 }
 
 // NewRunner builds a runner over a transport.
@@ -131,19 +134,20 @@ func NewRunner(opts Options) *Runner {
 		opts.MaxTurns = 5
 	}
 	return &Runner{
-		agentEvents: newAgentEvents(),
-		client:      opts.Client,
-		sessions:    opts.Sessions,
-		messages:    opts.Messages,
-		permissions: opts.Permissions,
-		model:       opts.Model,
-		provider:    opts.Provider,
-		maxTurns:    opts.MaxTurns,
-		workspace:   opts.Workspace,
-		active:      map[string]context.CancelFunc{},
-		changes:     map[string][]Change{},
-		cursors:     map[string]int{},
-		subagents:   map[string][]SubagentInfo{},
+		agentEvents:     newAgentEvents(),
+		client:          opts.Client,
+		sessions:        opts.Sessions,
+		messages:        opts.Messages,
+		permissions:     opts.Permissions,
+		model:           opts.Model,
+		provider:        opts.Provider,
+		maxTurns:        opts.MaxTurns,
+		workspace:       opts.Workspace,
+		reasoningEffort: opts.ReasoningEffort,
+		active:          map[string]context.CancelFunc{},
+		changes:         map[string][]Change{},
+		cursors:         map[string]int{},
+		subagents:       map[string][]SubagentInfo{},
 	}
 }
 
@@ -253,6 +257,7 @@ func (r *Runner) recordUsage(sessionID string, payload map[string]any) {
 	current.CompletionTokens += numberOf(payload, "completion_tokens")
 	current.CacheReadTokens += numberOf(payload, "cache_read_tokens")
 	current.CacheWriteTokens += numberOf(payload, "cache_write_tokens")
+	current.ReasoningTokens += numberOf(payload, "reasoning_tokens")
 	current.Cost += floatOf(payload, "cost_usd")
 	current.UsageReports++
 	if _, err := r.sessions.Save(ctx, current); err != nil {
@@ -270,6 +275,7 @@ func (r *Runner) resetUsage(sessionID string) {
 	}
 	current.PromptTokens, current.CompletionTokens = 0, 0
 	current.CacheReadTokens, current.CacheWriteTokens = 0, 0
+	current.ReasoningTokens = 0
 	current.Cost, current.UsageReports = 0, 0
 	if _, err := r.sessions.Save(ctx, current); err != nil {
 		logging.ErrorPersist("cannot reset what the run spent: " + err.Error())
@@ -304,6 +310,23 @@ func (r *Runner) SetProvider(provider string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.provider = provider
+}
+
+// ReasoningEffort reports the configured reasoning effort level or budget.
+func (r *Runner) ReasoningEffort() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.reasoningEffort != "" {
+		return r.reasoningEffort
+	}
+	return config.Get().ReasoningEffort
+}
+
+// SetReasoningEffort updates the reasoning effort level.
+func (r *Runner) SetReasoningEffort(effort string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.reasoningEffort = effort
 }
 
 // IsBusy reports whether any run is in flight.
@@ -366,13 +389,15 @@ func (r *Runner) Run(ctx context.Context, sessionID, content string) (<-chan age
 	if modelName == "" {
 		modelName = string(model.ID)
 	}
+	effort := r.ReasoningEffort()
 	if _, err := r.client.Start(ctx, StartRequest{
-		Goal:      content,
-		Provider:  r.provider,
-		Model:     modelName,
-		MaxTurns:  r.maxTurns,
-		RunID:     sessionID,
-		Workspace: r.workspace,
+		Goal:            content,
+		Provider:        r.provider,
+		Model:           modelName,
+		MaxTurns:        r.maxTurns,
+		RunID:           sessionID,
+		Workspace:       r.workspace,
+		ReasoningEffort: effort,
 	}); err != nil {
 		return nil, err
 	}
@@ -695,7 +720,11 @@ func (r *Runner) fold(ev Event, sessionID string, current *turn) bool {
 		if text == "" {
 			return false
 		}
-		current.parts = append(current.parts, message.ReasoningContent{Thinking: text})
+		if last, ok := lastReasoning(current); ok {
+			current.parts[last] = message.ReasoningContent{Thinking: current.parts[last].(message.ReasoningContent).Thinking + text}
+		} else {
+			current.parts = append(current.parts, message.ReasoningContent{Thinking: text})
+		}
 		return true
 	case "tool_call_ready":
 		name := stringOf(ev.Payload, "name")
@@ -728,6 +757,15 @@ func (r *Runner) fold(ev Event, sessionID string, current *turn) bool {
 func lastText(t *turn) (int, bool) {
 	for i := len(t.parts) - 1; i >= 0; i-- {
 		if _, ok := t.parts[i].(message.TextContent); ok {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func lastReasoning(t *turn) (int, bool) {
+	for i := len(t.parts) - 1; i >= 0; i-- {
+		if _, ok := t.parts[i].(message.ReasoningContent); ok {
 			return i, true
 		}
 	}

@@ -185,3 +185,70 @@ func TestAnthropicMultipartImagePayload(t *testing.T) {
 		t.Errorf("block 1 source mismatch: %v", src)
 	}
 }
+
+func TestAnthropicReasoningEffort(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedBody = make(map[string]any)
+		_ = json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":5,\"output_tokens\":0}}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"))
+	}))
+	defer srv.Close()
+
+	p := NewAnthropicWithPolicy(srv.URL, "test-key", "claude-3-7-sonnet", LocalDevelopmentDestinationPolicy())
+
+	// Test 1: medium effort
+	req := agent.ModelRequest{
+		RequestID:       "r-effort-1",
+		Model:           "claude-3-7-sonnet",
+		ReasoningEffort: "medium",
+		Messages: []agent.Message{
+			{ID: "m1", Role: agent.RoleUser, Content: "solve this puzzle"},
+		},
+	}
+	ch, err := p.Stream(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+
+	thinking, ok := receivedBody["thinking"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected thinking map in payload, got: %v", receivedBody)
+	}
+	if thinking["type"] != "enabled" || thinking["budget_tokens"] != float64(4096) {
+		t.Errorf("expected budget_tokens 4096, got: %v", thinking)
+	}
+	maxTokens, ok := receivedBody["max_tokens"].(float64)
+	if !ok || maxTokens < 4096 {
+		t.Errorf("expected max_tokens >= 4096, got: %v", receivedBody["max_tokens"])
+	}
+
+	// Test 2: custom numeric token budget
+	req.ReasoningEffort = "8192"
+	ch, err = p.Stream(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+	thinking = receivedBody["thinking"].(map[string]any)
+	if thinking["budget_tokens"] != float64(8192) {
+		t.Errorf("expected budget_tokens 8192, got: %v", thinking)
+	}
+
+	// Test 3: off / none
+	req.ReasoningEffort = "off"
+	ch, err = p.Stream(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+	if _, hasThinking := receivedBody["thinking"]; hasThinking {
+		t.Errorf("expected no thinking when effort is off, got: %v", receivedBody["thinking"])
+	}
+}

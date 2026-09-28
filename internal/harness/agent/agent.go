@@ -196,7 +196,10 @@ type ModelRequest struct {
 	ResponseFormat map[string]any `json:"response_format,omitempty"`
 	MaxTokens      int            `json:"max_tokens,omitempty"`
 	Temperature    float64        `json:"temperature,omitempty"`
-	Metadata       map[string]any `json:"metadata,omitempty"`
+	// ReasoningEffort sets the reasoning effort or thinking token budget
+	// (e.g. "low", "medium", "high", "max", "off", or token count like "4096").
+	ReasoningEffort string         `json:"reasoning_effort,omitempty"`
+	Metadata        map[string]any `json:"metadata,omitempty"`
 }
 
 // ToolSpec advertises one callable tool to the model.

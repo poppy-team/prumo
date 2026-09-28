@@ -67,6 +67,15 @@ description: Historical milestones and evolutionary projection of the Prumo Fram
 - **Dynamic User Command Palette**: User-defined Markdown commands (`commands/*.md`) with argument placeholders `{{arg}}` (GAP-082).
 - **Model Capabilities & Badges**: Dynamic badges (`[text reasoning vision tools audio]`) reflecting declared model capabilities (GAP-089).
 - **Comprehensive Accessibility (WCAG)**: 9 verified themes with 4.5:1 contrast floor (GAP-070), reduced motion mode (GAP-065), glyph-based focus indicators (GAP-062), and headless linear screen-reader outputs (`--prompt`, `--plain`, `--json`) (GAP-074).
+- **Reasoning Effort Control (`ReasoningEffort`)**:
+  - Slash command `/effort [low|medium|high|max|<tokens>|off]` with persistent configuration and real-time sidebar status display.
+  - Provider-neutral adaptation across Anthropic (`thinking: {budget_tokens: N}` and automatic `max_tokens` headroom), OpenAI (`reasoning_effort`), OpenRouter (`reasoning: {effort: ...}`), DeepSeek (`thinking: {type: enabled}`), and Gemini (`thinking_config` / `thinking_level`).
+  - Collapsible reasoning accordions (`<think>`) toggled via `Ctrl+X t` or `/think`.
+- **Developer-Native Terminal Workflows**:
+  - `/dirty`: probe uncommitted modifications across the workspace repository.
+  - `/commit <msg>`: atomic staging and conventional commit directly from composer.
+  - `/undo`: atomic turn reversal via Git rollback.
+  - `/web <url>`: fetches and distills web content cleanly into ongoing conversation context.
 - **Timeline Plaintext Export**: Export complete session logs to `.prumo/runtime/exports/<run>.txt` with separated token, cache, and cost metrics (GAP-067, GAP-087).
 
 ---
