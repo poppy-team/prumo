@@ -1,61 +1,61 @@
 # M5 Documentation System v2 — Exit Gate
 
-Status: **COMPLETE (M5 Exit Gate Passed)**
+Status: **CONCLUÍDO (Exit Gate do M5 Aprovado)**
 
-## Exit gate criteria
+## Critérios do exit gate
 
-M5 exit gate (per `docs/development/phases.md`): documentation contracts enforceable; profiles selectable; delta tracked; contradictions detected.
+Exit gate do M5 (conforme `docs/development/phases.md`): contratos de documentação aplicáveis; profiles selecionáveis; delta rastreado; contradições detectadas.
 
-### 1. Documentation contracts enforceable
+### 1. Contratos de documentação aplicáveis
 
-- Contract registry: `docs/contracts/builtin.json` (8 contracts), schema `schemas/documentation-contract.schema.json`.
-- Bindings: `docs/contracts/bindings.json` with `owned` sources, `answered_questions`, and `evidence`.
-- Machine schema validation on load; every stor/delta validated against `schemas/documentation-delta.schema.json`.
-- Verification: `prumo-agent docs audit` reports all applicable contracts `implementation-ready`.
+- Registro de contratos: `docs/contracts/builtin.json` (8 contratos), schema `schemas/documentation-contract.schema.json`.
+- Bindings: `docs/contracts/bindings.json` com fontes `owned`, `answered_questions` e `evidence`.
+- Validação de schema por máquina no carregamento; todo delta armazenado é validado contra `schemas/documentation-delta.schema.json`.
+- Verificação: `prumo-agent docs audit` reporta todos os contratos aplicáveis como `implementation-ready`.
 
-### 2. Profiles selectable
+### 2. Profiles selecionáveis
 
-- Profile registry: `docs/profiles/builtin.json` (7 profiles), schema `schemas/documentation-profile.schema.json`.
-- Applicability resolution via project capabilities (`prumo.json` project type/features plus detected `cmd`, `schemas`, `go.mod`).
-- Verification: `prumo-agent docs profiles` lists `api-service`, `cli`, `compiler`, `core-software`, `desktop-gui`, `library`, `web-application`.
+- Registro de profiles: `docs/profiles/builtin.json` (7 profiles), schema `schemas/documentation-profile.schema.json`.
+- Resolução de aplicabilidade via capacidades do projeto (tipo/features do projeto em `prumo.json`, mais `cmd`, `schemas` e `go.mod` detectados).
+- Verificação: `prumo-agent docs profiles` lista `api-service`, `cli`, `compiler`, `core-software`, `desktop-gui`, `library`, `web-application`.
 
-### 3. Delta tracked
+### 3. Delta rastreado
 
-- Persistent Delta lifecycle: `internal/documentation/delta.go` (C-G06).
-- Deterministic IDs (SHA-256 of goal, sorted contracts, sorted documents); stable across re-analysis.
-- Lifecycle: `proposed → reviewed → accepted → applied` (applied requires evidence) or `proposed → rejected`; versions advance and all transitions validate.
-- Local persistence under `.ai/docs/deltas/DD-<12hex>.json`, schema-validated on read, corruption-rejected.
+- Ciclo de vida persistente do Delta: `internal/documentation/delta.go` (C-G06).
+- IDs determinísticos (SHA-256 de goal, contratos ordenados, documentos ordenados); estáveis entre reanálises.
+- Ciclo de vida: `proposed → reviewed → accepted → applied` (applied exige evidência) ou `proposed → rejected`; as versões avançam e todas as transições são validadas.
+- Persistência local em `.ai/docs/deltas/DD-<12hex>.json`, validada por schema na leitura, com rejeição de arquivos corrompidos.
 - CLI: `prumo-agent docs delta propose|list|show|transition`.
-- Conformance fixture: `conformance/documentation/valid_delta.json`.
+- Fixture de conformance: `conformance/documentation/valid_delta.json`.
 
-### 4. Contradictions detected
+### 4. Contradições detectadas
 
-- Deterministic contradiction and causal-staleness findings (`DetectContradictions`, `DetectStaleness`).
-- Contradictions are findings only; they are never silently resolved by recency or model output.
+- Achados determinísticos de contradição e de obsolescência causal (`DetectContradictions`, `DetectStaleness`).
+- Contradições são apenas achados; nunca são resolvidas silenciosamente por recência ou por saída de modelo.
 - CLI: `prumo-agent docs contradictions`.
 
-## Evidence (framework dogfood on this repository)
+## Evidência (dogfood do framework neste repositório)
 
-- `prumo-agent docs audit` — all 7 applicable contracts `implementation-ready`.
-- `prumo-agent docs readiness --goal M5` — `ready: true`, no blocking contracts, no blocking questions.
-- `prumo-agent docs contradictions` — deterministic findings (0 for current tree).
-- `prumo-agent docs profiles` — all 7 built-in profiles resolvable.
+- `prumo-agent docs audit` — todos os 7 contratos aplicáveis `implementation-ready`.
+- `prumo-agent docs readiness --goal M5` — `ready: true`, sem contratos bloqueantes, sem questões bloqueantes.
+- `prumo-agent docs contradictions` — achados determinísticos (0 na árvore atual).
+- `prumo-agent docs profiles` — todos os 7 profiles embutidos resolvíveis.
 
-## Test evidence
+## Evidência de testes
 
-- `go test ./... -race` — pass across all packages.
-- `go vet ./...` — clean.
-- `pytest -q` — 127 pass (Python v0.3 oracle preserved).
-- Delta lifecycle, storage round-trip, corruption rejection, schema validation, and CLI integration tests all pass.
-- Delta determinism and conformance fixture regression tests pass.
+- `go test ./... -race` — passa em todos os pacotes.
+- `go vet ./...` — limpo.
+- `pytest -q` — 127 passam (oracle Python v0.3 preservado).
+- Ciclo de vida do delta, round-trip de storage, rejeição de corrupção, validação de schema e testes de integração da CLI passam.
+- Testes de regressão de determinismo do delta e da fixture de conformance passam.
 
-## Governance
+## Governança
 
-- Documentation Delta application remains governed by Repository Change Governance (`.prumo/repository/policy.json`): branch, commit, Pull Request, validation, review, and merge.
-- `feat/c-g06-documentation-delta-tracking` merged to `main` via PR #21 (squash).
-- Machine schemas under `schemas/documentation-*.schema.json` are the contract surface; changes require schema updates and conformance fixtures.
+- A aplicação do Documentation Delta continua governada pela Repository Change Governance (`.prumo/repository/policy.json`): branch, commit, Pull Request, validação, revisão e merge.
+- `feat/c-g06-documentation-delta-tracking` foi mergeada em `main` via PR #21 (squash).
+- Os schemas de máquina em `schemas/documentation-*.schema.json` são a superfície do contrato; mudanças exigem atualização de schema e fixtures de conformance.
 
-## Excluded from M5 exit gate
+## Fora do exit gate do M5
 
-- Semantic prose contradiction assistance remains a provider-future finding; deterministic contract-driven findings already satisfy the exit gate.
-- Living Plan interview (M6), Adoption (M7), full traceability (M8), and Experience (M9) are explicitly non-goals for M5.
+- A assistência semântica a contradições em prosa continua sendo um achado futuro dependente de provider; os achados determinísticos guiados por contrato já satisfazem o exit gate.
+- A entrevista do Living Plan (M6), a Adoção (M7), a rastreabilidade completa (M8) e a Experience (M9) são explicitamente não-objetivos do M5.

@@ -1,114 +1,114 @@
 # M6 Living Plan / Interview Engine — Exit Gate
 
-Status: **COMPLETE (M6 Exit Gate Passed)**
+Status: **CONCLUÍDO (Exit Gate do M6 Aprovado)**
 
-## Exit gate criteria
+## Critérios do exit gate
 
-M6 exit gate (per `docs/development/phases.md`): a new project can go from initial
-intent to implementation-ready via interview without a manual megaprompt;
-Goal-specific planning closes only relevant gaps; decisions/open questions carry
-authority and provenance; resume does not depend on transcript;
-docs/readiness/governance feedback loop works; question/decision evals reach the
-approved baseline; no agent suggestion is silently promoted.
+Exit gate do M6 (conforme `docs/development/phases.md`): um novo projeto pode ir da
+intenção inicial até implementation-ready por meio de entrevista, sem um megaprompt manual;
+o planejamento específico de um Goal fecha apenas as lacunas relevantes; decisões e
+questões em aberto carregam autoridade e proveniência; o resume não depende de transcript;
+o ciclo de feedback docs/readiness/governança funciona; as evals de questões/decisões
+atingem o baseline aprovado; nenhuma sugestão de agente é promovida silenciosamente.
 
-### 1. Initial intent → implementation-ready without a manual megaprompt
+### 1. Intenção inicial → implementation-ready sem um megaprompt manual
 
-- Deterministic end-to-end dogfood test `TestDogfoodZeroToReady`
-  (`cmd/prumo/plan_z2r_test.go`) drives the full loop through `run()`: blocked
-  readiness → questions → answered decisions → proposed delta → governance patch
-  → applied delta → passing readiness → blueprint proposal.
-- Committed sample project `examples/living-plan-sample/` ships at the ready
-  state with a replayable seven-step recipe (`README.md`).
-- Verified on the sample with the real CLI: `docs readiness --goal G-SAMPLE`
-  transitions from `{"ready": false, "blocking_contracts": ["project.scope"]}`
-  to `{"ready": true, "coverage": [[product.vision, implementation-ready],
+- O teste de dogfood determinístico de ponta a ponta `TestDogfoodZeroToReady`
+  (`cmd/prumo/plan_z2r_test.go`) conduz o ciclo completo por `run()`: readiness
+  bloqueado → questões → decisões respondidas → delta proposto → patch de governança
+  → delta aplicado → readiness aprovado → proposta de blueprint.
+- O projeto de exemplo versionado `examples/living-plan-sample/` já vem no estado
+  ready, com uma receita de sete passos reproduzível (`README.md`).
+- Verificado no exemplo com a CLI real: `docs readiness --goal G-SAMPLE`
+  passa de `{"ready": false, "blocking_contracts": ["project.scope"]}`
+  para `{"ready": true, "coverage": [[product.vision, implementation-ready],
   [project.scope, implementation-ready]]}`.
 
-### 2. Goal-specific planning closes only the relevant gaps
+### 2. O planejamento específico de um Goal fecha apenas as lacunas relevantes
 
-- Planning and readiness are goal-scoped: `prumo-agent plan --goal <id>`,
-  `docs readiness --goal <id>`; the documentation engine ignores unrelated
-  contracts when computing coverage for a Goal (M5 regression suite).
-- The sample loop only touches `product.vision` and `project.scope`; unrelated
-  contracts stay untouched.
+- Planejamento e readiness têm escopo por goal: `prumo-agent plan --goal <id>`,
+  `docs readiness --goal <id>`; o engine de documentação ignora contratos não
+  relacionados ao calcular a cobertura de um Goal (suíte de regressão do M5).
+- O ciclo do exemplo só toca `product.vision` e `project.scope`; contratos não
+  relacionados permanecem intocados.
 
-### 3. Decisions / open questions carry authority and provenance
+### 3. Decisões / questões em aberto carregam autoridade e proveniência
 
-- Decision proposals expose class, actor/source, authority, confidence
-  (inference-only), status, and affected contracts/docs
+- Propostas de decisão expõem classe, ator/fonte, autoridade, confiança
+  (apenas para inferência), status e contratos/docs afetados
   (`internal/planning/decision.go`, resolver `internal/planning/resolver.go`,
   E-G02/E-G03).
-- Open questions registry tracks blocker status, linked contract, owner,
-  created/resolved/superseded state, and resolution evidence
+- O registro de questões em aberto rastreia status de bloqueio, contrato vinculado, responsável,
+  estado de criada/resolvida/substituída e evidência de resolução
   (`internal/planning/question.go`, E-G01).
-- A resolved question is not deleted; it remains traceable to its decision.
+- Uma questão resolvida não é apagada; permanece rastreável até a sua decisão.
 
-### 4. Resume does not depend on transcript
+### 4. O resume não depende de transcript
 
-- Session checkpoint persisted under `.ai/plan/sessions/<id>.json` as
+- Checkpoint de sessão persistido em `.ai/plan/sessions/<id>.json` como
   `session.Checkpoint()` (`internal/app/sessionstore.go`, E-G07).
-- `prumo-agent plan resume` recompiles context from canonical decisions + open
-  questions + checkpoint (`internal/app/resume_test.go`,
-  `internal/planning/session_test.go`); no transcript is reintroduced.
+- `prumo-agent plan resume` recompila o contexto a partir das decisões canônicas +
+  questões em aberto + checkpoint (`internal/app/resume_test.go`,
+  `internal/planning/session_test.go`); nenhum transcript é reintroduzido.
 
-### 5. Docs/readiness/governance feedback loop works
+### 5. O ciclo de feedback docs/readiness/governança funciona
 
-- Loop proven by `TestDogfoodZeroToReady` and the sample README steps:
-  readiness → questions → answered decisions → delta propose → repository
-  governance authoring → delta apply (records decision evidence) → readiness
-  recompute → goal/plan proposal.
-- `plan delta [--apply]` never writes canonical docs; governance authoring +
-  README documents that flow (E-G05/E-G09).
+- Ciclo comprovado por `TestDogfoodZeroToReady` e pelos passos do README do exemplo:
+  readiness → questões → decisões respondidas → delta propose → autoria de
+  governança do repositório → delta apply (registra a evidência da decisão) → recálculo do
+  readiness → proposta de goal/plano.
+- `plan delta [--apply]` nunca escreve docs canônicos; a autoria de governança + o
+  README documentam esse fluxo (E-G05/E-G09).
 
-### 6. Question/decision evals reach the approved baseline
+### 6. As evals de questões/decisões atingem o baseline aprovado
 
-- The approved design (Notion §70.18) defines the baseline as deterministic
-  conversation evals; live-model evals belong to the future Harness Eval Suite
-  and are explicitly **not** a unit-test requirement.
-- Every listed deterministic scenario has a regression test: blocker sorted
-  before nice-to-have; explicit decision over inference; agent suggestion not
-  auto-accepted; locked-decision conflict produces a finding (E-G04);
-  resolved question updates the registry; unrelated docs gaps ignored for Goal
-  readiness; resume preserves accepted decisions without transcript.
-- Run in CI via `go test -race ./...`.
+- O design aprovado (Notion §70.18) define o baseline como evals de conversa
+  determinísticas; as evals com modelo real pertencem à futura Harness Eval Suite
+  e explicitamente **não** são um requisito de teste unitário.
+- Todo cenário determinístico listado tem um teste de regressão: bloqueante ordenado
+  antes de nice-to-have; decisão explícita acima de inferência; sugestão de agente não
+  aceita automaticamente; conflito com decisão travada produz um achado (E-G04);
+  questão resolvida atualiza o registro; lacunas de docs não relacionadas ignoradas no
+  readiness do Goal; o resume preserva as decisões aceitas sem transcript.
+- Executadas no CI via `go test -race ./...`.
 
-### 7. No agent suggestion silently promoted
+### 7. Nenhuma sugestão de agente é promovida silenciosamente
 
-- `agent-suggestion` classifications never promote to decisions and keep the
-  question open (answer authority enforcement in `internal/planning` +
+- Classificações `agent-suggestion` nunca são promovidas a decisões e mantêm a
+  questão aberta (enforcement da autoridade de resposta em `internal/planning` +
   `cmd/prumo/plan_z2r_test.go`: `TestPlanAnswerNeverPromotesAgentSuggestion`,
   `TestPlanAnswerUnresolvedKeepsQuestionOpen`).
 
-## Evidence (framework dogfood on this repository)
+## Evidência (dogfood do framework neste repositório)
 
-- `examples/living-plan-sample/` — committed sample, ready state, replay
-  README, and the applied delta record
+- `examples/living-plan-sample/` — exemplo versionado, estado ready, README
+  de replay e o registro do delta aplicado
   `docs/governance-delta-applied.json`.
-- Full CLI surface exercised against the sample: `plan questions`, `plan
+- Superfície completa da CLI exercitada no exemplo: `plan questions`, `plan
   answer`, `plan decisions`, `plan delta [--apply]`, `plan blueprint [--plan]`,
-  `docs readiness --goal` (E-G08 JSON envelope + text modes).
+  `docs readiness --goal` (envelope JSON E-G08 + modos de texto).
 
-## Test evidence
+## Evidência de testes
 
-- `go test -race ./...` — pass across all packages.
-- `go vet ./...`, `gofmt -l .` — clean.
-- `pytest -q` — 127 pass (Python v0.3 oracle preserved).
-- M5/M6 regression suites: coverage/re readiness isolation, delta lifecycle,
-  decision preview contradiction findings, authority resolution, checkpoint
-  round-trip, resume context compilation, command-line JSON envelopes.
+- `go test -race ./...` — passa em todos os pacotes.
+- `go vet ./...`, `gofmt -l .` — limpos.
+- `pytest -q` — 127 passam (oracle Python v0.3 preservado).
+- Suítes de regressão M5/M6: isolamento de cobertura/readiness, ciclo de vida do delta,
+  achados de contradição na prévia de decisões, resolução de autoridade, round-trip de
+  checkpoint, compilação de contexto no resume, envelopes JSON da linha de comando.
 
-## Governance
+## Governança
 
-- M6 merged to `main` via squash PRs: E-G01 (#24), E-G02 (#25), E-G03 (#26),
+- O M6 foi mergeado em `main` via PRs squash: E-G01 (#24), E-G02 (#25), E-G03 (#26),
   E-G04 (#27), E-G05 (#28), E-G06 (#29), E-G07 (#30), E-G08 (#31),
   E-G09 (#32).
-- Canonical spec: `docs/runtime/living-plan.md`; samples/dogfood under
+- Spec canônica: `docs/runtime/living-plan.md`; exemplos/dogfood em
   `examples/living-plan-sample/`.
 
-## Excluded from M6 exit gate
+## Fora do exit gate do M6
 
-- Live-model conversation/decision evals remain a Harness Eval Suite item
-  (Notion pages 61 and 70 §18); deterministic regression evals already satisfy
-  the gate.
-- Adoption Engine (M7), traceability (M8), and Experience (M9) are explicit
-  non-goals for M6.
+- As evals de conversa/decisão com modelo real continuam sendo um item da Harness Eval Suite
+  (páginas 61 e 70 §18 do Notion); as evals de regressão determinísticas já satisfazem
+  o gate.
+- O Adoption Engine (M7), a rastreabilidade (M8) e a Experience (M9) são
+  explicitamente não-objetivos do M6.

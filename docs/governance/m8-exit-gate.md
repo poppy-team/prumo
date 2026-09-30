@@ -1,65 +1,65 @@
 # M8 History + Traceability — Exit Gate
 
-Status: **COMPLETE (M8 Exit Gate Passed)**
+Status: **CONCLUÍDO (Exit Gate do M8 Aprovado)**
 
-## Exit gate criteria
+## Critérios do exit gate
 
-Milestone M8 exit gate (per `docs/development/phases.md`):
-Any code change is traceable to a decision and goal; the implementation journal is queryable;
-experiments, rejections, and technical debt are tracked; the typed traceability graph links
-requirements, decisions, goals, code, tests, documentation, and evidence.
-
----
-
-### 1. Typed Traceability Graph (req ↔ dec ↔ goal ↔ code ↔ test ↔ doc ↔ evidence)
-
-- Canonical graph model implemented in `internal/traceability/graph.go`:
-  - Node kinds: `req`, `dec`, `goal`, `code`, `test`, `doc`, `evidence`, `experiment`, `rejection`, `debt`.
-  - Edge kinds: `satisfies`, `derives_from`, `implements`, `verifies`, `documents`, `evidenced_by`, `rejects`, `incurs_debt`.
-  - Bidirectional traversal (`TracePath`) resolves full upstream lineages (decisions, requirements) and downstream lineages (tests, evidence, documentation).
-- Schema contract: `schemas/trace-graph.schema.json`.
+Exit gate do marco M8 (conforme `docs/development/phases.md`):
+qualquer mudança de código é rastreável até uma decisão e um goal; o journal de implementação é consultável;
+experimentos, rejeições e dívida técnica são rastreados; o grafo de rastreabilidade tipado liga
+requisitos, decisões, goals, código, testes, documentação e evidência.
 
 ---
 
-### 2. Implementation Journal (Synthesis, Not Chain-of-Thought)
+### 1. Grafo de Rastreabilidade Tipado (req ↔ dec ↔ goal ↔ code ↔ test ↔ doc ↔ evidence)
 
-- Implemented in `internal/traceability/journal.go`:
-  - Enforces Lean Progressive Context: stores structured implementation summaries, affected decisions, changed code, verification tests, and evidence hashes.
-  - Invariant: Raw chain-of-thought, verbose conversation transcripts, and non-deterministic telemetry are prohibited from canonical journal storage.
-  - Queryable by Goal, Decision, or File path.
-- Schema contract: `schemas/journal-entry.schema.json`.
-
----
-
-### 3. Experiment, Rejection, and Debt Registers
-
-- Implemented in `internal/traceability/registers.go`:
-  - **Experiment Register**: Captures hypotheses, methods, outcomes, and architectural conclusions.
-  - **Rejection Register**: Tracks discarded proposals, evaluated alternatives, and authoritative rationale for rejection.
-  - **Debt Register**: Tracks technical/architectural debt with severity (`low`, `medium`, `high`, `critical`), impacted contracts, and concrete remediation plans.
+- Modelo canônico do grafo implementado em `internal/traceability/graph.go`:
+  - Tipos de nó: `req`, `dec`, `goal`, `code`, `test`, `doc`, `evidence`, `experiment`, `rejection`, `debt`.
+  - Tipos de aresta: `satisfies`, `derives_from`, `implements`, `verifies`, `documents`, `evidenced_by`, `rejects`, `incurs_debt`.
+  - A travessia bidirecional (`TracePath`) resolve linhagens completas a montante (decisões, requisitos) e a jusante (testes, evidência, documentação).
+- Contrato de schema: `schemas/trace-graph.schema.json`.
 
 ---
 
-### 4. CLI Surface (`prumo-agent trace` and `prumo-agent journal`)
+### 2. Journal de Implementação (Síntese, Não Chain-of-Thought)
 
-- Implemented in `cmd/prumo/trace_commands.go`:
-  - `prumo-agent trace <ref>`: Traces any goal, decision, code file, or requirement, returning structured upstream/downstream lineages in human terminal format or JSON envelope.
-  - `prumo-agent journal [--goal <goal>] [--decision <decision>] [--file <file>]`: Queries implementation history.
-- Verified by automated tests in `cmd/prumo/trace_commands_test.go`.
-
----
-
-## Evidence & Test Verification
-
-- `go test -race ./...` — 100% pass across all packages.
-- `go vet ./...` — clean.
-- `gofmt -l .` — clean.
-- `python -m pytest -q` — 136 pass (Python oracle preserved).
-- Traceability suite (`internal/traceability`): all tests passing (100%).
-- CLI suite (`cmd/prumo`): all tests passing (100%).
+- Implementado em `internal/traceability/journal.go`:
+  - Faz valer o Lean Progressive Context: armazena resumos estruturados de implementação, decisões afetadas, código alterado, testes de verificação e hashes de evidência.
+  - Invariante: chain-of-thought bruto, transcripts de conversa verbosos e telemetria não determinística são proibidos no armazenamento canônico do journal.
+  - Consultável por Goal, Decisão ou caminho de arquivo.
+- Contrato de schema: `schemas/journal-entry.schema.json`.
 
 ---
 
-## Conclusion
+### 3. Registros de Experimentos, Rejeições e Dívida
 
-Milestone M8 (History + Traceability) is **COMPLETE**. All criteria and exit gate invariants are satisfied.
+- Implementados em `internal/traceability/registers.go`:
+  - **Experiment Register**: captura hipóteses, métodos, resultados e conclusões arquiteturais.
+  - **Rejection Register**: rastreia propostas descartadas, alternativas avaliadas e a justificativa autoritativa da rejeição.
+  - **Debt Register**: rastreia dívida técnica/arquitetural com severidade (`low`, `medium`, `high`, `critical`), contratos impactados e planos de remediação concretos.
+
+---
+
+### 4. Superfície da CLI (`prumo-agent trace` e `prumo-agent journal`)
+
+- Implementada em `cmd/prumo/trace_commands.go`:
+  - `prumo-agent trace <ref>`: rastreia qualquer goal, decisão, arquivo de código ou requisito, retornando linhagens estruturadas a montante/jusante em formato humano de terminal ou em envelope JSON.
+  - `prumo-agent journal [--goal <goal>] [--decision <decision>] [--file <file>]`: consulta o histórico de implementação.
+- Verificada por testes automatizados em `cmd/prumo/trace_commands_test.go`.
+
+---
+
+## Evidência e Verificação de Testes
+
+- `go test -race ./...` — 100% passam em todos os pacotes.
+- `go vet ./...` — limpo.
+- `gofmt -l .` — limpo.
+- `python -m pytest -q` — 136 passam (oracle Python preservado).
+- Suíte de rastreabilidade (`internal/traceability`): todos os testes passando (100%).
+- Suíte da CLI (`cmd/prumo`): todos os testes passando (100%).
+
+---
+
+## Conclusão
+
+O marco M8 (History + Traceability) está **CONCLUÍDO**. Todos os critérios e invariantes do exit gate foram satisfeitos.

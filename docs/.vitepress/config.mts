@@ -303,6 +303,7 @@ export default defineConfig({
         nav: [
           { text: 'Home', link: '/en/' },
           { text: 'Getting Started', link: '/en/getting-started/' },
+          { text: 'Manual', link: '/en/manual/usage' },
           { text: 'Harness', link: '/en/harness/' },
           { text: 'Workforce', link: '/en/workforce/' },
           { text: 'Tools', link: '/en/tools/' },
@@ -315,7 +316,22 @@ export default defineConfig({
             {
               text: 'Getting Started',
               items: [
-                { text: 'Overview', link: '/en/getting-started/' }
+                { text: 'Overview', link: '/en/getting-started/' },
+                { text: 'Quick Installation', link: '/en/getting-started/installation' },
+                { text: 'First Project (5 min)', link: '/en/getting-started/first-project' },
+                { text: 'Brownfield Adoption', link: '/en/getting-started/adoption' },
+                { text: 'Core Concepts', link: '/en/getting-started/concepts' }
+              ]
+            }
+          ],
+          '/en/manual/': [
+            {
+              text: 'User Manual',
+              items: [
+                { text: 'Detailed Installation', link: '/en/manual/installation' },
+                { text: 'Clean Uninstallation', link: '/en/manual/uninstallation' },
+                { text: 'Usage & Commands Guide', link: '/en/manual/usage' },
+                { text: 'Connectors & Platforms', link: '/en/manual/connectors' }
               ]
             }
           ],
@@ -323,7 +339,9 @@ export default defineConfig({
             {
               text: 'Harness & Execution',
               items: [
-                { text: 'Harness Overview', link: '/en/harness/' }
+                { text: 'Harness Overview', link: '/en/harness/' },
+                { text: 'ACI Tooling & Sandboxing', link: '/en/harness/aci-tools' },
+                { text: 'Directives & Task DAGs', link: '/en/harness/directives' }
               ]
             }
           ],
@@ -331,7 +349,10 @@ export default defineConfig({
             {
               text: 'Workforce Catalog',
               items: [
-                { text: 'Overview', link: '/en/workforce/' }
+                { text: 'Overview', link: '/en/workforce/' },
+                { text: '189 Precision Skills', link: '/en/workforce/skills' },
+                { text: '39 Specialist Agents', link: '/en/workforce/agents' },
+                { text: '20 Deterministic Recipes', link: '/en/workforce/recipes' }
               ]
             }
           ],
@@ -339,7 +360,9 @@ export default defineConfig({
             {
               text: 'Developer Tools',
               items: [
-                { text: 'CLI Reference', link: '/en/tools/' }
+                { text: 'CLI Reference', link: '/en/tools/' },
+                { text: 'Command Reference', link: '/en/tools/cli-reference' },
+                { text: 'Diagnostics & Doctor', link: '/en/tools/doctor' }
               ]
             }
           ],
@@ -347,7 +370,10 @@ export default defineConfig({
             {
               text: 'Architecture',
               items: [
-                { text: 'Macroarchitecture', link: '/en/architecture/' }
+                { text: 'Macroarchitecture', link: '/en/architecture/' },
+                { text: 'System Overview', link: '/en/architecture/overview' },
+                { text: 'Dependency Rules', link: '/en/architecture/dependency-rules' },
+                { text: 'Native Workspace Viewer (Rust)', link: '/en/architecture/viewer' }
               ]
             }
           ],
@@ -355,7 +381,10 @@ export default defineConfig({
             {
               text: 'Governance',
               items: [
-                { text: 'Authority & Living Book', link: '/en/governance/' }
+                { text: 'Authority & Living Book', link: '/en/governance/' },
+                { text: 'Authority & Docs Drift', link: '/en/governance/authority' },
+                { text: 'Lean Progressive Context (LPC)', link: '/en/governance/lpc' },
+                { text: 'Trust & Security Model', link: '/en/governance/trust-model' }
               ]
             }
           ]
