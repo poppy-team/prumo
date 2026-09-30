@@ -9,6 +9,15 @@ target/
 .coverage
 htmlcov/
 
+# Documentation site (VitePress & Vercel)
+node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+.vitepress/dist/
+.vitepress/cache/
+.vercel/
+.env*
+
 # Prumo derived/runtime state
 .prumo/runtime/
 .prumo/cache/

@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/raillen/prumo/internal/protocol"
 )
 
 type scaffoldFile struct {
@@ -43,7 +45,7 @@ func getScaffoldTemplates() []scaffoldFile {
 			content: func(projectName, _ string) string {
 				return fmt.Sprintf(`# %s — Prumo
 
-Este projeto utiliza o **Prumo v0.5** para colaboração humano-agente com governança, orquestração e contexto enxuto (Lean Progressive Context).
+Este projeto utiliza o **Prumo v%s** para colaboração humano-agente com governança, orquestração e contexto enxuto (Lean Progressive Context).
 
 ## Estrutura do Projeto
 
@@ -86,7 +88,7 @@ Este projeto utiliza o **Prumo v0.5** para colaboração humano-agente com gover
    `+"```"+`
 4. **Ciclo de Desenvolvimento com Metas**:
    Consulte [`+"`docs/development/testing-strategy.md`"+`](docs/development/testing-strategy.md) para o ciclo TDD/BDD com testes exaustivos.
-`, projectName)
+`, projectName, protocol.CLIVersion)
 			},
 		},
 		{
@@ -100,13 +102,13 @@ O formato baseia-se no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0
 ## [0.1.0] - %s
 
 ### Adicionado
-- Inicialização da estrutura canônica do Prumo v0.5.
+- Inicialização da estrutura canônica do Prumo v%s.
 - Configuração do manifesto `+"`prumo.json`"+` e orquestração `+"`.ai/`"+`.
 - Definição da hierarquia de documentação canônica em `+"`docs/`"+`.
 - Contrato estrito de arquitetura em `+"`docs/architecture/clean-code-contract.md`"+`.
 - Estratégia de testes exaustivos em `+"`docs/development/testing-strategy.md`"+` (unitários, integração, conformidade, segurança SAST/secrets, performance/stress, UI).
 - Política de documentação mandatória com `+"`README.md`"+` explicativo em cada diretório do projeto.
-`, date)
+`, date, protocol.CLIVersion)
 			},
 		},
 		{

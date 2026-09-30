@@ -67,7 +67,7 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	// 1. .clinerules in project root
 	rulesContent := `# Cline Guidelines
-This project uses Prumo v0.5 with Cline / Roo Code.
+This project uses Prumo v0.6 with Cline / Roo Code.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.

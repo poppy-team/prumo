@@ -1,0 +1,140 @@
+{
+  "id": "icon-library-creation",
+  "name": "Icon Library Engineering & Design System Integration",
+  "version": 1,
+  "purpose": "End-to-end icon library production pipeline: geometric grid standards, optical weight balance, SVG path optimization, accessibility metadata, and framework component generation.",
+  "select": {
+    "features_any": [
+      "iconography",
+      "design-system",
+      "svg",
+      "ui-components"
+    ]
+  },
+  "requires_skills_any": [
+    "svg-engineering",
+    "icon-system",
+    "design-tokens"
+  ],
+  "inputs": [
+    "Iconography taxonomy & functional requirements",
+    "Base pixel grid spec (e.g. 24x24 px, 2px stroke)",
+    "Target framework bindings (SVG, React, Vue, Web Components)"
+  ],
+  "agents": [
+    "svg-artist",
+    "design-system-engineer",
+    "accessibility-reviewer",
+    "tester"
+  ],
+  "skills": [
+    "svg-engineering",
+    "icon-system",
+    "design-tokens",
+    "generative-svg-art"
+  ],
+  "gates": [
+    "grid-conformance",
+    "path-optimization",
+    "a11y-audit"
+  ],
+  "artifacts": [
+    "Icon Pixel Grid & Optical Balance Specification",
+    "Optimized Scalable SVG Asset Bundle",
+    "Typed Component Wrapper Packages (React/Vue/Web Components)",
+    "Icon Metadata & Search Taxonomy Catalog JSON"
+  ],
+  "stop_conditions": [
+    "All icon glyphs strictly align to base grid, path data is normalized with zero redundant nodes, and accessibility metadata validates"
+  ],
+  "steps": [
+    {
+      "id": "grid-specification",
+      "name": "Establish Geometric Grid & Optical Alignment Keys",
+      "agent_role": "svg-artist",
+      "skills": [
+        "icon-system"
+      ],
+      "input": "Base pixel grid spec and design language",
+      "output": "Grid geometry and key shape guidelines",
+      "required_evidence": [
+        "review"
+      ]
+    },
+    {
+      "id": "vector-crafting",
+      "name": "Vector Path Crafting & Optical Sizing",
+      "agent_role": "svg-artist",
+      "skills": [
+        "svg-engineering",
+        "icon-system"
+      ],
+      "depends_on": [
+        "grid-specification"
+      ],
+      "input": "Icon taxonomy and grid geometry",
+      "output": "Raw SVG vector icon glyphs",
+      "required_evidence": [
+        "review"
+      ],
+      "gates": [
+        "grid-conformance"
+      ]
+    },
+    {
+      "id": "path-optimization",
+      "name": "Path Simplification & SVGO Bytecode Optimization",
+      "agent_role": "svg-artist",
+      "skills": [
+        "svg-engineering"
+      ],
+      "depends_on": [
+        "vector-crafting"
+      ],
+      "input": "Raw SVG glyphs",
+      "output": "Normalized, zero-overhead SVG assets",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "path-optimization"
+      ]
+    },
+    {
+      "id": "component-packaging",
+      "name": "Package Typed UI Components & Token Integration",
+      "agent_role": "design-system-engineer",
+      "skills": [
+        "design-tokens",
+        "icon-system"
+      ],
+      "depends_on": [
+        "path-optimization"
+      ],
+      "input": "Optimized SVGs and design tokens",
+      "output": "Component packages & metadata catalog",
+      "required_evidence": [
+        "test"
+      ]
+    },
+    {
+      "id": "accessibility-audit",
+      "name": "Audit Accessibility & Multi-size Visual Conformance",
+      "agent_role": "accessibility-reviewer",
+      "skills": [
+        "icon-system"
+      ],
+      "depends_on": [
+        "component-packaging"
+      ],
+      "input": "Component packages and rendered test matrix",
+      "output": "Iconography a11y audit report",
+      "required_evidence": [
+        "test"
+      ],
+      "gates": [
+        "a11y-audit"
+      ]
+    }
+  ]
+}

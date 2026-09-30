@@ -66,7 +66,7 @@ func (c *Connector) Compile(projectRoot string, opts connectors.CompileOptions) 
 
 	// 1. .windsurfrules in project root
 	rulesContent := `# Windsurf Guidelines
-This project uses Prumo v0.5 with Windsurf IDE.
+This project uses Prumo v0.6 with Windsurf IDE.
 
 - Follow Lean Progressive Context: smallest sufficient context, progressive expansion, pointer over payload.
 - Read ENTRYPOINT.md, prumo.json, and the active Goal.

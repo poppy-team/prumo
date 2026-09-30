@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/raillen/prumo/internal/migrations"
+	"github.com/raillen/prumo/internal/protocol"
 
 	"github.com/raillen/prumo/internal/harness/safepath"
 )
@@ -162,13 +163,74 @@ func GenerateMigrationProposals(report AdoptionReport) []AdoptionMigrationPropos
 			capList = append(capList, c.Capability)
 		}
 
+		projectName := filepath.Base(report.Repository.Root)
+		if projectName == "" || projectName == "." || projectName == "/" {
+			projectName = "adopted-project"
+		}
+		appTypes := report.Classification.AppTypes
+		if len(appTypes) == 0 {
+			appTypes = []string{"cli"}
+		}
+
 		manifestData := map[string]interface{}{
-			"version":      1,
-			"profile":      profileName,
-			"app_types":    report.Classification.AppTypes,
-			"languages":    report.Classification.Languages,
-			"frameworks":   report.Classification.Frameworks,
-			"capabilities": capList,
+			"version": 3,
+			"protocol": map[string]interface{}{
+				"version":    3,
+				"compatible": ">=3 <4",
+			},
+			"framework": map[string]interface{}{
+				"name":    "prumo",
+				"version": protocol.CLIVersion,
+			},
+			"project": map[string]interface{}{
+				"name": projectName,
+				"type": appTypes,
+			},
+			"stack": map[string]interface{}{
+				"languages":  report.Classification.Languages,
+				"frameworks": report.Classification.Frameworks,
+				"build":      report.Classification.Toolchains,
+			},
+			"features": report.Classification.Capabilities,
+			"documentation": map[string]interface{}{
+				"entrypoint":       "docs/PRUMO.md",
+				"canonical_format": "markdown",
+				"site": map[string]interface{}{
+					"enabled":               true,
+					"source":                "docs",
+					"generated":             true,
+					"public_internal_views": true,
+				},
+				"audiences":        []string{"user", "developer", "operations", "agent"},
+				"virtual_chunking": true,
+			},
+			"context": map[string]interface{}{
+				"methodology":    "lean-progressive-context",
+				"budget_profile": "medium",
+			},
+			"intelligence": map[string]interface{}{
+				"enabled":                        true,
+				"path":                           ".prumo/history/project-intelligence.json",
+				"task_reports":                   true,
+				"track_input_tokens":             true,
+				"track_output_tokens":            true,
+				"track_cost":                     true,
+				"distinguish_observed_estimated": true,
+			},
+			"orchestration": map[string]interface{}{
+				"protocol":     "POP",
+				"orchestrator": "native",
+				"autonomy":     "agentic",
+			},
+			"goals": map[string]interface{}{
+				"active_phase": "P00",
+				"active_goal":  nil,
+			},
+			"ai": map[string]interface{}{
+				"orchestrator":     "native",
+				"autonomy":         "agentic",
+				"preferred_models": []interface{}{},
+			},
 		}
 		contentBytes, _ := json.MarshalIndent(manifestData, "", "  ")
 
@@ -191,7 +253,7 @@ func GenerateMigrationProposals(report AdoptionReport) []AdoptionMigrationPropos
 			Contract: migrations.Contract{
 				ID:                "contract-amp-init-prumo",
 				FromVersion:       "0.0.0",
-				ToVersion:         "0.5.0",
+				ToVersion:         protocol.CLIVersion,
 				Preconditions:     []string{"manifest_absent:prumo.json"},
 				BackupStrategy:    "none",
 				AffectedArtifacts: []string{"prumo.json"},

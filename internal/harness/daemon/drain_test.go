@@ -134,13 +134,18 @@ func TestRunContextsAreCancelledWithTheDaemon(t *testing.T) {
 	// reaches it.
 	srv.rootCancel()
 	deadline := time.Now().Add(2 * time.Second)
+	cancelled := false
 	for time.Now().Before(deadline) {
 		if captured.Err() != nil {
-			return
+			cancelled = true
+			break
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("cancelling the server did not reach a run context")
+	if !cancelled {
+		t.Fatal("cancelling the server did not reach a run context")
+	}
+	srv.drain()
 }
 
 func TestAParkedRunDoesNotHoldTheDrainOpen(t *testing.T) {

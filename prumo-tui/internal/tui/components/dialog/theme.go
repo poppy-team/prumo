@@ -1,6 +1,9 @@
 package dialog
 
 import (
+	"fmt"
+	"strings"
+
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -25,11 +28,11 @@ type ThemeDialog interface {
 }
 
 type themeDialogCmp struct {
-	themes       []string
-	selectedIdx  int
-	width        int
-	height       int
-	currentTheme string
+	themes        []string
+	selectedIdx   int
+	width         int
+	height        int
+	originalTheme string
 }
 
 type themeKeyMap struct {
@@ -52,11 +55,11 @@ var themeKeys = themeKeyMap{
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("enter", "select theme"),
+		key.WithHelp("enter", "apply theme"),
 	),
 	Escape: key.NewBinding(
 		key.WithKeys("esc"),
-		key.WithHelp("esc", "close"),
+		key.WithHelp("esc", "revert & close"),
 	),
 	J: key.NewBinding(
 		key.WithKeys("j"),
@@ -69,13 +72,11 @@ var themeKeys = themeKeyMap{
 }
 
 func (t *themeDialogCmp) Init() tea.Cmd {
-	// Load available themes and update selectedIdx based on current theme
 	t.themes = theme.AvailableThemes()
-	t.currentTheme = theme.CurrentThemeName()
+	t.originalTheme = theme.CurrentThemeName()
 
-	// Find the current theme in the list
 	for i, name := range t.themes {
-		if name == t.currentTheme {
+		if name == t.originalTheme {
 			t.selectedIdx = i
 			break
 		}
@@ -91,20 +92,20 @@ func (t *themeDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, themeKeys.Up) || key.Matches(msg, themeKeys.K):
 			if t.selectedIdx > 0 {
 				t.selectedIdx--
+				_ = theme.PreviewTheme(t.themes[t.selectedIdx])
 			}
 			return t, nil
+
 		case key.Matches(msg, themeKeys.Down) || key.Matches(msg, themeKeys.J):
 			if t.selectedIdx < len(t.themes)-1 {
 				t.selectedIdx++
+				_ = theme.PreviewTheme(t.themes[t.selectedIdx])
 			}
 			return t, nil
+
 		case key.Matches(msg, themeKeys.Enter):
 			if len(t.themes) > 0 {
-				previousTheme := theme.CurrentThemeName()
 				selectedTheme := t.themes[t.selectedIdx]
-				if previousTheme == selectedTheme {
-					return t, util.CmdHandler(CloseThemeDialogMsg{})
-				}
 				if err := theme.SetTheme(selectedTheme); err != nil {
 					return t, util.ReportError(err)
 				}
@@ -112,9 +113,14 @@ func (t *themeDialogCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					ThemeName: selectedTheme,
 				})
 			}
+
 		case key.Matches(msg, themeKeys.Escape):
+			if t.originalTheme != "" {
+				_ = theme.PreviewTheme(t.originalTheme)
+			}
 			return t, util.CmdHandler(CloseThemeDialogMsg{})
 		}
+
 	case tea.WindowSizeMsg:
 		t.width = msg.Width
 		t.height = msg.Height
@@ -133,55 +139,75 @@ func (t *themeDialogCmp) viewString() string {
 			Border(lipgloss.RoundedBorder()).
 			BorderBackground(currentTheme.Background()).
 			BorderForeground(currentTheme.TextMuted()).
-			Width(40).
 			Render("No themes available")
 	}
 
-	// Calculate max width needed for theme names
-	maxWidth := 40 // Minimum width
-	for _, themeName := range t.themes {
-		if len(themeName) > maxWidth-4 { // Account for padding
-			maxWidth = len(themeName) + 4
-		}
-	}
-
-	maxWidth = max(30, min(maxWidth, t.width-15)) // Limit width to avoid overflow
-
-	// Build the theme list
-	themeItems := make([]string, 0, len(t.themes))
-	for i, themeName := range t.themes {
-		itemStyle := baseStyle.Width(maxWidth)
-
-		if i == t.selectedIdx {
-			itemStyle = itemStyle.
-				Background(currentTheme.Primary()).
-				Foreground(currentTheme.Background()).
-				Bold(true)
-		}
-
-		themeItems = append(themeItems, itemStyle.Padding(0, 1).Render(themeName))
-	}
+	const dialogWidth = 44
 
 	title := baseStyle.
 		Foreground(currentTheme.Primary()).
 		Bold(true).
-		Width(maxWidth).
+		Width(dialogWidth).
 		Padding(0, 1).
 		Render("Select Theme")
+
+	// Build the theme list with real-time palette swatches
+	themeItems := make([]string, 0, len(t.themes))
+	for i, themeName := range t.themes {
+		selected := i == t.selectedIdx
+		isOriginal := themeName == t.originalTheme
+
+		th := theme.GetTheme(themeName)
+		swatches := ""
+		if th != nil {
+			s1 := lipgloss.NewStyle().Foreground(th.Primary()).Render("■")
+			s2 := lipgloss.NewStyle().Foreground(th.Secondary()).Render("■")
+			s3 := lipgloss.NewStyle().Foreground(th.Accent()).Render("■")
+			swatches = fmt.Sprintf("%s %s %s", s1, s2, s3)
+		}
+
+		cursorPrefix := "  "
+		if selected {
+			cursorPrefix = "▸ "
+		} else if isOriginal {
+			cursorPrefix = "● "
+		}
+
+		nameLabel := cursorPrefix + themeName
+		remainingSpaces := max(1, dialogWidth-lipgloss.Width(nameLabel)-lipgloss.Width(swatches)-3)
+		rowContent := nameLabel + strings.Repeat(" ", remainingSpaces) + swatches
+
+		itemStyle := baseStyle.Width(dialogWidth).Padding(0, 1)
+		if selected {
+			itemStyle = itemStyle.
+				Background(currentTheme.Primary()).
+				Foreground(currentTheme.Background()).
+				Bold(true)
+		} else {
+			itemStyle = itemStyle.Foreground(currentTheme.Text())
+		}
+
+		themeItems = append(themeItems, itemStyle.Render(rowContent))
+	}
+
+	hint := baseStyle.
+		Foreground(currentTheme.TextMuted()).
+		Width(dialogWidth).
+		Padding(1, 1, 0, 1).
+		Render("↑/↓ live preview · enter apply · esc revert")
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
-		baseStyle.Width(maxWidth).Render(""),
-		baseStyle.Width(maxWidth).Render(lipgloss.JoinVertical(lipgloss.Left, themeItems...)),
-		baseStyle.Width(maxWidth).Render(""),
+		"",
+		lipgloss.JoinVertical(lipgloss.Left, themeItems...),
+		hint,
 	)
 
 	return baseStyle.Padding(1, 2).
 		Border(lipgloss.RoundedBorder()).
 		BorderBackground(currentTheme.Background()).
-		BorderForeground(currentTheme.TextMuted()).
-		Width(lipgloss.Width(content) + 4).
+		BorderForeground(currentTheme.Primary()).
 		Render(content)
 }
 
@@ -192,8 +218,7 @@ func (t *themeDialogCmp) BindingKeys() []key.Binding {
 // NewThemeDialogCmp creates a new theme switching dialog
 func NewThemeDialogCmp() ThemeDialog {
 	return &themeDialogCmp{
-		themes:       []string{},
-		selectedIdx:  0,
-		currentTheme: "",
+		themes:      []string{},
+		selectedIdx: 0,
 	}
 }

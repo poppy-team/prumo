@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This project uses Prumo v0.2.
+This project uses Prumo v0.6.
 
 - Read `ENTRYPOINT.md`, `prumo.json`, the active Goal and `docs/PRUMO.md`.
 - Treat Prumo as an external CLI utility available in PATH (`prumo`). Run `prumo <command>` or `prumo --help` for project operations and lifecycle. Do not inspect or search for internal framework development source code.

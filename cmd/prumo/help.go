@@ -25,20 +25,27 @@ var commandRegistry = map[string]CommandInfo{
 	"init": {
 		Name:     "init",
 		Category: "Project Lifecycle",
-		Summary:  "Initialize a new Prumo project workspace",
-		Usage:    "prumo init [path] --profile <profile.json> [--non-interactive]",
+		Summary:  "Initialize a new Prumo workspace (zero-config, presets, or custom profile)",
+		Usage:    "prumo init [path] [flags]",
 		Description: "Scaffolds a new Prumo project at the given path (default: current directory).\n" +
-			"Resolves the workforce from the specified project profile and generates prumo.json,\n" +
-			".ai/ directory, docs/PRUMO.md, PROJECT_STATE.md, and initial derived state.",
+			"Automatically detects project stack (Go, TypeScript/JavaScript, Rust, Python) or uses built-in presets.\n" +
+			"Generates prumo.json (Protocol v3), .ai/ workforce manifests, docs/PRUMO.md, and PROJECT_STATE.md.",
 		Flags: []string{
-			"--profile <path>       Path to project-profile.json declaring preferred models and stack (required)",
-			"--non-interactive      Execute without interactive prompts (fails if profile missing)",
+			"--preset <name>        Built-in workforce preset: standard|cli|web|service|library|minimal (default: standard)",
+			"--stack <lang>         Override target stack language: go|python|node|rust|general",
+			"--name <name>          Override project name (default: directory or manifest name)",
+			"--profile <path>       Custom project-profile.json for advanced custom configuration",
+			"--print-profile        Print the resolved profile JSON to stdout and exit",
+			"--non-interactive      Execute without interactive prompts",
 			"--home <path>          Custom Prumo home directory",
 			"--json                 Output structured JSON response",
 		},
 		Examples: []string{
-			"prumo init ./my-project --profile examples/brasa/project-profile.json",
-			"prumo init . --profile ./profile.json --non-interactive",
+			"prumo init",
+			"prumo init ./my-project",
+			"prumo init --preset web --name my-app",
+			"prumo init --stack go",
+			"prumo init --print-profile",
 		},
 	},
 	"status": {
@@ -296,19 +303,27 @@ var commandRegistry = map[string]CommandInfo{
 		Name:     "adopt",
 		Category: "Adoption & Migration",
 		Summary:  "Brownfield project scanner and adoption engine",
-		Usage:    "prumo adopt <subcommand> [path]",
-		Description: "Scans non-Prumo codebases, discovers technical facts, classifies tech stacks,\n" +
-			"and generates a non-destructive migration ledger and candidate Prumo configuration.",
+		Usage:    "prumo adopt [subcommand] [path] [flags]",
+		Description: "Scans existing non-Prumo codebases, discovers technical facts, classifies tech stacks,\n" +
+			"and generates a non-destructive migration ledger and candidate Prumo Protocol v3 configuration.",
 		Subcommands: []string{
 			"scan [path]        Scan directory tree and index project artifacts",
 			"facts [path]       Extract observed facts (languages, frameworks, build systems)",
 			"classify [path]    Classify project architecture and capability profile",
-			"scaffold [path]    Generate candidate prumo.json without overwriting user files",
+			"scaffold [path]    Generate candidate prumo.json dry-run preview",
+			"apply [path]       Apply adoption, write Protocol v3 prumo.json and workforce files",
 		},
 		Flags: []string{
+			"--apply            Apply adoption proposals immediately",
+			"--dry-run          Preview proposed changes without mutating disk",
+			"--interactive      Run interactive interview for ambiguous inferences",
+			"--non-interactive  Accept automatic resolutions for all inferences",
+			"--strict           Fail if contradictions or unconfirmed inferences remain",
 			"--json             Output scan results as JSON envelope",
 		},
 		Examples: []string{
+			"prumo adopt ./legacy-app",
+			"prumo adopt --apply ./legacy-app",
 			"prumo adopt scan ./legacy-app",
 			"prumo adopt facts ./legacy-app --json",
 			"prumo adopt classify ./legacy-app",
@@ -539,7 +554,7 @@ var commandRegistry = map[string]CommandInfo{
 			"--version <v>      Install a specific version or release tag",
 			"--force            Force reinstall even if already on the latest version",
 			"--dry-run          Simulate update procedure without modifying binaries",
-			"--repo <owner/repo> Custom GitHub repository (default: raillen/prumo)",
+			"--repo <owner/repo> Custom GitHub repository (default: poppy-team/prumo)",
 			"--token <token>    GitHub API token to avoid rate limiting",
 			"--no-cache         Bypass local update check cache",
 			"--json             Output update result as structured JSON envelope",
@@ -552,21 +567,30 @@ var commandRegistry = map[string]CommandInfo{
 		},
 	},
 	"connector": {
-		Name:        "connector",
-		Category:    "Environment & Connectors",
-		Summary:     "Manage and inspect harness connectors",
-		Usage:       "prumo connector <subcommand> [args]",
-		Description: "Inspects status, capabilities, and health of installed AI harness connectors.",
+		Name:     "connector",
+		Category: "Environment & Connectors",
+		Summary:  "Manage and inspect harness connectors (Claude, Antigravity, OpenCode, Codex...)",
+		Usage:    "prumo connector <subcommand> [args]",
+		Description: "Inspects status, capabilities, and health of installed AI harness connectors.\n" +
+			"Note: 'connector install' registers global bridges; use 'prumo compile --target <name>' to generate project-level adapter files.",
 		Subcommands: []string{
 			"list               List all supported and installed connectors",
-			"status <name>      Check status of a specific connector",
+			"status <name>      Check status, capabilities, and tool availability of a connector",
+			"install <name>     Install and configure global harness connector in ~/.prumo",
+			"uninstall <name>   Remove connector from ~/.prumo/connectors/",
+			"validate <name>    Validate connector protocol implementation",
+			"negotiate <name>   Test capability negotiation with harness",
 		},
 		Flags: []string{
-			"--json             Output connector data as JSON",
+			"--path <dir>       Target workspace directory for connector configuration",
+			"--json             Output connector data as JSON envelope",
 		},
 		Examples: []string{
 			"prumo connector list",
+			"prumo connector status claude",
 			"prumo connector status opencode",
+			"prumo connector install claude",
+			"prumo connector validate opencode",
 		},
 	},
 	"run": {
@@ -818,11 +842,11 @@ var commandRegistry = map[string]CommandInfo{
 	"tui": {
 		Name:     "tui",
 		Category: "Harness",
-		Summary:  "Terminal client for the Agent Protocol (palette → goal → run → stream → evidence)",
-		Usage:    "prumo tui [flags]",
-		Description: "Supervises a `prumo agent serve` daemon and drives it over the public Agent Protocol. " +
-			"Palette-first navigation, live AgentEvent timeline, and a terminal evidence panel. " +
-			"Imports only the public SDK — never prumo/internal. Interactive: no --json output.",
+		Summary:  "Launch Prumo Code Agent (interactive terminal user interface)",
+		Usage:    "prumo tui [flags] (or prumo code-agent, prumo agent)",
+		Description: "Launches Prumo Code Agent, supervising a `prumo agent serve` daemon and driving it over the public Agent Protocol. " +
+			"Features multi-tab conversations, live theme preview, OpenCode v2-style sidebar with context tokens, cost tracking, and workforce tree. " +
+			"All session telemetry is saved deterministically to .prumo/runtime/audit/telemetry.json for post-run audits.",
 		Flags: []string{
 			"--path <dir>         Workspace root (default: .)",
 			"--socket <path>      Attach to an existing daemon instead of starting one",
@@ -830,24 +854,25 @@ var commandRegistry = map[string]CommandInfo{
 			"--token <t>          Remote token (or --token-file / PRUMO_DAEMON_TOKEN)",
 			"--token-file <p>     File holding the remote token",
 			"--remote-tls-cert <p> CA cert pinning the remote server",
-			"--provider <name>    fake|fake-tools|openai-compat|anthropic|opencode (default: fake)",
+			"--provider <name>    fake|fake-tools|openai-compat|anthropic|opencode|gemini|deepseek (default: fake)",
 			"--model <id>         Model id for real providers",
 			"--max-turns <n>      Max turns (default: 5)",
-			"--theme <id>         theme.default|theme.high-contrast|theme.no-color|theme.reduced-motion",
+			"--theme <id>         theme name with live preview (default: prumo)",
 		},
 		Examples: []string{
 			"prumo tui --path .",
-			"prumo tui --theme theme.no-color",
+			"prumo code-agent",
+			"prumo agent",
+			"prumo tui --theme catppuccin",
 			"prumo tui --socket .prumo/runtime/harness/agentd.sock",
-			"prumo tui --remote 127.0.0.1:7777 --token-file .prumo/agentd.token",
 		},
 	},
 	"native": {
 		Name:     "native",
 		Category: "Harness",
-		Summary:  "Native desktop agent-aware Workspace Viewer and light editor (Rust + Freya)",
+		Summary:  "Prumo IDE - Native desktop agent-aware Workspace environment",
 		Usage:    "prumo native [--workspace <dir>] [--socket <path>]",
-		Description: "Launches the Prumo Native Workspace Viewer built with Rust and Freya. " +
+		Description: "Launches Prumo IDE, the native desktop agent-aware environment built with Rust and Freya. " +
 			"Provides an IDE-style Explorer, multi-tab editing, Quick Open, working-copy diff, daemon timeline, " +
 			"run start, and permission approval over the local Agent Protocol. " +
 			"Interactive: no --json output.",

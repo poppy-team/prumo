@@ -2,7 +2,6 @@ package cliops
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,9 +71,6 @@ func (s *Service) Resolve(profilePath string) (resolver.Resolution, error) {
 }
 func (s *Service) ModelPolicy(profile resolver.Profile) (map[string]any, error) {
 	models := profile.PreferredModels()
-	if len(models) == 0 {
-		return nil, errors.New("No preferred LLM roster configured. Prumo requires model preferences to be explicitly selected for every new project.")
-	}
 	roster := []map[string]any{}
 	ids := []string{}
 	for _, m := range models {
@@ -90,7 +86,11 @@ func (s *Service) ModelPolicy(profile resolver.Profile) (map[string]any, error) 
 	for _, role := range []string{"architect", "debugger", "documentation-maintainer", "implementer", "release-verifier", "reviewer", "security-reviewer", "tester", "ux-reviewer"} {
 		roles[role] = map[string]any{"preferred": append([]string{}, ids...), "fallback": []string{}}
 	}
-	return map[string]any{"version": 2, "selection_rule": "cheapest-reliable-model-that-passes-gates", "cross_provider_review": true, "context_aware_routing": true, "roster": roster, "roles": roles}, nil
+	selectionRule := "cheapest-reliable-model-that-passes-gates"
+	if len(roster) == 0 {
+		selectionRule = "current-runtime"
+	}
+	return map[string]any{"version": 2, "selection_rule": selectionRule, "cross_provider_review": true, "context_aware_routing": true, "roster": roster, "roles": roles}, nil
 }
 func contextPolicy() map[string]any {
 	profiles := map[string]any{}
@@ -103,13 +103,19 @@ func contextPolicy() map[string]any {
 	return map[string]any{"methodology": "lean-progressive-context", "architecture": "progressive-context-architecture", "mode": "progressive", "budget_profile": "medium", "profiles": profiles, "deep_recursion": map[string]any{"enabled": false, "experimental": true}, "runtime": map[string]any{"database": ".prumo/runtime/prumo.db", "completed_context_ttl": "0d", "failed_context_ttl": "7d"}}
 }
 func (s *Service) Init(root, profilePath string) (resolver.Resolution, error) {
-	profile, err := s.Profile(profilePath)
-	if err != nil {
-		return resolver.Resolution{}, err
+	if profilePath != "" {
+		profile, err := s.Profile(profilePath)
+		if err != nil {
+			return resolver.Resolution{}, err
+		}
+		return s.InitWithProfile(root, profile)
 	}
-	if len(profile.PreferredModels()) == 0 {
-		return resolver.Resolution{}, errors.New("Preferred LLMs/providers are required per project. Add ai.preferred_models to the profile.")
-	}
+	det := DetectProject(root)
+	profile := BuildDefaultProfile(det, "standard")
+	return s.InitWithProfile(root, profile)
+}
+
+func (s *Service) InitWithProfile(root string, profile resolver.Profile) (resolver.Resolution, error) {
 	catalog, err := resolver.LoadCatalog(s.repoRoot)
 	if err != nil {
 		return resolver.Resolution{}, err
@@ -192,7 +198,7 @@ func writeManifestJSON(path, kind string, values []string, reasons map[string]an
 	var out strings.Builder
 	out.WriteString("{\n")
 	out.WriteString("  \"generated_by\": {\n")
-	out.WriteString("    \"prumo\": \"0.2.0\"\n")
+	out.WriteString(fmt.Sprintf("    \"prumo\": %q\n", protocol.CLIVersion))
 	out.WriteString("  },\n")
 	valuesJSON, _ := json.MarshalIndent(values, "  ", "  ")
 	out.WriteString(fmt.Sprintf("  %q: %s,\n", kind, valuesJSON))

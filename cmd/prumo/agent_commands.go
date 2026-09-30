@@ -132,9 +132,15 @@ func runAgentRun(asJSON bool, args []string) int {
 	}
 	providerName := f["provider"]
 	if providerName == "" {
-		providerName = "fake"
+		providerName = os.Getenv("PRUMO_PROVIDER")
+		if providerName == "" {
+			providerName = "fake"
+		}
 	}
 	modelName := f["model"]
+	if modelName == "" {
+		modelName = os.Getenv("PRUMO_MODEL")
+	}
 	baseURL := f["base-url"]
 	apiKey := f["api-key"]
 	if apiKey == "" {
@@ -384,11 +390,17 @@ func runAgentResume(asJSON bool, args []string) int {
 	// output no model ever wrote.
 	providerName := f["provider"]
 	if providerName == "" {
-		providerName = "fake"
+		providerName = os.Getenv("PRUMO_PROVIDER")
+		if providerName == "" {
+			providerName = "fake"
+		}
 	}
 	baseURL := f["base-url"]
 	apiKey := f["api-key"]
 	modelName := f["model"]
+	if modelName == "" {
+		modelName = os.Getenv("PRUMO_MODEL")
+	}
 	var provider model.Provider
 	switch providerName {
 	case "fake":

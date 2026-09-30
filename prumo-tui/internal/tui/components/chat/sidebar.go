@@ -6,6 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/runtime"
 	"github.com/raillen/prumo-tui/internal/session"
@@ -14,7 +15,8 @@ import (
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 )
 
-// SidebarCmp is the collapsible right sidebar panel displaying session details and changed files.
+// SidebarCmp is the collapsible right sidebar panel displaying session details,
+// context token usage, workforce & subagents tree, and changed files.
 type SidebarCmp interface {
 	tea.Model
 	layout.Sizeable
@@ -68,6 +70,34 @@ func (s *sidebarCmp) View() tea.View {
 	return tea.NewView(s.viewString())
 }
 
+func formatTokens(n int64) string {
+	if n >= 1_000_000 {
+		return fmt.Sprintf("%.1fM", float64(n)/1_000_000)
+	}
+	if n >= 1_000 {
+		return fmt.Sprintf("%.1fk", float64(n)/1_000)
+	}
+	return fmt.Sprintf("%d", n)
+}
+
+func renderProgressBar(ratio float64, width int, filledColor, emptyColor theme.AdaptiveColor) string {
+	if width <= 0 {
+		return ""
+	}
+	filledLen := int(ratio * float64(width))
+	if filledLen < 0 {
+		filledLen = 0
+	}
+	if filledLen > width {
+		filledLen = width
+	}
+	emptyLen := width - filledLen
+
+	filledPart := lipgloss.NewStyle().Foreground(filledColor).Render(strings.Repeat("█", filledLen))
+	emptyPart := lipgloss.NewStyle().Foreground(emptyColor).Render(strings.Repeat("░", emptyLen))
+	return filledPart + emptyPart
+}
+
 func (s *sidebarCmp) viewString() string {
 	if s.width <= 0 || s.height <= 0 {
 		return ""
@@ -89,9 +119,13 @@ func (s *sidebarCmp) viewString() string {
 		Foreground(t.Text()).
 		Padding(0, 1)
 
+	accentStyle := baseStyle.
+		Foreground(t.Accent()).
+		Padding(0, 1)
+
 	var lines []string
 
-	// Section 1: Session Status & Details
+	// Section 1: Session Status & Model
 	lines = append(lines, headerStyle.Render("SESSION STATUS"))
 
 	busy := false
@@ -137,7 +171,72 @@ func (s *sidebarCmp) viewString() string {
 
 	lines = append(lines, "")
 
-	// Section 2: Changed Files
+	// Section 2: Context & Token Occupancy (OpenCode v2 Telemetry)
+	lines = append(lines, headerStyle.Render("CONTEXT TOKENS"))
+
+	totalTokens := s.session.PromptTokens + s.session.CompletionTokens
+	contextLimit := int64(128_000)
+	ratio := float64(totalTokens) / float64(contextLimit)
+	if ratio > 1.0 {
+		ratio = 1.0
+	}
+	pct := int(ratio * 100)
+
+	barWidth := max(8, s.width-4)
+	bar := renderProgressBar(ratio, barWidth, t.Primary(), t.BackgroundSecondary())
+	lines = append(lines, baseStyle.Padding(0, 1).Render(bar))
+
+	occupancyText := fmt.Sprintf("%s / %s (%d%%)", formatTokens(totalTokens), formatTokens(contextLimit), pct)
+	lines = append(lines, valueStyle.Render(occupancyText))
+
+	tokensDetail := fmt.Sprintf("in: %s  out: %s", formatTokens(s.session.PromptTokens), formatTokens(s.session.CompletionTokens))
+	lines = append(lines, labelStyle.Render(tokensDetail))
+
+	if s.session.CacheReadTokens > 0 {
+		lines = append(lines, labelStyle.Render(fmt.Sprintf("cache read: %s", formatTokens(s.session.CacheReadTokens))))
+	}
+
+	if s.session.Cost > 0 {
+		lines = append(lines, accentStyle.Render(fmt.Sprintf("Cost: $%.4f", s.session.Cost)))
+	}
+
+	lines = append(lines, "")
+
+	// Section 3: Workforce & Subagents (Prumo Exclusive)
+	lines = append(lines, headerStyle.Render("WORKFORCE"))
+	activeAgent := "coder"
+	if s.app != nil && s.app.Runner != nil {
+		activeAgent = s.app.Runner.ActiveAgent()
+	}
+	lines = append(lines, valueStyle.Render("Primary: "+activeAgent))
+
+	var subagents []runtime.SubagentInfo
+	if s.app != nil && s.app.Runner != nil && s.session.ID != "" {
+		subagents = s.app.Runner.Subagents(s.session.ID)
+	}
+
+	if len(subagents) == 0 {
+		lines = append(lines, labelStyle.Render("└─ (single agent)"))
+	} else {
+		for i, sub := range subagents {
+			prefix := "├─"
+			if i == len(subagents)-1 {
+				prefix = "└─"
+			}
+			role := sub.Role
+			if role == "" {
+				role = sub.ID
+			}
+			if len(role) > s.width-12 && s.width > 12 {
+				role = role[:s.width-15] + "..."
+			}
+			lines = append(lines, labelStyle.Render(fmt.Sprintf("%s %s [%s]", prefix, role, sub.Status)))
+		}
+	}
+
+	lines = append(lines, "")
+
+	// Section 4: Changed Files
 	lines = append(lines, headerStyle.Render("CHANGED FILES"))
 
 	var changes []runtime.Change
@@ -148,10 +247,7 @@ func (s *sidebarCmp) viewString() string {
 	if len(changes) == 0 {
 		lines = append(lines, labelStyle.Render("None in this run"))
 	} else {
-		maxFiles := s.height - len(lines) - 8
-		if maxFiles < 1 {
-			maxFiles = 1
-		}
+		maxFiles := max(2, s.height-len(lines)-9)
 		for i, change := range changes {
 			if i >= maxFiles {
 				lines = append(lines, labelStyle.Render(fmt.Sprintf("... and %d more", len(changes)-i)))
@@ -173,28 +269,34 @@ func (s *sidebarCmp) viewString() string {
 
 	lines = append(lines, "")
 
-	// Section 3: Shortcuts Cheat-Sheet
-	lines = append(lines, headerStyle.Render("QUICK SHORTCUTS"))
-	shortcuts := []struct {
-		key  string
-		desc string
-	}{
-		{"/", "commands"},
-		{"@", "files"},
-		{"ctrl+b", "toggle panel"},
-		{"ctrl+k", "palette"},
-		{"ctrl+o", "models"},
-		{"ctrl+s", "sessions"},
-		{"ctrl+g", "diffs"},
-		{"ctrl+l", "logs"},
-		{"ctrl+q", "quit"},
+	// Section 5: Shortcuts Cheat-Sheet
+	if len(lines) < s.height-4 {
+		lines = append(lines, headerStyle.Render("SHORTCUTS"))
+		shortcuts := []struct {
+			key  string
+			desc string
+		}{
+			{"/", "commands"},
+			{"@", "files"},
+			{"ctrl+t", "new tab"},
+			{"ctrl+w", "close tab"},
+			{"ctrl+b", "toggle panel"},
+			{"ctrl+o", "models"},
+			{"ctrl+s", "sessions"},
+			{"ctrl+q", "quit"},
+		}
+
+		for _, sc := range shortcuts {
+			if len(lines) >= s.height-1 {
+				break
+			}
+			lines = append(lines, labelStyle.Render(fmt.Sprintf("%-7s %s", sc.key, sc.desc)))
+		}
 	}
 
-	for _, sc := range shortcuts {
-		if len(lines) >= s.height-1 {
-			break
-		}
-		lines = append(lines, labelStyle.Render(fmt.Sprintf("%-7s %s", sc.key, sc.desc)))
+	// Truncate to height to guarantee no terminal overflow
+	if len(lines) > s.height {
+		lines = lines[:s.height]
 	}
 
 	content := strings.Join(lines, "\n")

@@ -1,0 +1,866 @@
+/* ==========================================================================
+   Prumo Design Tokens & Custom Properties
+   Mobile-first responsive foundation with fluid typography
+   ========================================================================== */
+
+:root {
+  /* Brand Palette */
+  --vp-c-brand-1: #2563eb;
+  --vp-c-brand-2: #1d4ed8;
+  --vp-c-brand-3: #1e40af;
+  --vp-c-brand-soft: rgba(37, 99, 235, 0.14);
+
+  /* Typography */
+  --vp-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* Hero Gradient */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #60a5fa 20%, #3b82f6 55%, #06b6d4 90%);
+  --vp-home-hero-image-background-image: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.22) 0%, rgba(15, 23, 42, 0) 70%);
+  --vp-home-hero-image-filter: drop-shadow(0 0 45px rgba(37, 99, 235, 0.35));
+
+  /* Accessibility & Focus */
+  --prumo-focus-ring: 2px solid var(--vp-c-brand-1);
+  --prumo-focus-offset: 3px;
+  --prumo-content-measure: 74ch;
+
+  /* Fluid Spacing Scale */
+  --prumo-space-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+  --prumo-space-sm: clamp(0.5rem, 1vw, 0.75rem);
+  --prumo-space-md: clamp(0.75rem, 1.5vw, 1.25rem);
+  --prumo-space-lg: clamp(1rem, 2vw, 1.75rem);
+  --prumo-space-xl: clamp(1.5rem, 3vw, 2.5rem);
+
+  /* Responsive Grid */
+  --prumo-grid-min: 280px;
+  --prumo-grid-gap: clamp(12px, 2vw, 18px);
+}
+
+.dark {
+  --vp-c-brand-1: #60a5fa;
+  --vp-c-brand-2: #3b82f6;
+  --vp-c-brand-3: #2563eb;
+  --vp-c-brand-soft: rgba(96, 165, 250, 0.16);
+
+  --vp-c-bg: #090d16;
+  --vp-c-bg-alt: #0d1322;
+  --vp-c-bg-elv: #131c31;
+  --vp-c-bg-soft: #17223b;
+  --vp-c-border: #1e293b;
+}
+
+/* ==========================================================================
+   Accessibility & Ergonomics
+   ========================================================================== */
+
+:focus-visible {
+  outline: var(--prumo-focus-ring) !important;
+  outline-offset: var(--prumo-focus-offset) !important;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Fluid Typography
+   ========================================================================== */
+
+.vp-doc p,
+.vp-doc li {
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+  font-size: clamp(0.9rem, 0.85rem + 0.25vw, 1rem);
+}
+
+.vp-doc p {
+  max-width: var(--prumo-content-measure);
+  margin-bottom: 1.25em;
+}
+
+.vp-doc h1 {
+  font-size: clamp(1.75rem, 1.5rem + 1.5vw, 2.5rem);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.vp-doc h2 {
+  font-size: clamp(1.35rem, 1.15rem + 1vw, 1.75rem);
+  margin-top: 2em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--vp-c-divider);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.vp-doc h3 {
+  font-size: clamp(1.15rem, 1rem + 0.5vw, 1.35rem);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+.vp-doc h4 {
+  font-size: clamp(1rem, 0.9rem + 0.35vw, 1.15rem);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+.vp-doc strong {
+  color: var(--vp-c-text-1);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Global Layout — Prevent Horizontal Overflow
+   ========================================================================== */
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+.VPContent {
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   Navigation — Desktop
+   ========================================================================== */
+
+.VPNavBarMenuLink,
+.VPNavBarMenuGroup,
+.VPSidebarItem {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+}
+
+/* Navbar items — refined spacing for desktop */
+.VPNavBar .VPNavBarMenu {
+  gap: 4px;
+}
+
+.VPNavBarMenuLink .text,
+.VPNavBarMenuGroup .text {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Sidebar navigation clarity */
+.VPSidebarItem.is-active > .item > .link > .text {
+  color: var(--vp-c-brand-1) !important;
+  font-weight: 600;
+}
+
+.VPSidebarItem .indicator {
+  background-color: var(--vp-c-brand-1) !important;
+}
+
+/* ==========================================================================
+   Navigation — Mobile Hamburger & Sidebar
+   ========================================================================== */
+
+/* Increase tap targets for mobile */
+@media (max-width: 768px) {
+  .VPNavBarMenuLink,
+  .VPNavBarMenuGroup,
+  .VPSidebarItem {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  /* Mobile hamburger button — larger touch target */
+  .VPNavBarHamburger {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mobile sidebar — full width overlay */
+  .VPSidebar {
+    padding-top: 8px;
+  }
+
+  .VPSidebar .group {
+    padding: 0 16px;
+  }
+
+  /* Mobile sidebar items — generous touch targets */
+  .VPSidebar .VPSidebarItem .item {
+    min-height: 44px;
+    padding: 6px 0;
+  }
+
+  .VPSidebar .VPSidebarItem .link {
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  .VPSidebar .VPSidebarItem .link:active {
+    background-color: var(--vp-c-brand-soft);
+  }
+
+  /* Mobile nav — prevent items from being cut off */
+  .VPNavBar {
+    padding: 0 12px;
+  }
+
+  .VPNavBar .content {
+    padding: 0;
+  }
+
+  /* Mobile menu items in flyout — more padding */
+  .VPMenu .menu-item {
+    padding: 10px 16px;
+    min-height: 44px;
+  }
+
+  /* Search button — compact on mobile */
+  .VPNavBarSearch {
+    padding-left: 8px;
+  }
+}
+
+/* Tablet landscape — compact nav spacing */
+@media (min-width: 769px) and (max-width: 960px) {
+  .VPNavBarMenuLink .text,
+  .VPNavBarMenuGroup .text {
+    font-size: 13px;
+  }
+
+  .VPNavBar .VPNavBarMenu {
+    gap: 2px;
+  }
+}
+
+/* Desktop wide — comfortable spacing */
+@media (min-width: 1280px) {
+  .VPNavBarMenuLink .text,
+  .VPNavBarMenuGroup .text {
+    font-size: 14px;
+  }
+
+  .VPNavBar .VPNavBarMenu {
+    gap: 8px;
+  }
+}
+
+/* ==========================================================================
+   Hero Section — Responsive
+   ========================================================================== */
+
+.VPHome .VPHero {
+  padding: clamp(32px, 6vw, 80px) clamp(16px, 4vw, 48px);
+}
+
+.VPHero .main {
+  max-width: 1152px;
+  margin: 0 auto;
+}
+
+/* Hero name — fluid size */
+.VPHero .name {
+  font-size: clamp(2rem, 1.5rem + 3vw, 3.5rem) !important;
+  line-height: 1.1 !important;
+}
+
+/* Hero text — fluid size */
+.VPHero .text {
+  font-size: clamp(1.25rem, 1rem + 1.5vw, 2rem) !important;
+  line-height: 1.3 !important;
+  max-width: 640px;
+}
+
+/* Hero tagline — constrain width on mobile */
+.VPHero .tagline {
+  font-size: clamp(0.875rem, 0.8rem + 0.5vw, 1.125rem) !important;
+  line-height: 1.6 !important;
+  max-width: 580px;
+  color: var(--vp-c-text-2);
+}
+
+/* Hero actions — stack vertically on small screens */
+.VPHero .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1.5vw, 16px);
+  justify-content: flex-start;
+}
+
+.VPHero .action .VPButton {
+  font-size: clamp(0.8rem, 0.75rem + 0.3vw, 0.95rem);
+  padding: clamp(8px, 1.5vw, 12px) clamp(16px, 2.5vw, 24px);
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+/* Hero image — responsive sizing */
+.VPHero .image-container {
+  max-width: clamp(200px, 30vw, 320px);
+}
+
+@media (max-width: 640px) {
+  /* Stack hero layout vertically on phones */
+  .VPHero .container {
+    flex-direction: column !important;
+    text-align: center;
+  }
+
+  .VPHero .main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .VPHero .text,
+  .VPHero .tagline {
+    max-width: 100%;
+  }
+
+  .VPHero .actions {
+    justify-content: center;
+  }
+
+  .VPHero .image-container {
+    margin: 16px auto 0;
+    max-width: 180px;
+  }
+
+  /* Hide hero image on very small screens to save space */
+  .VPHero .image-bg {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 960px) {
+  .VPHero .image-container {
+    max-width: 220px;
+  }
+}
+
+/* ==========================================================================
+   Feature Cards — Responsive Grid
+   ========================================================================== */
+
+.VPFeature {
+  border-radius: 14px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border: 1px solid var(--vp-c-border) !important;
+}
+
+.VPFeature:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -10px rgba(37, 99, 235, 0.22);
+}
+
+/* On touch devices, remove hover-dependent transforms */
+@media (hover: none) {
+  .VPFeature:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* Feature grid — responsive columns */
+@media (max-width: 640px) {
+  .VPFeatures .VPFeature {
+    padding: 18px !important;
+  }
+
+  .VPFeatures .title {
+    font-size: 15px !important;
+  }
+
+  .VPFeatures .details {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+}
+
+/* ==========================================================================
+   Badges & Tags
+   ========================================================================== */
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  font-size: clamp(11px, 0.7rem + 0.1vw, 12px);
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  border: 1px solid var(--vp-c-brand-1);
+  margin-bottom: 8px;
+}
+
+.cli-badge {
+  font-family: var(--vp-font-family-mono);
+  font-size: clamp(11px, 0.7rem + 0.1vw, 12px);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: var(--vp-c-bg-elv);
+  border: 1px solid var(--vp-c-border);
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Tool Grid — Responsive
+   ========================================================================== */
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--prumo-grid-min), 1fr));
+  gap: var(--prumo-grid-gap);
+  margin: var(--prumo-space-lg) 0;
+}
+
+.tool-card {
+  padding: clamp(16px, 2vw, 22px);
+  border-radius: 12px;
+  background-color: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-border);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tool-card:hover {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 8px 24px -10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-2px);
+}
+
+@media (hover: none) {
+  .tool-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.tool-card h3,
+.tool-card h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: var(--vp-c-brand-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.1rem);
+}
+
+.tool-card p {
+  color: var(--vp-c-text-2);
+  font-size: clamp(13px, 0.8rem + 0.1vw, 14px);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.tool-card .tool-cmd {
+  font-family: var(--vp-font-family-mono);
+  font-size: clamp(11px, 0.7rem + 0.1vw, 13px);
+  background: var(--vp-c-bg-alt);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-1);
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* On very small phones, go single column */
+@media (max-width: 480px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .tool-card {
+    padding: 14px;
+  }
+}
+
+/* Tablet: ensure 2 columns */
+@media (min-width: 481px) and (max-width: 768px) {
+  .tool-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
+   Wave / Architecture Grid — Responsive
+   ========================================================================== */
+
+.wave-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--prumo-grid-min), 1fr));
+  gap: clamp(12px, 2vw, 16px);
+  margin: var(--prumo-space-lg) 0;
+}
+
+.wave-card {
+  padding: clamp(14px, 2vw, 20px);
+  border-radius: 12px;
+  background-color: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-border);
+  transition: border-color 0.2s;
+}
+
+.wave-card:hover {
+  border-color: var(--vp-c-brand-1);
+}
+
+.wave-card h4 {
+  margin-top: 0;
+  color: var(--vp-c-brand-1);
+}
+
+@media (max-width: 480px) {
+  .wave-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* ==========================================================================
+   Tables — Responsive with Horizontal Scroll
+   ========================================================================== */
+
+.vp-doc table {
+  width: 100%;
+  display: table;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  margin: 20px 0;
+  border: 1px solid var(--vp-c-border);
+}
+
+.vp-doc th {
+  background-color: var(--vp-c-bg-soft);
+  font-weight: 700;
+  text-align: left;
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
+  color: var(--vp-c-text-1);
+  font-size: clamp(0.8rem, 0.75rem + 0.2vw, 0.9rem);
+  white-space: nowrap;
+}
+
+.vp-doc td {
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
+  border-top: 1px solid var(--vp-c-border);
+  font-size: clamp(0.8rem, 0.75rem + 0.2vw, 0.9rem);
+}
+
+/* Wrap tables in a scrollable container on mobile */
+@media (max-width: 768px) {
+  .vp-doc table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .vp-doc th,
+  .vp-doc td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ==========================================================================
+   Code Blocks — Responsive
+   ========================================================================== */
+
+.vp-doc div[class*='language-'] {
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-border);
+  margin: var(--prumo-space-md) 0;
+}
+
+/* Mobile code blocks — prevent overflow */
+@media (max-width: 640px) {
+  .vp-doc div[class*='language-'] {
+    border-radius: 8px;
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .vp-doc div[class*='language-'] pre {
+    padding: 12px 16px;
+  }
+
+  .vp-doc div[class*='language-'] code {
+    font-size: 12px;
+  }
+}
+
+/* Inline code — word break on mobile */
+.vp-doc :not(pre) > code {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+   Callout / Custom Blocks — Responsive
+   ========================================================================== */
+
+.custom-block {
+  border-radius: 10px !important;
+  padding: clamp(12px, 2vw, 16px) clamp(14px, 2.5vw, 20px) !important;
+  margin: var(--prumo-space-md) 0 !important;
+}
+
+@media (max-width: 640px) {
+  .custom-block {
+    border-radius: 8px !important;
+    margin-left: -8px !important;
+    margin-right: -8px !important;
+  }
+}
+
+/* ==========================================================================
+   Terminal Box — Responsive
+   ========================================================================== */
+
+.terminal-window {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-border);
+  background-color: var(--vp-c-bg-alt);
+  margin: var(--prumo-space-md) 0;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: var(--vp-c-bg-elv);
+  border-bottom: 1px solid var(--vp-c-border);
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.terminal-dot.red { background-color: #ef4444; }
+.terminal-dot.yellow { background-color: #f59e0b; }
+.terminal-dot.green { background-color: #10b981; }
+
+.terminal-title {
+  margin-left: 8px;
+  font-size: clamp(11px, 0.7rem + 0.1vw, 12px);
+  color: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+}
+
+@media (max-width: 640px) {
+  .terminal-window {
+    border-radius: 0;
+    margin-left: -16px;
+    margin-right: -16px;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+/* ==========================================================================
+   VitePress Content Area — Mobile Padding
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .VPDoc .content-container {
+    padding: 0 16px;
+  }
+
+  /* Reduce excessive top margin on mobile */
+  .vp-doc h1:first-child {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .VPDoc .content-container {
+    padding: 0 12px;
+  }
+}
+
+/* ==========================================================================
+   Footer — Responsive
+   ========================================================================== */
+
+.VPFooter {
+  padding: var(--prumo-space-lg) var(--prumo-space-md) !important;
+}
+
+.VPFooter .message,
+.VPFooter .copyright {
+  font-size: clamp(0.75rem, 0.7rem + 0.2vw, 0.875rem);
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .VPFooter {
+    text-align: center;
+  }
+
+  .VPFooter .message,
+  .VPFooter .copyright {
+    font-size: 0.75rem;
+  }
+}
+
+/* ==========================================================================
+   Home Page Sections — Responsive Content Width
+   ========================================================================== */
+
+.VPHome .vp-doc {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 48px);
+}
+
+@media (max-width: 640px) {
+  .VPHome .vp-doc {
+    padding: 0 16px;
+  }
+
+  .VPHome .vp-doc h2 {
+    font-size: 1.25rem;
+  }
+}
+
+/* ==========================================================================
+   VitePress Overrides — Mobile Nav Screen
+   ========================================================================== */
+
+/* The mobile nav screen (opened by hamburger) */
+.VPNavScreen {
+  padding: 16px !important;
+}
+
+.VPNavScreenMenuLink,
+.VPNavScreenMenuGroupLink {
+  min-height: 48px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.VPNavScreenMenuSection {
+  padding: 8px 0;
+}
+
+/* Mobile nav group titles */
+.VPNavScreenMenuGroupSection .title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vp-c-text-3);
+  padding: 12px 0 4px;
+}
+
+/* Mobile nav group items */
+.VPNavScreenMenuGroupSection .item {
+  min-height: 44px;
+  font-size: 14px;
+  padding: 6px 0 6px 12px;
+}
+
+/* Theme toggle and social icons in mobile nav */
+.VPNavScreenAppearance,
+.VPNavScreenSocialLinks {
+  padding: 16px 0;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+/* ==========================================================================
+   Outline (Table of Contents) — Responsive
+   ========================================================================== */
+
+@media (max-width: 1280px) {
+  /* Hide the aside TOC on smaller screens — VitePress handles this,
+     but we add explicit overflow prevention */
+  .VPDocAside {
+    overflow: hidden;
+  }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+  .VPNav,
+  .VPSidebar,
+  .VPDocAside,
+  .VPFooter,
+  .VPNavBar {
+    display: none !important;
+  }
+
+  .VPDoc .content-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .vp-doc h2 {
+    break-after: avoid;
+  }
+
+  .tool-grid,
+  .wave-grid {
+    break-inside: avoid;
+  }
+}
+
+/* ==========================================================================
+   Scroll Behavior & Smooth Scrolling
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Anchor offset to account for fixed navbar */
+.vp-doc [id] {
+  scroll-margin-top: 80px;
+}
+
+@media (max-width: 768px) {
+  .vp-doc [id] {
+    scroll-margin-top: 64px;
+  }
+}

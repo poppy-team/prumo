@@ -1,59 +1,60 @@
-# Authority & Projection Policy
+# Política de Autoridade e Projeção
 
-> Authority: repository-canonical. Single source of truth for documentation
-> authority order, roles and drift rules (W0.6, W0.8, W0.11).
+> Autoridade: canônica do repositório. Fonte única da verdade para a ordem de
+> autoridade da documentação, papéis e regras de drift (W0.6, W0.8, W0.11).
 
-## Authority order
+## Ordem de autoridade
 
-1. Canonical repository specs, schemas, contracts and accepted ADRs
-2. Accepted engineering documentation under `docs/`
-3. Prumo Living Book (Notion) — design input until promoted
-4. Agent inference
-5. External sources
+1. Specs, schemas, contratos e ADRs aceitas canônicos do repositório
+2. Documentação de engenharia aceita em `docs/`
+3. Livro Vivo do Prumo (Notion) — insumo de design até ser promovido
+4. Inferência do agente
+5. Fontes externas
 
-Once a design decision is promoted into a canonical repository specification,
-the repository version has authority over the Notion version for implementation.
+Depois que uma decisão de design é promovida para uma especificação canônica do
+repositório, a versão do repositório tem autoridade sobre a versão do Notion para
+a implementação.
 
-## Roles
+## Papéis
 
-| Role | Meaning | Drift-checked |
-|------|---------|---------------|
-| `canonical` | Owns project facts | yes |
-| `projection` | Derived surface; must resolve to a canonical source | yes |
-| `historical` | Record (ADR, migration note, progress log); never rewritten | no |
+| Papel | Significado | Verificado quanto a drift |
+|-------|-------------|---------------------------|
+| `canonical` | Detém os fatos do projeto | sim |
+| `projection` | Superfície derivada; deve resolver para uma fonte canônica | sim |
+| `historical` | Registro (ADR, nota de migração, log de progresso); nunca reescrito | não |
 
-The machine-readable classification is `docs/AUTHORITY_MAP.json`, verified by
-`prumo-agent docs authority` and the `docs-authority` CI gate.
+A classificação legível por máquina é o `docs/AUTHORITY_MAP.json`, verificado por
+`prumo-agent docs authority` e pelo gate de CI `docs-authority`.
 
-## Projection policy (W0.11)
+## Política de projeção (W0.11)
 
-- Agent and provider adapters — `AGENTS.md`, Copilot/Cursor/Claude rule files,
-  connector manifests, generated SDKs — are **projections**: they may not
-  introduce independent project facts.
-- A projection declares its `canonical_source`. A projection whose source is
-  itself a projection is a **cycle** and fails the gate.
-- Generated adapters carry provenance/fingerprint metadata once the Agent
-  Surface Compiler (W16) lands.
-- Derived indexes, summaries and Working Context Capsules live in runtime/cache
-  and never become canonical.
+- Adapters de agentes e providers — `AGENTS.md`, arquivos de regras de Copilot/Cursor/Claude,
+  manifestos de conectores, SDKs gerados — são **projeções**: não podem
+  introduzir fatos de projeto independentes.
+- Uma projeção declara seu `canonical_source`. Uma projeção cuja fonte é
+  ela mesma uma projeção é um **ciclo** e falha no gate.
+- Adapters gerados carregam metadados de proveniência/fingerprint assim que o Agent
+  Surface Compiler (W16) for entregue.
+- Índices derivados, resumos e Working Context Capsules vivem em runtime/cache
+  e nunca se tornam canônicos.
 
-## Drift rules (W0.8)
+## Regras de drift (W0.8)
 
-- An **active** document (canonical or projection) may not reference a project
-  release line older than the current CLI version unless the line carries a
-  historical annotation (`historical`, `legacy`, `migration`, `retired`,
+- Um documento **ativo** (canônico ou projeção) não pode referenciar uma linha de
+  release do projeto mais antiga que a versão atual da CLI, a menos que a linha traga uma
+  anotação histórica (`historical`, `legacy`, `migration`, `retired`,
   `superseded`, `deprecated`, `no longer`, `compatibility oracle`).
-- Routing surfaces (`AGENTS.md`, `ENTRYPOINT.md`, `README.md`, `FRAMEWORK.md`,
-  `docs/PRUMO.md`) must have resolvable relative links.
-- Per-document exemptions require an explicit `drift_exempt_reason` in the
-  authority map — never a silent weakening of the gate.
+- Superfícies de roteamento (`AGENTS.md`, `ENTRYPOINT.md`, `README.md`, `FRAMEWORK.md`,
+  `docs/PRUMO.md`) devem ter links relativos resolvíveis.
+- Isenções por documento exigem um `drift_exempt_reason` explícito no
+  mapa de autoridade — nunca um enfraquecimento silencioso do gate.
 
-## Verification
+## Verificação
 
 ```bash
-prumo-agent docs authority            # human output
-prumo-agent docs authority --json     # machine envelope
+prumo-agent docs authority            # saída para humanos
+prumo-agent docs authority --json     # envelope para máquinas
 go test ./internal/documentation/ -run TestAuthority
 ```
 
-CI gate group: `docs-authority` (see `docs/development/waves.md`).
+Grupo de gates do CI: `docs-authority` (veja `docs/development/waves.md`).

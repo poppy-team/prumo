@@ -1,6 +1,6 @@
 # Prumo: bootstrap
 
-Create a Prumo v0.2 project from the current approved discussion.
+Create a Prumo v0.6 project from the current approved discussion.
 
 Requirements:
 - use Markdown + JSON canonical formats;

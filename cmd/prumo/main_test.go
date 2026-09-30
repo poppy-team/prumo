@@ -69,8 +69,8 @@ func TestRunUnknownCommand(t *testing.T) {
 }
 
 func TestRunEmptyArgs(t *testing.T) {
-	if code := run([]string{}); code != 2 {
-		t.Fatalf("expected exit code 2, got %d", code)
+	if code := run([]string{}); code != 0 {
+		t.Fatalf("expected exit code 0 for dashboard, got %d", code)
 	}
 }
 
