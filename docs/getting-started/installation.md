@@ -7,7 +7,7 @@ O Prumo é distribuído como um executável estático único compilado em Go, se
 ### Linux & macOS
 
 ```bash
-# Baixar o executável oficial v0.6.1
+# Baixar o executável oficial v0.6.0
 curl -fsSL https://github.com/poppy-team/prumo/releases/latest/download/prumo-linux-amd64 -o /usr/local/bin/prumo
 chmod +x /usr/local/bin/prumo
 
@@ -24,41 +24,6 @@ prumo setup
 ```
 
 O comando inicializará o diretório global `~/.prumo`, contendo o registro de conectores e o cache de atualizações.
-
----
-
-## Superfícies de Interação
-
-O Prumo oferece três superfícies integradas prontas para uso:
-
-### 1. Prumo CLI & Daemon
-O comando `prumo` é a ferramenta de linha de comando para automação, compilação de adaptadores, governança e execução de planos:
-
-```bash
-prumo --help
-prumo validate
-prumo doctor
-```
-
-### 2. Prumo Code Agent (TUI)
-O **Prumo Code Agent** é o cliente terminal interativo com suporte a multi-tabs, telemetria detalhada de tokens/custos, preview de temas em tempo real e árvore de subagentes:
-
-```bash
-# Iniciar o Prumo Code Agent no repositório ativo
-prumo code-agent
-
-# Aliases equivalentes
-prumo agent
-prumo tui
-```
-
-### 3. Prumo IDE (GUI Desktop)
-O **Prumo IDE** é a interface gráfica desktop de altíssimo desempenho para navegação visual e inspeção de grafos de tarefas e planos:
-
-```bash
-# Iniciar o Prumo IDE no repositório ativo
-prumo native
-```
 
 ---
 

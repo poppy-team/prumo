@@ -1,6 +1,6 @@
-# Prumo Dependency Rules
+# Regras de Dependência do Prumo
 
-## Package Dependency Graph
+## Grafo de Dependências entre Pacotes
 
 ```mermaid
 flowchart TD
@@ -41,9 +41,9 @@ flowchart TD
     INTEGRATIONS -.-> PROTO
 ```
 
-## Hard Rules
+## Regras Rígidas
 
-### 1. Domain Isolation
+### 1. Isolamento de Domínio
 ```
 internal/protocol     → NO imports from: cmd, internal/app, internal/*storage*, integrations
 internal/project      → NO imports from: cmd, internal/app, integrations
@@ -51,7 +51,7 @@ internal/resolver     → NO imports from: cmd, internal/app, integrations
 internal/validator    → NO imports from: cmd, internal/app, integrations
 ```
 
-### 2. Application Services Layer
+### 2. Camada de Serviços de Aplicação
 ```
 internal/app          → MAY import: internal/protocol, internal/project, internal/resolver,
                        internal/compiler, internal/validator, internal/documentation,
@@ -60,13 +60,13 @@ internal/app          → MAY import: internal/protocol, internal/project, inter
                        internal/install, internal/storage, internal/contextcompiler
 ```
 
-### 3. CLI Layer
+### 3. Camada de CLI
 ```
 cmd/prumo             → MAY import: internal/app, internal/protocol
                        → MUST NOT import: any internal/* besides app + protocol
 ```
 
-### 4. Integrations
+### 4. Integrações
 ```
 integrations/*        → MAY import: internal/protocol (types only), internal/app (via CLI JSON)
                        → MUST NOT import: internal/* implementation packages
@@ -85,65 +85,65 @@ internal/control-plane/* → MAY import: internal/protocol, internal/storage (po
                          → MUST NOT import: internal/app, cmd, integrations
 ```
 
-## Circular Dependency Prevention
+## Prevenção de Dependências Circulares
 
-**Tooling check** (run in CI):
+**Verificação por ferramenta** (executada no CI):
 ```bash
-# Verify no cycles
+# Verifica que não há ciclos
 go mod graph | grep -E "internal/.*internal/" | sort -u
 ```
 
-## Interface Placement
+## Posicionamento de Interfaces
 
-| Interface | Defined In | Implemented By |
-|-----------|------------|----------------|
+| Interface | Definida em | Implementada por |
+|-----------|-------------|------------------|
 | `Repository` | `internal/storage` | `internal/storage/git` |
 | `DerivedIndex` | `internal/storage` | `internal/storage/sqlite` |
 | `EventSink` | `internal/control-plane/events` | `internal/control-plane/events/file`, `otel` |
 | `HarnessTransport` | `integrations/transport` | `integrations/opencode`, `codex`, etc. |
 | `Clock` | `internal/testutil` | `internal/testutil/fake_clock` |
-| `EmbeddingProvider` | `internal/knowledge` | (future) |
+| `EmbeddingProvider` | `internal/knowledge` | (futuro) |
 
-## Import Hygiene
+## Higiene de Imports
 
-- **No `utils`, `common`, `helpers` packages** — every package has domain semantics
-- **No package-per-file** — start consolidated, split when responsibility justifies
-- **`internal` protects premature API** — nothing in `internal` is public SDK
-- **Interfaces defined at consumer boundary** — not in shared package
+- **Nada de pacotes `utils`, `common`, `helpers`** — todo pacote tem semântica de domínio
+- **Nada de um pacote por arquivo** — comece consolidado e divida quando a responsabilidade justificar
+- **`internal` protege APIs prematuras** — nada em `internal` é SDK público
+- **Interfaces definidas na fronteira do consumidor** — não em um pacote compartilhado
 
-## Allowed Standard Library Imports Everywhere
+## Imports da Biblioteca Padrão Permitidos em Qualquer Lugar
 
 `context`, `errors`, `fmt`, `io`, `os`, `path`, `strings`, `time`, `encoding/json`, `sync`, `testing`
 
-## Versioned Imports
+## Imports Versionados
 
-External dependencies (when added) must be:
-- Pinned in `go.mod`
-- Vendored or checksum-verified in CI
-- Justified by anti-overengineering guardrail questions
+Dependências externas (quando adicionadas) devem ser:
+- Fixadas (pinned) no `go.mod`
+- Vendorizadas ou verificadas por checksum no CI
+- Justificadas pelas perguntas de guardrail contra overengineering
 
-### First external dependency — the TUI stack
+### Primeira dependência externa — a stack de TUI
 
-Until the H10 terminal client, this module had no third-party dependency: every
-package was standard library only. The terminal stack introduced the first
-direct ones, and the rules above apply to them.
+Até o cliente de terminal H10, este módulo não tinha nenhuma dependência de terceiros: todo
+pacote usava apenas a biblioteca padrão. A stack de terminal introduziu as primeiras
+dependências diretas, e as regras acima se aplicam a elas.
 
-**Where they live moved.** ADR 013 took the client out of this module entirely:
-the stack is required by `prumo-agent tui`, and this module is standard-library only
-again — which is what makes the rule below a property of the repository rather
-than a convention someone remembers.
+**O lugar onde elas vivem mudou.** A ADR 013 tirou o cliente deste módulo por completo:
+a stack é exigida pelo `prumo-agent tui`, e este módulo voltou a usar apenas a biblioteca padrão
+— o que faz da regra abaixo uma propriedade do repositório, e não
+uma convenção de que alguém precise se lembrar.
 
-| Aspect | Position |
-|--------|----------|
-| What | `charm.land/bubbletea/v2`, `charm.land/lipgloss/v2` and the rest of the Charm v2 tree (Stack H, accepted in `docs/product/tui-spike-h10.md`) |
-| Where | Only in the `prumo-agent tui` module. This module's `internal/` stays standard-library-only, and `prumo-agent tui/boundary_test.go` fails the build if the client ever imports `github.com/raillen/prumo/internal/...` |
-| Pinned | Exact module versions in `prumo-agent tui/go.mod`; the transitive set and its hashes in `prumo-agent tui/go.sum` |
-| Verified | `go mod verify` runs in the workflow's client job, so a mismatch fails the build |
-| Exit path | The renderer is behind `prumo-agent tui/internal/tui/styles` and the transport behind `prumo-agent tui/internal/runtime`, which is the only package in the client that knows the protocol exists; the protocol, the daemon and the SDK depend on neither framework |
-| Guardrail | The framework renders; it decides nothing. Folding a run's events, summing what it spent and resolving an icon set all live in framework-free files, which is also what makes them testable without a terminal |
+| Aspecto | Posição |
+|---------|---------|
+| O quê | `charm.land/bubbletea/v2`, `charm.land/lipgloss/v2` e o restante da árvore Charm v2 (Stack H, aceita em `docs/product/tui-spike-h10.md`) |
+| Onde | Somente no módulo `prumo-agent tui`. O `internal/` deste módulo continua usando apenas a biblioteca padrão, e o `prumo-agent tui/boundary_test.go` quebra o build se o cliente algum dia importar `github.com/raillen/prumo/internal/...` |
+| Fixada | Versões exatas dos módulos em `prumo-agent tui/go.mod`; o conjunto transitivo e seus hashes em `prumo-agent tui/go.sum` |
+| Verificada | `go mod verify` roda no job do cliente no workflow, então uma divergência quebra o build |
+| Rota de saída | O renderer fica atrás de `prumo-agent tui/internal/tui/styles` e o transporte atrás de `prumo-agent tui/internal/runtime`, o único pacote do cliente que sabe que o protocolo existe; o protocolo, o daemon e o SDK não dependem de nenhum dos dois frameworks |
+| Guardrail | O framework renderiza; não decide nada. Dobrar os eventos de uma execução, somar o que ela gastou e resolver um conjunto de ícones vivem em arquivos sem framework, o que também os torna testáveis sem um terminal |
 
-## OPEN QUESTIONS
+## QUESTÕES EM ABERTO
 
-- [ ] Exact package split for `internal/documentation` (contracts vs profiles vs readiness vs delta)
-- [ ] Whether `internal/evidence-gates` stays separate or merges into `internal/quality`
-- [ ] Whether `internal/control-plane` uses sub-packages per service or flat structure initially
+- [ ] Divisão exata de pacotes para `internal/documentation` (contratos vs profiles vs readiness vs delta)
+- [ ] Se `internal/evidence-gates` continua separado ou é incorporado a `internal/quality`
+- [ ] Se `internal/control-plane` usa subpacotes por serviço ou uma estrutura plana inicialmente

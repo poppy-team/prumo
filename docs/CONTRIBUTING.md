@@ -1,27 +1,27 @@
-# Contributing and Framework Evolution
+# Contribuição e Evolução do Framework
 
-Prumo should learn from real projects without becoming a dumping ground for project-specific instructions.
+O Prumo deve aprender com projetos reais sem virar um depósito de instruções específicas de cada projeto.
 
-A reusable change should identify:
+Uma mudança reutilizável deve identificar:
 
-- recurring problem;
-- evidence;
-- generic rule;
-- affected protocol/schemas/catalog/adapters;
-- compatibility/migration impact;
-- token/cost/maintenance impact when context behavior changes.
+- problema recorrente;
+- evidência;
+- regra genérica;
+- protocolo/schemas/catálogo/adapters afetados;
+- impacto de compatibilidade/migração;
+- impacto em tokens/custo/manutenção quando o comportamento do contexto muda.
 
 ## Checklist
 
-- Keep core provider-neutral.
-- Keep `ENTRYPOINT.md` and root `AGENTS.md` short.
-- Maintain Markdown + JSON as the human-maintained format budget.
-- A new persistent format requires ADR-level justification.
-- Keep runtime/cache/derived data out of canonical Git state.
-- Update schemas when contracts change.
-- Add tests for behavior/migration changes.
-- Do not bake current model rankings into role definitions.
-- Prefer capabilities/risk selectors over technology duplication.
-- Prefer semantic virtual chunks over documentation microfiles.
-- Context changes need a token/quality benchmark and stopping rule.
-- Deep recursion stays experimental unless evidence justifies promotion.
+- Mantenha o core neutro em relação a providers.
+- Mantenha `ENTRYPOINT.md` e o `AGENTS.md` da raiz curtos.
+- Mantenha Markdown + JSON como o orçamento de formatos mantidos por humanos.
+- Um novo formato persistente exige justificativa em nível de ADR.
+- Mantenha runtime/cache/dados derivados fora do estado canônico do Git.
+- Atualize os schemas quando os contratos mudarem.
+- Adicione testes para mudanças de comportamento/migração.
+- Não embuta rankings atuais de modelos nas definições de papéis.
+- Prefira seletores de capacidades/risco à duplicação por tecnologia.
+- Prefira chunks virtuais semânticos a microarquivos de documentação.
+- Mudanças de contexto precisam de um benchmark de tokens/qualidade e de uma regra de parada.
+- A recursão profunda continua experimental, a menos que a evidência justifique a promoção.

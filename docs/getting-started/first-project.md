@@ -88,55 +88,12 @@ prumo compile --target antigravity
 
 ---
 
-## 5. Iniciar o Prumo Code Agent (TUI Interativo)
+## 5. Iniciar o Coding Agent Interativo (TUI)
 
-O **Prumo Code Agent** é o cliente interativo de terminal projetado para desenvolvimento assistido por IA em máxima harmonia com o desenvolvedor:
-
-```bash
-prumo code-agent
-```
-
-*(Você também pode utilizar os atalhos `prumo agent` ou `prumo tui`)*.
-
-### Recursos do Prumo Code Agent
-
-1. **Sessão com Nome Automático por Branch**:
-   - Cada nova sessão é automaticamente inicializada com o nome da **branch Git ativa** (ex: `feature/auth-jwt`).
-   - Caso o repositório não tenha branch ou esteja em estado *detached HEAD*, o nome é gerado deterministicamente no formato `YYYY-MM-DD-<nome-do-projeto>`.
-
-2. **Multi-Tabs (Conversas Simultâneas)**:
-   - Execute múltiplos fluxos de trabalho ou investigações em paralelo no mesmo repositório:
-     - `Ctrl+T`: Cria uma nova aba de conversação.
-     - `Ctrl+W`: Fecha a aba ativa.
-     - `Alt+1` até `Alt+9`: Alterna diretamente para a aba desejada.
-
-3. **Barra Lateral com Telemetria Profunda do Harness**:
-   - Inspirada na ergonomia do OpenCode v2, mas alimentada com dados profundos que apenas o harness do Prumo fornece:
-     - **Provider & Modelo**: Sempre visíveis no topo da barra lateral e na status line.
-     - **Projeto & Branch**: Caminho absoluto e branch atual rastreados em tempo real.
-     - **Consumo de Tokens**: Contagem detalhada de tokens de entrada (prompt), saída (completion) e leitura/escrita de cache.
-     - **Custo Acumulado (USD)**: Estimativa precisa de custo da sessão e do projeto.
-     - **Arquivos Modificados**: Lista de arquivos criados ou editados na sessão.
-     - **Workforce & Subagentes**: Árvore hierárquica de subagentes invocados em execução.
-     - **Verification Gates**: Status de checagens de linters, testes e integridade de metas.
-     - **Visibilidade Persistente**: Pressione `Ctrl+B` para alternar a exibição da barra lateral (o estado é salvo no arquivo de configuração do usuário).
-
-4. **Visualização de Temas em Tempo Real**:
-   - Abra a seleção de temas pelo comando `/theme` ou pelo menu de comandos (`Ctrl+K` → *Theme*).
-   - Ao navegar com as setas `↑`/`↓` ou `j`/`k`, o tema é **aplicado instantaneamente na tela** para pré-visualização, acompanhado de swatches de cor (`[■ ■ ■]`).
-   - Pressione `Enter` para confirmar e salvar nas preferências ou `Esc` para restaurar o tema anterior sem alterar nada no disco.
-
-5. **Finalização com Salvamento Determinístico e Auditoria**:
-   - Ao pressionar `Ctrl+Q`, um modal intuitivo permite escolher entre **Save & Quit**, **Quit (Sem Salvar)** ou **Cancel**.
-   - Você pode renomear a sessão antes de salvá-la.
-   - Ao salvar, a telemetria completa da sessão é gravada deterministicamente em `.prumo/runtime/audit/telemetry.json` e `.prumo/runtime/audit/sessions/<session-id>.json`.
-
----
-
-## 6. Prumo IDE (Interface Desktop Gráfica)
-
-Para inspecionar o repositório, grafos de tarefas e planos através de uma interface visual desktop de alta performance:
+Prumo inclui um agente terminal com interface rica integrado:
 
 ```bash
-prumo native
+prumo agent
 ```
+
+Você pode conversar com o agente, solicitar implementações e acompanhar as decisões arquiteturais com total rastreabilidade.

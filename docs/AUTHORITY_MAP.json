@@ -25,6 +25,7 @@
     { "path": "docs/development/implementation-blueprint.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "v0.3→v0.4 migration blueprint; its version references are the historical migration boundary" },
     { "path": "docs/development/phases.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "M0–M4 are the v0.3→v0.4 migration record; later sections (Pre-TUI waves, H10) are current" },
     { "path": "docs/governance/m*-exit-gate.md", "role": "historical", "note": "milestone validation records" },
+    { "path": "docs/en/governance/m*-exit-gate.md", "role": "historical", "note": "English copies of the milestone validation records" },
     { "path": "docs/governance/documentation-dogfood.md", "role": "historical", "note": "dated M5 dogfood record; its readiness claim predates semantic readiness v2 (W15)" },
     { "path": "docs/LIVRO_VIVO_HUB.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "Living Book Hub references chapter titles from v0.4 line" },
     { "path": "docs/architecture/prumo-native-workspace-viewer.md", "role": "canonical", "drift_exempt": true, "drift_exempt_reason": "References chapter titles containing historical version tokens" },
