@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/session"
@@ -83,6 +84,56 @@ func TestChatPageSidebarPersistence(t *testing.T) {
 	}
 	if config.Get().ShowSidebar {
 		t.Fatalf("expected config.Get().ShowSidebar to be false after toggle")
+	}
+}
+
+func TestChatPageResponsiveSidebarDefault(t *testing.T) {
+	_ = config.UpdateSidebarVisibility(false)
+	model := NewChatPage(&app.App{Workspace: "/tmp/test"})
+	page := model.(*chatPage)
+
+	page.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	if page.showSidebar {
+		t.Fatalf("expected sidebar hidden on narrow terminal, got visible")
+	}
+
+	page.Update(tea.WindowSizeMsg{Width: 140, Height: 30})
+	if !page.showSidebar {
+		t.Fatalf("expected sidebar visible on wide terminal by default, got hidden")
+	}
+
+	page.Update(chat.ToggleSidebarMsg{})
+	if page.showSidebar {
+		t.Fatalf("expected sidebar hidden after user toggle, got visible")
+	}
+	page.Update(tea.WindowSizeMsg{Width: 160, Height: 30})
+	if page.showSidebar {
+		t.Fatalf("expected user override to keep sidebar hidden on resize, got visible")
+	}
+}
+
+func TestChatPageSidebarFocusRouting(t *testing.T) {
+	_ = config.UpdateSidebarVisibility(true)
+	model := NewChatPage(&app.App{Workspace: "/tmp/test"})
+	page := model.(*chatPage)
+	page.Update(tea.WindowSizeMsg{Width: 140, Height: 30})
+	if !page.showSidebar {
+		t.Fatalf("expected sidebar visible for focus test")
+	}
+
+	page.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	if !page.sidebarCmp.Focused() {
+		t.Fatalf("expected tab to focus the sidebar")
+	}
+
+	page.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	if !page.sidebarCmp.Focused() {
+		t.Fatalf("expected sidebar to stay focused after navigation key")
+	}
+
+	page.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if page.sidebarCmp.Focused() {
+		t.Fatalf("expected esc to return focus to the composer")
 	}
 }
 

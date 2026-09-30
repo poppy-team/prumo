@@ -11,9 +11,24 @@ import (
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
+	"github.com/raillen/prumo-tui/internal/tui/page"
 )
 
 func ctrl(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Mod: tea.ModCtrl} }
+
+func TestCtrlTOpensChatTabInsteadOfThemeDialog(t *testing.T) {
+	model := shell(t, 100, 30).(appModel)
+	before := model.pages[page.ChatPage].View().Content
+	updated, cmd := model.Update(ctrl('t'))
+	model = updated.(appModel)
+	if model.showThemeDialog {
+		t.Fatal("ctrl+t opened the theme dialog")
+	}
+	model = drive(t, model, cmd, 4).(appModel)
+	if after := model.pages[page.ChatPage].View().Content; after == before || !strings.Contains(after, "Tab 2") {
+		t.Fatal("ctrl+t did not open a new chat tab")
+	}
+}
 
 // The interaction contract reserves two chords and states what they do. A
 // client that rebinds them is not following the map a user learned elsewhere.

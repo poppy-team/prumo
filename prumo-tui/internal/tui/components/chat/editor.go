@@ -167,6 +167,10 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textarea.SetValue(current + msg.Path)
 		return m, nil
 	case tea.KeyPressMsg:
+		if m.textarea.Focused() && msg.Code == tea.KeyEnter && (msg.Mod.Contains(tea.ModAlt) || msg.Mod.Contains(tea.ModShift)) {
+			m.textarea, cmd = m.textarea.Update(tea.KeyPressMsg{Code: msg.Code})
+			return m, cmd
+		}
 		if key.Matches(msg, messageKeys.PageUp) || key.Matches(msg, messageKeys.PageDown) ||
 			key.Matches(msg, messageKeys.HalfPageUp) || key.Matches(msg, messageKeys.HalfPageDown) {
 			return m, nil

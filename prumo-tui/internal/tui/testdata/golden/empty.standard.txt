@@ -1,30 +1,30 @@
-# digest sha256:21ea62155c84a22c
-                                                                                                    
- ◆ Prumo unknown                                                                                    
- https://github.com/raillen/prumo                                                                   
-                                                                                                    
- cwd: /home/raillen/Documentos/Projetos/prumo/prumo-tui/internal/tui                                
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
-                                                                                                    
+# digest sha256:23083e10e877ffee
+                                                                      │  ▼ SESSION STATUS           
+ ◆ Prumo unknown                                                      │  ● Idle                     
+ https://github.com/raillen/prumo                                     │  Title: New Session         
+                                                                      │  Provider: fake             
+ cwd: /home/raillen/Documentos/Projetos/prumo/prumo-tui/internal/tui  │  Model: default             
+                                                                      │  Effort: default            
+                                                                      │                             
+                                                                      │  ▼ CONTEXT TOKENS           
+                                                                      │  ░░░░░░░░░░░░░░░░░░░░░░░    
+                                                                      │  0 / 128.0k (0%)            
+                                                                      │  in: 0  out: 0              
+                                                                      │                             
+                                                                      │  ▼ GOALS                    
+                                                                      │  No canonical goals         
+                                                                      │                             
+                                                                      │  ▼ WORKFORCE                
+                                                                      │  Primary: coder             
+                                                                      │  └─ (single agent)          
+                                                                      │                             
+                                                                      │  ▼ CHANGED FILES            
+                                                                      │  None in this run           
+                                                                      │                             
+                                                                      │  ▼ SHORTCUTS                
+                                                                      │  /       commands           
+                                                                      │  @       files              
+                                                                      │  ctrl+t  new tab            
  press enter to send the message, write \ and enter to add a new line                               
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  >                                                                                                  

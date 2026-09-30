@@ -1,30 +1,30 @@
-# digest sha256:1e513ec61e302ca8
-                                                                                                                                            
- Loading...                                                                                                                                 
-                                                                                                                                            
- press enter to send the message, write \ and enter to add a new line                                                                       
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
+# digest sha256:2232d16c435c94fe
+                                                                                                  │  ▼ SESSION STATUS                       
+ Loading...                                                                                       │  ● Idle                                 
+                                                                                                  │  Title: S1                              
+ press enter to send the message, write \ and enter to add a new line                             │  Provider: fake                         
+                                                                                                  │  Model: default                         
+                                                                                                  │  Effort: default                        
+                                                                                                  │                                         
+                                                                                                  │  ▼ CONTEXT TOKENS                       
+                                                                                                  │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    
+                                                                                                  │  0 / 128.0k (0%)                        
+                                                                                                  │  in: 0  out: 0                          
+                                                                                                  │                                         
+                                                                                                  │  ▼ GOALS                                
+                                                                                                  │  No canonical goals                     
+                                                                                                  │                                         
+                                                                                                  │  ▼ WORKFORCE                            
+                                                                                                  │  Primary: coder                         
+                                                                                                  │  └─ (single agent)                      
+                                                                                                  │                                         
+                                                                                                  │  ▼ CHANGED FILES                        
+                                                                                                  │  None in this run                       
+                                                                                                  │                                         
+                                                                                                  │  ▼ SHORTCUTS                            
+                                                                                                  │  /       commands                       
+                                                                                                  │  @       files                          
+                                                                                                  │  ctrl+t  new tab                        
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  >                                                                                                                                          
                                                                                                                                             

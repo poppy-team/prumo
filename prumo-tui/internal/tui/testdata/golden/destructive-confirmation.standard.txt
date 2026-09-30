@@ -1,30 +1,30 @@
-# digest sha256:0c5e7df2144d83fd
-                                                                                                    
- ┃ row 0 of the conversation                                                                        
-                                                                                                    
- ┃ row 1 of the conversation                                                                        
-                                                                                                    
- ┃ row 2 of the conversation                                                                        
-                                                                                                    
- ┃ row 3 of the conversation                                                                        
-                        ╭──────────────────────────────────────────────────╮                        
+# digest sha256:01f5cbebbbb929fd
+                                                                      │  ▼ SESSION STATUS           
+ ┃ row 0 of the conversation                                          │  ● Idle                     
+                                                                      │  Title: S1                  
+ ┃ row 1 of the conversation                                          │  Provider: fake             
+                                                                      │  Model: default             
+ ┃ row 2 of the conversation                                          │  Effort: default            
+                                                                      │                             
+ ┃ row 3 of the conversation                                          │  ▼ CONTEXT TOKENS           
+                        ╭──────────────────────────────────────────────────╮ ░░░░░░░░░░░░░░░░░░░    
+                        │                                                  │░128.0k (0%)            
+                        │  Quit Session                                    │░0  out: 0              
                         │                                                  │░                       
-                        │  Quit Session                                    │░                       
-                        │                                                  │░                       
-                        │  Save conversation before quitting?              │░                       
-                        │                                                  │░                       
+                        │  Save conversation before quitting?              │░ALS                    
+                        │                                                  │░anonical goals         
                         │  Session name (editable):                        │░                       
-                        │  ╭──────────────────────────────────────────╮    │░                       
-                        │  │ > S1                                     │    │░                       
-                        │  ╰──────────────────────────────────────────╯    │░                       
+                        │  ╭──────────────────────────────────────────╮    │░RKFORCE                
+                        │  │ > S1                                     │    │░ary: coder             
+                        │  ╰──────────────────────────────────────────╯    │░single agent)          
                         │                                                  │░                       
-                        │                  Save & Quit    Quit    Cancel   │░                       
-                        │                                                  │░                       
+                        │                  Save & Quit    Quit    Cancel   │░ANGED FILES            
+                        │                                                  │░ in this run           
                         ╰──────────────────────────────────────────────────╯░                       
-                         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                       
-                                                                                                    
-                                                                                                    
- press enter to send the message, write \ and enter to add a new line                               
+                         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ORTCUTS                
+                                                                      │  /       commands           
+                                                                      │  @       files              
+ press enter to send the message, write \ and enter to add a new line │  ctrl+t  new tab            
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  >                                                                                                  
                                                                                                     

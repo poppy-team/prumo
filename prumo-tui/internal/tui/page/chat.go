@@ -42,6 +42,7 @@ type chatPage struct {
 	sidebar              layout.Container
 	sidebarCmp           chat.SidebarCmp
 	showSidebar          bool
+	sidebarOverride      bool
 	layout               layout.SplitPaneLayout
 	session              session.Session
 	completionDialog     dialog.CompletionDialog
@@ -59,6 +60,7 @@ type ChatKeyMap struct {
 	ShowCompletionDialog   key.Binding
 	ShowCommandsCompletion key.Binding
 	ToggleSidebar          key.Binding
+	FocusSidebar           key.Binding
 	NewSession             key.Binding
 	NewTab                 key.Binding
 	CloseTab               key.Binding
@@ -79,6 +81,10 @@ var keyMap = ChatKeyMap{
 	ToggleSidebar: key.NewBinding(
 		key.WithKeys("ctrl+b"),
 		key.WithHelp("ctrl+b", "toggle sidebar"),
+	),
+	FocusSidebar: key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("tab", "focus sidebar"),
 	),
 	NewSession: key.NewBinding(
 		key.WithKeys("ctrl+n"),
@@ -121,6 +127,23 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		p.width = msg.Width
 		p.height = msg.Height
+		if p.sidebarOverride {
+			if p.showSidebar {
+				cmds = append(cmds, p.setSidebar())
+			} else {
+				cmds = append(cmds, p.clearSidebar())
+			}
+		} else {
+			shouldShow := p.width >= 100
+			if shouldShow != p.showSidebar {
+				p.showSidebar = shouldShow
+				if p.showSidebar {
+					cmds = append(cmds, p.setSidebar())
+				} else {
+					cmds = append(cmds, p.clearSidebar())
+				}
+			}
+		}
 		cmds = append(cmds, p.updateLayoutSize())
 
 	case dialog.CompletionDialogCloseMsg:
@@ -187,6 +210,24 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
+		if p.sidebarCmp.Focused() {
+			p.lastVimChord = 0
+			if key.Matches(msg, keyMap.ToggleSidebar) {
+				p.sidebarCmp.Blur()
+				return p, p.toggleSidebar()
+			}
+			switch msg.String() {
+			case "tab", "esc", "i", "a":
+				return p, p.blurSidebar()
+			}
+			sc, cmd := p.sidebarCmp.Update(msg)
+			p.sidebarCmp = sc.(chat.SidebarCmp)
+			return p, cmd
+		}
+		if !p.showCompletionDialog && p.showSidebar && key.Matches(msg, keyMap.FocusSidebar) {
+			p.lastVimChord = 0
+			return p, p.focusSidebar()
+		}
 		// Modal Vim navigation when composer is unfocused/unblurred
 		if !p.editorCmp.Focused() {
 			switch msg.String() {
@@ -475,11 +516,34 @@ func (p *chatPage) updateLayoutSize() tea.Cmd {
 
 func (p *chatPage) toggleSidebar() tea.Cmd {
 	p.showSidebar = !p.showSidebar
+	p.sidebarOverride = true
 	_ = config.UpdateSidebarVisibility(p.showSidebar)
 	if p.showSidebar {
 		return p.setSidebar()
 	}
+	if p.sidebarCmp.Focused() {
+		p.sidebarCmp.Blur()
+		p.editor.SetFocused(true)
+		return tea.Batch(p.clearSidebar(), p.editorCmp.Focus())
+	}
 	return p.clearSidebar()
+}
+
+func (p *chatPage) focusSidebar() tea.Cmd {
+	if !p.showSidebar {
+		return nil
+	}
+	p.sidebarCmp.Focus()
+	p.editorCmp.Blur()
+	p.editor.SetFocused(false)
+	p.lastVimChord = 0
+	return nil
+}
+
+func (p *chatPage) blurSidebar() tea.Cmd {
+	p.sidebarCmp.Blur()
+	p.editor.SetFocused(true)
+	return p.editorCmp.Focus()
 }
 
 func (p *chatPage) setSidebar() tea.Cmd {
@@ -613,6 +677,7 @@ func (p *chatPage) BindingKeys() []key.Binding {
 	bindings := layout.KeyMapToSlice(keyMap)
 	bindings = append(bindings, p.messages.BindingKeys()...)
 	bindings = append(bindings, p.editor.BindingKeys()...)
+	bindings = append(bindings, p.sidebarCmp.BindingKeys()...)
 	return bindings
 }
 

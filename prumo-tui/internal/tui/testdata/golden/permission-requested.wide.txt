@@ -1,30 +1,30 @@
-# digest sha256:b49212fb92a3f04d
-                                                                                                                                            
- ┃ row 0 of the conversation                                                                                                                
-                                                                                                                                            
- ┃ row 1 of the conversation                                                                                                                
-                                                                                                                                            
- ┃ row 2 of the conversation                                                                                                                
-                                                                                                                                            
- ┃ row 3 of the conversation       ╭─────────────────────────────────────────────────────────────────────╮                                  
-                                   │                                                                     │░                                 
-                                   │ Permission Required                                                 │░                                 
-                                   │                                                                     │░                                 
+# digest sha256:968db0442c540b7b
+                                                                                                  │  ▼ SESSION STATUS                       
+ ┃ row 0 of the conversation                                                                      │  ● Idle                                 
+                                                                                                  │  Title: S1                              
+ ┃ row 1 of the conversation                                                                      │  Provider: fake                         
+                                                                                                  │  Model: default                         
+ ┃ row 2 of the conversation                                                                      │  Effort: default                        
+                                                                                                  │                                         
+ ┃ row 3 of the conversation       ╭─────────────────────────────────────────────────────────────────────╮ EXT TOKENS                       
+                                   │                                                                     │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    
+                                   │ Permission Required                                                 │░8.0k (0%)                        
+                                   │                                                                     │░ out: 0                          
                                    │ Tool: process.exec                                                  │░                                 
+                                   │                                                                     │░S                                
+                                   │   go test ./...                                                     │░onical goals                     
                                    │                                                                     │░                                 
-                                   │   go test ./...                                                     │░                                 
+                                   │                                                                     │░FORCE                            
+                                   │                                                                     │░y: coder                         
+                                   │                                                                     │░ngle agent)                      
                                    │                                                                     │░                                 
-                                   │                                                                     │░                                 
-                                   │                                                                     │░                                 
-                                   │                                                                     │░                                 
-                                   │                                                                     │░                                 
-                                   │                                                                     │░                                 
-                                   │                                                                     │░                                 
+                                   │                                                                     │░GED FILES                        
+                                   │                                                                     │░n this run                       
                                    │                      Allow (a)    Allow for session (s)    Deny (d) │░                                 
-                                   │                                                                     │░                                 
-                                   ╰─────────────────────────────────────────────────────────────────────╯░                                 
-                                    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                                 
- press enter to send the message, write \ and enter to add a new line                                                                       
+                                   │                                                                     │░TCUTS                            
+                                   ╰─────────────────────────────────────────────────────────────────────╯░  commands                       
+                                    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  files                          
+ press enter to send the message, write \ and enter to add a new line                             │  ctrl+t  new tab                        
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  >                                                                                                                                          
                                                                                                                                             

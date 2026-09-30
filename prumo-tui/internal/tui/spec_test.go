@@ -71,6 +71,7 @@ func shellChords() map[string]string {
 // short, and every entry names where it comes from.
 var componentChords = map[string]string{
 	"ctrl+n":    "page/chat.go: start a new session",
+	"ctrl+t":    "page/chat.go: open a new tab",
 	"@":         "page/chat.go: complete a path",
 	"/":         "page/chat.go: slash command completion",
 	"ctrl+s":    "components/chat/editor.go: send the message",

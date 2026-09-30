@@ -1,30 +1,30 @@
-# digest sha256:4419500a497cd1bf
-                                                                                                                                            
- ┃ row 0 of the conversation                                                                                                                
-                                                                                                                                            
- ┃ row 1 of the conversation                                                                                                                
-                                                                                                                                            
- ┃ row 2 of the conversation                                                                                                                
-                                                                                                                                            
- ┃ row 3 of the conversation                                                                                                                
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
- ⟳ Generating...                                                                                                                            
- press enter to add to the run, esc to cancel it                                                                                            
+# digest sha256:e27e6b2bdd9c5206
+                                                                                                  │  ▼ SESSION STATUS                       
+ ┃ row 0 of the conversation                                                                      │  ◌ Working...                           
+                                                                                                  │  Title: S1                              
+ ┃ row 1 of the conversation                                                                      │  Provider: fake                         
+                                                                                                  │  Model: default                         
+ ┃ row 2 of the conversation                                                                      │  Effort: default                        
+                                                                                                  │                                         
+ ┃ row 3 of the conversation                                                                      │  ▼ CONTEXT TOKENS                       
+                                                                                                  │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    
+                                                                                                  │  0 / 128.0k (0%)                        
+                                                                                                  │  in: 0  out: 0                          
+                                                                                                  │                                         
+                                                                                                  │  ▼ GOALS                                
+                                                                                                  │  No canonical goals                     
+                                                                                                  │                                         
+                                                                                                  │  ▼ WORKFORCE                            
+                                                                                                  │  Primary: coder                         
+                                                                                                  │  └─ (single agent)                      
+                                                                                                  │                                         
+                                                                                                  │  ▼ CHANGED FILES                        
+                                                                                                  │  None in this run                       
+                                                                                                  │                                         
+                                                                                                  │  ▼ SHORTCUTS                            
+                                                                                                  │  /       commands                       
+ ⟳ Generating...                                                                                  │  @       files                          
+ press enter to add to the run, esc to cancel it                                                  │  ctrl+t  new tab                        
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  >                                                                                                                                          
                                                                                                                                             

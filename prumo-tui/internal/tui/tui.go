@@ -102,8 +102,8 @@ var keys = keyMap{
 	),
 
 	SwitchTheme: key.NewBinding(
-		key.WithKeys("ctrl+t"),
-		key.WithHelp("ctrl+t", "switch theme"),
+		key.WithKeys("alt+t"),
+		key.WithHelp("alt+t", "switch theme"),
 	),
 
 	ChangedFiles: key.NewBinding(

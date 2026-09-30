@@ -1,30 +1,30 @@
-# digest sha256:81eecd7afc05a92a
-                                                                                                                                            
- ┃ how does the client fold a run?                                                                                                          
-                                                                                                                                            
- ┃ The client folds the run's own log and draws what it says.                                                                               
- ┃  (0ms)                                                                                                                                   
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
-                                                                                                                                            
- press enter to send the message, write \ and enter to add a new line                                                                       
+# digest sha256:c39ee3ea50404396
+                                                                                                  │  ▼ SESSION STATUS                       
+ ┃ how does the client fold a run?                                                                │  ● Idle                                 
+                                                                                                  │  Title: how does the client fold a      
+ ┃ The client folds the run's own log and draws what it says.                                     │  run?                                   
+ ┃  (0ms)                                                                                         │  Provider: fake                         
+                                                                                                  │  Model: default                         
+                                                                                                  │  Effort: default                        
+                                                                                                  │                                         
+                                                                                                  │  ▼ CONTEXT TOKENS                       
+                                                                                                  │  █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    
+                                                                                                  │  19.2k / 128.0k (14%)                   
+                                                                                                  │  in: 18.4k  out: 760                    
+                                                                                                  │  cache read: 9.2k                       
+                                                                                                  │  Cost: $0.0412                          
+                                                                                                  │                                         
+                                                                                                  │  ▼ GOALS                                
+                                                                                                  │  No canonical goals                     
+                                                                                                  │                                         
+                                                                                                  │  ▼ WORKFORCE                            
+                                                                                                  │  Primary: coder                         
+                                                                                                  │  └─ (single agent)                      
+                                                                                                  │                                         
+                                                                                                  │  ▼ CHANGED FILES                        
+                                                                                                  │  ● ...tui/internal/runtime/runner.go    
+                                                                                                  │  ● ...-tui/internal/stream/stream.go    
+ press enter to send the message, write \ and enter to add a new line                             │                                         
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  >                                                                                                                                          
                                                                                                                                             
