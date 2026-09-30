@@ -1,6 +1,6 @@
-# Prumo Architecture Overview
+# Visão Geral da Arquitetura do Prumo
 
-## High-Level Topology
+## Topologia de Alto Nível
 
 ```mermaid
 flowchart LR
@@ -27,50 +27,50 @@ flowchart LR
     IP --> H
 ```
 
-## Planes & Boundaries
+## Planos e Fronteiras
 
-### Major Components
+### Principais Componentes
 
-The major components are Protocol Domain, Project Service, Resolution Service, Documentation Engine, Planning Engine, Adoption Engine, Knowledge Engine, Experience Engine, Evidence/Gate Engine, Control Plane, Execution Plane, and Integration Plane.
+Os principais componentes são Protocol Domain, Project Service, Resolution Service, Documentation Engine, Planning Engine, Adoption Engine, Knowledge Engine, Experience Engine, Evidence/Gate Engine, Control Plane, Execution Plane e Integration Plane.
 
-### Control Plane (Horizontal Infrastructure)
-| Service | Responsibility |
-|---------|----------------|
-| `RunService` | Run lifecycle, checkpoints, retry, resume, cancellation, livelock detection |
-| `BudgetService` | Hierarchical budget envelopes, cost governance, rate limits |
-| `ContextService` | Context Compiler pipeline, token budgets, cache awareness, compaction |
-| `ModelRoutingService` | Model Registry, eval-driven router, drift detection, fallback |
-| `ToolGateway` | Tool descriptors, lazy discovery, side-effect journal, MCP governance |
-| `EnvironmentService` | Sandbox contract, isolation requirements, execution environments |
-| `AutomationService` | Event-driven rules, DLQ, idempotency, concurrency keys |
-| `ObservabilityService` | Structured telemetry, explainability, incident bundles |
-| `PackageRuntimeService` | `prumo.lock`, provider isolation, supply chain verification |
+### Control Plane (Infraestrutura Horizontal)
+| Serviço | Responsabilidade |
+|---------|------------------|
+| `RunService` | Ciclo de vida de execuções (run), checkpoints, retry, resume, cancelamento, detecção de livelock |
+| `BudgetService` | Envelopes de orçamento hierárquicos, governança de custo, rate limits |
+| `ContextService` | Pipeline do Context Compiler, orçamentos de tokens, consciência de cache, compactação |
+| `ModelRoutingService` | Model Registry, roteador guiado por evals, detecção de drift, fallback |
+| `ToolGateway` | Descritores de ferramentas, descoberta lazy, journal de efeitos colaterais, governança de MCP |
+| `EnvironmentService` | Contrato de sandbox, requisitos de isolamento, ambientes de execução |
+| `AutomationService` | Regras orientadas a eventos, DLQ, idempotência, chaves de concorrência |
+| `ObservabilityService` | Telemetria estruturada, explicabilidade, incident bundles |
+| `PackageRuntimeService` | `prumo.lock`, isolamento de providers, verificação da cadeia de suprimentos (supply chain) |
 
-### Knowledge Plane (Canonical State)
-| Engine | Responsibility |
-|--------|----------------|
-| Goals | Lifecycle, locks, amendments, state transitions |
-| Documentation | Contracts, profiles, readiness, delta, contradictions |
-| Planning | Interview, decisions, open questions, confidence |
-| Adoption | Scanner, semantic mapping, gap detection, migration |
-| Experience | Session events, summaries, handoffs, proposals |
-| Traceability | Typed edges: req↔dec↔code↔test↔doc↔evidence |
+### Knowledge Plane (Estado Canônico)
+| Engine | Responsabilidade |
+|--------|------------------|
+| Goals | Ciclo de vida, locks, emendas, transições de estado |
+| Documentation | Contratos, profiles, readiness, delta, contradições |
+| Planning | Entrevista, decisões, questões em aberto, confiança |
+| Adoption | Scanner, mapeamento semântico, detecção de lacunas, migração |
+| Experience | Eventos de sessão, resumos, handoffs, propostas |
+| Traceability | Arestas tipadas: req↔dec↔code↔test↔doc↔evidence |
 
-### Quality Plane (Verification)
-| Component | Responsibility |
-|-----------|----------------|
-| Test Providers | Contract-based: Playwright, ZAP, CodeQL, fuzzers, sanitizers, UIA/AX/AT-SPI, KUnit, syzkaller |
-| Quality Orchestrator | Deterministic plan from change impact + risk + capabilities |
-| Evidence Normalization | Common schema for runs, findings, artifacts, environment fingerprint |
-| Security Verifier | Independent verification for high/critical risk |
+### Quality Plane (Verificação)
+| Componente | Responsabilidade |
+|------------|------------------|
+| Test Providers | Baseados em contrato: Playwright, ZAP, CodeQL, fuzzers, sanitizers, UIA/AX/AT-SPI, KUnit, syzkaller |
+| Quality Orchestrator | Plano determinístico a partir de impacto da mudança + risco + capacidades |
+| Evidence Normalization | Schema comum para execuções, achados, artefatos, fingerprint do ambiente |
+| Security Verifier | Verificação independente para risco alto/crítico |
 
-### Execution Plane (External Providers)
-Models, tools/MCPs, sandboxes/runtimes, external providers. **Never import canonical rules.**
+### Execution Plane (Providers Externos)
+Modelos, ferramentas/MCPs, sandboxes/runtimes, providers externos. **Nunca importam regras canônicas.**
 
 ### Integration Plane (Adapters)
-OpenCode, Codex, Claude Code, Gemini CLI, Copilot CLI, Kiro, Generic. **Thin adapters only — no canonical logic.**
+OpenCode, Codex, Claude Code, Gemini CLI, Copilot CLI, Kiro, Generic. **Apenas adapters finos — nenhuma lógica canônica.**
 
-## Dependency Direction
+## Direção das Dependências
 
 ```mermaid
 flowchart TD
@@ -84,29 +84,29 @@ flowchart TD
     QP --> DS
 ```
 
-**Rules:**
-- Domain/Protocol never imports CLI, concrete storage, or harness
-- CLI depends on Application Services
-- Storage implements ports defined by consumers
-- Integrations call Prumo Core via stable CLI JSON/stdio or versioned API
-- SQLite never required to interpret canonical state
-- External harness never controls invariants
+**Regras:**
+- Domain/Protocol nunca importa a CLI, storage concreto ou o harness
+- A CLI depende dos Application Services
+- O storage implementa as ports definidas pelos consumidores
+- As integrações chamam o Prumo Core via JSON/stdio estável da CLI ou API versionada
+- SQLite nunca é necessário para interpretar o estado canônico
+- Um harness externo nunca controla os invariantes
 
-## Interface Boundaries
+## Fronteiras de Interface
 
-Interfaces exist **only** at real boundaries with multiple implementations:
-- `Repository` (Git filesystem)
-- `EventSink` (local file, OTLP, in-memory)
-- `DerivedIndex` (SQLite, in-memory, future)
+Interfaces existem **somente** em fronteiras reais com múltiplas implementações:
+- `Repository` (filesystem Git)
+- `EventSink` (arquivo local, OTLP, in-memory)
+- `DerivedIndex` (SQLite, in-memory, futuro)
 - `HarnessTransport` (stdio, HTTP, MCP)
-- `Clock` (tests)
-- `EmbeddingProvider` (future)
+- `Clock` (testes)
+- `EmbeddingProvider` (futuro)
 
-**Avoid premature interfaces** during Go migration.
+**Evite interfaces prematuras** durante a migração para Go.
 
-## Internal Machine API
+## API Interna de Máquina
 
-Versioned, stable commands for plugins/adapters:
+Comandos versionados e estáveis para plugins/adapters:
 ```
 prumo internal project-status --json
 prumo internal resolve --json
@@ -116,22 +116,22 @@ prumo internal context --json
 prumo internal handoff --json
 ```
 
-## Protocol Version Negotiation
+## Negociação de Versão do Protocolo
 
-Every adapter declares:
-- connector id/version
-- Prumo protocol version supported
-- capabilities
-- lifecycle hooks
-- write-blocking support
-- agent/skill primitives
+Todo adapter declara:
+- id/versão do conector
+- versão do protocolo Prumo suportada
+- capacidades
+- hooks de ciclo de vida
+- suporte a bloqueio de escrita
+- primitivas de agent/skill
 
-Prumo refuses "strict" enforcement when harness lacks sufficient primitives.
+O Prumo recusa o enforcement "strict" quando o harness não tem primitivas suficientes.
 
-## Design Principle
+## Princípio de Design
 
-> **Hard-code invariants; configure policies; evaluate heuristics.**
+> **Invariantes são fixados no código; políticas são configuradas; heurísticas são avaliadas.**
 >
-> - Invariants: Goal lock, schema validation, evidence requirements
-> - Policies: independent verifier for critical risk, budget limits
-> - Heuristics: workforce size, model routing, context packing (subject to evals)
+> - Invariantes: lock de Goal, validação de schema, exigências de evidência
+> - Políticas: verificador independente para risco crítico, limites de orçamento
+> - Heurísticas: tamanho da workforce, roteamento de modelos, empacotamento de contexto (sujeito a evals)
