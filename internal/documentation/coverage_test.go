@@ -41,7 +41,7 @@ func TestPrumoAuditAndReadiness(t *testing.T) {
 func TestLexicalMatchNeverAuthoritative(t *testing.T) {
 	contract := Contract{ID: "lexical", RequiredKnowledge: []string{"architecture"}}
 	coverage := evaluate("../..", contract, Binding{
-		Sources:  []string{"docs/architecture/overview.md"},
+		Sources:  []string{"docs/en/architecture/overview.md"},
 		Evidence: []string{"review-result"},
 	})
 	if coverage.State != Unverified {
