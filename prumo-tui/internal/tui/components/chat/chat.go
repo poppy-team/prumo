@@ -51,6 +51,24 @@ type SwitchTabMsg struct {
 	Index int
 }
 
+// RunBackgroundMsg starts a run on a session the user is not looking at. The
+// tab stays dormant: the run proceeds daemon-side and the tab bar badges its
+// progress, so a long run never holds the composer hostage.
+type RunBackgroundMsg struct {
+	Title           string
+	Goal            string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
+}
+
+// BackgroundStartedMsg reports a background run the daemon accepted.
+type BackgroundStartedMsg struct {
+	SessionID string
+	Title     string
+}
+
 type NextTabMsg struct{}
 type PrevTabMsg struct{}
 

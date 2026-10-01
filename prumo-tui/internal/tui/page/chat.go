@@ -8,10 +8,14 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/completions"
 	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/llm/models"
+	"github.com/raillen/prumo-tui/internal/message"
+	"github.com/raillen/prumo-tui/internal/permission"
+	"github.com/raillen/prumo-tui/internal/pubsub"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
@@ -30,6 +34,12 @@ type SessionTab struct {
 	Model           string
 	ReasoningEffort string
 	Workspace       string
+	// Unread marks a finished or answered run the user has not looked at
+	// since it landed on a tab that was not active. NeedsApproval marks a
+	// permission gate waiting on a tab that is not active. Both clear when
+	// the tab becomes active.
+	Unread        bool
+	NeedsApproval bool
 }
 
 type chatPage struct {
@@ -199,6 +209,9 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case chat.SendMsg:
 		return p, p.sendMessage(msg.Text)
 
+	case chat.RunBackgroundMsg:
+		return p, p.runBackground(msg)
+
 	case chat.SessionSelectedMsg:
 		p.session = msg
 		p.sidebarCmp.UpdateSession(p.session)
@@ -207,7 +220,26 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.Title != "" {
 				p.tabs[p.activeTabIndex].Title = msg.Title
 			}
+			p.tabs[p.activeTabIndex].Unread = false
+			p.tabs[p.activeTabIndex].NeedsApproval = false
 		}
+
+	case chat.BackgroundStartedMsg:
+		return p, util.ReportInfo(fmt.Sprintf("Background run started: %s — keep working, the tab bar tracks it", msg.Title))
+
+	case pubsub.Event[agent.AgentEvent]:
+		p.markTabUnread(msg.Payload.SessionID, msg.Payload.Done || msg.Payload.Error != nil)
+
+	case pubsub.Event[message.Message]:
+		if msg.Type == pubsub.CreatedEvent {
+			p.markTabUnread(msg.Payload.SessionID, true)
+		}
+
+	case pubsub.Event[permission.PermissionRequest]:
+		p.markTabApproval(msg.Payload.SessionID, true)
+
+	case dialog.PermissionResponseMsg:
+		p.markTabApproval(msg.Permission.SessionID, false)
 
 	case tea.KeyPressMsg:
 		if p.sidebarCmp.Focused() {
@@ -410,6 +442,8 @@ func (p *chatPage) switchTab(index int) tea.Cmd {
 	p.saveActiveTabState()
 
 	p.activeTabIndex = index
+	p.tabs[index].Unread = false
+	p.tabs[index].NeedsApproval = false
 	tab := p.tabs[index]
 	p.applyTabState(tab)
 
@@ -433,6 +467,49 @@ func (p *chatPage) switchTab(index int) tea.Cmd {
 		util.CmdHandler(chat.SessionClearedMsg{}),
 		p.updateLayoutSize(),
 	)
+}
+
+func (p *chatPage) activeTabSessionID() string {
+	if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) {
+		return p.tabs[p.activeTabIndex].ID
+	}
+	return ""
+}
+
+func (p *chatPage) tabIndexBySession(sessionID string) int {
+	if sessionID == "" {
+		return -1
+	}
+	for i := range p.tabs {
+		if p.tabs[i].ID != "" && p.tabs[i].ID == sessionID {
+			return i
+		}
+	}
+	return -1
+}
+
+// markTabUnread flags a finished or answered run the user has not seen. Events
+// for the active tab, or without a session, are the visible conversation and
+// never a badge.
+func (p *chatPage) markTabUnread(sessionID string, unread bool) {
+	if !unread || sessionID == "" || sessionID == p.activeTabSessionID() {
+		return
+	}
+	if i := p.tabIndexBySession(sessionID); i >= 0 {
+		p.tabs[i].Unread = true
+	}
+}
+
+// markTabApproval flags a permission gate waiting on an inactive tab. The
+// shell dialog answers gates on the active tab, so the badge is for runs the
+// user is not looking at.
+func (p *chatPage) markTabApproval(sessionID string, waiting bool) {
+	if i := p.tabIndexBySession(sessionID); i >= 0 {
+		p.tabs[i].NeedsApproval = waiting
+		if waiting && i != p.activeTabIndex {
+			p.tabs[i].Unread = true
+		}
+	}
 }
 
 func (p *chatPage) nextTab() tea.Cmd {
@@ -590,6 +667,71 @@ func (p *chatPage) sendMessage(text string) tea.Cmd {
 	}
 }
 
+// runBackground starts a run on a dormant tab: the session is created and the
+// tab appended, but the active tab never changes, so the composer stays usable.
+// Progress surfaces through the tab bar badges and the completion toast.
+func (p *chatPage) runBackground(msg chat.RunBackgroundMsg) tea.Cmd {
+	if strings.TrimSpace(msg.Goal) == "" {
+		return util.ReportWarn("Usage: /run-bg <goal> [--provider p] [--model m] [--effort e] [--worktree path]")
+	}
+	if p.app == nil || p.app.Sessions == nil || p.app.CoderAgent == nil {
+		return util.ReportWarn("Background run needs an attached harness: start the client inside a project")
+	}
+	title := msg.Title
+	if title == "" {
+		title = fmt.Sprintf("bg: %s", firstLine(msg.Goal))
+	}
+	provider := msg.Provider
+	if provider == "" {
+		provider = p.app.CurrentProvider()
+	}
+	model := msg.Model
+	if model == "" && p.app.CoderAgent != nil {
+		model = string(p.app.CoderAgent.Model().ID)
+	}
+	effort := msg.ReasoningEffort
+	if effort == "" {
+		effort = p.app.CurrentReasoningEffort()
+	}
+	ws := msg.Workspace
+	if ws == "" {
+		ws = p.app.CurrentWorkspace()
+	}
+	created, err := p.app.Sessions.Create(context.Background(), title)
+	if err != nil {
+		return util.ReportFailure("Starting the background run", "press enter to try again", err)
+	}
+	p.tabs = append(p.tabs, SessionTab{
+		ID:              created.ID,
+		Title:           title,
+		Provider:        provider,
+		Model:           model,
+		ReasoningEffort: effort,
+		Workspace:       ws,
+	})
+	goal := msg.Goal
+	return func() tea.Msg {
+		if _, err := p.app.CoderAgent.Run(context.Background(), created.ID, goal); err != nil {
+			return util.ReportFailure("Starting the background run", "switch to the tab and send the goal again", err)()
+		}
+		return chat.BackgroundStartedMsg{SessionID: created.ID, Title: title}
+	}
+}
+
+func firstLine(s string) string {
+	if idx := strings.IndexAny(s, "\r\n"); idx >= 0 {
+		s = s[:idx]
+	}
+	s = strings.TrimSpace(s)
+	if len(s) > 42 {
+		return s[:39] + "..."
+	}
+	if s == "" {
+		return "untitled"
+	}
+	return s
+}
+
 func (p *chatPage) SetSize(width, height int) tea.Cmd {
 	p.width = width
 	p.height = height
@@ -598,6 +740,22 @@ func (p *chatPage) SetSize(width, height int) tea.Cmd {
 
 func (p *chatPage) GetSize() (int, int) {
 	return p.layout.GetSize()
+}
+
+// tabBadge is the one-glyph state of a tab: a run in flight, a gate waiting,
+// or output the user has not seen. Empty means nothing to report, which keeps
+// quiet tabs byte-identical to before.
+func (p *chatPage) tabBadge(tab SessionTab) string {
+	if tab.ID != "" && p.app != nil && p.app.CoderAgent != nil && p.app.CoderAgent.IsSessionBusy(tab.ID) {
+		return " ●"
+	}
+	if tab.NeedsApproval {
+		return " !"
+	}
+	if tab.Unread {
+		return " *"
+	}
+	return ""
 }
 
 func (p *chatPage) renderTabBar() string {
@@ -613,7 +771,7 @@ func (p *chatPage) renderTabBar() string {
 		if len(tabTitle) > 18 {
 			tabTitle = tabTitle[:15] + "..."
 		}
-		label := fmt.Sprintf(" %d: %s ", i+1, tabTitle)
+		label := fmt.Sprintf(" %d: %s%s ", i+1, tabTitle, p.tabBadge(tab))
 		var style lipgloss.Style
 		if i == p.activeTabIndex {
 			style = baseStyle.

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/viewport"
@@ -216,6 +217,23 @@ func formatTokens(n int64) string {
 	return fmt.Sprintf("%d", n)
 }
 
+// subagentElapsed names how long a running subagent has been going, coarsely
+// enough that a frame stays readable: done work shows no duration, running
+// work shows one. StartedAt is unix seconds; anything else means unknown.
+func subagentElapsed(sub runtime.SubagentInfo) string {
+	if sub.Status != "running" || sub.StartedAt <= 0 {
+		return ""
+	}
+	secs := time.Now().Unix() - sub.StartedAt
+	if secs < 0 {
+		return ""
+	}
+	if secs < 90 {
+		return fmt.Sprintf(" %ds", secs)
+	}
+	return fmt.Sprintf(" %dm", secs/60)
+}
+
 func renderProgressBar(ratio float64, width int, filledColor, emptyColor theme.AdaptiveColor) string {
 	if width <= 0 {
 		return ""
@@ -333,6 +351,16 @@ func (s *sidebarCmp) viewString() string {
 			effort = e
 		}
 		lines = append(lines, labelStyle.Render("Effort: "+effort))
+
+		if s.app != nil && s.app.Runner != nil {
+			if vm := s.app.Runner.VisionModel(); vm != "" {
+				visionLabel := vm
+				if len(visionLabel) > s.width-4 && s.width > 4 {
+					visionLabel = visionLabel[:s.width-7] + "..."
+				}
+				lines = append(lines, labelStyle.Render("Vision: "+visionLabel))
+			}
+		}
 
 		ws := ""
 		if s.app != nil {
@@ -476,7 +504,7 @@ func (s *sidebarCmp) viewString() string {
 				if len(role) > s.width-12 && s.width > 12 {
 					role = role[:s.width-15] + "..."
 				}
-				lines = append(lines, labelStyle.Render(fmt.Sprintf("%s %s [%s]", prefix, role, sub.Status)))
+				lines = append(lines, labelStyle.Render(fmt.Sprintf("%s %s [%s]%s", prefix, role, sub.Status, subagentElapsed(sub))))
 			}
 		}
 	}

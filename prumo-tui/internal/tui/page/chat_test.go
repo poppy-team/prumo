@@ -1,14 +1,21 @@
 package page
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/llm/models"
+	"github.com/raillen/prumo-tui/internal/message"
+	"github.com/raillen/prumo-tui/internal/permission"
+	"github.com/raillen/prumo-tui/internal/pubsub"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
+	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
 )
 
 func TestChatPageTabs(t *testing.T) {
@@ -134,6 +141,156 @@ func TestChatPageSidebarFocusRouting(t *testing.T) {
 	page.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if page.sidebarCmp.Focused() {
 		t.Fatalf("expected esc to return focus to the composer")
+	}
+}
+
+type stubBusyAgent struct {
+	agent.Service
+	busy map[string]bool
+	ran  *string
+}
+
+func (s stubBusyAgent) IsSessionBusy(id string) bool { return s.busy[id] }
+func (s stubBusyAgent) Model() models.Model          { return models.Model{} }
+func (s stubBusyAgent) Run(_ context.Context, sessionID, content string) (<-chan agent.AgentEvent, error) {
+	if s.ran != nil {
+		*s.ran = sessionID + ":" + content
+	}
+	out := make(chan agent.AgentEvent)
+	close(out)
+	return out, nil
+}
+
+func TestChatPageTabBadges(t *testing.T) {
+	fakeApp := app.New(app.Options{Provider: "fake", Workspace: "/tmp/badges"})
+	model := NewChatPage(fakeApp)
+	page := model.(*chatPage)
+
+	page.Update(chat.NewTabMsg{Title: "foreground"})
+	page.Update(chat.SessionSelectedMsg(session.Session{ID: "s-active", Title: "foreground"}))
+	page.tabs[0].ID = "s-background"
+
+	if got := page.tabBadge(page.tabs[0]); got != "" {
+		t.Fatalf("expected no badge on quiet tab, got %q", got)
+	}
+
+	page.Update(pubsub.Event[agent.AgentEvent]{
+		Type:    pubsub.CreatedEvent,
+		Payload: agent.AgentEvent{SessionID: "s-background", Done: true},
+	})
+	if !page.tabs[0].Unread {
+		t.Fatalf("expected background tab marked unread on run completion")
+	}
+	if got := page.tabBadge(page.tabs[0]); got != " *" {
+		t.Fatalf("expected unread badge, got %q", got)
+	}
+
+	page.Update(pubsub.Event[agent.AgentEvent]{
+		Type:    pubsub.CreatedEvent,
+		Payload: agent.AgentEvent{SessionID: "s-active", Done: true},
+	})
+	if page.tabs[1].Unread {
+		t.Fatalf("active tab must never badge itself unread")
+	}
+
+	page.Update(pubsub.Event[message.Message]{
+		Type:    pubsub.CreatedEvent,
+		Payload: message.Message{SessionID: "s-background"},
+	})
+	if !page.tabs[0].Unread {
+		t.Fatalf("expected background tab kept unread on message arrival")
+	}
+
+	page.Update(pubsub.Event[permission.PermissionRequest]{
+		Type:    pubsub.CreatedEvent,
+		Payload: permission.PermissionRequest{ID: "p1", SessionID: "s-background"},
+	})
+	if !page.tabs[0].NeedsApproval {
+		t.Fatalf("expected background tab flagged for approval")
+	}
+	if got := page.tabBadge(page.tabs[0]); got != " !" {
+		t.Fatalf("expected approval badge to win, got %q", got)
+	}
+
+	page.Update(dialog.PermissionResponseMsg{
+		Action:     dialog.PermissionDeny,
+		Permission: permission.PermissionRequest{ID: "p1", SessionID: "s-background"},
+	})
+	if page.tabs[0].NeedsApproval {
+		t.Fatalf("expected approval flag cleared on response")
+	}
+
+	page.Update(chat.SwitchTabMsg{Index: 0})
+	if page.tabs[0].Unread {
+		t.Fatalf("expected unread cleared when tab becomes active")
+	}
+	if bar := page.renderTabBar(); strings.Contains(bar, "*") || strings.Contains(bar, "!") {
+		t.Fatalf("expected no badges after visiting tab, got:\n%s", bar)
+	}
+}
+
+func TestChatPageTabBusyBadge(t *testing.T) {
+	fakeApp := app.New(app.Options{Provider: "fake", Workspace: "/tmp/badges"})
+	model := NewChatPage(fakeApp)
+	page := model.(*chatPage)
+	page.app.CoderAgent = stubBusyAgent{busy: map[string]bool{"s-running": true}}
+
+	page.Update(chat.NewTabMsg{Title: "worker"})
+	page.Update(chat.SessionSelectedMsg(session.Session{ID: "s-running", Title: "worker"}))
+	page.tabs[0].ID = "s-idle"
+
+	if got := page.tabBadge(page.tabs[1]); got != " ●" {
+		t.Fatalf("expected busy badge on running tab, got %q", got)
+	}
+	if got := page.tabBadge(page.tabs[0]); got != "" {
+		t.Fatalf("expected no badge on idle tab, got %q", got)
+	}
+	if bar := page.renderTabBar(); !strings.Contains(bar, "●") {
+		t.Fatalf("expected busy badge in tab bar, got:\n%s", bar)
+	}
+}
+
+func TestChatPageRunBackground(t *testing.T) {
+	fakeApp := app.New(app.Options{Provider: "fake", Workspace: "/tmp/bg"})
+	model := NewChatPage(fakeApp)
+	page := model.(*chatPage)
+	var ran string
+	page.app.CoderAgent = stubBusyAgent{ran: &ran}
+
+	before := len(page.tabs)
+	active := page.activeTabIndex
+	_, cmd := page.Update(chat.RunBackgroundMsg{Goal: "summarize the repo", Title: "summary"})
+	if cmd == nil {
+		t.Fatal("expected cmd starting the background run")
+	}
+	if len(page.tabs) != before+1 {
+		t.Fatalf("expected dormant tab appended, got %d tabs", len(page.tabs))
+	}
+	if page.activeTabIndex != active {
+		t.Fatalf("background run must not steal the active tab")
+	}
+	tab := page.tabs[len(page.tabs)-1]
+	if tab.Title != "summary" || tab.ID == "" {
+		t.Fatalf("dormant tab missing session binding: %+v", tab)
+	}
+	msg := cmd()
+	started, ok := msg.(chat.BackgroundStartedMsg)
+	if !ok {
+		t.Fatalf("expected BackgroundStartedMsg, got %T", msg)
+	}
+	if started.SessionID != tab.ID {
+		t.Fatalf("started session %q does not match tab %q", started.SessionID, tab.ID)
+	}
+	if ran != tab.ID+":summarize the repo" {
+		t.Fatalf("run reached the wrong session or goal: %q", ran)
+	}
+
+	_, warnCmd := page.Update(chat.RunBackgroundMsg{Goal: "   "})
+	if warnCmd == nil {
+		t.Fatal("expected usage warning on empty goal")
+	}
+	if len(page.tabs) != before+1 {
+		t.Fatalf("empty goal must not append a tab")
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -90,7 +91,10 @@ type Runner struct {
 	maxTurns        int
 	workspace       string
 	reasoningEffort string
-	active          map[string]context.CancelFunc
+	// visionModel is the workspace's image-capable model override, for goals
+	// that name image files while the active model does not declare vision.
+	visionModel string
+	active      map[string]context.CancelFunc
 	// changes is what the harness reported per session, kept so the view can
 	// ask without re-reading the timeline on every frame.
 	changes map[string][]Change
@@ -124,6 +128,7 @@ type Options struct {
 	MaxTurns        int
 	Workspace       string
 	ReasoningEffort string
+	VisionModel     string
 }
 
 // NewRunner builds a runner over a transport.
@@ -145,6 +150,7 @@ func NewRunner(opts Options) *Runner {
 		maxTurns:          opts.MaxTurns,
 		workspace:         opts.Workspace,
 		reasoningEffort:   opts.ReasoningEffort,
+		visionModel:       opts.VisionModel,
 		active:            map[string]context.CancelFunc{},
 		changes:           map[string][]Change{},
 		cursors:           map[string]int{},
@@ -153,6 +159,11 @@ func NewRunner(opts Options) *Runner {
 	}
 	if r.model.ContextWindow <= 0 {
 		r.model.ContextWindow = knownModelContextLength(string(r.model.ID))
+	}
+	// An explicit option wins over the workspace file; otherwise the workspace
+	// file decides, and a workspace without one keeps the empty override.
+	if r.visionModel == "" {
+		_ = r.LoadVisionModel()
 	}
 	return r
 }
@@ -341,6 +352,129 @@ func (r *Runner) SetReasoningEffort(effort string) {
 	r.reasoningEffort = effort
 }
 
+// visionModelFilename is the workspace-scoped vision override, kept beside the
+// client's other workspace state rather than in the global config: which model
+// sees a project's images is a property of the project, not of the machine.
+const visionModelFilename = "vision-model"
+
+// visionModelPath is where the workspace's vision override lives.
+func visionModelPath(workspace string) string {
+	return filepath.Join(workspace, ".prumo", visionModelFilename)
+}
+
+// VisionModel reports the workspace's image-capable model override, or empty
+// when image-bearing goals go to the active model unchanged.
+func (r *Runner) VisionModel() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.visionModel
+}
+
+// SetVisionModel records the workspace's image-capable model override for
+// subsequent runs. It does not touch the disk; SaveVisionModel persists.
+func (r *Runner) SetVisionModel(model string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.visionModel = strings.TrimSpace(model)
+}
+
+// LoadVisionModel reads the workspace's vision override into subsequent runs.
+// A missing file is not an error: most workspaces never set one.
+func (r *Runner) LoadVisionModel() error {
+	r.mu.Lock()
+	ws := r.workspace
+	r.mu.Unlock()
+	if ws == "" {
+		return nil
+	}
+	data, err := os.ReadFile(visionModelPath(ws))
+	if err != nil {
+		if os.IsNotExist(err) {
+			r.SetVisionModel("")
+			return nil
+		}
+		return err
+	}
+	if len(data) > 1024 {
+		return fmt.Errorf("vision override exceeds 1KB: %s", visionModelPath(ws))
+	}
+	r.SetVisionModel(string(data))
+	return nil
+}
+
+// SaveVisionModel persists the workspace's vision override and applies it to
+// subsequent runs. An empty model clears the override and removes the file.
+func (r *Runner) SaveVisionModel(model string) error {
+	model = strings.TrimSpace(model)
+	r.mu.Lock()
+	ws := r.workspace
+	r.mu.Unlock()
+	if ws == "" {
+		return errors.New("no workspace to store the vision override in")
+	}
+	path := visionModelPath(ws)
+	if model == "" {
+		r.SetVisionModel("")
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, append([]byte(model), '\n'), 0o644); err != nil {
+		return err
+	}
+	r.SetVisionModel(model)
+	return nil
+}
+
+// ModelHasVision reports whether the catalogue declares vision for a model.
+// Unknown models report false: the client only claims what the harness said.
+func (r *Runner) ModelHasVision(modelID string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	cap, ok := r.modelCapabilities[modelID]
+	return ok && cap.Declared && slicesContain(cap.Features, "vision")
+}
+
+func slicesContain(items []string, want string) bool {
+	for _, item := range items {
+		if item == want {
+			return true
+		}
+	}
+	return false
+}
+
+// imageRefPattern matches an image file named in a goal, the way `@` completion
+// and clipboard paste write one: @path/to/shot.png.
+var imageRefPattern = regexp.MustCompile(`(?i)@\S*\.(png|jpe?g|gif|webp|bmp|svg)\b`)
+
+func containsImageRef(content string) bool {
+	return imageRefPattern.MatchString(content)
+}
+
+// visionModelFor routes an image-bearing goal to the workspace's vision model
+// when the active model does not declare vision. Anything else — no override,
+// no image reference, or an active model with declared vision — keeps the
+// active model. Steering never reroutes: a mid-run model switch is invalid,
+// and the goal already belongs to its run.
+func (r *Runner) visionModelFor(model models.Model, modelName, content string) string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.visionModel == "" || !containsImageRef(content) {
+		return modelName
+	}
+	for _, id := range []string{string(model.ID), modelName} {
+		if cap, ok := r.modelCapabilities[id]; ok && cap.Declared && slicesContain(cap.Features, "vision") {
+			return modelName
+		}
+	}
+	return r.visionModel
+}
+
 // Workspace reports the active workspace or worktree directory.
 func (r *Runner) Workspace() string {
 	r.mu.Lock()
@@ -351,8 +485,11 @@ func (r *Runner) Workspace() string {
 // SetWorkspace updates the active workspace or worktree directory for subsequent runs.
 func (r *Runner) SetWorkspace(ws string) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.workspace = ws
+	r.mu.Unlock()
+	// The vision override is workspace-scoped, so it follows the workspace. A
+	// workspace that never set one simply keeps the empty override.
+	_ = r.LoadVisionModel()
 }
 
 // IsBusy reports whether any run is in flight.
@@ -415,6 +552,7 @@ func (r *Runner) Run(ctx context.Context, sessionID, content string) (<-chan age
 	if modelName == "" {
 		modelName = string(model.ID)
 	}
+	modelName = r.visionModelFor(model, modelName, content)
 	effort := r.ReasoningEffort()
 	if _, err := r.client.Start(ctx, StartRequest{
 		Goal:            content,

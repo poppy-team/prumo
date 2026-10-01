@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/raillen/prumo-tui/internal/app"
@@ -66,6 +67,52 @@ func TestSidebarRendersSessionAndShortcuts(t *testing.T) {
 	}
 	if !strings.Contains(view, "ctrl+b") {
 		t.Fatalf("expected ctrl+b in view:\n%s", view)
+	}
+}
+
+func TestSidebarShowsVisionOverride(t *testing.T) {
+	appInst := app.New(app.Options{Provider: "fake", Workspace: t.TempDir()})
+	sidebar := NewSidebarCmp(appInst)
+	_ = sidebar.SetSize(40, 40)
+	sidebar.UpdateSession(session.Session{ID: "sess-vision", Title: "vision"})
+
+	if view := sidebar.View().Content; strings.Contains(view, "Vision:") {
+		t.Fatalf("unset vision override must stay hidden, got:\n%s", view)
+	}
+	if err := appInst.Runner.SaveVisionModel("sight-4o"); err != nil {
+		t.Fatal(err)
+	}
+	if view := sidebar.View().Content; !strings.Contains(view, "Vision: sight-4o") {
+		t.Fatalf("expected vision override line, got:\n%s", view)
+	}
+}
+
+func TestSidebarSubagentElapsed(t *testing.T) {
+	if got := subagentElapsed(runtime.SubagentInfo{Status: "done", StartedAt: time.Now().Unix() - 60}); got != "" {
+		t.Fatalf("finished work shows no duration, got %q", got)
+	}
+	if got := subagentElapsed(runtime.SubagentInfo{Status: "running"}); got != "" {
+		t.Fatalf("unknown start shows no duration, got %q", got)
+	}
+	if got := subagentElapsed(runtime.SubagentInfo{Status: "running", StartedAt: time.Now().Unix() + 60}); got != "" {
+		t.Fatalf("future start shows no duration, got %q", got)
+	}
+	if got := subagentElapsed(runtime.SubagentInfo{Status: "running", StartedAt: time.Now().Unix() - 150}); got != " 2m" {
+		t.Fatalf("expected coarse minutes, got %q", got)
+	}
+
+	appInst := app.New(app.Options{Provider: "fake", Workspace: t.TempDir()})
+	sidebar := NewSidebarCmp(appInst)
+	_ = sidebar.SetSize(40, 40)
+	sidebar.UpdateSession(session.Session{ID: "sess-elapsed", Title: "elapsed"})
+	appInst.Runner.RecordSubagent("sess-elapsed", runtime.SubagentInfo{
+		ID:        "sub-9",
+		Role:      "builder",
+		Status:    "running",
+		StartedAt: time.Now().Unix() - 150,
+	})
+	if view := sidebar.View().Content; !strings.Contains(view, "builder [running] 2m") {
+		t.Fatalf("expected elapsed duration on running subagent, got:\n%s", view)
 	}
 }
 

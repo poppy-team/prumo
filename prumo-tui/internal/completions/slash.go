@@ -38,6 +38,8 @@ var defaultSlashCommands = []SlashCommand{
 	{Name: "/agent", Description: "Switch active primary agent persona"},
 	{Name: "/subagents", Description: "List delegated session subagents"},
 	{Name: "/tab", Description: "Manage independent conversation tabs (new, close, next, prev, index)"},
+	{Name: "/run-bg", Description: "Start a goal as a background run on a dormant tab"},
+	{Name: "/vision", Description: "Set the workspace vision model for image references"},
 	{Name: "/worktree", Description: "Manage Git worktrees (list, new, switch)"},
 	{Name: "/editor", Description: "Draft prompt in external $EDITOR (Ctrl+E)"},
 	{Name: "/paste", Description: "Paste image from system clipboard into conversation"},

@@ -5,8 +5,11 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/pubsub"
+	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/page"
 	"github.com/raillen/prumo-tui/internal/tui/util"
@@ -376,6 +379,102 @@ func TestSlashCommandTab(t *testing.T) {
 	switchMsg, ok := cmd().(chat.SwitchTabMsg)
 	if !ok || switchMsg.Index != 1 {
 		t.Fatalf("expected SwitchTabMsg with Index 1, got: %v", cmd())
+	}
+}
+
+func TestSlashCommandRunBackground(t *testing.T) {
+	_, m := newTestApp(t)
+
+	_, cmd := m.Update(chat.SendMsg{Text: "/run-bg summarize the repo --model worker-1 --effort high"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /run-bg")
+	}
+	bgMsg, ok := cmd().(chat.RunBackgroundMsg)
+	if !ok {
+		t.Fatalf("expected RunBackgroundMsg, got: %T", cmd())
+	}
+	if bgMsg.Goal != "summarize the repo" {
+		t.Errorf("expected goal text, got %q", bgMsg.Goal)
+	}
+	if bgMsg.Model != "worker-1" {
+		t.Errorf("expected model override, got %q", bgMsg.Model)
+	}
+	if bgMsg.ReasoningEffort != "high" {
+		t.Errorf("expected effort override, got %q", bgMsg.ReasoningEffort)
+	}
+
+	_, aliasCmd := m.Update(chat.SendMsg{Text: "/bg quick check"})
+	if aliasCmd == nil {
+		t.Fatal("expected cmd on /bg alias")
+	}
+	if _, ok := aliasCmd().(chat.RunBackgroundMsg); !ok {
+		t.Fatalf("expected RunBackgroundMsg from alias, got: %T", aliasCmd())
+	}
+}
+
+func TestBackgroundCompletionAnnounces(t *testing.T) {
+	_, m := newTestApp(t)
+
+	updated, _ := m.Update(chat.SessionSelectedMsg(session.Session{ID: "s-visible", Title: "visible"}))
+	shell := updated.(appModel)
+
+	_, cmd := shell.Update(pubsub.Event[agent.AgentEvent]{
+		Type:    pubsub.CreatedEvent,
+		Payload: agent.AgentEvent{SessionID: "s-background", Done: true},
+	})
+	if cmd == nil {
+		t.Fatal("expected attention cmd for background completion")
+	}
+	found := false
+	if batch, ok := cmd().(tea.BatchMsg); ok {
+		for _, sub := range batch {
+			if info, ok := sub().(util.InfoMsg); ok && strings.Contains(info.Msg, "Background run finished") {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected background-finished toast in batch, got: %#v", cmd())
+	}
+
+	_, quietCmd := shell.Update(pubsub.Event[agent.AgentEvent]{
+		Type:    pubsub.CreatedEvent,
+		Payload: agent.AgentEvent{SessionID: "s-visible", Done: true},
+	})
+	if quietCmd != nil {
+		t.Fatalf("visible session must keep its existing path, got cmd: %#v", quietCmd())
+	}
+}
+
+func TestSlashCommandVision(t *testing.T) {
+	_, m := newTestApp(t)
+
+	_, cmd := m.Update(chat.SendMsg{Text: "/vision"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /vision")
+	}
+	if info, ok := cmd().(util.InfoMsg); !ok || !strings.Contains(info.Msg, "Vision model:") {
+		t.Fatalf("expected current vision model, got: %#v", cmd())
+	}
+
+	_, cmd = m.Update(chat.SendMsg{Text: "/vision off"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /vision off")
+	}
+	if info, ok := cmd().(util.InfoMsg); !ok || !strings.Contains(info.Msg, "cleared") {
+		t.Fatalf("expected clear confirmation, got: %#v", cmd())
+	}
+
+	_, cmd = m.Update(chat.SendMsg{Text: "/vision sight-4o"})
+	if cmd == nil {
+		t.Fatal("expected cmd on /vision <model>")
+	}
+	info, ok := cmd().(util.InfoMsg)
+	if !ok || !strings.Contains(info.Msg, "sight-4o") {
+		t.Fatalf("expected save confirmation naming the model, got: %#v", cmd())
+	}
+	if got := m.app.Runner.VisionModel(); got != "sight-4o" {
+		t.Fatalf("runner vision model = %q, want saved override", got)
 	}
 }
 

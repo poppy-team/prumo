@@ -118,6 +118,15 @@ ask for. Toggling it with `Ctrl+B` records an explicit choice that resizes stop
 overriding: an automatic change is never written to the configuration, only the
 user's own toggle is.
 
+The tab bar badges a tab that needs attention while another tab is active: a
+filled dot while its run is in flight, an exclamation mark while a permission
+gate waits on it, and an asterisk when it finished unseen. Visiting the tab
+clears its badges. A run started with `/run-bg` lives on a dormant tab and is
+tracked the same way, with a toast and a terminal bell when it finishes, fails,
+or waits on a gate. A goal that names an image file is routed to the
+workspace's vision model (`/vision`) when the active model does not declare
+vision; steering an in-flight run never reroutes it.
+
 **No horizontal scrolling, at any width.** The frame is fitted to the terminal it
 was drawn for: content reflows or truncates with a visible marker, and a row that
 silently loses its tail is a defect. Width is computed conservatively for Unicode

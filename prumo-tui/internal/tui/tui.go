@@ -428,9 +428,14 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// The gate is announced in words as well as drawn: a request that exists
 		// only as a dialog cannot be read from a frame, and the contract asks for
 		// it to be legible without interacting with it.
+		notice := gateNotice(msg.Payload.ToolName)
+		if msg.Payload.SessionID != "" && msg.Payload.SessionID != a.selectedSession.ID {
+			notice += " — waiting on a background tab"
+		}
 		return a, tea.Batch(
 			a.permissions.SetPermissions(msg.Payload),
-			util.ReportWarn(gateNotice(msg.Payload.ToolName)),
+			util.ReportWarn(notice),
+			attentionBell(),
 		)
 	case openJobsMsg:
 		return a, a.openJobs()
@@ -511,6 +516,9 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case pubsub.Event[agent.AgentEvent]:
 		payload := msg.Payload
+		if notice := a.backgroundNotice(payload); notice != nil {
+			return a, notice
+		}
 		if payload.Error != nil {
 			a.recordSessionAudit("failed")
 			return a, util.ReportFailure("The run stopped", "send the goal again, or read the log with ctrl+l", payload.Error)
@@ -1162,6 +1170,42 @@ type jobsLoadedMsg struct {
 // The list is read when the panel opens rather than kept in step: the schedule
 // belongs to the daemon, and a client that mirrored it would be describing a
 // queue it cannot keep current.
+// saveVisionModel stores the workspace's vision override and says what the
+// harness declares about it: a model without declared vision still routes
+// images to itself when set, but the user should know the declaration is
+// missing rather than discover it from a blind run.
+func (a *appModel) saveVisionModel(target string) tea.Cmd {
+	runner := a.app.Runner
+	provider := a.app.CurrentProvider()
+	return func() tea.Msg {
+		if err := runner.SaveVisionModel(target); err != nil {
+			return util.ReportFailure("Saving the vision model", "check workspace permissions", err)()
+		}
+		note := "the model catalogue is unavailable, so the declaration is unknown"
+		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ids, _, err := runner.ModelCatalogue(ctx, provider)
+		cancel()
+		if err == nil {
+			known := false
+			for _, id := range ids {
+				if id == target {
+					known = true
+					break
+				}
+			}
+			switch {
+			case !known:
+				note = "the provider does not list this model"
+			case runner.ModelHasVision(target):
+				note = "the harness declares vision for this model"
+			default:
+				note = "the harness declares no vision for this model"
+			}
+		}
+		return util.ReportInfo(fmt.Sprintf("Vision model set to: %s (%s)", target, note))()
+	}
+}
+
 func (a *appModel) openJobs() tea.Cmd {
 	runner := a.app.Runner
 	a.showJobs = true
@@ -1234,6 +1278,45 @@ func (a *appModel) loadDiff(path string) tea.Cmd {
 // waiting, and every key that answers it.
 func gateNotice(tool string) string {
 	return fmt.Sprintf("Permission required: %s — a to allow, s for the session, d to deny", tool)
+}
+
+// backgroundNotice announces a run the user is not looking at: a finished or
+// failed background run, in words plus a terminal bell. Streaming events,
+// connection traffic, events without a session, and the visible session all
+// return nil and keep their existing path — the audit trail is deliberately
+// untouched here, because recordSessionAudit attributes to the selected
+// session and a background event must not rewrite that record.
+func (a appModel) backgroundNotice(payload agent.AgentEvent) tea.Cmd {
+	id := payload.SessionID
+	if id == "" || id == a.selectedSession.ID {
+		return nil
+	}
+	title := "background run"
+	if a.app != nil && a.app.Sessions != nil {
+		if sess, err := a.app.Sessions.Get(context.Background(), id); err == nil && sess.Title != "" {
+			title = sess.Title
+		}
+	}
+	switch {
+	case payload.Error != nil:
+		return tea.Batch(
+			util.ReportFailure(fmt.Sprintf("Background run stopped: %s", title), "switch to its tab to see what happened", payload.Error),
+			attentionBell(),
+		)
+	case payload.Done:
+		return tea.Batch(
+			util.ReportInfo(fmt.Sprintf("Background run finished: %s — switch to its tab to read it", title)),
+			attentionBell(),
+		)
+	default:
+		return nil
+	}
+}
+
+// attentionBell rings the terminal bell without printing a line: the toast
+// carries the words, the bell carries the nudge.
+func attentionBell() tea.Cmd {
+	return tea.Printf("\a")
 }
 
 // exportTimeline writes what the harness recorded for a run, where a reader or a
@@ -2059,6 +2142,26 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			return a, util.ReportWarn("Invalid effort level. Use: low, medium, high, max, <number-of-tokens>, or off")
 		}
 
+	case "/vision":
+		if a.app == nil || a.app.Runner == nil {
+			return a, util.ReportWarn("Vision routing needs an attached harness: start the client inside a project")
+		}
+		if len(args) == 0 {
+			current := a.app.Runner.VisionModel()
+			if current == "" {
+				current = "off (image references go to the active model)"
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Vision model: %s\nUsage: /vision <model-id> | off", current))
+		}
+		target := strings.TrimSpace(args[0])
+		if strings.EqualFold(target, "off") || strings.EqualFold(target, "disable") || strings.EqualFold(target, "none") {
+			if err := a.app.Runner.SaveVisionModel(""); err != nil {
+				return a, util.ReportFailure("Clearing the vision model", "check workspace permissions", err)
+			}
+			return a, util.ReportInfo("Vision model cleared: image references go to the active model")
+		}
+		return a, a.saveVisionModel(target)
+
 	case "/dirty":
 		ws := "."
 		if a.app != nil && a.app.Workspace != "" {
@@ -2210,6 +2313,34 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			}
 		}
 		return a, util.CmdHandler(chat.NewTabMsg{})
+
+	case "/run-bg", "/background", "/bg":
+		bgMsg := chat.RunBackgroundMsg{}
+		var goalParts []string
+		for i := 0; i < len(args); i++ {
+			arg := args[i]
+			switch {
+			case (arg == "--provider" || arg == "-p") && i+1 < len(args):
+				i++
+				bgMsg.Provider = args[i]
+			case (arg == "--model" || arg == "-m") && i+1 < len(args):
+				i++
+				bgMsg.Model = args[i]
+			case (arg == "--effort" || arg == "-e") && i+1 < len(args):
+				i++
+				bgMsg.ReasoningEffort = args[i]
+			case (arg == "--worktree" || arg == "--wt") && i+1 < len(args):
+				i++
+				bgMsg.Workspace = args[i]
+			case (arg == "--title" || arg == "-t") && i+1 < len(args):
+				i++
+				bgMsg.Title = args[i]
+			default:
+				goalParts = append(goalParts, arg)
+			}
+		}
+		bgMsg.Goal = strings.Join(goalParts, " ")
+		return a, util.CmdHandler(bgMsg)
 
 	case "/worktree", "/worktrees", "/wt":
 		ws := "."
