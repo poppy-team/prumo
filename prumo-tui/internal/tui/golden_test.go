@@ -343,7 +343,11 @@ type frameColourless struct{ inner tea.Model }
 
 func (f frameColourless) Init() tea.Cmd { return nil }
 
-func (f frameColourless) Update(tea.Msg) (tea.Model, tea.Cmd) { return f, nil }
+func (f frameColourless) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	updated, _ := f.inner.Update(msg)
+	f.inner = updated
+	return f, nil
+}
 
 // View renders the component for the terminal, without its escapes.
 func (f frameColourless) View() tea.View { return tea.NewView(plain(f.inner.View().Content)) }

@@ -181,6 +181,8 @@ export default defineConfig({
               { text: 'Macroarquitetura do Sistema', link: '/architecture/' },
               { text: 'Regras de Dependência', link: '/architecture/dependency-rules' },
               { text: 'Native Workspace Viewer (Rust)', link: '/architecture/viewer' },
+              { text: 'Roadmap Oficial (v0.1 → v1.0)', link: '/roadmap' },
+              { text: 'Plano Granular de Patches', link: '/granular-plan' },
               { text: 'Governança & Livro Vivo', link: '/governance/' },
               { text: 'Autoridade & Drift de Docs', link: '/governance/authority' },
               { text: 'Lean Progressive Context (LPC)', link: '/governance/lpc' },
@@ -308,6 +310,8 @@ export default defineConfig({
           { text: 'Workforce', link: '/en/workforce/' },
           { text: 'Tools', link: '/en/tools/' },
           { text: 'Architecture', link: '/en/architecture/' },
+          { text: 'Roadmap', link: '/en/roadmap' },
+          { text: 'Granular Plan', link: '/en/granular-plan' },
           { text: 'Governance', link: '/en/governance/' }
         ],
 

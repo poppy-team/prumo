@@ -2,7 +2,7 @@
 set -eu
 
 REPOSITORY="${PRUMO_REPOSITORY:-raillen/prumo}"
-VERSION="${PRUMO_VERSION:-v0.6.0}"
+VERSION="${PRUMO_VERSION:-v0.6.1}"
 INSTALL_DIR="${PRUMO_INSTALL_DIR:-${HOME}/.local/bin}"
 PRUMO_HOME_VALUE="${PRUMO_HOME:-${HOME}/.prumo}"
 PACKAGE="${PRUMO_PACKAGE:-${1:-}}"
@@ -25,10 +25,10 @@ if [ -z "$PACKAGE" ]; then
     printf '%s\n' "================================================="
     printf '%s\n' "       Prumo Package Selection ($VERSION)"
     printf '%s\n' "================================================="
-    printf '%s\n' "1) Prumo Harness CLI (Headless runtime, daemon & tools) [default]"
-    printf '%s\n' "2) Prumo Agent IDE   (Desktop GUI pair programmer & editor)"
-    printf '%s\n' "3) Prumo Agent TUI   (Interactive terminal harness)"
-    printf '%s\n' "4) All packages      (CLI + IDE + TUI)"
+    printf '%s\n' "1) Prumo CLI        (Core runtime, daemon & tools) [default]"
+    printf '%s\n' "2) Prumo IDE        (Desktop GUI pair programmer & editor)"
+    printf '%s\n' "3) Prumo Code Agent (Interactive terminal client)"
+    printf '%s\n' "4) All packages      (CLI + IDE + Code Agent)"
     printf '%s' "Select package [1-4, default: 1]: "
     read -r choice || choice=""
     case "$choice" in

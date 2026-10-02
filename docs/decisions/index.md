@@ -21,7 +21,7 @@ Os Registros de Decisão de Arquitetura (**ADRs — Architectural Decision Recor
 | **013** | Fundação da Interface TUI | Aceito | Arquitetura reativa baseada em Bubble Tea para o cliente terminal interativo. |
 | **014** | Leituras de Protocolo e Push | Aceito | Semântica de persistência Git atômica sem mutações corrompidas. |
 | **015** | Nomenclatura de Comandos | Aceito | Padronização dos verbos e substantivos no CLI `prumo`. |
-| **016** | Separação entre Harness e Agent | Aceito | O `prumo` (harness/CLI) e o `prumo-agent` (`pa`, TUI/cliente interativo) são binários distintos. |
+| **016** | Separação entre Harness e Agent | Aceito | O Prumo (harness/CLI), o Prumo Code Agent (TUI/cliente interativo) e o Prumo IDE (GUI desktop) formam as três superfícies do ecossistema. |
 | **017** | Delegação de Subagentes em Nível Único | Aceito | Limitação da recursão de subagentes a um único nível de profundidade para evitar explosão de custos. |
 | **018** | Daemon Global | Aceito | Serviço em background leve para supervisão e sincronização contínua. |
 | **019** | Ciclo de Vida de Invocação de Ferramentas | Aceito | Protocolo padronizado de validação prévia, execução e envelope de resultado para ACI. |

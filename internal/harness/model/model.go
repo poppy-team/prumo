@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -499,6 +500,58 @@ func (o *OpenAICompat) Stream(ctx context.Context, req agent.ModelRequest) (<-ch
 		msgs = append(msgs, chatMessage{Role: role, Content: parts})
 	}
 	payload := map[string]any{"model": model, "messages": msgs, "stream": true}
+	if req.MaxTokens > 0 {
+		payload["max_tokens"] = req.MaxTokens
+	}
+	if req.Temperature > 0 {
+		payload["temperature"] = req.Temperature
+	}
+	if req.ReasoningEffort != "" {
+		effort := strings.ToLower(strings.TrimSpace(req.ReasoningEffort))
+		if effort != "off" && effort != "none" && effort != "0" {
+			isOpenRouter := strings.Contains(o.BaseURL, "openrouter.ai")
+			isDeepSeek := o.Provider == "deepseek" || strings.Contains(o.BaseURL, "deepseek.com")
+			switch effort {
+			case "low", "medium", "high":
+				if isOpenRouter {
+					payload["reasoning"] = map[string]any{"effort": effort}
+				} else {
+					payload["reasoning_effort"] = effort
+				}
+				if isDeepSeek {
+					payload["thinking"] = map[string]any{"type": "enabled"}
+				}
+			case "max":
+				if isOpenRouter {
+					payload["reasoning"] = map[string]any{"effort": "max"}
+				} else {
+					payload["reasoning_effort"] = "high"
+				}
+				if isDeepSeek {
+					payload["thinking"] = map[string]any{"type": "enabled"}
+				}
+			default:
+				if n, err := strconv.Atoi(effort); err == nil && n > 0 {
+					var mappedEffort string
+					if n <= 2048 {
+						mappedEffort = "low"
+					} else if n <= 8192 {
+						mappedEffort = "medium"
+					} else {
+						mappedEffort = "high"
+					}
+					if isOpenRouter {
+						payload["reasoning"] = map[string]any{"effort": mappedEffort, "max_tokens": n}
+					} else {
+						payload["reasoning_effort"] = mappedEffort
+					}
+					if isDeepSeek {
+						payload["thinking"] = map[string]any{"type": "enabled"}
+					}
+				}
+			}
+		}
+	}
 	if len(req.Tools) > 0 {
 		tools := make([]any, 0, len(req.Tools))
 		for _, ts := range req.Tools {

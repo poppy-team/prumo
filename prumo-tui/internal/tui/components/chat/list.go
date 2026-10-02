@@ -26,6 +26,16 @@ type cacheItem struct {
 	width   int
 	content []uiMessage
 }
+
+// MessagesCmp is the transcript message list surface.
+type MessagesCmp interface {
+	tea.Model
+	ScrollDown(lines int)
+	ScrollUp(lines int)
+	ScrollToTop()
+	ScrollToBottom()
+}
+
 type messagesCmp struct {
 	app           *app.App
 	width, height int
@@ -44,6 +54,7 @@ type messagesCmp struct {
 	// renderedFrom is the index of the oldest message that is drawn. Everything
 	// before it is in the conversation and not on screen yet.
 	renderedFrom int
+	showThinking bool
 }
 type renderFinishedMsg struct{}
 
@@ -88,6 +99,10 @@ func (m *messagesCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.SetSession(msg)
 			return m, cmd
 		}
+		return m, nil
+	case ToggleThinkingMsg:
+		m.showThinking = !m.showThinking
+		m.rerender()
 		return m, nil
 	case SessionClearedMsg:
 		m.session = session.Session{}
@@ -196,6 +211,28 @@ func (m *messagesCmp) IsAgentWorking() bool {
 	return m.app.CoderAgent.IsSessionBusy(m.session.ID)
 }
 
+func (m *messagesCmp) ScrollDown(lines int) {
+	m.viewport.ScrollDown(lines)
+}
+
+func (m *messagesCmp) ScrollUp(lines int) {
+	m.viewport.ScrollUp(lines)
+	if m.viewport.YOffset() == 0 {
+		m.renderMore()
+	}
+}
+
+func (m *messagesCmp) ScrollToTop() {
+	for m.renderedFrom > 0 {
+		m.renderMore()
+	}
+	m.viewport.GotoTop()
+}
+
+func (m *messagesCmp) ScrollToBottom() {
+	m.viewport.GotoBottom()
+}
+
 func formatTimeDifference(unixTime1, unixTime2 int64) string {
 	diffSeconds := float64(math.Abs(float64(unixTime2 - unixTime1)))
 
@@ -279,6 +316,7 @@ func (m *messagesCmp) rendered(msg message.Message, index int) []uiMessage {
 			m.app.Messages,
 			m.currentMsgID,
 			m.session.SummaryMessageID == msg.ID,
+			m.showThinking,
 			m.width,
 			index,
 		)
@@ -532,6 +570,15 @@ func (m *messagesCmp) rerender() {
 		delete(m.cachedContent, msg.ID)
 	}
 	m.renderView()
+}
+
+func (m *messagesCmp) ToggleThinking() {
+	m.showThinking = !m.showThinking
+	m.rerender()
+}
+
+func (m *messagesCmp) ShowThinking() bool {
+	return m.showThinking
 }
 
 // resizeSettle is how long a width change waits for the terminal to stop moving.

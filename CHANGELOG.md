@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.6.1 — Prumo Code Agent & Deterministic Audit Telemetry
+
+- **Prumo Code Agent (Terminal User Interface)**:
+  - Multi-tabs conversation management (`Ctrl+T` to create new tabs, `Ctrl+W` to close, `Alt+1`..`Alt+9` to switch tabs).
+  - OpenCode v2-style Sidebar powered by deep Prumo Harness Telemetry: persistent view of active provider/model, workspace directory, Git branch, real-time token breakdown (prompt, completion, cache read/write), accumulated cost in USD, modified files list, active workforce agents, subagent invocation trees, and verification gates status.
+  - Persistent sidebar toggle (`Ctrl+B`) stored in user config.
+  - Real-time Theme Preview: navigating theme choices in `/theme` or `Ctrl+K` immediately applies the palette with visual color swatches (`[■ ■ ■]`), persisting on `Enter` and cleanly rolling back on `Esc`.
+  - Interactive Session Exit Dialog (`Ctrl+Q`): allows renaming sessions before saving, quitting without saving, or canceling.
+  - Deterministic Session Naming: auto-names sessions based on current Git branch, falling back to `YYYY-MM-DD-<project>`.
+  - Rich TUI Commands: added `/agents`, `/workforce`, `/agent <name>`, `/subagents`, `/tab`, `/tabs`, `/gates`, `/audit`, and `/telemetry` to slash commands and Command Palette (`Ctrl+K`).
+- **Deterministic Project & Session Audit Telemetry**:
+  - Structured, deterministic audit engine recording session and project-level aggregates to `.prumo/runtime/audit/telemetry.json` and `.prumo/runtime/audit/sessions/<id>.json`.
+  - Byte-for-byte reproducible JSON serialization with sorted keys and ordered lists for clean Git diffs.
+- **Ecosystem Taxonomy & Ergonomics**:
+  - `Prumo`: CLI, daemon, and governance motor (`prumo`).
+  - `Prumo Code Agent`: Interactive terminal pair programmer (`prumo code-agent` / `prumo agent` / `prumo tui`).
+  - `Prumo IDE`: High-performance native desktop GUI (`prumo native`).
+
 - **Multi-Platform AI Harness Connectors**:
   - Added new native connectors for Cursor (`.cursor/rules/prumo-guidelines.mdc`, `.cursor/mcp.json`), Windsurf (`.windsurfrules`, `.windsurf/mcp_config.json`), and Cline / Roo Code (`.clinerules`, `.roomodes`).
   - Implemented surgical managed region compiler (`doccompile.RemoveRegion` / `UpsertRegion`): pre-existing user instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.windsurfrules`, `.clinerules`) are augmented rather than overwritten and are preserved during uninstallation (GAP-141).

@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	prumo "github.com/raillen/prumo/sdk/prumo"
 
 	"github.com/raillen/prumo-tui/internal/agent"
+	"github.com/raillen/prumo-tui/internal/config"
 	"github.com/raillen/prumo-tui/internal/llm/models"
 	"github.com/raillen/prumo-tui/internal/logging"
 	"github.com/raillen/prumo-tui/internal/message"
@@ -83,12 +85,16 @@ type Runner struct {
 	messages    *message.Store
 	permissions *permission.Service
 
-	mu        sync.Mutex
-	model     models.Model
-	provider  string
-	maxTurns  int
-	workspace string
-	active    map[string]context.CancelFunc
+	mu              sync.Mutex
+	model           models.Model
+	provider        string
+	maxTurns        int
+	workspace       string
+	reasoningEffort string
+	// visionModel is the workspace's image-capable model override, for goals
+	// that name image files while the active model does not declare vision.
+	visionModel string
+	active      map[string]context.CancelFunc
 	// changes is what the harness reported per session, kept so the view can
 	// ask without re-reading the timeline on every frame.
 	changes map[string][]Change
@@ -97,8 +103,9 @@ type Runner struct {
 	// would re-read what was already drawn and counted.
 	cursors map[string]int
 
-	activeAgent string
-	subagents   map[string][]SubagentInfo
+	activeAgent       string
+	subagents         map[string][]SubagentInfo
+	modelCapabilities map[string]ModelCapabilities
 }
 
 // SubagentInfo describes an agent or subagent running in a session.
@@ -112,14 +119,16 @@ type SubagentInfo struct {
 
 // Options configures a runner.
 type Options struct {
-	Client      Client
-	Sessions    *session.Store
-	Messages    *message.Store
-	Permissions *permission.Service
-	Provider    string
-	Model       models.Model
-	MaxTurns    int
-	Workspace   string
+	Client          Client
+	Sessions        *session.Store
+	Messages        *message.Store
+	Permissions     *permission.Service
+	Provider        string
+	Model           models.Model
+	MaxTurns        int
+	Workspace       string
+	ReasoningEffort string
+	VisionModel     string
 }
 
 // NewRunner builds a runner over a transport.
@@ -130,21 +139,33 @@ func NewRunner(opts Options) *Runner {
 	if opts.MaxTurns <= 0 {
 		opts.MaxTurns = 5
 	}
-	return &Runner{
-		agentEvents: newAgentEvents(),
-		client:      opts.Client,
-		sessions:    opts.Sessions,
-		messages:    opts.Messages,
-		permissions: opts.Permissions,
-		model:       opts.Model,
-		provider:    opts.Provider,
-		maxTurns:    opts.MaxTurns,
-		workspace:   opts.Workspace,
-		active:      map[string]context.CancelFunc{},
-		changes:     map[string][]Change{},
-		cursors:     map[string]int{},
-		subagents:   map[string][]SubagentInfo{},
+	r := &Runner{
+		agentEvents:       newAgentEvents(),
+		client:            opts.Client,
+		sessions:          opts.Sessions,
+		messages:          opts.Messages,
+		permissions:       opts.Permissions,
+		model:             opts.Model,
+		provider:          opts.Provider,
+		maxTurns:          opts.MaxTurns,
+		workspace:         opts.Workspace,
+		reasoningEffort:   opts.ReasoningEffort,
+		visionModel:       opts.VisionModel,
+		active:            map[string]context.CancelFunc{},
+		changes:           map[string][]Change{},
+		cursors:           map[string]int{},
+		subagents:         map[string][]SubagentInfo{},
+		modelCapabilities: make(map[string]ModelCapabilities),
 	}
+	if r.model.ContextWindow <= 0 {
+		r.model.ContextWindow = knownModelContextLength(string(r.model.ID))
+	}
+	// An explicit option wins over the workspace file; otherwise the workspace
+	// file decides, and a workspace without one keeps the empty override.
+	if r.visionModel == "" {
+		_ = r.LoadVisionModel()
+	}
+	return r
 }
 
 // cursor reports how far into a run's timeline the client has already folded.
@@ -253,6 +274,7 @@ func (r *Runner) recordUsage(sessionID string, payload map[string]any) {
 	current.CompletionTokens += numberOf(payload, "completion_tokens")
 	current.CacheReadTokens += numberOf(payload, "cache_read_tokens")
 	current.CacheWriteTokens += numberOf(payload, "cache_write_tokens")
+	current.ReasoningTokens += numberOf(payload, "reasoning_tokens")
 	current.Cost += floatOf(payload, "cost_usd")
 	current.UsageReports++
 	if _, err := r.sessions.Save(ctx, current); err != nil {
@@ -270,6 +292,7 @@ func (r *Runner) resetUsage(sessionID string) {
 	}
 	current.PromptTokens, current.CompletionTokens = 0, 0
 	current.CacheReadTokens, current.CacheWriteTokens = 0, 0
+	current.ReasoningTokens = 0
 	current.Cost, current.UsageReports = 0, 0
 	if _, err := r.sessions.Save(ctx, current); err != nil {
 		logging.ErrorPersist("cannot reset what the run spent: " + err.Error())
@@ -288,7 +311,13 @@ func (r *Runner) Model() models.Model {
 func (r *Runner) Update(modelID models.ModelID) (models.Model, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.model = models.Model{ID: modelID, Name: string(modelID)}
+	ctxLen := int64(0)
+	if cap, ok := r.modelCapabilities[string(modelID)]; ok && cap.ContextTokens > 0 {
+		ctxLen = int64(cap.ContextTokens)
+	} else {
+		ctxLen = knownModelContextLength(string(modelID))
+	}
+	r.model = models.Model{ID: modelID, Name: string(modelID), ContextWindow: ctxLen}
 	return r.model, nil
 }
 
@@ -304,6 +333,163 @@ func (r *Runner) SetProvider(provider string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.provider = provider
+}
+
+// ReasoningEffort reports the configured reasoning effort level or budget.
+func (r *Runner) ReasoningEffort() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.reasoningEffort != "" {
+		return r.reasoningEffort
+	}
+	return config.Get().ReasoningEffort
+}
+
+// SetReasoningEffort updates the reasoning effort level.
+func (r *Runner) SetReasoningEffort(effort string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.reasoningEffort = effort
+}
+
+// visionModelFilename is the workspace-scoped vision override, kept beside the
+// client's other workspace state rather than in the global config: which model
+// sees a project's images is a property of the project, not of the machine.
+const visionModelFilename = "vision-model"
+
+// visionModelPath is where the workspace's vision override lives.
+func visionModelPath(workspace string) string {
+	return filepath.Join(workspace, ".prumo", visionModelFilename)
+}
+
+// VisionModel reports the workspace's image-capable model override, or empty
+// when image-bearing goals go to the active model unchanged.
+func (r *Runner) VisionModel() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.visionModel
+}
+
+// SetVisionModel records the workspace's image-capable model override for
+// subsequent runs. It does not touch the disk; SaveVisionModel persists.
+func (r *Runner) SetVisionModel(model string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.visionModel = strings.TrimSpace(model)
+}
+
+// LoadVisionModel reads the workspace's vision override into subsequent runs.
+// A missing file is not an error: most workspaces never set one.
+func (r *Runner) LoadVisionModel() error {
+	r.mu.Lock()
+	ws := r.workspace
+	r.mu.Unlock()
+	if ws == "" {
+		return nil
+	}
+	data, err := os.ReadFile(visionModelPath(ws))
+	if err != nil {
+		if os.IsNotExist(err) {
+			r.SetVisionModel("")
+			return nil
+		}
+		return err
+	}
+	if len(data) > 1024 {
+		return fmt.Errorf("vision override exceeds 1KB: %s", visionModelPath(ws))
+	}
+	r.SetVisionModel(string(data))
+	return nil
+}
+
+// SaveVisionModel persists the workspace's vision override and applies it to
+// subsequent runs. An empty model clears the override and removes the file.
+func (r *Runner) SaveVisionModel(model string) error {
+	model = strings.TrimSpace(model)
+	r.mu.Lock()
+	ws := r.workspace
+	r.mu.Unlock()
+	if ws == "" {
+		return errors.New("no workspace to store the vision override in")
+	}
+	path := visionModelPath(ws)
+	if model == "" {
+		r.SetVisionModel("")
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, append([]byte(model), '\n'), 0o644); err != nil {
+		return err
+	}
+	r.SetVisionModel(model)
+	return nil
+}
+
+// ModelHasVision reports whether the catalogue declares vision for a model.
+// Unknown models report false: the client only claims what the harness said.
+func (r *Runner) ModelHasVision(modelID string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	cap, ok := r.modelCapabilities[modelID]
+	return ok && cap.Declared && slicesContain(cap.Features, "vision")
+}
+
+func slicesContain(items []string, want string) bool {
+	for _, item := range items {
+		if item == want {
+			return true
+		}
+	}
+	return false
+}
+
+// imageRefPattern matches an image file named in a goal, the way `@` completion
+// and clipboard paste write one: @path/to/shot.png.
+var imageRefPattern = regexp.MustCompile(`(?i)@\S*\.(png|jpe?g|gif|webp|bmp|svg)\b`)
+
+func containsImageRef(content string) bool {
+	return imageRefPattern.MatchString(content)
+}
+
+// visionModelFor routes an image-bearing goal to the workspace's vision model
+// when the active model does not declare vision. Anything else — no override,
+// no image reference, or an active model with declared vision — keeps the
+// active model. Steering never reroutes: a mid-run model switch is invalid,
+// and the goal already belongs to its run.
+func (r *Runner) visionModelFor(model models.Model, modelName, content string) string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.visionModel == "" || !containsImageRef(content) {
+		return modelName
+	}
+	for _, id := range []string{string(model.ID), modelName} {
+		if cap, ok := r.modelCapabilities[id]; ok && cap.Declared && slicesContain(cap.Features, "vision") {
+			return modelName
+		}
+	}
+	return r.visionModel
+}
+
+// Workspace reports the active workspace or worktree directory.
+func (r *Runner) Workspace() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.workspace
+}
+
+// SetWorkspace updates the active workspace or worktree directory for subsequent runs.
+func (r *Runner) SetWorkspace(ws string) {
+	r.mu.Lock()
+	r.workspace = ws
+	r.mu.Unlock()
+	// The vision override is workspace-scoped, so it follows the workspace. A
+	// workspace that never set one simply keeps the empty override.
+	_ = r.LoadVisionModel()
 }
 
 // IsBusy reports whether any run is in flight.
@@ -366,13 +552,16 @@ func (r *Runner) Run(ctx context.Context, sessionID, content string) (<-chan age
 	if modelName == "" {
 		modelName = string(model.ID)
 	}
+	modelName = r.visionModelFor(model, modelName, content)
+	effort := r.ReasoningEffort()
 	if _, err := r.client.Start(ctx, StartRequest{
-		Goal:      content,
-		Provider:  r.provider,
-		Model:     modelName,
-		MaxTurns:  r.maxTurns,
-		RunID:     sessionID,
-		Workspace: r.workspace,
+		Goal:            content,
+		Provider:        r.provider,
+		Model:           modelName,
+		MaxTurns:        r.maxTurns,
+		RunID:           sessionID,
+		Workspace:       r.workspace,
+		ReasoningEffort: effort,
 	}); err != nil {
 		return nil, err
 	}
@@ -695,7 +884,11 @@ func (r *Runner) fold(ev Event, sessionID string, current *turn) bool {
 		if text == "" {
 			return false
 		}
-		current.parts = append(current.parts, message.ReasoningContent{Thinking: text})
+		if last, ok := lastReasoning(current); ok {
+			current.parts[last] = message.ReasoningContent{Thinking: current.parts[last].(message.ReasoningContent).Thinking + text}
+		} else {
+			current.parts = append(current.parts, message.ReasoningContent{Thinking: text})
+		}
 		return true
 	case "tool_call_ready":
 		name := stringOf(ev.Payload, "name")
@@ -728,6 +921,15 @@ func (r *Runner) fold(ev Event, sessionID string, current *turn) bool {
 func lastText(t *turn) (int, bool) {
 	for i := len(t.parts) - 1; i >= 0; i-- {
 		if _, ok := t.parts[i].(message.TextContent); ok {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func lastReasoning(t *turn) (int, bool) {
+	for i := len(t.parts) - 1; i >= 0; i-- {
+		if _, ok := t.parts[i].(message.ReasoningContent); ok {
 			return i, true
 		}
 	}
@@ -868,8 +1070,9 @@ func describePayload(payload map[string]any) string {
 // ModelCapabilities is what one model declares it can do, as the view layer
 // reads it: a list of words, and whether anyone declared them at all.
 type ModelCapabilities struct {
-	Declared bool
-	Features []string
+	Declared      bool
+	Features      []string
+	ContextTokens int
 }
 
 // DefaultModelsFor returns curated models for common providers so the user
@@ -968,10 +1171,19 @@ func (r *Runner) ModelCatalogue(ctx context.Context, provider string) ([]string,
 		for _, info := range infos {
 			ids = append(ids, info.ID)
 			capabilities[info.ID] = ModelCapabilities{
-				Declared: info.Declared,
-				Features: featuresOf(info.Capabilities),
+				Declared:      info.Declared,
+				Features:      featuresOf(info.Capabilities),
+				ContextTokens: info.Capabilities.ContextTokens,
 			}
 		}
+		r.mu.Lock()
+		if r.modelCapabilities == nil {
+			r.modelCapabilities = make(map[string]ModelCapabilities)
+		}
+		for k, v := range capabilities {
+			r.modelCapabilities[k] = v
+		}
+		r.mu.Unlock()
 		return ids, capabilities, nil
 	}
 
@@ -985,11 +1197,46 @@ func (r *Runner) ModelCatalogue(ctx context.Context, provider string) ([]string,
 				Features: []string{"text", "tools"},
 			}
 		}
+		r.mu.Lock()
+		if r.modelCapabilities == nil {
+			r.modelCapabilities = make(map[string]ModelCapabilities)
+		}
+		for k, v := range capabilities {
+			r.modelCapabilities[k] = v
+		}
+		r.mu.Unlock()
 		return ids, capabilities, nil
 	}
 
 	// Curated defaults fallback
 	return DefaultModelsFor(provider), DefaultCapabilitiesFor(provider), nil
+}
+
+func knownModelContextLength(modelID string) int64 {
+	m := strings.ToLower(modelID)
+	switch {
+	case strings.Contains(m, "claude-3-7") || strings.Contains(m, "claude-3-5") || strings.Contains(m, "claude-3"):
+		return 200_000
+	case strings.Contains(m, "gpt-4o") || strings.Contains(m, "o1") || strings.Contains(m, "o3"):
+		return 128_000
+	case strings.Contains(m, "gemini-2") || strings.Contains(m, "gemini-1.5"):
+		return 1_048_576
+	case strings.Contains(m, "deepseek"):
+		return 128_000
+	case strings.Contains(m, "qwen") || strings.Contains(m, "llama-3") || strings.Contains(m, "nemotron") || strings.Contains(m, "mimo"):
+		return 131_072
+	}
+	return 0
+}
+
+// ModelContextLength returns the context window in tokens for a given model, or 0 if unknown.
+func (r *Runner) ModelContextLength(modelID string) int64 {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if cap, ok := r.modelCapabilities[modelID]; ok && cap.ContextTokens > 0 {
+		return int64(cap.ContextTokens)
+	}
+	return knownModelContextLength(modelID)
 }
 
 // featuresOf names what a model declares, in a fixed order so the same model

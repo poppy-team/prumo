@@ -55,6 +55,7 @@ func shellChords() map[string]string {
 	add("shell: logs", keys.Logs.Keys()...)
 	add("shell: changed files", keys.ChangedFiles.Keys()...)
 	add("shell: sidebar", keys.Sidebar.Keys()...)
+	add("shell: leader key", keys.Leader.Keys()...)
 	add("shell: dismiss", returnKey.Keys()...)
 	add("shell: leave the log page", logsKeyReturnKey.Keys()...)
 	add("shell: toggle the keymap", helpEsc.Keys()...)
@@ -70,6 +71,7 @@ func shellChords() map[string]string {
 // short, and every entry names where it comes from.
 var componentChords = map[string]string{
 	"ctrl+n":    "page/chat.go: start a new session",
+	"ctrl+t":    "page/chat.go: open a new tab",
 	"@":         "page/chat.go: complete a path",
 	"/":         "page/chat.go: slash command completion",
 	"ctrl+s":    "components/chat/editor.go: send the message",
@@ -81,6 +83,7 @@ var componentChords = map[string]string{
 	"f":         "components/chat/list.go: scroll down a page",
 	"ctrl+u":    "components/chat/list.go: half a page up",
 	"ctrl+d":    "components/chat/list.go: half a page down",
+	"g":         "components/chat/list.go: scroll to top or bottom (Vim mode)",
 	"esc":       "page/chat.go, dialogs: dismiss the topmost layer",
 	"q":         "shell: leave the log page",
 	"a":         "components/dialog/permission.go: approve",

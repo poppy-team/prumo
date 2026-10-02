@@ -309,6 +309,215 @@
                     "path": "prumo-tui/internal/tui/components/chat/list.go",
                     "status": "implemented"
                   }
+                },
+                {
+                  "id": "node:sidebar",
+                  "kind": "pane",
+                  "label": "Session sidebar",
+                  "role": "The run's own telemetry beside the conversation: session, context, goals, workforce and changed files",
+                  "intent": "Glanceable state without leaving the composer: what is running, what it costs, and what the goal demands",
+                  "slot": {
+                    "region": "body",
+                    "order": 3,
+                    "align": "stretch",
+                    "stack": "column",
+                    "condition": "page = chat and (columns >= 100 or sidebar toggled open)"
+                  },
+                  "size_classes": [
+                    "standard",
+                    "wide"
+                  ],
+                  "states": [
+                    "default",
+                    "focus",
+                    "active"
+                  ],
+                  "tokens": [
+                    "token:color.panel",
+                    "token:color.text",
+                    "token:color.text-muted",
+                    "token:color.focus"
+                  ],
+                  "inputs": [
+                    "tab",
+                    "esc",
+                    "up",
+                    "down",
+                    "j",
+                    "k",
+                    "enter",
+                    "space",
+                    "pgup",
+                    "pgdown",
+                    "ctrl+u",
+                    "ctrl+d",
+                    "ctrl+b"
+                  ],
+                  "implementation": {
+                    "symbol": "chat.NewSidebarCmp",
+                    "path": "prumo-tui/internal/tui/components/chat/sidebar.go",
+                    "status": "implemented"
+                  },
+                  "children": [
+                    {
+                      "id": "node:sidebar-status",
+                      "kind": "status",
+                      "label": "Session status",
+                      "role": "Whether the run is idle or working, and which provider, model, effort and workspace it runs with",
+                      "intent": "The answer to am I waiting on something, without reading the transcript",
+                      "slot": {
+                        "region": "body",
+                        "order": 0,
+                        "align": "stretch"
+                      },
+                      "size_classes": [
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "active"
+                      ],
+                      "tokens": [
+                        "token:color.text",
+                        "token:color.text-muted"
+                      ],
+                      "implementation": {
+                        "symbol": "chat.NewSidebarCmp",
+                        "path": "prumo-tui/internal/tui/components/chat/sidebar.go",
+                        "status": "implemented"
+                      }
+                    },
+                    {
+                      "id": "node:sidebar-context",
+                      "kind": "status",
+                      "label": "Context tokens",
+                      "role": "How much of the model's own context window the run has consumed, and what it cost",
+                      "intent": "A budget the user watches before it binds, not after",
+                      "slot": {
+                        "region": "body",
+                        "order": 1,
+                        "align": "stretch"
+                      },
+                      "size_classes": [
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "active"
+                      ],
+                      "tokens": [
+                        "token:color.text",
+                        "token:color.text-muted",
+                        "token:color.accent"
+                      ],
+                      "implementation": {
+                        "symbol": "chat.NewSidebarCmp",
+                        "path": "prumo-tui/internal/tui/components/chat/sidebar.go",
+                        "status": "implemented"
+                      }
+                    },
+                    {
+                      "id": "node:sidebar-goals",
+                      "kind": "list",
+                      "label": "Goals",
+                      "role": "The workspace's canonical goals as collapsible accordions: the active goal expanded, the rest one keypress away, each with its criteria, constraints and gates",
+                      "intent": "The contract the run is held to, visible where the run is driven",
+                      "slot": {
+                        "region": "body",
+                        "order": 2,
+                        "align": "stretch"
+                      },
+                      "size_classes": [
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "focus",
+                        "empty",
+                        "active"
+                      ],
+                      "tokens": [
+                        "token:color.text",
+                        "token:color.text-muted",
+                        "token:color.accent"
+                      ],
+                      "inputs": [
+                        "up",
+                        "down",
+                        "j",
+                        "k",
+                        "enter",
+                        "space"
+                      ],
+                      "implementation": {
+                        "symbol": "goals.ReadWorkspace",
+                        "path": "prumo-tui/internal/goals/goals.go",
+                        "status": "implemented"
+                      }
+                    },
+                    {
+                      "id": "node:sidebar-workforce",
+                      "kind": "list",
+                      "label": "Workforce",
+                      "role": "The primary agent and the subagents it delegated to, with their running state",
+                      "intent": "Who is doing the work right now, including work the user did not start directly",
+                      "slot": {
+                        "region": "body",
+                        "order": 3,
+                        "align": "stretch"
+                      },
+                      "size_classes": [
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "active"
+                      ],
+                      "tokens": [
+                        "token:color.text",
+                        "token:color.text-muted"
+                      ],
+                      "implementation": {
+                        "symbol": "chat.NewSidebarCmp",
+                        "path": "prumo-tui/internal/tui/components/chat/sidebar.go",
+                        "status": "implemented"
+                      }
+                    },
+                    {
+                      "id": "node:sidebar-changes",
+                      "kind": "list",
+                      "label": "Changed files",
+                      "role": "The files this run created, modified or deleted, scrollable with the sidebar",
+                      "intent": "What the run touched, before the diff is opened",
+                      "slot": {
+                        "region": "body",
+                        "order": 4,
+                        "align": "stretch"
+                      },
+                      "size_classes": [
+                        "standard",
+                        "wide"
+                      ],
+                      "states": [
+                        "default",
+                        "empty",
+                        "active"
+                      ],
+                      "tokens": [
+                        "token:color.text",
+                        "token:color.text-muted"
+                      ],
+                      "implementation": {
+                        "symbol": "chat.NewSidebarCmp",
+                        "path": "prumo-tui/internal/tui/components/chat/sidebar.go",
+                        "status": "implemented"
+                      }
+                    }
+                  ]
                 }
               ]
             },
@@ -1054,6 +1263,27 @@
       "to": "node:statusline",
       "label": "stopping a recurring run is reported where every other failure is",
       "condition": "a job is stopped"
+    },
+    {
+      "kind": "focus",
+      "from": "node:composer",
+      "to": "node:sidebar",
+      "label": "tab moves the keyboard to the sidebar panel without leaving the page",
+      "condition": "the sidebar is open and no completion menu is shown"
+    },
+    {
+      "kind": "focus",
+      "from": "node:sidebar",
+      "to": "node:composer",
+      "label": "tab, esc, i or a returns the keyboard to the composer",
+      "condition": "the sidebar holds the keyboard"
+    },
+    {
+      "kind": "data",
+      "from": "node:sidebar-goals",
+      "to": "node:transcript",
+      "label": "the accordion shows the contract the run in the transcript is held to",
+      "condition": "the workspace declares canonical goals"
     }
   ]
 }

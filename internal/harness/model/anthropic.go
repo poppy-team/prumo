@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/raillen/prumo/internal/harness/agent"
@@ -185,8 +186,42 @@ func (a *Anthropic) Stream(ctx context.Context, req agent.ModelRequest) (<-chan 
 		}
 		msgs = append(msgs, anthropicOutboundMessage{Role: role, Content: blocks})
 	}
+	maxTokens := 1024
+	if req.MaxTokens > 0 {
+		maxTokens = req.MaxTokens
+	}
 	payload := map[string]any{
-		"model": modelName, "max_tokens": 1024, "stream": true, "messages": msgs,
+		"model": modelName, "max_tokens": maxTokens, "stream": true, "messages": msgs,
+	}
+	if req.ReasoningEffort != "" {
+		effort := strings.ToLower(strings.TrimSpace(req.ReasoningEffort))
+		var budget int
+		switch effort {
+		case "off", "none", "disabled", "0":
+			budget = 0
+		case "low":
+			budget = 1024
+		case "medium":
+			budget = 4096
+		case "high":
+			budget = 16384
+		case "max":
+			budget = 32768
+		default:
+			if n, err := strconv.Atoi(effort); err == nil && n > 0 {
+				budget = n
+			}
+		}
+		if budget > 0 {
+			payload["thinking"] = map[string]any{
+				"type":          "enabled",
+				"budget_tokens": budget,
+			}
+			if maxTokens <= budget {
+				maxTokens = budget + 2048
+				payload["max_tokens"] = maxTokens
+			}
+		}
 	}
 	if len(systemBlocks) > 0 {
 		systemBlocks[len(systemBlocks)-1]["cache_control"] = map[string]string{"type": "ephemeral"}

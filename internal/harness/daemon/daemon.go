@@ -706,17 +706,21 @@ func (s *Server) opStart(msg map[string]any) map[string]any {
 	s.mu.Unlock()
 
 	modelName := str(msg, "model")
+	reasoningEffort := str(msg, "reasoning_effort")
+	if reasoningEffort == "" {
+		reasoningEffort = os.Getenv("PRUMO_REASONING_EFFORT")
+	}
 	s.saveRecord(RunRecord{RunID: runID, Status: "running"})
 	s.appendEvent(runID, agent.AgentEvent{ID: runID + "-started", RunID: runID, Kind: "run.started", Payload: map[string]any{"goal": goal, "provider": providerName}, CreatedAt: agent.Now()})
 
-	go s.execute(runCtx, runID, goal, modelName, provider, tools, workspace, maxTurns, ar)
+	go s.execute(runCtx, runID, goal, modelName, provider, tools, workspace, maxTurns, reasoningEffort, ar)
 	return map[string]any{"ok": true, "run_id": runID}
 }
 
 // execute builds one run's collaborators and hands them to observe. Every
 // artifact the run produces is written by observe, so a run that stops for
 // approval and then continues still ends with exactly one coherent record.
-func (s *Server) execute(ctx context.Context, runID, goal, modelName string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int, ar *activeRun) {
+func (s *Server) execute(ctx context.Context, runID, goal, modelName string, provider model.Provider, tools harnessruntime.ToolExecutor, workspace string, maxTurns int, reasoningEffort string, ar *activeRun) {
 	dir := s.StoreDir
 	budgetTokens, budgetUSD, budgetTools := s.Deps.Budget.limits()
 	tracker := runlayer.NewTracker(budgetTokens, budgetUSD, budgetTools)
@@ -750,13 +754,14 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 		}
 	}
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
-		Models:        provider,
-		Tools:         counting,
-		Perms:         engine,
-		Checkpoints:   checkpoints,
-		EffectJournal: checkpoints,
-		Workspace:     workspace,
-		HasVision:     hasVision,
+		Models:          provider,
+		Tools:           counting,
+		Perms:           engine,
+		Checkpoints:     checkpoints,
+		EffectJournal:   checkpoints,
+		Workspace:       workspace,
+		HasVision:       hasVision,
+		ReasoningEffort: reasoningEffort,
 		Events: func(ev agent.AgentEvent) {
 			s.appendEvent(runID, ev)
 			ar.mu.Lock()

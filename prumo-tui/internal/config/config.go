@@ -36,6 +36,9 @@ type Config struct {
 	// Provider and Model name what the client asks the harness to run with.
 	Provider string
 	Model    string
+	// ReasoningEffort controls the model reasoning budget / effort level.
+	// Supported levels: "low", "medium", "high", "max", numeric token budgets (e.g. "4096"), or "off".
+	ReasoningEffort string
 	// ShowSidebar records whether the sidebar is open, persisted across sessions.
 	ShowSidebar bool
 	// Onboarded records that the first-run offer was answered. It is written
@@ -120,8 +123,9 @@ type persisted struct {
 	// Provider is written only when the first-run offer chose one for the
 	// person; --provider still wins, because a flag is said now and this file
 	// was read earlier.
-	Provider string `json:"provider,omitempty"`
-	Model    string `json:"model,omitempty"`
+	Provider        string `json:"provider,omitempty"`
+	Model           string `json:"model,omitempty"`
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 
 	Onboarded   bool  `json:"onboarded,omitempty"`
 	ShowSidebar *bool `json:"show_sidebar,omitempty"`
@@ -178,6 +182,9 @@ func Load() error {
 	if saved.ShowSidebar != nil {
 		current.ShowSidebar = *saved.ShowSidebar
 	}
+	if saved.ReasoningEffort != "" && current.ReasoningEffort == "" {
+		current.ReasoningEffort = saved.ReasoningEffort
+	}
 	current.Onboarded = saved.Onboarded
 	return nil
 }
@@ -192,9 +199,10 @@ func save() error {
 	}
 	mu.RLock()
 	saved := persisted{
-		Theme:       current.Theme,
-		Onboarded:   current.Onboarded,
-		ShowSidebar: &current.ShowSidebar,
+		Theme:           current.Theme,
+		Onboarded:       current.Onboarded,
+		ShowSidebar:     &current.ShowSidebar,
+		ReasoningEffort: current.ReasoningEffort,
 	}
 	if current.chosenProvider {
 		saved.Provider = current.Provider
@@ -248,6 +256,15 @@ func UpdateModel(name string) error {
 	mu.Lock()
 	current.Model = name
 	current.chosenModel = true
+	mu.Unlock()
+	return save()
+}
+
+// UpdateReasoningEffort records the reasoning effort level or token budget,
+// so subsequent model requests utilize the desired thinking intensity.
+func UpdateReasoningEffort(effort string) error {
+	mu.Lock()
+	current.ReasoningEffort = effort
 	mu.Unlock()
 	return save()
 }

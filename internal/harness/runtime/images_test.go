@@ -142,6 +142,97 @@ func TestResolveReferencesMultiple(t *testing.T) {
 	}
 }
 
+func TestResolveReferencesRejectsParentTraversal(t *testing.T) {
+	dir := t.TempDir()
+	msgs := []agent.Message{
+		{ID: "m1", Role: agent.RoleUser, Content: "inspect @../secret.png please"},
+	}
+
+	_, err := ResolveReferences(msgs, dir, true)
+	if err == nil {
+		t.Fatal("expected traversal error, got nil")
+	}
+	if !strings.Contains(err.Error(), "escapes workspace") {
+		t.Fatalf("expected escapes workspace error, got: %v", err)
+	}
+}
+
+func TestResolveReferencesRejectsAbsolutePathOutsideWorkspace(t *testing.T) {
+	dir := t.TempDir()
+	outsideDir := t.TempDir()
+	outsideImg := filepath.Join(outsideDir, "secret.png")
+	if err := os.WriteFile(outsideImg, []byte("png"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	msgs := []agent.Message{
+		{ID: "m1", Role: agent.RoleUser, Content: "inspect @" + outsideImg},
+	}
+
+	_, err := ResolveReferences(msgs, dir, true)
+	if err == nil {
+		t.Fatal("expected escape error, got nil")
+	}
+	if !strings.Contains(err.Error(), "escapes workspace") {
+		t.Fatalf("expected escapes workspace error, got: %v", err)
+	}
+}
+
+func TestResolveReferencesRejectsSymlinkLeavingWorkspace(t *testing.T) {
+	dir := t.TempDir()
+	outsideDir := t.TempDir()
+	outsideImg := filepath.Join(outsideDir, "secret.png")
+	if err := os.WriteFile(outsideImg, []byte("png"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	link := filepath.Join(dir, "link.png")
+	if err := os.Symlink(outsideImg, link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+
+	msgs := []agent.Message{
+		{ID: "m1", Role: agent.RoleUser, Content: "inspect @link.png"},
+	}
+
+	_, err := ResolveReferences(msgs, dir, true)
+	if err == nil {
+		t.Fatal("expected symlink escape error, got nil")
+	}
+	if !strings.Contains(err.Error(), "escapes workspace") {
+		t.Fatalf("expected escapes workspace error, got: %v", err)
+	}
+}
+
+func TestResolveReferencesExceedsAggregateSizeLimit(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create 3 files of 9MB each (total 27MB > 25MB limit)
+	for _, name := range []string{"img1.png", "img2.png", "img3.png"} {
+		f, err := os.Create(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Truncate(9 * 1024 * 1024); err != nil {
+			f.Close()
+			t.Fatal(err)
+		}
+		f.Close()
+	}
+
+	msgs := []agent.Message{
+		{ID: "m1", Role: agent.RoleUser, Content: "look at @img1.png and @img2.png and @img3.png"},
+	}
+
+	_, err := ResolveReferences(msgs, dir, true)
+	if err == nil {
+		t.Fatal("expected aggregate size limit error, got nil")
+	}
+	if !strings.Contains(err.Error(), "aggregate image payload exceeds 25MB limit") {
+		t.Fatalf("expected aggregate limit error, got: %v", err)
+	}
+}
+
 func TestRunnerStepResolvesVisionReferences(t *testing.T) {
 	dir := t.TempDir()
 	imgBytes := []byte("img-content")

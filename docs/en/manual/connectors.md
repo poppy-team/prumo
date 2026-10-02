@@ -8,9 +8,9 @@ Prumo adopts a provider-agnostic architecture. No execution environment or LLM v
 
 It is essential to distinguish the two levels of Prumo integration:
 
-1. **Global Connector (`prumo connector ...`)**: 
+1. **Global Connector (`prumo connector ...`)**:
    Operates on your computer (`~/.prumo/connectors/`). It manages installation, the tool's availability status on the `$PATH`, and the capabilities negotiated with that agent's executable (e.g. Claude Code, OpenCode CLI, Antigravity).
-2. **Project Adapter (`prumo compile --target ...`)**: 
+2. **Project Adapter (`prumo compile --target ...`)**:
    Operates on the active repository (`./`). It surgically generates or injects context rules, skills, and instructions that the agent will read when opened in this folder (e.g. `CLAUDE.md`, `.gemini/`, `.opencode/`, `.cursorrules`).
 
 ---

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
 )
@@ -52,5 +53,50 @@ func TestADirectoryIsNotAReference(t *testing.T) {
 
 	if got := editor.textarea.Value(); got != "internal/" {
 		t.Fatalf("the editor changed something it was not asked to: %q", got)
+	}
+}
+
+func TestEnterSendsMessage(t *testing.T) {
+	editor := newEditor(t)
+	editor.textarea.SetValue("hello world")
+
+	_, cmd := editor.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected send command on Enter, got nil")
+	}
+	if got := editor.textarea.Value(); got != "" {
+		t.Fatalf("expected editor value to be reset after send, got %q", got)
+	}
+}
+
+func TestAltEnterInsertsNewline(t *testing.T) {
+	editor := newEditor(t)
+	editor.textarea.SetValue("line1")
+
+	_, cmd := editor.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt})
+	if cmd != nil {
+		msg := cmd()
+		if _, ok := msg.(SendMsg); ok {
+			t.Fatal("Alt+Enter should not send message")
+		}
+	}
+	if got := editor.textarea.Value(); got != "line1\n" {
+		t.Fatalf("expected 'line1\\n', got %q", got)
+	}
+}
+
+func TestShiftEnterInsertsNewline(t *testing.T) {
+	editor := newEditor(t)
+	editor.textarea.SetValue("line1")
+
+	_, cmd := editor.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModShift})
+	if cmd != nil {
+		msg := cmd()
+		if _, ok := msg.(SendMsg); ok {
+			t.Fatal("Shift+Enter should not send message")
+		}
+	}
+	if got := editor.textarea.Value(); got != "line1\n" {
+		t.Fatalf("expected 'line1\\n', got %q", got)
 	}
 }

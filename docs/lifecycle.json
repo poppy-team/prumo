@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0",
+  "version": "0.6.1",
   "release_gates": [
     "every registered translation is current for its source digest",
     "every media record illustrates the current revision of its unit",
@@ -7,7 +7,7 @@
     "no current document presents a removed version line as available"
   ],
   "version_policy": {
-    "current": "0.6.0",
+    "current": "0.6.1",
     "supported": ["0.5"],
     "deprecated": ["0.3", "0.4"],
     "removed": ["0.1", "0.2"],

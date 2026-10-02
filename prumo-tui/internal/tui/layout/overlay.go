@@ -43,6 +43,24 @@ func PlaceOverlay(
 	bgHeight := len(bgLines)
 	fgHeight := len(fgLines)
 
+	// Ensure overlay rows are filled to full width with background color
+	// so underlying text/cells never bleed through transparent gaps.
+	var bgStyle lipgloss.Style
+	hasTheme := theme.CurrentTheme() != nil
+	if hasTheme {
+		bgStyle = lipgloss.NewStyle().Background(theme.CurrentTheme().Background())
+	}
+	for i, line := range fgLines {
+		if gap := fgWidth - ansi.PrintableRuneWidth(line); gap > 0 {
+			if hasTheme {
+				fgLines[i] += bgStyle.Render(strings.Repeat(" ", gap))
+			} else {
+				fgLines[i] += strings.Repeat(" ", gap)
+			}
+		}
+	}
+	fg = strings.Join(fgLines, "\n")
+
 	if shadow {
 		t := theme.CurrentTheme()
 		baseStyle := styles.BaseStyle()

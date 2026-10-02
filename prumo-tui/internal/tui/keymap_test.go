@@ -11,9 +11,24 @@ import (
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
+	"github.com/raillen/prumo-tui/internal/tui/page"
 )
 
 func ctrl(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Mod: tea.ModCtrl} }
+
+func TestCtrlTOpensChatTabInsteadOfThemeDialog(t *testing.T) {
+	model := shell(t, 100, 30).(appModel)
+	before := model.pages[page.ChatPage].View().Content
+	updated, cmd := model.Update(ctrl('t'))
+	model = updated.(appModel)
+	if model.showThemeDialog {
+		t.Fatal("ctrl+t opened the theme dialog")
+	}
+	model = drive(t, model, cmd, 4).(appModel)
+	if after := model.pages[page.ChatPage].View().Content; after == before || !strings.Contains(after, "Tab 2") {
+		t.Fatal("ctrl+t did not open a new chat tab")
+	}
+}
 
 // The interaction contract reserves two chords and states what they do. A
 // client that rebinds them is not following the map a user learned elsewhere.
@@ -119,9 +134,59 @@ func TestEverySurfaceHasAChord(t *testing.T) {
 		"themes":   keys.SwitchTheme.Keys(),
 		"files":    keys.Filepicker.Keys(),
 		"help":     keys.Help.Keys(),
+		"leader":   keys.Leader.Keys(),
 	} {
 		if len(binding) == 0 {
 			t.Errorf("%s has no keyboard route", name)
 		}
+	}
+}
+
+func TestLeaderKeyChords(t *testing.T) {
+	_, m := newTestApp(t)
+
+	// Step 1: Press Ctrl+X
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
+	model := updated.(appModel)
+	if !model.leaderPending {
+		t.Fatal("expected leaderPending to be true after ctrl+x")
+	}
+	if cmd == nil {
+		t.Fatal("expected feedback command after activating leader key")
+	}
+
+	// Step 2: Press 'n' (new session)
+	model.selectedSession.ID = "test-session"
+	updated, _ = model.Update(tea.KeyPressMsg{Code: 'n'})
+	model = updated.(appModel)
+	if model.leaderPending {
+		t.Fatal("expected leaderPending to be cleared after sub-key")
+	}
+	if model.selectedSession.ID != "" {
+		t.Fatalf("expected empty session id, got %q", model.selectedSession.ID)
+	}
+
+	// Step 3: Test cancellation with Esc
+	updated, _ = model.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
+	model = updated.(appModel)
+	if !model.leaderPending {
+		t.Fatal("expected leaderPending to be true after second ctrl+x")
+	}
+	updated, cmd = model.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	model = updated.(appModel)
+	if model.leaderPending {
+		t.Fatal("expected leaderPending to be false after esc")
+	}
+
+	// Step 4: Test leader 't' (toggle thinking)
+	updated, _ = model.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
+	model = updated.(appModel)
+	updated, cmd = model.Update(tea.KeyPressMsg{Code: 't'})
+	model = updated.(appModel)
+	if model.leaderPending {
+		t.Fatal("expected leaderPending to be false after leader 't'")
+	}
+	if cmd == nil {
+		t.Fatal("expected cmd after leader 't'")
 	}
 }

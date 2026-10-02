@@ -1,5 +1,5 @@
-# digest sha256:dfc05a6cd4a6e106
-                                                                                                                                            
+# digest sha256:e0b660e3c1da1b48
+                                                                                                  │  ▼ SESSION STATUS                       
  ┃ row 0 of the con╭────────────────────────────────────────────────────────────────────────────────────────────────────╮                   
                    │                                                                                                    │░                  
  ┃ row 1 of the con│   Commands                                                                                         │░                  
@@ -7,7 +7,7 @@
  ┃ row 2 of the con│   Initialize Project                                                                               │░                  
                    │   Create or update AGENTS.md, the agent memory file                                                │░                  
  ┃ row 3 of the con│   Scheduled runs                                                                                   │░                  
-                   │   See what the daemon repeats on a schedule, and stop one                                          │░                  
+                   │   See what the daemon repeats on a schedule, and stop one                                          │░░░░░░░░░░░░░░░    
                    │   Export the session's timeline                                                                    │░                  
                    │   Write the run's own record to .prumo/runtime/exports/ as plain text                              │░                  
                    │   Compact Session                                                                                  │░                  

@@ -8,9 +8,14 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/raillen/prumo-tui/internal/agent"
 	"github.com/raillen/prumo-tui/internal/app"
 	"github.com/raillen/prumo-tui/internal/completions"
 	"github.com/raillen/prumo-tui/internal/config"
+	"github.com/raillen/prumo-tui/internal/llm/models"
+	"github.com/raillen/prumo-tui/internal/message"
+	"github.com/raillen/prumo-tui/internal/permission"
+	"github.com/raillen/prumo-tui/internal/pubsub"
 	"github.com/raillen/prumo-tui/internal/session"
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
@@ -23,8 +28,18 @@ import (
 var ChatPage PageID = "chat"
 
 type SessionTab struct {
-	ID    string
-	Title string
+	ID              string
+	Title           string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
+	// Unread marks a finished or answered run the user has not looked at
+	// since it landed on a tab that was not active. NeedsApproval marks a
+	// permission gate waiting on a tab that is not active. Both clear when
+	// the tab becomes active.
+	Unread        bool
+	NeedsApproval bool
 }
 
 type chatPage struct {
@@ -32,9 +47,12 @@ type chatPage struct {
 	editor               layout.Container
 	editorCmp            chat.EditorCmp
 	messages             layout.Container
+	messagesCmp          chat.MessagesCmp
+	lastVimChord         rune
 	sidebar              layout.Container
 	sidebarCmp           chat.SidebarCmp
 	showSidebar          bool
+	sidebarOverride      bool
 	layout               layout.SplitPaneLayout
 	session              session.Session
 	completionDialog     dialog.CompletionDialog
@@ -52,6 +70,7 @@ type ChatKeyMap struct {
 	ShowCompletionDialog   key.Binding
 	ShowCommandsCompletion key.Binding
 	ToggleSidebar          key.Binding
+	FocusSidebar           key.Binding
 	NewSession             key.Binding
 	NewTab                 key.Binding
 	CloseTab               key.Binding
@@ -72,6 +91,10 @@ var keyMap = ChatKeyMap{
 	ToggleSidebar: key.NewBinding(
 		key.WithKeys("ctrl+b"),
 		key.WithHelp("ctrl+b", "toggle sidebar"),
+	),
+	FocusSidebar: key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("tab", "focus sidebar"),
 	),
 	NewSession: key.NewBinding(
 		key.WithKeys("ctrl+n"),
@@ -114,6 +137,23 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		p.width = msg.Width
 		p.height = msg.Height
+		if p.sidebarOverride {
+			if p.showSidebar {
+				cmds = append(cmds, p.setSidebar())
+			} else {
+				cmds = append(cmds, p.clearSidebar())
+			}
+		} else {
+			shouldShow := p.width >= 100
+			if shouldShow != p.showSidebar {
+				p.showSidebar = shouldShow
+				if p.showSidebar {
+					cmds = append(cmds, p.setSidebar())
+				} else {
+					cmds = append(cmds, p.clearSidebar())
+				}
+			}
+		}
 		cmds = append(cmds, p.updateLayoutSize())
 
 	case dialog.CompletionDialogCloseMsg:
@@ -121,13 +161,38 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case layout.FocusMsg:
 		p.editor.SetFocused(msg.Focused)
+		if msg.Focused {
+			return p, p.editorCmp.Focus()
+		}
+		p.editorCmp.Blur()
 		return p, nil
 
 	case chat.ToggleSidebarMsg:
 		return p, p.toggleSidebar()
 
 	case chat.NewTabMsg:
-		return p, p.newTab(msg.Title)
+		return p, p.newTab(msg)
+
+	case chat.UpdateActiveTabMsg:
+		if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) {
+			if msg.Title != "" {
+				p.tabs[p.activeTabIndex].Title = msg.Title
+			}
+			if msg.Provider != "" {
+				p.tabs[p.activeTabIndex].Provider = msg.Provider
+			}
+			if msg.Model != "" {
+				p.tabs[p.activeTabIndex].Model = msg.Model
+			}
+			if msg.ReasoningEffort != "" {
+				p.tabs[p.activeTabIndex].ReasoningEffort = msg.ReasoningEffort
+			}
+			if msg.Workspace != "" {
+				p.tabs[p.activeTabIndex].Workspace = msg.Workspace
+			}
+			p.sidebarCmp.UpdateSession(p.session)
+		}
+		return p, nil
 
 	case chat.SwitchTabMsg:
 		return p, p.switchTab(msg.Index)
@@ -144,6 +209,9 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case chat.SendMsg:
 		return p, p.sendMessage(msg.Text)
 
+	case chat.RunBackgroundMsg:
+		return p, p.runBackground(msg)
+
 	case chat.SessionSelectedMsg:
 		p.session = msg
 		p.sidebarCmp.UpdateSession(p.session)
@@ -152,9 +220,97 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.Title != "" {
 				p.tabs[p.activeTabIndex].Title = msg.Title
 			}
+			p.tabs[p.activeTabIndex].Unread = false
+			p.tabs[p.activeTabIndex].NeedsApproval = false
 		}
 
+	case chat.BackgroundStartedMsg:
+		return p, util.ReportInfo(fmt.Sprintf("Background run started: %s — keep working, the tab bar tracks it", msg.Title))
+
+	case pubsub.Event[agent.AgentEvent]:
+		p.markTabUnread(msg.Payload.SessionID, msg.Payload.Done || msg.Payload.Error != nil)
+
+	case pubsub.Event[message.Message]:
+		if msg.Type == pubsub.CreatedEvent {
+			p.markTabUnread(msg.Payload.SessionID, true)
+		}
+
+	case pubsub.Event[permission.PermissionRequest]:
+		p.markTabApproval(msg.Payload.SessionID, true)
+
+	case dialog.PermissionResponseMsg:
+		p.markTabApproval(msg.Permission.SessionID, false)
+
 	case tea.KeyPressMsg:
+		if p.sidebarCmp.Focused() {
+			p.lastVimChord = 0
+			if key.Matches(msg, keyMap.ToggleSidebar) {
+				p.sidebarCmp.Blur()
+				return p, p.toggleSidebar()
+			}
+			switch msg.String() {
+			case "tab", "esc", "i", "a":
+				return p, p.blurSidebar()
+			}
+			sc, cmd := p.sidebarCmp.Update(msg)
+			p.sidebarCmp = sc.(chat.SidebarCmp)
+			return p, cmd
+		}
+		if !p.showCompletionDialog && p.showSidebar && key.Matches(msg, keyMap.FocusSidebar) {
+			p.lastVimChord = 0
+			return p, p.focusSidebar()
+		}
+		// Modal Vim navigation when composer is unfocused/unblurred
+		if !p.editorCmp.Focused() {
+			switch msg.String() {
+			case "i", "a", "enter":
+				p.lastVimChord = 0
+				p.editor.SetFocused(true)
+				return p, p.editorCmp.Focus()
+			case "j", "down":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollDown(1)
+				}
+				return p, nil
+			case "k", "up":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollUp(1)
+				}
+				return p, nil
+			case "g":
+				if p.lastVimChord == 'g' {
+					p.lastVimChord = 0
+					if p.messagesCmp != nil {
+						p.messagesCmp.ScrollToTop()
+					}
+				} else {
+					p.lastVimChord = 'g'
+				}
+				return p, nil
+			case "G":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollToBottom()
+				}
+				return p, nil
+			case "ctrl+d":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollDown(10)
+				}
+				return p, nil
+			case "ctrl+u":
+				p.lastVimChord = 0
+				if p.messagesCmp != nil {
+					p.messagesCmp.ScrollUp(10)
+				}
+				return p, nil
+			}
+			p.lastVimChord = 0
+		}
+
 		switch {
 		case key.Matches(msg, keyMap.ShowCompletionDialog):
 			p.completionDialog.SetProvider(p.filesProvider)
@@ -171,7 +327,7 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, p.toggleSidebar()
 
 		case key.Matches(msg, keyMap.NewTab):
-			return p, p.newTab("")
+			return p, p.newTab(chat.NewTabMsg{})
 
 		case key.Matches(msg, keyMap.CloseTab):
 			return p, p.closeTab(p.activeTabIndex)
@@ -198,8 +354,13 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			)
 
 		case key.Matches(msg, keyMap.Cancel):
-			if p.session.ID != "" {
+			if p.session.ID != "" && p.app != nil && p.app.CoderAgent != nil && p.app.CoderAgent.IsSessionBusy(p.session.ID) {
 				p.app.CoderAgent.Cancel(p.session.ID)
+				return p, nil
+			}
+			if p.editorCmp.Focused() {
+				p.editorCmp.Blur()
+				p.editor.SetFocused(false)
 				return p, nil
 			}
 		}
@@ -224,15 +385,41 @@ func (p *chatPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, tea.Batch(cmds...)
 }
 
-func (p *chatPage) newTab(title string) tea.Cmd {
+func (p *chatPage) newTab(msg chat.NewTabMsg) tea.Cmd {
+	title := msg.Title
 	if title == "" {
 		title = fmt.Sprintf("Tab %d", len(p.tabs)+1)
 	}
+	provider := msg.Provider
+	if provider == "" && p.app != nil {
+		provider = p.app.CurrentProvider()
+	}
+	model := msg.Model
+	if model == "" && p.app != nil && p.app.CoderAgent != nil {
+		model = string(p.app.CoderAgent.Model().ID)
+	}
+	effort := msg.ReasoningEffort
+	if effort == "" && p.app != nil {
+		effort = p.app.CurrentReasoningEffort()
+	}
+	ws := msg.Workspace
+	if ws == "" && p.app != nil {
+		ws = p.app.CurrentWorkspace()
+	}
+
+	p.saveActiveTabState()
+
 	p.tabs = append(p.tabs, SessionTab{
-		ID:    "",
-		Title: title,
+		ID:              "",
+		Title:           title,
+		Provider:        provider,
+		Model:           model,
+		ReasoningEffort: effort,
+		Workspace:       ws,
 	})
 	p.activeTabIndex = len(p.tabs) - 1
+	p.applyTabState(p.tabs[p.activeTabIndex])
+
 	p.session = session.Session{Title: title}
 	p.sidebarCmp.UpdateSession(p.session)
 	return tea.Batch(
@@ -251,8 +438,15 @@ func (p *chatPage) switchTab(index int) tea.Cmd {
 	if index >= len(p.tabs) {
 		index = len(p.tabs) - 1
 	}
+
+	p.saveActiveTabState()
+
 	p.activeTabIndex = index
+	p.tabs[index].Unread = false
+	p.tabs[index].NeedsApproval = false
 	tab := p.tabs[index]
+	p.applyTabState(tab)
+
 	if tab.ID != "" && p.app != nil && p.app.Sessions != nil {
 		sess, err := p.app.Sessions.Get(context.Background(), tab.ID)
 		if err == nil {
@@ -275,6 +469,49 @@ func (p *chatPage) switchTab(index int) tea.Cmd {
 	)
 }
 
+func (p *chatPage) activeTabSessionID() string {
+	if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) {
+		return p.tabs[p.activeTabIndex].ID
+	}
+	return ""
+}
+
+func (p *chatPage) tabIndexBySession(sessionID string) int {
+	if sessionID == "" {
+		return -1
+	}
+	for i := range p.tabs {
+		if p.tabs[i].ID != "" && p.tabs[i].ID == sessionID {
+			return i
+		}
+	}
+	return -1
+}
+
+// markTabUnread flags a finished or answered run the user has not seen. Events
+// for the active tab, or without a session, are the visible conversation and
+// never a badge.
+func (p *chatPage) markTabUnread(sessionID string, unread bool) {
+	if !unread || sessionID == "" || sessionID == p.activeTabSessionID() {
+		return
+	}
+	if i := p.tabIndexBySession(sessionID); i >= 0 {
+		p.tabs[i].Unread = true
+	}
+}
+
+// markTabApproval flags a permission gate waiting on an inactive tab. The
+// shell dialog answers gates on the active tab, so the badge is for runs the
+// user is not looking at.
+func (p *chatPage) markTabApproval(sessionID string, waiting bool) {
+	if i := p.tabIndexBySession(sessionID); i >= 0 {
+		p.tabs[i].NeedsApproval = waiting
+		if waiting && i != p.activeTabIndex {
+			p.tabs[i].Unread = true
+		}
+	}
+}
+
 func (p *chatPage) nextTab() tea.Cmd {
 	if len(p.tabs) > 1 {
 		return p.switchTab((p.activeTabIndex + 1) % len(p.tabs))
@@ -292,10 +529,16 @@ func (p *chatPage) prevTab() tea.Cmd {
 func (p *chatPage) closeTab(index int) tea.Cmd {
 	if len(p.tabs) <= 1 {
 		ws := ""
+		prov := "fake"
 		if p.app != nil {
 			ws = p.app.Workspace
+			prov = p.app.CurrentProvider()
 		}
-		p.tabs[0] = SessionTab{Title: util.DefaultSessionTitle(ws)}
+		p.tabs[0] = SessionTab{
+			Title:     util.DefaultSessionTitle(ws),
+			Provider:  prov,
+			Workspace: ws,
+		}
 		p.activeTabIndex = 0
 		p.session = session.Session{Title: p.tabs[0].Title}
 		p.sidebarCmp.UpdateSession(p.session)
@@ -306,7 +549,38 @@ func (p *chatPage) closeTab(index int) tea.Cmd {
 	if p.activeTabIndex >= len(p.tabs) {
 		p.activeTabIndex = len(p.tabs) - 1
 	}
+	tab := p.tabs[p.activeTabIndex]
+	p.applyTabState(tab)
 	return p.switchTab(p.activeTabIndex)
+}
+
+func (p *chatPage) saveActiveTabState() {
+	if p.activeTabIndex >= 0 && p.activeTabIndex < len(p.tabs) && p.app != nil {
+		p.tabs[p.activeTabIndex].Provider = p.app.CurrentProvider()
+		if p.app.CoderAgent != nil {
+			p.tabs[p.activeTabIndex].Model = string(p.app.CoderAgent.Model().ID)
+		}
+		p.tabs[p.activeTabIndex].ReasoningEffort = p.app.CurrentReasoningEffort()
+		p.tabs[p.activeTabIndex].Workspace = p.app.CurrentWorkspace()
+	}
+}
+
+func (p *chatPage) applyTabState(tab SessionTab) {
+	if p.app == nil {
+		return
+	}
+	if tab.Provider != "" {
+		p.app.SetProvider(tab.Provider)
+	}
+	if tab.Model != "" {
+		p.app.SetModel(models.ModelID(tab.Model))
+	}
+	if tab.ReasoningEffort != "" {
+		p.app.SetReasoningEffort(tab.ReasoningEffort)
+	}
+	if tab.Workspace != "" {
+		p.app.SetWorkspace(tab.Workspace)
+	}
 }
 
 func (p *chatPage) updateLayoutSize() tea.Cmd {
@@ -319,11 +593,34 @@ func (p *chatPage) updateLayoutSize() tea.Cmd {
 
 func (p *chatPage) toggleSidebar() tea.Cmd {
 	p.showSidebar = !p.showSidebar
+	p.sidebarOverride = true
 	_ = config.UpdateSidebarVisibility(p.showSidebar)
 	if p.showSidebar {
 		return p.setSidebar()
 	}
+	if p.sidebarCmp.Focused() {
+		p.sidebarCmp.Blur()
+		p.editor.SetFocused(true)
+		return tea.Batch(p.clearSidebar(), p.editorCmp.Focus())
+	}
 	return p.clearSidebar()
+}
+
+func (p *chatPage) focusSidebar() tea.Cmd {
+	if !p.showSidebar {
+		return nil
+	}
+	p.sidebarCmp.Focus()
+	p.editorCmp.Blur()
+	p.editor.SetFocused(false)
+	p.lastVimChord = 0
+	return nil
+}
+
+func (p *chatPage) blurSidebar() tea.Cmd {
+	p.sidebarCmp.Blur()
+	p.editor.SetFocused(true)
+	return p.editorCmp.Focus()
 }
 
 func (p *chatPage) setSidebar() tea.Cmd {
@@ -370,6 +667,71 @@ func (p *chatPage) sendMessage(text string) tea.Cmd {
 	}
 }
 
+// runBackground starts a run on a dormant tab: the session is created and the
+// tab appended, but the active tab never changes, so the composer stays usable.
+// Progress surfaces through the tab bar badges and the completion toast.
+func (p *chatPage) runBackground(msg chat.RunBackgroundMsg) tea.Cmd {
+	if strings.TrimSpace(msg.Goal) == "" {
+		return util.ReportWarn("Usage: /run-bg <goal> [--provider p] [--model m] [--effort e] [--worktree path]")
+	}
+	if p.app == nil || p.app.Sessions == nil || p.app.CoderAgent == nil {
+		return util.ReportWarn("Background run needs an attached harness: start the client inside a project")
+	}
+	title := msg.Title
+	if title == "" {
+		title = fmt.Sprintf("bg: %s", firstLine(msg.Goal))
+	}
+	provider := msg.Provider
+	if provider == "" {
+		provider = p.app.CurrentProvider()
+	}
+	model := msg.Model
+	if model == "" && p.app.CoderAgent != nil {
+		model = string(p.app.CoderAgent.Model().ID)
+	}
+	effort := msg.ReasoningEffort
+	if effort == "" {
+		effort = p.app.CurrentReasoningEffort()
+	}
+	ws := msg.Workspace
+	if ws == "" {
+		ws = p.app.CurrentWorkspace()
+	}
+	created, err := p.app.Sessions.Create(context.Background(), title)
+	if err != nil {
+		return util.ReportFailure("Starting the background run", "press enter to try again", err)
+	}
+	p.tabs = append(p.tabs, SessionTab{
+		ID:              created.ID,
+		Title:           title,
+		Provider:        provider,
+		Model:           model,
+		ReasoningEffort: effort,
+		Workspace:       ws,
+	})
+	goal := msg.Goal
+	return func() tea.Msg {
+		if _, err := p.app.CoderAgent.Run(context.Background(), created.ID, goal); err != nil {
+			return util.ReportFailure("Starting the background run", "switch to the tab and send the goal again", err)()
+		}
+		return chat.BackgroundStartedMsg{SessionID: created.ID, Title: title}
+	}
+}
+
+func firstLine(s string) string {
+	if idx := strings.IndexAny(s, "\r\n"); idx >= 0 {
+		s = s[:idx]
+	}
+	s = strings.TrimSpace(s)
+	if len(s) > 42 {
+		return s[:39] + "..."
+	}
+	if s == "" {
+		return "untitled"
+	}
+	return s
+}
+
 func (p *chatPage) SetSize(width, height int) tea.Cmd {
 	p.width = width
 	p.height = height
@@ -378,6 +740,22 @@ func (p *chatPage) SetSize(width, height int) tea.Cmd {
 
 func (p *chatPage) GetSize() (int, int) {
 	return p.layout.GetSize()
+}
+
+// tabBadge is the one-glyph state of a tab: a run in flight, a gate waiting,
+// or output the user has not seen. Empty means nothing to report, which keeps
+// quiet tabs byte-identical to before.
+func (p *chatPage) tabBadge(tab SessionTab) string {
+	if tab.ID != "" && p.app != nil && p.app.CoderAgent != nil && p.app.CoderAgent.IsSessionBusy(tab.ID) {
+		return " ●"
+	}
+	if tab.NeedsApproval {
+		return " !"
+	}
+	if tab.Unread {
+		return " *"
+	}
+	return ""
 }
 
 func (p *chatPage) renderTabBar() string {
@@ -393,7 +771,7 @@ func (p *chatPage) renderTabBar() string {
 		if len(tabTitle) > 18 {
 			tabTitle = tabTitle[:15] + "..."
 		}
-		label := fmt.Sprintf(" %d: %s ", i+1, tabTitle)
+		label := fmt.Sprintf(" %d: %s%s ", i+1, tabTitle, p.tabBadge(tab))
 		var style lipgloss.Style
 		if i == p.activeTabIndex {
 			style = baseStyle.
@@ -457,6 +835,7 @@ func (p *chatPage) BindingKeys() []key.Binding {
 	bindings := layout.KeyMapToSlice(keyMap)
 	bindings = append(bindings, p.messages.BindingKeys()...)
 	bindings = append(bindings, p.editor.BindingKeys()...)
+	bindings = append(bindings, p.sidebarCmp.BindingKeys()...)
 	return bindings
 }
 
@@ -465,8 +844,10 @@ func NewChatPage(app *app.App) tea.Model {
 	slashProvider := completions.NewSlashCommandContextGroup()
 	completionDialog := dialog.NewCompletionDialogCmp(filesProvider)
 
+	messagesModel := chat.NewMessagesCmp(app)
+	messagesCmp, _ := messagesModel.(chat.MessagesCmp)
 	messagesContainer := layout.NewContainer(
-		chat.NewMessagesCmp(app),
+		messagesModel,
 		layout.WithPadding(1, 1, 0, 1),
 	)
 
@@ -495,8 +876,18 @@ func NewChatPage(app *app.App) tea.Model {
 	}
 
 	initTitle := "project"
+	initProvider := "fake"
+	initModel := ""
+	initEffort := ""
+	initWorkspace := ""
 	if app != nil {
 		initTitle = util.DefaultSessionTitle(app.Workspace)
+		initProvider = app.CurrentProvider()
+		if app.CoderAgent != nil {
+			initModel = string(app.CoderAgent.Model().ID)
+		}
+		initEffort = app.CurrentReasoningEffort()
+		initWorkspace = app.CurrentWorkspace()
 	}
 
 	return &chatPage{
@@ -504,6 +895,7 @@ func NewChatPage(app *app.App) tea.Model {
 		editor:           editorContainer,
 		editorCmp:        editorCmp,
 		messages:         messagesContainer,
+		messagesCmp:      messagesCmp,
 		sidebar:          sidebarContainer,
 		sidebarCmp:       sidebarCmp,
 		showSidebar:      initShowSidebar,
@@ -513,8 +905,12 @@ func NewChatPage(app *app.App) tea.Model {
 		layout:           layout.NewSplitPane(splitOpts...),
 		tabs: []SessionTab{
 			{
-				ID:    "",
-				Title: initTitle,
+				ID:              "",
+				Title:           initTitle,
+				Provider:        initProvider,
+				Model:           initModel,
+				ReasoningEffort: initEffort,
+				Workspace:       initWorkspace,
 			},
 		},
 		activeTabIndex: 0,

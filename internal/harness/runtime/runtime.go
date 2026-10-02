@@ -59,6 +59,8 @@ type Services struct {
 	Workspace string
 	// HasVision reports whether the selected model declares vision capability.
 	HasVision bool
+	// ReasoningEffort sets the model reasoning effort level or budget.
+	ReasoningEffort string
 }
 
 // ToolExecutor executes one normalized ToolCall.
@@ -719,10 +721,12 @@ func (r *Runner) Step(ctx context.Context) error {
 
 		specs := r.toolSpecs(ctx)
 		req := agent.ModelRequest{
-			RequestID: fmt.Sprintf("%s:%s:req", r.State.RunID, r.State.TurnID),
-			RunID:     r.State.RunID, TurnID: r.State.TurnID,
-			Messages: append([]agent.Message{}, r.Messages...),
-			Tools:    specs,
+			RequestID:       fmt.Sprintf("%s:%s:req", r.State.RunID, r.State.TurnID),
+			RunID:           r.State.RunID,
+			TurnID:          r.State.TurnID,
+			Messages:        append([]agent.Message{}, r.Messages...),
+			Tools:           specs,
+			ReasoningEffort: r.Svc.ReasoningEffort,
 		}
 		// Budget preflight, before the call. Usage arrives afterwards, so
 		// checking there bounds nothing: the last turn of a run is the one that
@@ -811,6 +815,7 @@ func (r *Runner) Step(ctx context.Context) error {
 					"completion_tokens":  ev.Usage.OutputTokens,
 					"cache_read_tokens":  ev.Usage.CacheReadTokens,
 					"cache_write_tokens": ev.Usage.CacheWriteTokens,
+					"reasoning_tokens":   ev.Usage.ReasoningTokens,
 					"cost_usd":           ev.Usage.CostUSD,
 				})
 				r.emitLocked("budget.tick", map[string]any{

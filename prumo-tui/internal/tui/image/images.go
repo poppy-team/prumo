@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"os/exec"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -70,4 +71,71 @@ func ImagePreview(width int, filename string) (string, error) {
 	imageString := ToString(width, img)
 
 	return imageString, nil
+}
+
+// CaptureClipboardImage attempts to extract an image from the system clipboard
+// using native platform tools (wl-paste on Wayland, xclip on X11, pngpaste on macOS,
+// or PowerShell on Windows) and saves it to destDir.
+func CaptureClipboardImage(destDir string) (string, error) {
+	if destDir == "" {
+		destDir = os.TempDir()
+	}
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", fmt.Errorf("creating image destination directory: %w", err)
+	}
+
+	targetPath := fmt.Sprintf("%s/clipboard_%d.png", strings.TrimRight(destDir, "/"), os.Getpid())
+
+	// Try Wayland first (wl-paste)
+	if _, err := exec.LookPath("wl-paste"); err == nil {
+		cmd := exec.Command("wl-paste", "-t", "image/png")
+		out, err := cmd.Output()
+		if err == nil && len(out) > 0 {
+			if err := os.WriteFile(targetPath, out, 0600); err == nil {
+				return targetPath, nil
+			}
+		}
+	}
+
+	// Try X11 (xclip)
+	if _, err := exec.LookPath("xclip"); err == nil {
+		cmd := exec.Command("xclip", "-selection", "clipboard", "-t", "image/png", "-o")
+		out, err := cmd.Output()
+		if err == nil && len(out) > 0 {
+			if err := os.WriteFile(targetPath, out, 0600); err == nil {
+				return targetPath, nil
+			}
+		}
+	}
+
+	// Try macOS (pngpaste)
+	if _, err := exec.LookPath("pngpaste"); err == nil {
+		cmd := exec.Command("pngpaste", targetPath)
+		if err := cmd.Run(); err == nil {
+			if info, statErr := os.Stat(targetPath); statErr == nil && info.Size() > 0 {
+				return targetPath, nil
+			}
+		}
+	}
+
+	// Try Windows (PowerShell)
+	if _, err := exec.LookPath("powershell.exe"); err == nil {
+		psScript := fmt.Sprintf(`
+Add-Type -AssemblyName System.Windows.Forms
+$img = [System.Windows.Forms.Clipboard]::GetImage()
+if ($img -ne $null) {
+    $img.Save('%s', [System.Drawing.Imaging.ImageFormat]::Png)
+    exit 0
+}
+exit 1
+`, targetPath)
+		cmd := exec.Command("powershell.exe", "-NoProfile", "-Command", psScript)
+		if err := cmd.Run(); err == nil {
+			if info, statErr := os.Stat(targetPath); statErr == nil && info.Size() > 0 {
+				return targetPath, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no image found on clipboard or clipboard utility not found (supported: wl-paste, xclip, pngpaste, powershell)")
 }

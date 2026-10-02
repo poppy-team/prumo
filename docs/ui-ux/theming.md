@@ -44,7 +44,7 @@ group below — the compiler refuses one that does not — and inherits the rest
 ## Which themes ship, and how one is chosen
 
 Nine palettes ship: `prumo` (the default), `catppuccin`, `dracula`, `flexoki`,
-`gruvbox`, `monokai`, `onedark`, `tokyonight` and `tron`. `ctrl+t` lists them and
+`gruvbox`, `monokai`, `onedark`, `softlight`, `tokyonight` and `tron`. `alt+t` lists them and
 switches live; the choice is applied where the interface is built
 (`tui.New`) and written to the client's own configuration
 (`$XDG_CONFIG_HOME/prumo-agent tui/config.json`), so a restart keeps it. `--theme`

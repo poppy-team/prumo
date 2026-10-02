@@ -16,7 +16,7 @@ import (
 func codeIntelItems(root, goal string) []Item {
 	idx := repomap.Build(root, 200, 2000, 1<<16)
 	var out []Item
-	rendered := idx.Render(1500)
+	rendered := idx.RenderRanked(1500, goal)
 	if rendered != "" {
 		cost := estimateTokens(rendered)
 		if cost < 50 {

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -29,11 +31,14 @@ import (
 	"github.com/raillen/prumo-tui/internal/tui/components/chat"
 	"github.com/raillen/prumo-tui/internal/tui/components/core"
 	"github.com/raillen/prumo-tui/internal/tui/components/dialog"
+	"github.com/raillen/prumo-tui/internal/tui/image"
 	"github.com/raillen/prumo-tui/internal/tui/layout"
 	"github.com/raillen/prumo-tui/internal/tui/page"
 	"github.com/raillen/prumo-tui/internal/tui/styles"
 	"github.com/raillen/prumo-tui/internal/tui/theme"
 	"github.com/raillen/prumo-tui/internal/tui/util"
+	"github.com/raillen/prumo-tui/internal/web"
+	"github.com/raillen/prumo-tui/internal/worktree"
 )
 
 type keyMap struct {
@@ -48,6 +53,7 @@ type keyMap struct {
 	SwitchTheme   key.Binding
 	ChangedFiles  key.Binding
 	Sidebar       key.Binding
+	Leader        key.Binding
 }
 
 const (
@@ -83,7 +89,7 @@ var keys = keyMap{
 	),
 
 	Commands: key.NewBinding(
-		key.WithKeys("ctrl+k"),
+		key.WithKeys("ctrl+k", "ctrl+p"),
 		key.WithHelp("ctrl+k", "commands"),
 	),
 	Filepicker: key.NewBinding(
@@ -96,8 +102,8 @@ var keys = keyMap{
 	),
 
 	SwitchTheme: key.NewBinding(
-		key.WithKeys("ctrl+t"),
-		key.WithHelp("ctrl+t", "switch theme"),
+		key.WithKeys("alt+t"),
+		key.WithHelp("alt+t", "switch theme"),
 	),
 
 	ChangedFiles: key.NewBinding(
@@ -108,6 +114,11 @@ var keys = keyMap{
 	Sidebar: key.NewBinding(
 		key.WithKeys("ctrl+b"),
 		key.WithHelp("ctrl+b", "toggle sidebar"),
+	),
+
+	Leader: key.NewBinding(
+		key.WithKeys("ctrl+x"),
+		key.WithHelp("ctrl+x", "leader key prefix"),
 	),
 }
 
@@ -135,6 +146,7 @@ type appModel struct {
 	status          core.StatusCmp
 	app             *app.App
 	selectedSession session.Session
+	leaderPending   bool
 
 	showPermissions bool
 	permissions     dialog.PermissionDialogCmp
@@ -178,6 +190,9 @@ type appModel struct {
 
 	showProviderDialog bool
 	providerDialog     dialog.ProviderDialog
+
+	showDirtyDialog bool
+	dirtyDialog     dialog.DirtyDialog
 
 	// composerFocused is the focus the page was last told about, kept so the
 	// shell tells it when the answer changes rather than on every message.
@@ -273,7 +288,8 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a appModel) dialogOpen() bool {
 	return a.showQuit || a.showOnboard || a.showPermissions || a.showHelp || a.showSessionDialog ||
 		a.showCommandDialog || a.showModelDialog || a.showInitDialog || a.showFilepicker ||
-		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs || a.showProviderDialog
+		a.showThemeDialog || a.showMultiArgumentsDialog || a.showFiles || a.showJobs || a.showProviderDialog ||
+		a.showDirtyDialog
 }
 
 func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -341,6 +357,12 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.providerDialog = prov.(dialog.ProviderDialog)
 		cmds = append(cmds, provCmd)
 
+		if a.dirtyDialog != nil {
+			dirty, dirtyCmd := a.dirtyDialog.Update(msg)
+			a.dirtyDialog = dirty.(dialog.DirtyDialog)
+			cmds = append(cmds, dirtyCmd)
+		}
+
 		a.initDialog.SetSize(msg.Width, msg.Height)
 
 		if a.showMultiArgumentsDialog {
@@ -406,9 +428,14 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// The gate is announced in words as well as drawn: a request that exists
 		// only as a dialog cannot be read from a frame, and the contract asks for
 		// it to be legible without interacting with it.
+		notice := gateNotice(msg.Payload.ToolName)
+		if msg.Payload.SessionID != "" && msg.Payload.SessionID != a.selectedSession.ID {
+			notice += " — waiting on a background tab"
+		}
 		return a, tea.Batch(
 			a.permissions.SetPermissions(msg.Payload),
-			util.ReportWarn(gateNotice(msg.Payload.ToolName)),
+			util.ReportWarn(notice),
+			attentionBell(),
 		)
 	case openJobsMsg:
 		return a, a.openJobs()
@@ -489,6 +516,9 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case pubsub.Event[agent.AgentEvent]:
 		payload := msg.Payload
+		if notice := a.backgroundNotice(payload); notice != nil {
+			return a, notice
+		}
 		if payload.Error != nil {
 			a.recordSessionAudit("failed")
 			return a, util.ReportFailure("The run stopped", "send the goal again, or read the log with ctrl+l", payload.Error)
@@ -663,13 +693,54 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.showProviderDialog = true
 		return a, nil
 
+	case dialog.CloseDirtyDialogMsg:
+		a.showDirtyDialog = false
+		switch msg.Action {
+		case "stash":
+			return a, tea.Batch(
+				util.ReportInfo("Working tree changes stashed. Resuming goal..."),
+				util.CmdHandler(chat.SendMsg{Text: msg.Prompt, PreflightChecked: true}),
+			)
+		case "commit":
+			return a, tea.Batch(
+				util.ReportInfo("Working tree changes committed. Resuming goal..."),
+				util.CmdHandler(chat.SendMsg{Text: msg.Prompt, PreflightChecked: true}),
+			)
+		case "proceed":
+			return a, util.CmdHandler(chat.SendMsg{Text: msg.Prompt, PreflightChecked: true})
+		case "abort":
+			return a, util.ReportInfo("Pre-flight check aborted. Working tree preserved.")
+		}
+		return a, nil
+
 	case chat.SendMsg:
 		trimmed := strings.TrimSpace(msg.Text)
 		if strings.HasPrefix(trimmed, "/") {
 			return a.handleSlashCommand(trimmed)
 		}
+		if strings.HasPrefix(trimmed, "!") {
+			return a.handleShellCommand(trimmed[1:])
+		}
+		if !msg.PreflightChecked {
+			ws := "."
+			if a.app != nil && a.app.Workspace != "" {
+				ws = a.app.Workspace
+			}
+			if isDirty, summary, err := dialog.CheckDirtyStatus(ws); err == nil && isDirty {
+				a.dirtyDialog.SetDirty(msg.Text, ws, summary)
+				a.showDirtyDialog = true
+				return a, nil
+			}
+		}
 
 	case tea.KeyPressMsg:
+		// If dirty dialog is open, let it handle the key press first
+		if a.showDirtyDialog {
+			d, dirtyCmd := a.dirtyDialog.Update(msg)
+			a.dirtyDialog = d.(dialog.DirtyDialog)
+			return a, dirtyCmd
+		}
+
 		// If quit dialog is open, let it handle the key press first
 		if a.showQuit {
 			q, quitCmd := a.quit.Update(msg)
@@ -703,6 +774,53 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			args, cmd := a.multiArgumentsDialog.Update(msg)
 			a.multiArgumentsDialog = args.(dialog.MultiArgumentsDialogCmp)
 			return a, cmd
+		}
+
+		if a.leaderPending {
+			a.leaderPending = false
+			if key.Matches(msg, keys.Cancel) || msg.String() == "esc" {
+				return a, util.ReportInfo("Leader mode cancelled.")
+			}
+			switch strings.ToLower(msg.String()) {
+			case "n":
+				a.selectedSession = session.Session{}
+				return a, tea.Batch(
+					util.CmdHandler(chat.SessionClearedMsg{}),
+					util.ReportInfo("Leader: Started new session"),
+				)
+			case "l", "s":
+				sessions, err := a.app.Sessions.List(context.Background())
+				if err != nil {
+					return a, util.ReportFailure("Listing the runs", "send a goal to start a new one", err)
+				}
+				if len(sessions) == 0 {
+					return a, util.ReportWarn("No sessions available")
+				}
+				a.sessionDialog.SetSessions(sessions)
+				a.showSessionDialog = true
+				return a, nil
+			case "u":
+				return a.handleSlashCommand("/undo")
+			case "m":
+				a.showModelDialog = true
+				return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
+			case "c":
+				return a.handleSlashCommand("/compact")
+			case "t":
+				return a, tea.Batch(
+					util.CmdHandler(chat.ToggleThinkingMsg{}),
+					util.ReportInfo("Toggled reasoning/thinking visibility"),
+				)
+			case "q":
+				return a, a.promptQuit()
+			default:
+				return a, util.ReportWarn(fmt.Sprintf("Unknown leader chord: %q. Available: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [t]hink, [q]uit, [esc]", msg.String()))
+			}
+		}
+
+		if key.Matches(msg, keys.Leader) {
+			a.leaderPending = true
+			return a, util.ReportInfo("Leader key (Ctrl+X) active: [n]ew, [l]ist, [u]ndo, [m]odel, [c]ompact, [t]hink, [q]uit")
 		}
 
 		switch {
@@ -946,6 +1064,15 @@ func (a appModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if a.showDirtyDialog {
+		d, dirtyCmd := a.dirtyDialog.Update(msg)
+		a.dirtyDialog = d.(dialog.DirtyDialog)
+		cmds = append(cmds, dirtyCmd)
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			return a, tea.Batch(cmds...)
+		}
+	}
+
 	s, _ := a.status.Update(msg)
 	a.status = s.(core.StatusCmp)
 	a.pages[a.currentPage], cmd = a.pages[a.currentPage].Update(msg)
@@ -1043,6 +1170,42 @@ type jobsLoadedMsg struct {
 // The list is read when the panel opens rather than kept in step: the schedule
 // belongs to the daemon, and a client that mirrored it would be describing a
 // queue it cannot keep current.
+// saveVisionModel stores the workspace's vision override and says what the
+// harness declares about it: a model without declared vision still routes
+// images to itself when set, but the user should know the declaration is
+// missing rather than discover it from a blind run.
+func (a *appModel) saveVisionModel(target string) tea.Cmd {
+	runner := a.app.Runner
+	provider := a.app.CurrentProvider()
+	return func() tea.Msg {
+		if err := runner.SaveVisionModel(target); err != nil {
+			return util.ReportFailure("Saving the vision model", "check workspace permissions", err)()
+		}
+		note := "the model catalogue is unavailable, so the declaration is unknown"
+		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ids, _, err := runner.ModelCatalogue(ctx, provider)
+		cancel()
+		if err == nil {
+			known := false
+			for _, id := range ids {
+				if id == target {
+					known = true
+					break
+				}
+			}
+			switch {
+			case !known:
+				note = "the provider does not list this model"
+			case runner.ModelHasVision(target):
+				note = "the harness declares vision for this model"
+			default:
+				note = "the harness declares no vision for this model"
+			}
+		}
+		return util.ReportInfo(fmt.Sprintf("Vision model set to: %s (%s)", target, note))()
+	}
+}
+
 func (a *appModel) openJobs() tea.Cmd {
 	runner := a.app.Runner
 	a.showJobs = true
@@ -1115,6 +1278,45 @@ func (a *appModel) loadDiff(path string) tea.Cmd {
 // waiting, and every key that answers it.
 func gateNotice(tool string) string {
 	return fmt.Sprintf("Permission required: %s — a to allow, s for the session, d to deny", tool)
+}
+
+// backgroundNotice announces a run the user is not looking at: a finished or
+// failed background run, in words plus a terminal bell. Streaming events,
+// connection traffic, events without a session, and the visible session all
+// return nil and keep their existing path — the audit trail is deliberately
+// untouched here, because recordSessionAudit attributes to the selected
+// session and a background event must not rewrite that record.
+func (a appModel) backgroundNotice(payload agent.AgentEvent) tea.Cmd {
+	id := payload.SessionID
+	if id == "" || id == a.selectedSession.ID {
+		return nil
+	}
+	title := "background run"
+	if a.app != nil && a.app.Sessions != nil {
+		if sess, err := a.app.Sessions.Get(context.Background(), id); err == nil && sess.Title != "" {
+			title = sess.Title
+		}
+	}
+	switch {
+	case payload.Error != nil:
+		return tea.Batch(
+			util.ReportFailure(fmt.Sprintf("Background run stopped: %s", title), "switch to its tab to see what happened", payload.Error),
+			attentionBell(),
+		)
+	case payload.Done:
+		return tea.Batch(
+			util.ReportInfo(fmt.Sprintf("Background run finished: %s — switch to its tab to read it", title)),
+			attentionBell(),
+		)
+	default:
+		return nil
+	}
+}
+
+// attentionBell rings the terminal bell without printing a line: the toast
+// carries the words, the bell carries the nudge.
+func attentionBell() tea.Cmd {
+	return tea.Printf("\a")
 }
 
 // exportTimeline writes what the harness recorded for a run, where a reader or a
@@ -1200,6 +1402,9 @@ func (a *appModel) promptQuit() tea.Cmd {
 	}
 	if a.showMultiArgumentsDialog {
 		a.showMultiArgumentsDialog = false
+	}
+	if a.showDirtyDialog {
+		a.showDirtyDialog = false
 	}
 	if a.showQuit {
 		return a.quit.Init()
@@ -1512,6 +1717,21 @@ func (a appModel) viewString() string {
 		)
 	}
 
+	if a.showDirtyDialog {
+		overlay := a.dirtyDialog.View().Content
+		row := lipgloss.Height(appView) / 2
+		row -= lipgloss.Height(overlay) / 2
+		col := lipgloss.Width(appView) / 2
+		col -= lipgloss.Width(overlay) / 2
+		appView = layout.PlaceOverlay(
+			col,
+			row,
+			overlay,
+			appView,
+			true,
+		)
+	}
+
 	// The frame is fitted last so overlays are subject to it too: a dialog that
 	// runs past the terminal is exactly the surface a user cannot dismiss.
 	return fitToTerminal(appView, a.width)
@@ -1600,6 +1820,7 @@ func New(app *app.App) tea.Model {
 		files:           dialog.NewFilesDialogCmp(),
 		jobs:            dialog.NewJobsDialogCmp(),
 		providerDialog:  dialog.NewProviderDialogCmp(app.CurrentProvider()),
+		dirtyDialog:     dialog.NewDirtyDialog(),
 		app:             app,
 		commands:        []dialog.Command{},
 		pages: map[page.PageID]tea.Model{
@@ -1791,7 +2012,10 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 				return a, util.ReportFailure("Choosing the model", "pick another one with /models or ctrl+o", err)
 			}
 			_ = config.UpdateModel(targetModel)
-			return a, util.ReportInfo(fmt.Sprintf("Model switched to: %s", model.Name))
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Model: targetModel}),
+				util.ReportInfo(fmt.Sprintf("Model switched to: %s", model.Name)),
+			)
 		}
 		a.showModelDialog = true
 		return a, tea.Batch(a.modelDialog.Init(), a.loadModels())
@@ -1805,7 +2029,10 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			if a.app != nil {
 				a.app.SetProvider(targetProvider)
 			}
-			return a, util.ReportInfo(fmt.Sprintf("Provider switched to: %s", targetProvider))
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Provider: targetProvider}),
+				util.ReportInfo(fmt.Sprintf("Provider switched to: %s", targetProvider)),
+			)
 		}
 		if a.app != nil {
 			a.providerDialog.SetCurrentProvider(a.app.CurrentProvider())
@@ -1851,6 +2078,145 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			}
 		}
 		return a, util.ReportWarn("Init command not available")
+
+	case "/undo":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		cmd := exec.Command("git", "reset", "--hard", "HEAD~1")
+		cmd.Dir = ws
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return a, util.ReportFailure("Reverting last commit (/undo)", "ensure repository has commits to undo", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Git commit reverted (/undo):\n%s", strings.TrimSpace(string(out))))
+
+	case "/think", "/thinking":
+		return a, tea.Batch(
+			util.CmdHandler(chat.ToggleThinkingMsg{}),
+			util.ReportInfo("Toggled reasoning/thinking visibility"),
+		)
+
+	case "/effort", "/reasoning":
+		if len(args) == 0 {
+			currentEffort := config.Get().ReasoningEffort
+			if currentEffort == "" {
+				currentEffort = "default (model decides)"
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Current reasoning effort: %s\nUsage: /effort [low|medium|high|max|<tokens>|off]", currentEffort))
+		}
+		target := strings.ToLower(strings.TrimSpace(args[0]))
+		switch target {
+		case "low", "medium", "high", "max", "off", "none", "disable", "default":
+			if target == "default" {
+				target = ""
+			}
+			if err := config.UpdateReasoningEffort(target); err != nil {
+				return a, util.ReportFailure("Updating reasoning effort", "check configuration permissions", err)
+			}
+			if a.app != nil {
+				a.app.SetReasoningEffort(target)
+			}
+			disp := target
+			if disp == "" {
+				disp = "default"
+			}
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{ReasoningEffort: target}),
+				util.ReportInfo(fmt.Sprintf("Reasoning effort set to: %s", disp)),
+			)
+		default:
+			if n, err := strconv.Atoi(target); err == nil && n > 0 {
+				if err := config.UpdateReasoningEffort(target); err != nil {
+					return a, util.ReportFailure("Updating reasoning effort", "check configuration permissions", err)
+				}
+				if a.app != nil {
+					a.app.SetReasoningEffort(target)
+				}
+				return a, tea.Batch(
+					util.CmdHandler(chat.UpdateActiveTabMsg{ReasoningEffort: target}),
+					util.ReportInfo(fmt.Sprintf("Reasoning budget set to: %d tokens", n)),
+				)
+			}
+			return a, util.ReportWarn("Invalid effort level. Use: low, medium, high, max, <number-of-tokens>, or off")
+		}
+
+	case "/vision":
+		if a.app == nil || a.app.Runner == nil {
+			return a, util.ReportWarn("Vision routing needs an attached harness: start the client inside a project")
+		}
+		if len(args) == 0 {
+			current := a.app.Runner.VisionModel()
+			if current == "" {
+				current = "off (image references go to the active model)"
+			}
+			return a, util.ReportInfo(fmt.Sprintf("Vision model: %s\nUsage: /vision <model-id> | off", current))
+		}
+		target := strings.TrimSpace(args[0])
+		if strings.EqualFold(target, "off") || strings.EqualFold(target, "disable") || strings.EqualFold(target, "none") {
+			if err := a.app.Runner.SaveVisionModel(""); err != nil {
+				return a, util.ReportFailure("Clearing the vision model", "check workspace permissions", err)
+			}
+			return a, util.ReportInfo("Vision model cleared: image references go to the active model")
+		}
+		return a, a.saveVisionModel(target)
+
+	case "/dirty":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		cmd := exec.Command("git", "status", "--porcelain")
+		cmd.Dir = ws
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return a, util.ReportFailure("Checking git status (/dirty)", "ensure workspace is a Git repository", err)
+		}
+		trimmed := strings.TrimSpace(string(out))
+		if trimmed == "" {
+			return a, util.ReportInfo("Git working tree is clean. Ready for agent operations.")
+		}
+		lines := strings.Split(trimmed, "\n")
+		return a, util.ReportWarn(fmt.Sprintf("Dirty working tree (%d uncommitted changes):\n%s\nActions: !git stash, !git commit, or /undo", len(lines), trimmed))
+
+	case "/commit":
+		if len(args) == 0 {
+			return a, util.ReportWarn("Usage: /commit <message> (e.g. /commit feat(core): update parser)")
+		}
+		commitMsg := strings.Join(args, " ")
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		addCmd := exec.Command("git", "add", "-A")
+		addCmd.Dir = ws
+		if out, err := addCmd.CombinedOutput(); err != nil {
+			return a, util.ReportFailure("Staging changes (/commit)", "ensure workspace is a Git repository", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
+		}
+		commitCmd := exec.Command("git", "commit", "-m", commitMsg)
+		commitCmd.Dir = ws
+		out, err := commitCmd.CombinedOutput()
+		if err != nil {
+			return a, util.ReportFailure("Committing changes (/commit)", "check git status or provide a valid message", fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out))))
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Git commit successful:\n%s", strings.TrimSpace(string(out))))
+
+	case "/web":
+		if len(args) == 0 {
+			return a, util.ReportWarn("Usage: /web <url> (fetches and distills web page into conversation)")
+		}
+		targetURL := args[0]
+		return a, func() tea.Msg {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			distilled, err := web.FetchAndDistill(ctx, targetURL)
+			if err != nil {
+				return util.ReportFailure("Fetching web content (/web)", "check URL and internet connection", err)()
+			}
+			prompt := fmt.Sprintf("Web page context from %s:\n\n%s", targetURL, distilled)
+			return chat.SendMsg{Text: prompt}
+		}
 
 	case "/export":
 		return a, util.CmdHandler(exportTimelineMsg{})
@@ -1910,11 +2276,29 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			sub := strings.ToLower(args[0])
 			switch sub {
 			case "new", "n":
-				title := ""
-				if len(args) > 1 {
-					title = strings.Join(args[1:], " ")
+				newMsg := chat.NewTabMsg{}
+				var titleParts []string
+				for i := 1; i < len(args); i++ {
+					arg := args[i]
+					switch {
+					case (arg == "--provider" || arg == "-p") && i+1 < len(args):
+						i++
+						newMsg.Provider = args[i]
+					case (arg == "--model" || arg == "-m") && i+1 < len(args):
+						i++
+						newMsg.Model = args[i]
+					case (arg == "--effort" || arg == "-e") && i+1 < len(args):
+						i++
+						newMsg.ReasoningEffort = args[i]
+					case (arg == "--worktree" || arg == "--wt") && i+1 < len(args):
+						i++
+						newMsg.Workspace = args[i]
+					default:
+						titleParts = append(titleParts, arg)
+					}
 				}
-				return a, util.CmdHandler(chat.NewTabMsg{Title: title})
+				newMsg.Title = strings.Join(titleParts, " ")
+				return a, util.CmdHandler(newMsg)
 			case "close", "c":
 				return a, util.CmdHandler(chat.CloseTabMsg{})
 			case "next":
@@ -1929,6 +2313,102 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			}
 		}
 		return a, util.CmdHandler(chat.NewTabMsg{})
+
+	case "/run-bg", "/background", "/bg":
+		bgMsg := chat.RunBackgroundMsg{}
+		var goalParts []string
+		for i := 0; i < len(args); i++ {
+			arg := args[i]
+			switch {
+			case (arg == "--provider" || arg == "-p") && i+1 < len(args):
+				i++
+				bgMsg.Provider = args[i]
+			case (arg == "--model" || arg == "-m") && i+1 < len(args):
+				i++
+				bgMsg.Model = args[i]
+			case (arg == "--effort" || arg == "-e") && i+1 < len(args):
+				i++
+				bgMsg.ReasoningEffort = args[i]
+			case (arg == "--worktree" || arg == "--wt") && i+1 < len(args):
+				i++
+				bgMsg.Workspace = args[i]
+			case (arg == "--title" || arg == "-t") && i+1 < len(args):
+				i++
+				bgMsg.Title = args[i]
+			default:
+				goalParts = append(goalParts, arg)
+			}
+		}
+		bgMsg.Goal = strings.Join(goalParts, " ")
+		return a, util.CmdHandler(bgMsg)
+
+	case "/worktree", "/worktrees", "/wt":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		if len(args) == 0 || args[0] == "list" {
+			list, err := worktree.List(context.Background(), ws)
+			if err != nil {
+				return a, util.ReportFailure("Listing Git worktrees", "ensure workspace is a Git repository", err)
+			}
+			if len(list) == 0 {
+				return a, util.ReportInfo(fmt.Sprintf("Active workspace: %s (no additional worktrees)", ws))
+			}
+			var lines []string
+			lines = append(lines, fmt.Sprintf("Git Worktrees (Active: %s):", ws))
+			for i, wt := range list {
+				curr := " "
+				if wt.Path == ws {
+					curr = "●"
+				}
+				lines = append(lines, fmt.Sprintf(" %s %d. branch: %s · path: %s", curr, i+1, wt.Branch, wt.Path))
+			}
+			lines = append(lines, "\nCommands: /worktree new <branch> [path], /worktree switch <path-or-index>")
+			return a, util.ReportInfo(strings.Join(lines, "\n"))
+		}
+		sub := strings.ToLower(args[0])
+		switch sub {
+		case "new", "create", "add":
+			if len(args) < 2 {
+				return a, util.ReportWarn("Usage: /worktree new <branch-name> [custom-path]")
+			}
+			branch := args[1]
+			targetPath := worktree.DefaultWorktreePath(ws, branch)
+			if len(args) > 2 {
+				targetPath = args[2]
+			}
+			if err := worktree.Create(context.Background(), ws, targetPath, branch); err != nil {
+				return a, util.ReportFailure("Creating Git worktree", "verify branch and destination", err)
+			}
+			if a.app != nil {
+				a.app.SetWorkspace(targetPath)
+			}
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Workspace: targetPath, Title: "wt:" + branch}),
+				util.ReportInfo(fmt.Sprintf("Worktree created at: %s (branch: %s)\nActive tab bound to worktree.", targetPath, branch)),
+			)
+		case "switch", "cd":
+			if len(args) < 2 {
+				return a, util.ReportWarn("Usage: /worktree switch <path-or-index>")
+			}
+			target := args[1]
+			list, err := worktree.List(context.Background(), ws)
+			if err == nil {
+				if idx, errConv := strconv.Atoi(target); errConv == nil && idx >= 1 && idx <= len(list) {
+					target = list[idx-1].Path
+				}
+			}
+			if a.app != nil {
+				a.app.SetWorkspace(target)
+			}
+			return a, tea.Batch(
+				util.CmdHandler(chat.UpdateActiveTabMsg{Workspace: target}),
+				util.ReportInfo(fmt.Sprintf("Active tab workspace switched to: %s", target)),
+			)
+		default:
+			return a, util.ReportWarn("Usage: /worktree [list|new <branch>|switch <path>]")
+		}
 
 	case "/gates", "/gate":
 		return a, util.ReportInfo("Prumo Verification Gates:\n• tests: passing deterministic unit & suite tests\n• lint: clean code standards conformance\n• build: clean zero-error compilation\n• trust: security & permission review gates")
@@ -1948,6 +2428,60 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 			ad.Summary.TotalCostUSD, ad.Summary.TotalFilesChanged, audit.AuditRelPath)
 		return a, util.ReportInfo(text)
 
+	case "/paste", "/image":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		mediaDir := filepath.Join(ws, ".prumo", "cache", "media")
+		savedPath, err := image.CaptureClipboardImage(mediaDir)
+		if err != nil {
+			return a, util.ReportFailure("Capturing clipboard image (/paste)", "ensure clipboard contains a PNG/JPEG image", err)
+		}
+		preview, previewErr := image.ImagePreview(40, savedPath)
+		previewText := ""
+		if previewErr == nil && preview != "" {
+			previewText = "\n" + preview
+		}
+		relPath, errRel := filepath.Rel(ws, savedPath)
+		if errRel != nil {
+			relPath = savedPath
+		}
+		prompt := fmt.Sprintf("@%s", relPath)
+		return a, tea.Batch(
+			util.CmdHandler(chat.SendMsg{Text: prompt}),
+			util.ReportInfo(fmt.Sprintf("Pasted image: %s%s", relPath, previewText)),
+		)
+
+	case "/editor", "/e":
+		return a, util.CmdHandler(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+
+	case "/diagnostics", "/lint":
+		ws := "."
+		if a.app != nil && a.app.Workspace != "" {
+			ws = a.app.Workspace
+		}
+		var cmd *exec.Cmd
+		if _, err := os.Stat(filepath.Join(ws, "go.mod")); err == nil {
+			cmd = exec.Command("go", "vet", "./...")
+		} else if _, err := os.Stat(filepath.Join(ws, "Cargo.toml")); err == nil {
+			cmd = exec.Command("cargo", "check", "--message-format=short")
+		} else if _, err := os.Stat(filepath.Join(ws, "package.json")); err == nil {
+			cmd = exec.Command("npm", "run", "lint", "--if-present")
+		} else {
+			return a, util.ReportInfo("No recognized language project file (go.mod, Cargo.toml, package.json) for automatic diagnostics.")
+		}
+		cmd.Dir = ws
+		out, err := cmd.CombinedOutput()
+		trimmed := strings.TrimSpace(string(out))
+		if err != nil {
+			return a, util.ReportWarn(fmt.Sprintf("Diagnostics found issues:\n%s", trimmed))
+		}
+		if trimmed == "" {
+			return a, util.ReportInfo("Diagnostics clean: no compiler or linter issues detected.")
+		}
+		return a, util.ReportInfo(fmt.Sprintf("Diagnostics output:\n%s", trimmed))
+
 	case "/quit", "/exit", "/q":
 		return a, a.promptQuit()
 
@@ -1965,4 +2499,29 @@ func (a appModel) handleSlashCommand(raw string) (tea.Model, tea.Cmd) {
 		}
 		return a, util.ReportWarn(fmt.Sprintf("Unknown command: %s. Type /help for available commands.", name))
 	}
+}
+
+func (a appModel) handleShellCommand(raw string) (tea.Model, tea.Cmd) {
+	cmdStr := strings.TrimSpace(raw)
+	if cmdStr == "" {
+		return a, util.ReportWarn("No shell command provided after '!'")
+	}
+	ws := "."
+	if a.app != nil && a.app.Workspace != "" {
+		ws = a.app.Workspace
+	}
+
+	cmd := exec.Command("sh", "-c", cmdStr)
+	cmd.Dir = ws
+	out, err := cmd.CombinedOutput()
+	outputStr := strings.TrimRight(string(out), "\r\n")
+	if err != nil {
+		msg := fmt.Sprintf("! %s [failed: %v]\n%s", cmdStr, err, outputStr)
+		return a, util.ReportWarn(strings.TrimSpace(msg))
+	}
+	if outputStr == "" {
+		outputStr = "(no output)"
+	}
+	msg := fmt.Sprintf("! %s\n%s", cmdStr, outputStr)
+	return a, util.ReportInfo(msg)
 }

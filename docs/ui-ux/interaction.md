@@ -35,19 +35,24 @@ binding is listed here; a surface that adds a binding adds a row.
 
 | Chord | Action | Scope |
 |-------|--------|-------|
-| `Ctrl+K` | Open the command menu | App shell |
+| `Ctrl+K` or `Ctrl+P` | Open the command menu | App shell |
 | `Ctrl+S` | List the runs the daemon knows, to re-attach to one | App shell |
 | `Ctrl+O` | Ask the harness which models the provider serves | App shell |
-| `Ctrl+T` | Switch the palette | App shell |
+| `Alt+T` | Switch the palette | App shell |
+| `Ctrl+T` | Open a new tab | Chat page |
 | `Ctrl+F` | Browse the workspace's files; picking one writes its path into the goal | App shell |
 | `Ctrl+L` | Show the client's own log | App shell |
 | `Ctrl+G` | Show the files this run changed | App shell |
 | `Ctrl+B` | Toggle the sidebar panel | App shell |
+| `Ctrl+X` | Leader key prefix (chords: n, l, u, m, c, t, q) | App shell |
 | `Ctrl+N` | Start a new session | Composer |
 | `Ctrl+C` | Cancel the run in flight; with nothing running, ask before quitting | Any (reserved) |
 | `Ctrl+Q` | Ask before quitting | Any (reserved) |
 | `Esc` | Dismiss the topmost layer; cancel the run when the page has it | Any |
-| `Enter` | Send the goal — with a trailing `\` it inserts a newline instead — or accept the selected row | Composer, lists |
+| `Enter` | Send the goal — with `Alt` or `Shift` held it inserts a newline instead, as does a trailing `\` — or accept the selected row | Composer, lists |
+| `Tab` | Move the keyboard to the sidebar panel; `Tab` or `Esc` moves it back to the composer | Chat page |
+| `Up` / `Down` or `j` / `k` | Move between sidebar sections and goals | Sidebar |
+| `Enter` or `Space` | Expand or collapse the focused sidebar section or goal | Sidebar |
 | `Space` | Accept the selected action without `Enter` | Approval, quit prompt |
 | `Up` / `Down` or `j` / `k` | Move the selection within the focused list | Lists |
 | `Left` / `Right` / `Tab` / `Shift+Tab` | Move the selection between the actions of a dialog | Approval, quit prompt, first-run offer |
@@ -57,6 +62,7 @@ binding is listed here; a surface that adds a binding adds a row.
 | `PgUp` / `b` | Scroll the transcript up a page | Transcript |
 | `PgDn` / `f` | Scroll the transcript down a page | Transcript |
 | `Ctrl+U` / `Ctrl+D` | Scroll the transcript half a page | Transcript |
+| `g` / `G` | Scroll the transcript to top or bottom (Vim mode) | Transcript |
 | `h` / `Backspace` | Go up a directory | Files |
 | `l` | Enter the selected directory | Files |
 | `i` | Show or hide hidden files | Files |
@@ -72,8 +78,10 @@ opens. A chord that answered with silence would read as a broken key.
 
 ## Focus semantics
 
-- Exactly one surface holds the keyboard: the composer, or the dialog drawn over
-  it. A dialog takes it away from the page and gives it back when it closes.
+- Exactly one surface holds the keyboard: the composer, the sidebar panel, or
+  the dialog drawn over it. A dialog takes it away from the page and gives it
+  back when it closes; `Tab` moves it between composer and sidebar, and `Esc`
+  always returns it to the composer.
 - Focus is **never hidden**. The composer's border is heavy (`━`) while it holds
   the keyboard and light (`─`) while a layer is over it, and it also changes
   colour with the `focus` token. The glyph is what carries the distinction,
@@ -103,6 +111,21 @@ opens. A chord that answered with silence would read as a broken key.
 | Compact | `< 80` | The transcript and the composer are the whole page; the statusline drops its optional segments — the accounting first, then the change count — rather than running past the screen; a row that loses its tail ends with a truncation marker. |
 | Standard | `80–119` | The same page, with room for the statusline's accounting. |
 | Wide | `≥ 120` | The same page, with room for the accounting, the change count and the message beside the model. |
+
+The sidebar panel is open by default on terminals with 100 or more columns and
+closed below that, so a narrow terminal is never squeezed by a panel it did not
+ask for. Toggling it with `Ctrl+B` records an explicit choice that resizes stop
+overriding: an automatic change is never written to the configuration, only the
+user's own toggle is.
+
+The tab bar badges a tab that needs attention while another tab is active: a
+filled dot while its run is in flight, an exclamation mark while a permission
+gate waits on it, and an asterisk when it finished unseen. Visiting the tab
+clears its badges. A run started with `/run-bg` lives on a dormant tab and is
+tracked the same way, with a toast and a terminal bell when it finishes, fails,
+or waits on a gate. A goal that names an image file is routed to the
+workspace's vision model (`/vision`) when the active model does not declare
+vision; steering an in-flight run never reroutes it.
 
 **No horizontal scrolling, at any width.** The frame is fitted to the terminal it
 was drawn for: content reflows or truncates with a visible marker, and a row that

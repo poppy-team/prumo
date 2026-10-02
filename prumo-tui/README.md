@@ -63,6 +63,12 @@ What the integration required from the core, and got:
    instead of zeros. `ctrl+g` lists **which** files changed, not only how many.
 3. **A run can be steered.** Sending while a run is in flight says something to
    that run rather than starting a second one.
+4. **A run can go to the background.** `/run-bg <goal>` starts the goal on a
+   dormant tab without leaving the composer: the tab bar badges it while it
+   runs (`●`), when it waits on a gate (`!`), and when it finished unseen
+   (`*`), and a toast plus a terminal bell announces the finish, the failure,
+   or the waiting gate. Switching to the tab reads the run and clears its
+   badges.
 
 Deferred deliberately, because the harness cannot answer them yet — not because
 they were too hard:
@@ -135,3 +141,19 @@ never an invented capability. The source is the workspace's `.prumo/models.json`
 
 Format reference: `docs/harness/providers.md`; schema:
 `schemas/model-declarations.schema.json`.
+
+## Which model sees an image
+
+A goal names images as text (`@shot.png`, from completion, file pick, or
+clipboard paste) — never as bytes — and the daemon resolves the reference with
+the run's model. When the active model does not declare vision, the client
+routes image-bearing goals to the workspace's vision model instead:
+
+- `/vision` shows the current override; `/vision <model-id>` sets it (stored in
+  `<workspace>/.prumo/vision-model`, so it follows the project); `/vision off`
+  clears it.
+- Setting reports what the harness declares about the model, so a missing
+  vision declaration is known before the run rather than discovered after.
+- Routing happens only when a run starts; steering an in-flight run never
+  switches its model, and a goal without an image reference always keeps the
+  active model.

@@ -40,25 +40,47 @@ func noticeIn(t *testing.T, cmd tea.Cmd) util.InfoMsg {
 	if cmd == nil {
 		t.Fatal("the answer produced nothing for the user to read")
 	}
-	msg := cmd()
-	batch, isBatch := msg.(tea.BatchMsg)
-	if !isBatch {
-		notice, ok := msg.(util.InfoMsg)
-		if !ok {
-			t.Fatalf("the answer produced %T", msg)
+	return searchNotice(t, cmd())
+}
+
+// searchNotice finds the user-readable notice in an answer, descending into
+// nested batches: the shell wraps a dialog-opening answer with its focus
+// message, so the notice is not always at the top level.
+func searchNotice(t *testing.T, msg tea.Msg) util.InfoMsg {
+	t.Helper()
+	if batch, isBatch := msg.(tea.BatchMsg); isBatch {
+		for _, inner := range batch {
+			if inner == nil {
+				continue
+			}
+			if notice, ok := searchNoticeOpt(inner()); ok {
+				return notice
+			}
 		}
-		return notice
+		t.Fatal("the answer produced no notice")
+		return util.InfoMsg{}
 	}
-	for _, inner := range batch {
-		if inner == nil {
-			continue
-		}
-		if notice, ok := inner().(util.InfoMsg); ok {
-			return notice
-		}
+	notice, ok := msg.(util.InfoMsg)
+	if !ok {
+		t.Fatalf("the answer produced %T", msg)
 	}
-	t.Fatal("the answer produced no notice")
-	return util.InfoMsg{}
+	return notice
+}
+
+func searchNoticeOpt(msg tea.Msg) (util.InfoMsg, bool) {
+	if batch, isBatch := msg.(tea.BatchMsg); isBatch {
+		for _, inner := range batch {
+			if inner == nil {
+				continue
+			}
+			if notice, ok := searchNoticeOpt(inner()); ok {
+				return notice, true
+			}
+		}
+		return util.InfoMsg{}, false
+	}
+	notice, ok := msg.(util.InfoMsg)
+	return notice, ok
 }
 
 // The gate the dialog answers has to be the one the service is holding, or the

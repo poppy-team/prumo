@@ -24,6 +24,9 @@ type EditorCmp interface {
 	layout.Sizeable
 	layout.Bindings
 	Value() string
+	Focused() bool
+	Focus() tea.Cmd
+	Blur()
 }
 
 type editorCmp struct {
@@ -36,6 +39,18 @@ type editorCmp struct {
 
 func (m *editorCmp) Value() string {
 	return m.textarea.Value()
+}
+
+func (m *editorCmp) Focused() bool {
+	return m.textarea.Focused()
+}
+
+func (m *editorCmp) Focus() tea.Cmd {
+	return m.textarea.Focus()
+}
+
+func (m *editorCmp) Blur() {
+	m.textarea.Blur()
 }
 
 type EditorKeyMaps struct {
@@ -61,33 +76,52 @@ var editorMaps = EditorKeyMaps{
 }
 
 func (m *editorCmp) openEditor() tea.Cmd {
-	editor := os.Getenv("EDITOR")
+	editor := os.Getenv("VISUAL")
 	if editor == "" {
-		editor = "nvim"
+		editor = os.Getenv("EDITOR")
+	}
+	if editor == "" {
+		for _, candidate := range []string{"nvim", "vim", "nano", "vi"} {
+			if _, err := exec.LookPath(candidate); err == nil {
+				editor = candidate
+				break
+			}
+		}
+	}
+	if editor == "" {
+		editor = "nano"
 	}
 
-	tmpfile, err := os.CreateTemp("", "msg_*.md")
+	tmpfile, err := os.CreateTemp("", "prumo_msg_*.md")
 	if err != nil {
 		return util.ReportError(err)
 	}
+	currentVal := m.textarea.Value()
+	if currentVal != "" {
+		_ = os.WriteFile(tmpfile.Name(), []byte(currentVal), 0600)
+	}
+	tmpfilePath := tmpfile.Name()
 	tmpfile.Close()
-	c := exec.Command(editor, tmpfile.Name()) //nolint:gosec
+
+	c := exec.Command(editor, tmpfilePath) //nolint:gosec
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	return tea.ExecProcess(c, func(err error) tea.Msg {
+		defer os.Remove(tmpfilePath)
 		if err != nil {
 			return util.ReportError(err)
 		}
-		content, err := os.ReadFile(tmpfile.Name())
+		content, err := os.ReadFile(tmpfilePath)
 		if err != nil {
 			return util.ReportError(err)
 		}
-		if len(content) == 0 {
+		trimmed := strings.TrimSpace(string(content))
+		if len(trimmed) == 0 {
 			return util.ReportWarn("Message is empty")
 		}
-		os.Remove(tmpfile.Name())
-		return SendMsg{Text: string(content)}
+		m.textarea.Reset()
+		return SendMsg{Text: trimmed}
 	})
 }
 
@@ -133,6 +167,10 @@ func (m *editorCmp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textarea.SetValue(current + msg.Path)
 		return m, nil
 	case tea.KeyPressMsg:
+		if m.textarea.Focused() && msg.Code == tea.KeyEnter && (msg.Mod.Contains(tea.ModAlt) || msg.Mod.Contains(tea.ModShift)) {
+			m.textarea, cmd = m.textarea.Update(tea.KeyPressMsg{Code: msg.Code})
+			return m, cmd
+		}
 		if key.Matches(msg, messageKeys.PageUp) || key.Matches(msg, messageKeys.PageDown) ||
 			key.Matches(msg, messageKeys.HalfPageUp) || key.Matches(msg, messageKeys.HalfPageDown) {
 			return m, nil

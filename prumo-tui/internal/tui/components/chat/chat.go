@@ -16,7 +16,8 @@ import (
 // It carries text and nothing else: a file is *named* in the goal rather than
 // attached to it, because what a model can see is the harness's decision.
 type SendMsg struct {
-	Text string
+	Text             string
+	PreflightChecked bool
 }
 
 type SessionSelectedMsg = session.Session
@@ -25,15 +26,47 @@ type SessionClearedMsg struct{}
 
 type ToggleSidebarMsg struct{}
 
+type ToggleThinkingMsg struct{}
+
 type EditorFocusMsg bool
 
 // Multi-tab conversation message types
 type NewTabMsg struct {
-	Title string
+	Title           string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
+}
+
+type UpdateActiveTabMsg struct {
+	Title           string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
 }
 
 type SwitchTabMsg struct {
 	Index int
+}
+
+// RunBackgroundMsg starts a run on a session the user is not looking at. The
+// tab stays dormant: the run proceeds daemon-side and the tab bar badges its
+// progress, so a long run never holds the composer hostage.
+type RunBackgroundMsg struct {
+	Title           string
+	Goal            string
+	Provider        string
+	Model           string
+	ReasoningEffort string
+	Workspace       string
+}
+
+// BackgroundStartedMsg reports a background run the daemon accepted.
+type BackgroundStartedMsg struct {
+	SessionID string
+	Title     string
 }
 
 type NextTabMsg struct{}

@@ -5,7 +5,7 @@
 param(
     [string]$Package = $(if ($env:PRUMO_PACKAGE) { $env:PRUMO_PACKAGE } else { "" }),
     [string]$Repository = $(if ($env:PRUMO_REPOSITORY) { $env:PRUMO_REPOSITORY } else { "raillen/prumo" }),
-    [string]$Version = $(if ($env:PRUMO_VERSION) { $env:PRUMO_VERSION } else { "v0.6.0" }),
+    [string]$Version = $(if ($env:PRUMO_VERSION) { $env:PRUMO_VERSION } else { "v0.6.1" }),
     [string]$InstallDir = $(if ($env:PRUMO_INSTALL_DIR) { $env:PRUMO_INSTALL_DIR } else { "$env:LOCALAPPDATA\Programs\prumo" })
 )
 
@@ -25,10 +25,10 @@ if (-not $Package) {
         Write-Host "=================================================" -ForegroundColor Cyan
         Write-Host "       Prumo Package Selection ($Version)" -ForegroundColor Cyan
         Write-Host "=================================================" -ForegroundColor Cyan
-        Write-Host "1) Prumo Harness CLI (Headless runtime, daemon & tools) [default]"
-        Write-Host "2) Prumo Agent IDE   (Desktop GUI pair programmer & editor)"
-        Write-Host "3) Prumo Agent TUI   (Interactive terminal harness)"
-        Write-Host "4) All packages      (CLI + IDE + TUI)"
+        Write-Host "1) Prumo CLI        (Core runtime, daemon & tools) [default]"
+        Write-Host "2) Prumo IDE        (Desktop GUI pair programmer & editor)"
+        Write-Host "3) Prumo Code Agent (Interactive terminal client)"
+        Write-Host "4) All packages      (CLI + IDE + Code Agent)"
         $choice = Read-Host "Select package [1-4, default: 1]"
         switch ($choice) {
             "2" { $Package = "ide" }

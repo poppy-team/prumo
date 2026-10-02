@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/raillen/prumo-tui/internal/app"
+	"github.com/raillen/prumo-tui/internal/llm/models"
+	"github.com/raillen/prumo-tui/internal/runtime"
 	"github.com/raillen/prumo-tui/internal/session"
 )
 
@@ -21,7 +24,7 @@ func TestTheAccountingShowsEveryKindOfToken(t *testing.T) {
 	}}
 
 	text := cmp.accountingText()
-	for _, want := range []string{"in 19.2K", "cache 8.1K", "out 760", "$0.0412", "~$0.0137/req"} {
+	for _, want := range []string{"in 19.2K", "cache 8.1K", "30% hit", "out 760", "$0.0412", "~$0.0137/req"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("the accounting lost %q: %q", want, text)
 		}
@@ -96,5 +99,30 @@ func TestStatusShowsWorkspaceAndBranch(t *testing.T) {
 	view := cmp.viewString()
 	if !strings.Contains(view, "ctrl+? help") {
 		t.Fatalf("expected help hint in status view, got:\n%s", view)
+	}
+}
+
+func TestContextPressureGauge(t *testing.T) {
+	// Without app or when context window is 0, gauge is empty
+	cmp := statusCmp{
+		session: session.Session{ID: "S1", PromptTokens: 35000, CompletionTokens: 5000},
+	}
+	if got := cmp.contextGauge(); got != "" {
+		t.Fatalf("expected empty context gauge when limit unknown, got: %q", got)
+	}
+
+	// With app and runner with declared context window
+	testApp := &app.App{
+		Runner: runtime.NewRunner(runtime.Options{
+			Model: models.Model{ID: "custom-model", ContextWindow: 100_000},
+		}),
+	}
+	cmpWithApp := statusCmp{
+		app:     testApp,
+		session: session.Session{ID: "S1", PromptTokens: 30_000, CompletionTokens: 5_000},
+	}
+	got := cmpWithApp.contextGauge()
+	if !strings.Contains(got, "ctx: 35%") {
+		t.Fatalf("expected 'ctx: 35%%' in context gauge, got: %q", got)
 	}
 }

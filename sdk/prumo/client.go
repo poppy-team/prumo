@@ -152,13 +152,14 @@ type RunStatus struct {
 
 // StartRequest launches a headless run.
 type StartRequest struct {
-	Goal      string
-	Provider  string
-	Model     string
-	BaseURL   string
-	MaxTurns  int
-	RunID     string
-	Workspace string
+	Goal            string
+	Provider        string
+	Model           string
+	BaseURL         string
+	MaxTurns        int
+	RunID           string
+	Workspace       string
+	ReasoningEffort string
 }
 
 // Start launches a run and returns its id.
@@ -167,10 +168,14 @@ func (c Client) Start(ctx context.Context, r StartRequest) (string, error) {
 	if maxTurns <= 0 {
 		maxTurns = 5
 	}
-	out, err := c.call(ctx, map[string]any{
+	payload := map[string]any{
 		"op": "start", "goal": r.Goal, "provider": r.Provider, "model": r.Model,
 		"base_url": r.BaseURL, "max_turns": maxTurns, "run_id": r.RunID, "workspace": r.Workspace,
-	})
+	}
+	if r.ReasoningEffort != "" {
+		payload["reasoning_effort"] = r.ReasoningEffort
+	}
+	out, err := c.call(ctx, payload)
 	if err != nil {
 		return "", err
 	}
