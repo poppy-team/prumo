@@ -40,6 +40,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/runlayer"
 	harnessruntime "github.com/raillen/prumo/internal/harness/runtime"
 	"github.com/raillen/prumo/internal/protocol"
+	"github.com/raillen/prumo/internal/protocol/goals"
 	"github.com/raillen/prumo/internal/toolgateway"
 )
 
@@ -312,14 +313,7 @@ func runAgentRun(asJSON bool, args []string) int {
 	}
 	finishRun := func() {
 		saveKnowledge()
-		_ = tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
-		_ = runlayer.DumpPermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), engine)
-		if _, evErr := runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
-			runID, goal, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy()); evErr != nil {
-			fmt.Fprintf(os.Stderr, "evidence: %v\n", evErr)
-		}
-		_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
-		_, _ = checkpoints.Prune(5)
+		finishRunProducts(dir, runID, runner, tracker, counting, engine, checkpoints, timeline, goal)
 	}
 	if err := runner.RunUntilDone(context.Background()); err != nil {
 		finishRun()
@@ -334,6 +328,28 @@ func runAgentRun(asJSON bool, args []string) int {
 	}
 	fmt.Printf("Run %s: %s (%s)\n", runID, runner.State.Phase, runner.State.StopReason)
 	return exitOK
+}
+
+// finishRunProducts emits every durable product of a finished run: budget,
+// permission journal, evidence record, observability bridge and checkpoint
+// pruning. Run and resume share it, because a resumed run that skips these
+// leaves the goal with no evidence of the work that actually continued it.
+func finishRunProducts(dir, runID string, runner *harnessruntime.Runner, tracker *runlayer.Tracker, counting *runlayer.CountingTools, engine *perm.Engine, checkpoints *checkpoint.Store, timeline []agent.AgentEvent, goalID string) {
+	_ = tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
+	_ = runlayer.DumpPermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), engine)
+	evidencePath := filepath.Join(dir, "evidence-"+runID+".json")
+	if _, evErr := runlayer.WriteEvidence(evidencePath,
+		runID, goalID, string(runner.State.Phase), runner.State.StopReason, tracker.Snapshot(), counting.ReportsCopy()); evErr != nil {
+		fmt.Fprintf(os.Stderr, "evidence: %v\n", evErr)
+	}
+	// Bridge the run outcome into the durable goal lifecycle. When the run's
+	// goal names a real goal, the evidence record is appended to that goal so
+	// its DONE gate is satisfied by something the system actually executed
+	// rather than by a manual edit.
+	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(dir)))
+	_ = goals.AppendRunEvidence(projectRoot, goalID, evidencePath, string(runner.State.Phase))
+	_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
+	_, _ = checkpoints.Prune(5)
 }
 
 func runAgentResume(asJSON bool, args []string) int {
@@ -440,11 +456,23 @@ func runAgentResume(asJSON bool, args []string) int {
 		aware.SetWorkspace(root)
 	}
 
+	// A continuation is work the goal lifecycle has to see: it spends budget and
+	// produces tool results, so it emits the same durable products a first run
+	// does. Without this a resumed run left no evidence behind at all.
+	resumeTracker := runlayer.NewTracker(0, 0, 0)
+	resumeCounting := &runlayer.CountingTools{Base: aci.New(root), Tracker: resumeTracker}
+	resumeEngine := perm.New(perm.Policy{DefaultAction: agent.PermissionAllow})
+	resumeEventLog := filepath.Join(dir, "events-"+runID+".jsonl")
+	var resumeTimeline []agent.AgentEvent
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
-		Models: provider, Tools: aci.New(root),
-		Perms:         perm.New(perm.Policy{DefaultAction: agent.PermissionAllow}),
+		Models: provider, Tools: resumeCounting,
+		Perms:         resumeEngine,
 		Checkpoints:   store,
 		EffectJournal: store,
+		Events: func(ev agent.AgentEvent) {
+			appendAgentEvent(resumeEventLog, ev)
+			resumeTimeline = append(resumeTimeline, ev)
+		},
 	}, runID, cp.State.SessionID)
 	runner.RestoreFrom(cp)
 
@@ -454,9 +482,11 @@ func runAgentResume(asJSON bool, args []string) int {
 	// RunUntilDone carries the runaway-loop guard; a hand-rolled loop here
 	// stepped forever against a provider that keeps asking for tools.
 	if runErr := runner.RunUntilDone(runCtx); runErr != nil {
+		finishRunProducts(dir, runID, runner, resumeTracker, resumeCounting, resumeEngine, store, resumeTimeline, strings.TrimSpace(cp.State.Goal))
 		return serviceError(asJSON, runErr)
 	}
 	continued := runner.TurnsDone > stepsBefore
+	finishRunProducts(dir, runID, runner, resumeTracker, resumeCounting, resumeEngine, store, resumeTimeline, strings.TrimSpace(cp.State.Goal))
 
 	result := map[string]any{
 		"run_id": runID, "resumed_from": cp.ID, "phase": string(runner.State.Phase),

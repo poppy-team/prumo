@@ -47,33 +47,24 @@ func AnalyzeImpact(root string, changed []string) ([]Impact, error) {
 	if err != nil {
 		return nil, err
 	}
-	return AnalyzeImpacts(registry, bindings, changed), nil
+	return AnalyzeImpactsIn(root, registry, bindings, changed, nil), nil
 }
 
 func AnalyzeImpacts(registry Registry, bindings []Binding, changed []string) []Impact {
-	impacts := []Impact{}
-	for _, contract := range registry.Contracts {
-		for _, trigger := range contract.UpdateTriggers {
-			if triggerMatches(trigger, changed) {
-				docs := []string{}
-				for _, b := range bindings {
-					if b.ContractID == contract.ID {
-						docs = append(docs, b.Sources...)
-					}
-				}
-				sort.Strings(docs)
-				impacts = append(impacts, Impact{ContractID: contract.ID, Documents: docs, Reason: "update trigger: " + trigger, Severity: "medium"})
-				break
-			}
-		}
-	}
-	sort.Slice(impacts, func(i, j int) bool { return impacts[i].ContractID < impacts[j].ContractID })
-	return impacts
+	return AnalyzeImpactsWithGraph(registry, bindings, changed, nil)
 }
 func triggerMatches(trigger string, changed []string) bool {
-	token := strings.ToLower(strings.Split(trigger, ".")[0])
+	raw := trigger
+	if idx := strings.Index(raw, ":"); idx != -1 {
+		raw = raw[idx+1:]
+	}
+	token := strings.ToLower(strings.TrimSuffix(raw, "/"))
+	if token == "" {
+		return false
+	}
 	for _, path := range changed {
-		if strings.Contains(strings.ToLower(path), token) {
+		norm := strings.ToLower(filepath.ToSlash(path))
+		if strings.Contains(norm, token) {
 			return true
 		}
 	}
@@ -99,32 +90,152 @@ func unique(values []string) []string {
 	}
 	return out
 }
+
+// numericFact is a statement of the shape <key: value | key=value | "key": value>
+// for the same subject key. Detecting the same key with materially different
+// numeric/config values across canonical sources is a deterministic
+// contradiction, and it replaces a hard-coded "port only, four files" regex.
+var numericClaim = regexp.MustCompile(`(?:"([a-zA-Z0-9_.\-]+)"\s*:\s*([0-9][0-9.]*)|([a-zA-Z0-9_.\-]+)\s*[=:]\s*([0-9][0-9.]*))`)
+
+// genericIndicators and intentionally shape the contradiction detector toward
+// keys that plausibly carry comparable meaning across sources. Keys like
+// "version" carry a different value per context (a profile's schema version
+// vs the project protocol version), so flagging them as contradictions was a
+// false-positive path, not a correctness signal.
+var genericIndicators = map[string]bool{
+	"version": true, "id": true, "index": true, "size": true, "count": true,
+	"length": true, "len": true, "width": true, "height": true, "rank": true,
+}
+
+// DetectContradictions finds canonical sources that assert different numeric
+// values for the same declarative key (config or SLA). The previous version
+// only inspected `port`/`default_port` in four hard-coded files, so a real
+// conflict between `prumo.json`, an ADR and a deployment doc passed silently.
+// This general detector compares numeric-claim keys across every canonical
+// document except the ambiguous scaffolding ones above.
 func DetectContradictions(root string) ([]Finding, error) {
-	values := map[string][]string{}
-	pattern := regexp.MustCompile(`(?i)(?:port|default_port)\s*(?:=|:)\s*([0-9]{2,5})`)
-	for _, source := range []string{"prumo.json", "docs/manual/installation.md", "docs/reference/cli.md", "docs/architecture/overview.md"} {
-		data, err := os.ReadFile(filepath.Join(root, source))
+	sources, err := contradictionSources(root)
+	if err != nil {
+		return nil, err
+	}
+	occ := map[string]map[string]map[string]bool{} // key -> source -> set of values
+	for _, source := range sources {
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(source)))
 		if err != nil {
 			continue
 		}
-		for _, match := range pattern.FindAllStringSubmatch(string(data), -1) {
-			if len(match) > 1 {
-				values[match[1]] = append(values[match[1]], source)
+		for _, m := range numericClaim.FindAllStringSubmatch(string(data), -1) {
+			key := strings.ToLower(m[1])
+			if key == "" {
+				key = strings.ToLower(m[3])
+			}
+			value := m[2]
+			if value == "" {
+				value = m[4]
+			}
+			if key == "" || value == "" {
+				continue
+			}
+			if occ[key] == nil {
+				occ[key] = map[string]map[string]bool{}
+			}
+			if occ[key][source] == nil {
+				occ[key][source] = map[string]bool{}
+			}
+			occ[key][source][value] = true
+		}
+	}
+	findings := []Finding{}
+	for key, bySource := range occ {
+		if genericIndicators[key] {
+			continue
+		}
+		// A conflict requires the same key to be set with different values
+		// across distinct sources. A single file that legitimately nests the
+		// key several times (for example the per-profile context budgets in
+		// prumo.json) is not a cross-source contradiction.
+		if len(bySource) < 2 {
+			continue
+		}
+		valueSet := map[string]string{}
+		for source, values := range bySource {
+			for value := range values {
+				valueSet[value] = source
+			}
+		}
+		if len(valueSet) < 2 {
+			continue
+		}
+		vals := []string{}
+		paths := []string{}
+		for value, source := range valueSet {
+			vals = append(vals, value)
+			paths = append(paths, source)
+		}
+		sort.Strings(vals)
+		sort.Strings(paths)
+		findings = append(findings, Finding{
+			ID:          "DOC_CONTRADICTION",
+			Sources:     unique(paths),
+			Type:        "numeric-fact contradiction",
+			Severity:    "medium",
+			Authority:   "canonical-documentation",
+			Description: "conflicting values for " + key + ": " + strings.Join(vals, ", "),
+			State:       "open",
+		})
+	}
+	sort.Slice(findings, func(i, j int) bool { return findings[i].Description < findings[j].Description })
+	return findings, nil
+}
+
+// contradictionSources returns every canonical doc that can contradict another:
+// prumo.json plus all documents bound to contracts. Falling back to all docs
+// when no bindings are declared keeps the check fair for a project that has not
+// wired bindings yet.
+func contradictionSources(root string) ([]string, error) {
+	seen := map[string]bool{"prumo.json": true}
+	out := []string{"prumo.json"}
+	for _, doc := range walkAllDocs(root)[1:] {
+		if seen[doc] {
+			continue
+		}
+		seen[doc] = true
+		out = append(out, doc)
+	}
+	// Documents can also be bound from outside the docs/ tree; include them so a
+	// conflict in an operations or product doc is still a cross-file contradiction.
+	bindings, err := LoadBindings(root)
+	if err == nil {
+		for _, b := range bindings {
+			for _, s := range b.Sources {
+				if seen[s] {
+					continue
+				}
+				seen[s] = true
+				out = append(out, s)
 			}
 		}
 	}
-	if len(values) < 2 {
-		return []Finding{}, nil
-	}
-	paths := []string{}
-	ports := []string{}
-	for port, sources := range values {
-		ports = append(ports, port)
-		paths = append(paths, sources...)
-	}
-	sort.Strings(ports)
-	sort.Strings(paths)
-	return []Finding{{ID: "DOC_CONTRADICTION", Sources: unique(paths), Type: "syntactic contradiction", Severity: "medium", Authority: "canonical-documentation", Description: "conflicting port values: " + strings.Join(ports, ", "), State: "open"}}, nil
+	return out, nil
+}
+
+func walkAllDocs(root string) []string {
+	out := []string{"prumo.json"}
+	_ = filepath.Walk(filepath.Join(root, "docs"), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".md") && !strings.HasSuffix(path, ".json") {
+			return nil
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return nil
+		}
+		out = append(out, filepath.ToSlash(rel))
+		return nil
+	})
+	return out
 }
 func DetectStaleness(root string, changed []string) ([]Finding, error) {
 	impacts, err := AnalyzeImpact(root, changed)

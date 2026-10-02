@@ -32,6 +32,7 @@ import (
 	"github.com/raillen/prumo/internal/harness/runlayer"
 	harnessruntime "github.com/raillen/prumo/internal/harness/runtime"
 	"github.com/raillen/prumo/internal/harness/safepath"
+	"github.com/raillen/prumo/internal/protocol/goals"
 )
 
 // StartRequest asks the daemon to run a goal headlessly.
@@ -183,6 +184,13 @@ type activeRun struct {
 	counting *runlayer.CountingTools
 	kstore   *knowledge.Store
 
+	// goal is the request's goal text, recorded so the run's evidence can name
+	// the goal it speaks to. The schema requires goal_id on every record.
+	// workspace is the project root the goal lives in, which is where the goal
+	// lifecycle is resolved from when the run's evidence is bridged back into it.
+	goal      string
+	workspace string
+
 	// mu guards timeline, which the runner's event callback appends to while
 	// the persistence step reads it.
 	mu       sync.Mutex
@@ -191,10 +199,6 @@ type activeRun struct {
 	// busy is true while the run loop is advancing, so an approval cannot
 	// start a second loop over the same state. Guarded by Server.mu.
 	busy bool
-
-	// goal is the request's goal text, recorded so the run's evidence can name
-	// the goal it speaks to. The schema requires goal_id on every record.
-	goal string
 }
 
 // New creates a server; call Serve to block.
@@ -753,6 +757,8 @@ func (s *Server) execute(ctx context.Context, runID, goal, modelName string, pro
 			hasVision = caps.Vision
 		}
 	}
+	ar.goal = goal
+	ar.workspace = workspace
 	runner := harnessruntime.NewRunner(harnessruntime.Services{
 		Models:          provider,
 		Tools:           counting,
@@ -830,7 +836,8 @@ func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
 	_ = ar.kstore.Save(filepath.Join(dir, "knowledge-"+runID+".json"))
 	_ = ar.tracker.Save(filepath.Join(dir, "budget-"+runID+".json"))
 	_ = runlayer.SavePermissions(filepath.Join(dir, "permissions-"+runID+".jsonl"), ar.engine)
-	if _, evErr := runlayer.WriteEvidence(filepath.Join(dir, "evidence-"+runID+".json"),
+	evidencePath := filepath.Join(dir, "evidence-"+runID+".json")
+	if _, evErr := runlayer.WriteEvidence(evidencePath,
 		runID, ar.goal, string(phase), runner.State.StopReason, ar.tracker.Snapshot(), ar.counting.ReportsCopy()); evErr != nil {
 		// Evidence that cannot be written must be visible. Reporting the run
 		// as successful while its evidence is missing is the false green this
@@ -840,6 +847,10 @@ func (s *Server) observe(ctx context.Context, runID string, ar *activeRun) {
 			Payload: map[string]any{"error": evErr.Error()}, CreatedAt: agent.Now(),
 		})
 	}
+	// Bridge the run outcome into the durable goal lifecycle: when the run's
+	// goal names a real goal, its evidence record is appended to that goal, so
+	// the goal's DONE gate is satisfied by work the system actually executed.
+	_ = goals.AppendRunEvidence(ar.workspace, ar.goal, evidencePath, string(phase))
 	_ = runlayer.BridgeToObservability(filepath.Join(dir, "obs-"+runID+".jsonl"), timeline)
 	_, _ = checkpoint.New(filepath.Join(dir, "checkpoints")).Prune(5)
 	// "finished" is for a run that ended. A run that stopped for a decision has

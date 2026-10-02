@@ -166,6 +166,8 @@ func runPlan(asJSON bool, args []string) int {
 		return runPlanDelta(asJSON, path, sessionID, goal, apply)
 	case "blueprint":
 		return runPlanBlueprint(asJSON, path, sessionID, goal, planRequested)
+	case "seed":
+		return runPlanSeed(asJSON, path, sessionID, goal)
 	default:
 		fmt.Fprintf(os.Stderr, "error: unknown plan subcommand: %s\n", action)
 		return exitUsage
@@ -240,6 +242,18 @@ func runPlanResume(asJSON bool, path, sessionID, goal string, budget int) int {
 	session, err := planSession(path, sessionID, goal)
 	if err != nil {
 		return serviceError(asJSON, err)
+	}
+	// Intake: a fresh session has no recorded decisions or questions yet, which
+	// means it was created by a blank create-or-resume. Seed it from docs
+	// readiness so the planner starts from the project's actual gaps instead of
+	// requiring a human or a fixture to pre-populate questions. Sessions that
+	// already carry state are left exactly as they are.
+	if len(session.Decisions) == 0 && len(session.Open) == 0 {
+		scope := strings.TrimPrefix(strings.TrimSpace(session.Scope), "goal:")
+		if seeded, _, seedErr := app.SeedQuestionsFromReadiness(path, scope, session); seedErr == nil && len(seeded.Open) > 0 {
+			_ = app.SaveSession(path, seeded)
+			session = seeded
+		}
 	}
 	bindings, err := app.LoadSessionBindings(path)
 	if err != nil {
@@ -569,4 +583,42 @@ func acceptedAndBound(decisions []planning.DecisionProposal) []planning.Decision
 		}
 	}
 	return accepted
+}
+
+// runPlanSeed materializes the session's open questions from docs readiness.
+// This is the Living Plan intake: instead of a human or a test fixture having to
+// know the project's gaps in advance, the planner reads the documentation
+// engine's coverage and turns every unmet obligation into a bounded question.
+func runPlanSeed(asJSON bool, path, sessionID, goal string) int {
+	session, err := planSession(path, sessionID, goal)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	scope := strings.TrimSpace(session.Scope)
+	if scope == "" && goal != "" {
+		scope = "goal:" + goal
+	}
+	seeded, added, err := app.SeedQuestionsFromReadiness(path, strings.TrimPrefix(scope, "goal:"), session)
+	if err != nil {
+		return serviceError(asJSON, err)
+	}
+	if err := app.SaveSession(path, seeded); err != nil {
+		return serviceError(asJSON, err)
+	}
+	if asJSON {
+		return printEnvelope(protocol.OkEnvelope(map[string]any{
+			"session":   seeded.ID,
+			"added":     len(added),
+			"questions": app.SessionOpenQuestions(seeded),
+		}))
+	}
+	if len(added) == 0 {
+		fmt.Println("No new open questions: coverage gaps did not produce any new obligations.")
+		return exitOK
+	}
+	fmt.Printf("Seeded %d open question(s) for session %s:\n", len(added), seeded.ID)
+	for _, q := range added {
+		fmt.Printf("- [%s] %s: %s\n", q.Priority, q.ID, questionText(q))
+	}
+	return exitOK
 }

@@ -11,12 +11,18 @@ import (
 
 func runRepositoryPolicy(asJSON bool, args []string) int {
 	if len(args) < 2 || args[0] != "repo" || args[1] != "policy" {
-		fmt.Fprintf(os.Stderr, "error: expected repo policy <check|explain|plan|apply>\n")
+		fmt.Fprintf(os.Stderr, "error: expected repo policy <init|check|explain|plan|apply>\n")
 		return exitUsage
 	}
 	command := "check"
 	if len(args) > 2 {
 		command = args[2]
+	}
+	switch command {
+	case "init", "check", "explain", "plan", "apply":
+	default:
+		fmt.Fprintf(os.Stderr, "error: unknown repo policy subcommand %q (expected init|check|explain|plan|apply)\n", command)
+		return exitUsage
 	}
 	root := "."
 	dryRun := false
@@ -32,6 +38,21 @@ func runRepositoryPolicy(asJSON bool, args []string) int {
 		case "--dry-run":
 			dryRun = true
 		}
+	}
+	if command == "init" {
+		created, err := repositorypolicy.EnsurePolicyForInit(root)
+		if err != nil {
+			return serviceError(asJSON, err)
+		}
+		if asJSON {
+			return printEnvelope(protocol.OkEnvelope(map[string]any{"created": created, "path": repositorypolicy.PolicyPath(root)}))
+		}
+		if created {
+			fmt.Printf("Initialized repository policy at %s\n", repositorypolicy.PolicyPath(root))
+		} else {
+			fmt.Printf("Repository policy already exists at %s\n", repositorypolicy.PolicyPath(root))
+		}
+		return exitOK
 	}
 	service := repositorypolicy.NewService(root)
 	policy, err := service.Load()

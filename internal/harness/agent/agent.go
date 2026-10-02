@@ -291,7 +291,13 @@ type NativeAgentState struct {
 	PendingPerms      []string       `json:"pending_permissions,omitempty"`
 	StopReason        string         `json:"stop_reason,omitempty"`
 	Budget            map[string]any `json:"budget,omitempty"`
-	UpdatedAt         string         `json:"updated_at"`
+	// Messages carries the compact conversation so a checkpoint can be resumed
+	// with the reasoning context intact. The previous state persisted only the
+	// structural fields, which is why `prumo agent resume` could not actually
+	// continue work and was reduced to marking the run complete.
+	Messages  []Message `json:"messages,omitempty"`
+	Goal      string    `json:"goal,omitempty"`
+	UpdatedAt string    `json:"updated_at"`
 }
 
 // Checkpoint persists a safe-point snapshot.

@@ -11,9 +11,7 @@
       "project.scope",
       "architecture.system",
       "testing.strategy",
-      "security.trust",
-      "cli.reference",
-      "installation.lifecycle"
+      "security.trust"
     ]
   },
   {
@@ -27,7 +25,8 @@
       "core-software"
     ],
     "contracts": [
-      "cli.reference"
+      "cli.reference",
+      "installation.lifecycle"
     ]
   },
   {

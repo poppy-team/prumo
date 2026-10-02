@@ -1,11 +1,14 @@
 package cliops
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
 
+	prumo "github.com/raillen/prumo"
 	"github.com/raillen/prumo/internal/protocol"
 )
 
@@ -35,6 +38,130 @@ func scaffoldBaselineDocuments(root, projectName string) error {
 		}
 	}
 	return nil
+}
+
+// scaffoldDocumentationControlPlane seeds the machine-readable documentation
+// contracts a project needs before `docs audit`, `docs readiness`,
+// `docs authority` and the Living Plan loop can run at all.
+//
+// This was the single largest greenfield blocker: `prumo init` produced a
+// project where every documentation command failed with a missing-file error,
+// and the only recovery path (the adoption engine) wrote a bindings format the
+// engine could not read. A scaffolded project now arrives with a working
+// control plane and an honest, explicit "not yet answered" readiness state
+// instead of a crash.
+func scaffoldDocumentationControlPlane(root string) error {
+	for _, dir := range []string{
+		filepath.Join(root, "docs", "contracts"),
+		filepath.Join(root, "docs", "profiles"),
+	} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+
+	// Materialize the framework registry locally so a project is self-describing
+	// and auditable without relying on the binary's embedded copy.
+	for _, pair := range []struct {
+		name string
+		data []byte
+	}{
+		{filepath.Join(root, "docs", "contracts", "builtin.json"), embeddedFile(prumo.EmbeddedDocContracts(), "builtin.json")},
+		{filepath.Join(root, "docs", "profiles", "builtin.json"), embeddedFile(prumo.EmbeddedDocProfiles(), "builtin.json")},
+	} {
+		if len(pair.data) == 0 {
+			continue
+		}
+		if _, err := os.Stat(pair.name); err == nil {
+			// A project that already carries its own registry keeps it.
+			continue
+		}
+		if err := os.WriteFile(pair.name, pair.data, 0644); err != nil {
+			return err
+		}
+	}
+
+	// Bind the canonical documents the scaffold actually produced. Without
+	// bindings, every applicable contract reads as unbound and readiness can
+	// never move; with them, `docs audit` reports real, actionable coverage.
+	bindings := []map[string]any{
+		{
+			"contract_id": "product.vision",
+			"sources":     []string{"docs/product/vision.md"},
+			"ownership":   "human-maintained",
+			"authority":   "canonical-documentation",
+		},
+		{
+			"contract_id": "project.scope",
+			"sources":     []string{"docs/product/scope.md"},
+			"ownership":   "human-maintained",
+			"authority":   "canonical-documentation",
+		},
+		{
+			"contract_id": "architecture.system",
+			"sources":     []string{"docs/architecture/overview.md", "docs/architecture/clean-code-contract.md"},
+			"ownership":   "human-maintained",
+			"authority":   "canonical-documentation",
+		},
+		{
+			"contract_id": "testing.strategy",
+			"sources":     []string{"docs/development/testing-strategy.md"},
+			"ownership":   "human-maintained",
+			"authority":   "canonical-documentation",
+		},
+		{
+			"contract_id": "security.trust",
+			"sources":     []string{"docs/security/threat-model.md", "docs/security/security-contract.md"},
+			"ownership":   "human-maintained",
+			"authority":   "canonical-documentation",
+		},
+	}
+	bindingsPath := filepath.Join(root, "docs", "contracts", "bindings.json")
+	if _, err := os.Stat(bindingsPath); err != nil {
+		data, err := json.MarshalIndent(bindings, "", "  ")
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(bindingsPath, append(data, '\n'), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Authority map: the classification `prumo docs authority` verifies. Scaffolding
+	// it here is what makes the documented CI gate runnable on a new project.
+	authorityPath := filepath.Join(root, "docs", "AUTHORITY_MAP.json")
+	if _, err := os.Stat(authorityPath); err != nil {
+		authority := map[string]any{
+			"version":         1,
+			"current_version": protocol.CLIVersion,
+			"generated_by":    "prumo init",
+			"documents": []map[string]any{
+				{"path": "docs/**", "role": "canonical"},
+				{"path": "docs/governance/**", "role": "historical", "drift_exempt": true, "drift_exempt_reason": "Governance records reference the versions that were current when they were written."},
+				{"path": "docs/adr/**", "role": "historical", "drift_exempt": true, "drift_exempt_reason": "ADRs are immutable decision records and legitimately reference superseded versions."},
+				{"path": "AGENTS.md", "role": "projection", "canonical_source": "docs/PRUMO.md"},
+				{"path": "CLAUDE.md", "role": "projection", "canonical_source": "docs/PRUMO.md"},
+				{"path": "GEMINI.md", "role": "projection", "canonical_source": "docs/PRUMO.md"},
+				{"path": "*.md", "role": "canonical"},
+			},
+		}
+		data, err := json.MarshalIndent(authority, "", "  ")
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(authorityPath, append(data, '\n'), 0644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func embeddedFile(fsys fs.FS, name string) []byte {
+	data, err := fs.ReadFile(fsys, name)
+	if err != nil {
+		return nil
+	}
+	return data
 }
 
 func getScaffoldTemplates() []scaffoldFile {
@@ -294,6 +421,19 @@ Registra custos de LLM (tokens de entrada/saída), número de iterações por ta
 
 ## Inventário
 - ` + "`project-intelligence.json`" + `: Base de dados estruturada em JSON com métricas consolidadas de tarefas e consumo de recursos.
+`
+			},
+		},
+		{
+			relPath: ".prumo/repository/README.md",
+			content: func(_, _ string) string {
+				return `# Governança de Repositório (` + "`.prumo/repository/`" + `)
+
+## O que é este diretório?
+Contém a política de governança do repositório usada pelos gates de branch, commit, PR e merge.
+
+## Arquivos
+- ` + "`policy.json`" + `: Política de governança do repositório avaliada por ` + "`prumo repo policy`" + `.
 `
 			},
 		},
@@ -725,6 +865,33 @@ Mantém histórico linear, rastreabilidade auditável e proteção de branches p
    - Todo código entra em ` + "`main`" + ` via PR.
    - Estratégia de merge: ` + "`squash`" + ` com branch de trabalho deletada após o merge.
    - Quality gates do CI (` + "`gofmt`" + `, ` + "`govet`" + `, ` + "`gotest -race`" + `) devem passar 100%.
+`
+			},
+		},
+		{
+			relPath: "docs/contracts/README.md",
+			content: func(_, _ string) string {
+				return `# Contratos de Documentação (` + "`docs/contracts/`" + `)
+
+## O que é este diretório?
+Armazena a definição formal dos contratos de documentação e seus vínculos (bindings) com fontes canônicas.
+
+## Arquivos
+- ` + "`builtin.json`" + `: Contratos e obrigações canônicas de documentação.
+- ` + "`bindings.json`" + `: Vínculo entre cada contrato e seus documentos fontes mantidos pelo projeto.
+`
+			},
+		},
+		{
+			relPath: "docs/profiles/README.md",
+			content: func(_, _ string) string {
+				return `# Perfis de Documentação (` + "`docs/profiles/`" + `)
+
+## O que é este diretório?
+Declara os perfis que agrupam contratos aplicáveis de documentação conforme o tipo e capacidades do projeto.
+
+## Arquivos
+- ` + "`builtin.json`" + `: Perfis de documentação suportados e os contratos que compõem cada um.
 `
 			},
 		},

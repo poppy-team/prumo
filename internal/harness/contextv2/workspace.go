@@ -173,69 +173,98 @@ func gitModified(root string) map[string]bool {
 
 var skipDirs = map[string]bool{".git": true, "node_modules": true, ".prumo": true, "target": true, "dist": true, ".venv": true}
 
+// fileItemCaps bound the structured workspace scan so a compilation can never
+// grow with the size of a repository. The depth limit is what makes canonical
+// documentation reachable: the previous walk stopped one level below the root,
+// so every file under docs/<area>/<file>.md was structurally invisible to
+// context selection and the agent paid its budget for metadata instead of
+// domain knowledge.
+const (
+	maxScanDepth  = 4
+	maxScanFiles  = 50
+	maxScanBytes  = 1 << 20
+	scanAuthority = 0.5
+)
+
+// documentationScore lifts canonical documentation above incidental workspace
+// files, so when the budget forces a cut the agent keeps the knowledge that
+// describes the system over, say, a changelog.
+func documentationScore(rel string) float64 {
+	slash := filepath.ToSlash(rel)
+	if strings.HasPrefix(slash, "docs/") && (strings.HasSuffix(slash, ".md") || strings.HasSuffix(slash, ".json")) {
+		return 0.7
+	}
+	return scanAuthority
+}
+
 func fileItems(root string, modified map[string]bool) []Item {
 	out := []Item{}
-	top, err := os.ReadDir(root)
-	if err != nil {
-		return out
-	}
-	names := []string{}
-	for _, e := range top {
-		if skipDirs[e.Name()] {
-			continue
-		}
-		names = append(names, e.Name())
-	}
-	sort.Strings(names)
 	count := 0
-	add := func(rel string, st os.FileInfo) {
-		if count >= 50 || st.IsDir() || st.Size() > 1<<20 {
+	seen := map[string]bool{}
+
+	var walk func(dir string, prefix string, depth int)
+	walk = func(dir string, prefix string, depth int) {
+		if depth > maxScanDepth || count >= maxScanFiles {
 			return
 		}
-		count++
-		score := 0.5
-		if modified[rel] {
-			score = 0.8
-		}
-		reason := "workspace file"
-		if modified[rel] {
-			reason = "recently modified workspace file"
-		}
-		out = append(out, Item{
-			Ref: "file:" + rel, Authority: "reference", Trust: "medium", Privacy: "internal",
-			Freshness: st.ModTime().UTC().Format(time.RFC3339), Rev: "",
-			Score: score, Method: "structured", TokenCost: cappedEstimate(int(st.Size())),
-			Reason: reason,
-		})
-	}
-	for _, name := range names {
-		p := filepath.Join(root, name)
-		st, err := os.Stat(p)
+		entries, err := os.ReadDir(dir)
 		if err != nil {
-			continue
+			return
 		}
-		if st.IsDir() {
-			sub, err := os.ReadDir(p)
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			if skipDirs[e.Name()] || strings.HasPrefix(e.Name(), ".") && e.Name() != "." {
+				// Skip hidden entries other than the root itself; a hidden
+				// directory (e.g. .github) is a tooling surface, not project
+				// knowledge, and the instruction surfaces are added separately.
+				continue
+			}
+			names = append(names, e.Name())
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			if count >= maxScanFiles {
+				return
+			}
+			full := filepath.Join(dir, name)
+			rel := name
+			if prefix != "" {
+				rel = filepath.Join(prefix, name)
+			}
+			if seen[rel] {
+				continue
+			}
+			st, err := os.Stat(full)
 			if err != nil {
 				continue
 			}
-			subNames := []string{}
-			for _, e := range sub {
-				subNames = append(subNames, e.Name())
+			if st.IsDir() {
+				walk(full, rel, depth+1)
+				continue
 			}
-			sort.Strings(subNames)
-			for _, sn := range subNames {
-				sp := filepath.Join(p, sn)
-				sst, err := os.Stat(sp)
-				if err != nil || sst.IsDir() {
-					continue
-				}
-				add(filepath.Join(name, sn), sst)
+			if st.Size() > maxScanBytes {
+				continue
 			}
-			continue
+			seen[rel] = true
+			count++
+			score := documentationScore(rel)
+			reason := "workspace file"
+			if strings.HasPrefix(filepath.ToSlash(rel), "docs/") {
+				reason = "documentation file"
+			}
+			if modified[rel] {
+				score = 0.8
+				reason = "recently modified " + reason
+			}
+			out = append(out, Item{
+				Ref: "file:" + rel, Authority: "reference", Trust: "medium", Privacy: "internal",
+				Freshness: st.ModTime().UTC().Format(time.RFC3339), Rev: "",
+				Score: score, Method: "structured", TokenCost: cappedEstimate(int(st.Size())),
+				Reason: reason,
+			})
 		}
-		add(name, st)
 	}
+	walk(root, "", 1)
 	return out
 }
 

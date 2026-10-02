@@ -3,20 +3,77 @@ package cliops
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	prumo "github.com/raillen/prumo"
 	"github.com/raillen/prumo/internal/connectors"
 	"github.com/raillen/prumo/internal/connectors/antigravity"
 	"github.com/raillen/prumo/internal/connectors/gemini"
 	"github.com/raillen/prumo/internal/connectors/opencode"
+	"github.com/raillen/prumo/internal/harness/doccompile"
 	"github.com/raillen/prumo/internal/protocol"
 	"github.com/raillen/prumo/internal/protocol/goals"
 	"github.com/raillen/prumo/internal/protocol/plans"
 	"github.com/raillen/prumo/internal/resolver"
 )
+
+// agentsCoreRegionID is the stable identity of the generated block inside a
+// harness instruction file. The framework's own AGENTS.md already uses it, so
+// the marker convention is the one the repository ships rather than a new one.
+const agentsCoreRegionID = "agents-core"
+
+func beginRegion(id string) string { return "<!-- prumo:begin " + id + " -->" }
+func endRegion(id string) string   { return "<!-- prumo:end " + id + " -->" }
+
+// writeManagedInstructionFile renders adapter content into the instruction file
+// without destroying anything a human wrote.
+//
+// The generated block is delimited by stable region markers, which is the same
+// convention the framework's own AGENTS.md uses. Three cases are handled:
+//
+//   - file absent: the adapter content becomes the file, wrapped in markers so
+//     the next compile has a region to update;
+//   - file present with the region: only the region body is replaced, so any
+//     curated text before or after it survives untouched;
+//   - file present without the region: the existing content is treated as
+//     human-maintained and kept verbatim, with the generated block appended.
+//
+// Rewriting the whole file — the previous behaviour — destroyed project rules
+// on every recompile, which is the opposite of what a projection must do.
+func writeManagedInstructionFile(path, adapter string) error {
+	body := strings.TrimRight(adapter, "\n")
+	block := beginRegion(agentsCoreRegionID) + "\n" + body + "\n" + endRegion(agentsCoreRegionID) + "\n"
+
+	existing, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return writeText(path, block)
+		}
+		return err
+	}
+
+	current := string(existing)
+	if strings.Contains(current, beginRegion(agentsCoreRegionID)) {
+		replaced, replaceErr := doccompile.ReplaceRegion(current, agentsCoreRegionID, body)
+		if replaceErr != nil {
+			// A region that was opened but never closed is human-edited
+			// damage, not a reason to lose the file: fall back to appending a
+			// fresh, well-formed block instead of overwriting.
+			return writeText(path, strings.TrimRight(current, "\n")+"\n\n"+block)
+		}
+		return writeText(path, replaced)
+	}
+
+	preserved := strings.TrimRight(current, "\n")
+	if preserved == "" {
+		return writeText(path, block)
+	}
+	return writeText(path, preserved+"\n\n"+block)
+}
 
 func stringsFromAny(value any) []string {
 	out := []string{}
@@ -121,7 +178,7 @@ func (s *Service) Compile(root, target string) ([]string, error) {
 	skillsManifest, _ := readJSON(filepath.Join(root, ".ai", "skills", "manifest.json"))
 	selectedAgents := stringsFromAny(agentsManifest["agents"])
 	selectedSkills := stringsFromAny(skillsManifest["skills"])
-	adapter, err := os.ReadFile(filepath.Join(s.repoRoot, "src", "prumo", "resources", "adapters", target+".md"))
+	adapter, err := readAdapterTemplate(s.repoRoot, target)
 	if err != nil {
 		return nil, err
 	}
@@ -136,14 +193,13 @@ func (s *Service) Compile(root, target string) ([]string, error) {
 			name = "CLAUDE.md"
 		}
 		path := filepath.Join(root, name)
-		if err := writeText(path, string(adapter)); err != nil {
+		if err := writeManagedInstructionFile(path, string(adapter)); err != nil {
 			return nil, err
 		}
 		created = append(created, path)
 		for _, id := range selectedAgents {
-			agentPackage := filepath.Join(s.repoRoot, "src", "prumo", "resources", "workforce", "agents", id, "AGENT.md")
 			path := filepath.Join(root, prefix, "agents", id+".md")
-			if data, err := os.ReadFile(agentPackage); err == nil {
+			if data, ok := readWorkforceFile(s.repoRoot, "agents", id, "AGENT.md"); ok {
 				if err := writeText(path, string(data)); err != nil {
 					return nil, err
 				}
@@ -153,10 +209,9 @@ func (s *Service) Compile(root, target string) ([]string, error) {
 			created = append(created, path)
 		}
 		for _, id := range selectedSkills {
-			skillPackage := filepath.Join(s.repoRoot, "src", "prumo", "resources", "workforce", "skills", id)
 			targetDir := filepath.Join(root, prefix, "skills", id)
-			if info, err := os.Stat(skillPackage); err == nil && info.IsDir() {
-				created = append(created, copyWorkforcePackage(skillPackage, targetDir)...)
+			if copied, ok := copyWorkforceSkill(s.repoRoot, id, targetDir); ok {
+				created = append(created, copied...)
 			} else {
 				path := filepath.Join(targetDir, "SKILL.md")
 				if err := writeText(path, renderItem(skillMap[id])); err != nil {
@@ -185,6 +240,93 @@ func (s *Service) Compile(root, target string) ([]string, error) {
 		return nil, err
 	}
 	return []string{path}, nil
+}
+
+// readAdapterTemplate loads a harness adapter template, preferring the project's
+// local copy and falling back to the template embedded in the binary. Reading
+// only from disk meant `prumo compile` failed outside the framework source tree,
+// which is the only place an installed user ever runs it.
+func readAdapterTemplate(repoRoot, target string) ([]byte, error) {
+	if name, ok := safeAdapterName(target); ok {
+		path := filepath.Join(repoRoot, "src", "prumo", "resources", "adapters", name+".md")
+		if data, err := os.ReadFile(path); err == nil {
+			return data, nil
+		}
+		if data, err := fs.ReadFile(prumo.EmbeddedAdapters(), name+".md"); err == nil {
+			return data, nil
+		}
+	}
+	return nil, fmt.Errorf("adapter template not found for target %q", target)
+}
+
+// safeAdapterName constrains the target to a plain file name so it can never
+// escape the adapters directory when joined into a path.
+func safeAdapterName(target string) (string, bool) {
+	if target == "" || target == "." || filepath.IsAbs(target) {
+		return "", false
+	}
+	clean := filepath.Clean(target)
+	if clean != target || strings.ContainsAny(target, `/\`) {
+		return "", false
+	}
+	return target, true
+}
+
+// readWorkforceFile reads one file from a workforce package, preferring the
+// project-local copy and falling back to the embedded workforce.
+func readWorkforceFile(repoRoot, kind, id, name string) ([]byte, bool) {
+	if _, ok := safeAdapterName(id); !ok {
+		return nil, false
+	}
+	if _, ok := safeAdapterName(name); !ok {
+		return nil, false
+	}
+	rel := []string{"workforce", kind, id, name}
+	local := filepath.Join(append([]string{repoRoot, "src", "prumo", "resources"}, rel...)...)
+	if data, err := os.ReadFile(local); err == nil {
+		return data, true
+	}
+	if data, err := fs.ReadFile(prumo.EmbeddedWorkforce(), filepath.Join(rel...)); err == nil {
+		return data, true
+	}
+	return nil, false
+}
+
+// copyWorkforceSkill copies a whole skill package from disk or from the embedded
+// workforce. A skill without a package still yields a rendered SKILL.md, so a
+// compiled adapter never silently loses a selected skill.
+func copyWorkforceSkill(repoRoot, id, targetDir string) ([]string, bool) {
+	if _, ok := safeAdapterName(id); !ok {
+		return nil, false
+	}
+	local := filepath.Join(repoRoot, "src", "prumo", "resources", "workforce", "skills", id)
+	if info, err := os.Stat(local); err == nil && info.IsDir() {
+		return copyWorkforcePackage(local, targetDir), true
+	}
+	base := filepath.Join("workforce", "skills", id)
+	entries, err := fs.ReadDir(prumo.EmbeddedWorkforce(), base)
+	if err != nil || len(entries) == 0 {
+		return nil, false
+	}
+	created := []string{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		data, err := fs.ReadFile(prumo.EmbeddedWorkforce(), filepath.Join(base, entry.Name()))
+		if err != nil {
+			continue
+		}
+		dest := filepath.Join(targetDir, entry.Name())
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			continue
+		}
+		if err := os.WriteFile(dest, data, 0644); err != nil {
+			continue
+		}
+		created = append(created, dest)
+	}
+	return created, len(created) > 0
 }
 
 func (s *Service) ExplainWorkforce(profilePath string) (map[string]any, error) {

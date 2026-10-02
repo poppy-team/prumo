@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	prumo "github.com/raillen/prumo"
 	"github.com/raillen/prumo/internal/protocol"
 )
 
@@ -18,9 +20,69 @@ type Registry struct {
 	byID   map[string]map[string]any
 }
 
+// LoadRegistry builds the schema registry for dir. The binary embeds every
+// canonical schema, so a missing or unreadable directory is not a failure: the
+// embedded set is authoritative and a local directory only ever overrides it.
+// That is what makes the released binary usable from any working directory
+// instead of only from inside the framework source tree.
 func LoadRegistry(dir string) (Registry, error) {
 	registry := Registry{byName: map[string]map[string]any{}, byID: map[string]map[string]any{}}
+	if err := registry.loadDir(dir); err != nil {
+		// A project-local directory that does not exist, or that this process
+		// cannot read, falls back to the embedded schemas instead of failing.
+		// An override that exists but is broken still has to surface, otherwise
+		// a typo in a schema would be silently masked by the embedded copy.
+		if _, statErr := os.Stat(dir); statErr != nil {
+			return registry, registry.loadEmbedded()
+		}
+		return registry, err
+	}
+	// Embedded schemas fill any gap the local directory does not provide.
+	embedded, embeddedErr := loadRegistryFromFS(prumo.EmbeddedSchemas())
+	if embeddedErr != nil {
+		return registry, embeddedErr
+	}
+	registry.merge(embedded)
+	return registry, nil
+}
+
+func (r Registry) loadDir(dir string) error {
 	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			return err
+		}
+		schema, err := decodeSchema(entry.Name(), data)
+		if err != nil {
+			return err
+		}
+		r.byName[entry.Name()] = schema
+		if id, ok := schema["$id"].(string); ok {
+			r.byID[id] = schema
+		}
+	}
+	return nil
+}
+
+func (r Registry) loadEmbedded() error {
+	embedded, err := loadRegistryFromFS(prumo.EmbeddedSchemas())
+	if err != nil {
+		return err
+	}
+	r.merge(embedded)
+	return nil
+}
+
+func loadRegistryFromFS(fsys fs.FS) (Registry, error) {
+	registry := Registry{byName: map[string]map[string]any{}, byID: map[string]map[string]any{}}
+	entries, err := fs.ReadDir(fsys, ".")
 	if err != nil {
 		return registry, err
 	}
@@ -28,14 +90,13 @@ func LoadRegistry(dir string) (Registry, error) {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
-		path := filepath.Join(dir, entry.Name())
-		data, err := os.ReadFile(path)
+		data, err := fs.ReadFile(fsys, entry.Name())
 		if err != nil {
 			return registry, err
 		}
-		var schema map[string]any
-		if err := json.Unmarshal(data, &schema); err != nil {
-			return registry, fmt.Errorf("%s: %w", entry.Name(), err)
+		schema, err := decodeSchema(entry.Name(), data)
+		if err != nil {
+			return registry, err
 		}
 		registry.byName[entry.Name()] = schema
 		if id, ok := schema["$id"].(string); ok {
@@ -43,6 +104,29 @@ func LoadRegistry(dir string) (Registry, error) {
 		}
 	}
 	return registry, nil
+}
+
+func decodeSchema(name string, data []byte) (map[string]any, error) {
+	var schema map[string]any
+	if err := json.Unmarshal(data, &schema); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	return schema, nil
+}
+
+// merge copies entries the receiver does not already have, so a local schema
+// always wins over the embedded one of the same name.
+func (r Registry) merge(other Registry) {
+	for name, schema := range other.byName {
+		if _, ok := r.byName[name]; !ok {
+			r.byName[name] = schema
+		}
+	}
+	for id, schema := range other.byID {
+		if _, ok := r.byID[id]; !ok {
+			r.byID[id] = schema
+		}
+	}
 }
 
 func (r Registry) Schema(name string) (map[string]any, bool) {

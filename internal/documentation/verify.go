@@ -29,7 +29,7 @@ type VerifyReport struct {
 
 // VerifyChecks lists the deterministic checks by name, so a report can state
 // exactly what ran.
-var VerifyChecks = []string{"authority", "managed-regions", "documentation-links", "claim-drift"}
+var VerifyChecks = []string{"authority", "managed-regions", "documentation-links", "claim-drift", "binding-integrity"}
 
 var (
 	mdLinkPattern     = regexp.MustCompile(`\]\(([^)\s]+\.md)(?:#[^)]*)?\)`)
@@ -52,6 +52,7 @@ func VerifyDocs(root string) (VerifyReport, error) {
 		return VerifyReport{}, err
 	}
 	report.Files = len(files)
+	report.Findings = append(report.Findings, checkBindingIntegrity(root)...)
 	implemented := implementationWords(root)
 	for _, rel := range files {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
@@ -66,6 +67,44 @@ func VerifyDocs(root string) (VerifyReport, error) {
 	sortFindings(report.Findings)
 	report.OK = len(report.Findings) == 0
 	return report, nil
+}
+
+// checkBindingIntegrity verifies referential integrity between contracts and the
+// documents bound to them. A binding that points at a file which no longer
+// exists leaves the control plane reporting healthy coverage for knowledge that
+// is not in the repository: deleting a bound document produced no finding at
+// all, which is the silent-drift failure this check exists to catch.
+func checkBindingIntegrity(root string) []VerifyFinding {
+	bindings, err := LoadBindings(root)
+	if err != nil {
+		// No bindings file is a legitimate "not yet bound" state; the audit
+		// and readiness surfaces report it with their own vocabulary.
+		return nil
+	}
+	out := []VerifyFinding{}
+	for _, binding := range bindings {
+		for _, source := range binding.Sources {
+			info, statErr := os.Stat(filepath.Join(root, filepath.FromSlash(source)))
+			switch {
+			case statErr != nil:
+				out = append(out, VerifyFinding{
+					Kind:   "binding:missing-source",
+					Path:   source,
+					Detail: "contract " + binding.ContractID + " is bound to this document, but it does not exist",
+				})
+			case info.IsDir():
+				// A directory binding is a namespace reference, not a document.
+				continue
+			case info.Size() == 0:
+				out = append(out, VerifyFinding{
+					Kind:   "binding:empty-source",
+					Path:   source,
+					Detail: "contract " + binding.ContractID + " is bound to this document, but it is empty",
+				})
+			}
+		}
+	}
+	return out
 }
 
 // VerifyDocsStrict is `prumo docs verify --strict` (W19.9). Beyond the

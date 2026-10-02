@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/raillen/prumo/internal/protocol/goals"
 )
 
 func repoRoot(t *testing.T) string {
@@ -329,5 +331,57 @@ func TestInitDefaultProfileZeroArgs(t *testing.T) {
 	}
 	if findings, err := svc.Doctor(dir); err != nil || len(findings) != 0 {
 		t.Fatalf("doctor reported errors on default init: %v %v", findings, err)
+	}
+}
+
+// TestGoalAmendFlagsOverrideFile covers the finding that passing --file
+// discarded the --reason and --approved-by flags entirely, so the recorded
+// history fell back to generic "Formal amendment"/"human" values. Explicit
+// flags must win over the values carried in the amendment file.
+func TestGoalAmendFlagsOverrideFile(t *testing.T) {
+	dir := t.TempDir()
+	goalDir := filepath.Join(dir, ".ai", "goals", "P00")
+	if err := os.MkdirAll(goalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	goal := goals.NewGoal("P00-G01", "Foundation", "P00", "Ship foundation.")
+	goalPath := filepath.Join(goalDir, "P00-G01.goal.json")
+	data, _ := json.Marshal(goal)
+	if err := os.WriteFile(goalPath, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	svc := New(testRepoRootForCompile(t))
+	if _, err := svc.GoalState(dir, "P00-G01", "PLANNED", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.GoalState(dir, "P00-G01", "LOCKED", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	amendFile := filepath.Join(dir, "amend.json")
+	if err := os.WriteFile(amendFile, []byte(`{"reason":"file reason","approved_by":"file-approver","acceptance":["flatten criterion"]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	amended, err := svc.GoalAmend(dir, "P00-G01", amendFile, "Tighten acceptance after security review", "cto")
+	if err != nil {
+		t.Fatalf("GoalAmend: %v", err)
+	}
+	history, _ := amended["history"].([]any)
+	last := history[len(history)-1].(map[string]any)
+	if last["reason"] != "Tighten acceptance after security review" {
+		t.Fatalf("expected CLI --reason to win, got: %v", last["reason"])
+	}
+	if last["approved_by"] != "cto" {
+		t.Fatalf("expected CLI --approved-by to win, got: %v", last["approved_by"])
+	}
+	accRaw, ok := amended["acceptance"].([]any)
+	if !ok {
+		accStr, okStr := amended["acceptance"].([]string)
+		if !okStr || len(accStr) != 1 || accStr[0] != "flatten criterion" {
+			t.Fatalf("expected flattened acceptance from file to be applied, got: %#v", amended["acceptance"])
+		}
+	} else if len(accRaw) != 1 || accRaw[0] != "flatten criterion" {
+		t.Fatalf("expected flattened acceptance from file to be applied, got: %#v", amended["acceptance"])
 	}
 }

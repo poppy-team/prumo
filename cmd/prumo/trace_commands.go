@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
+	docengine "github.com/raillen/prumo/internal/documentation"
 	"github.com/raillen/prumo/internal/protocol"
 	"github.com/raillen/prumo/internal/traceability"
 )
@@ -49,13 +52,25 @@ func runTrace(asJSON bool, args []string) int {
 		return exitInternal
 	}
 
-	// If empty graph, populate a default local graph from project context if available
+	// A project with no persisted graph is derived from its own canonical state.
+	// Nothing is invented here: an empty project yields an empty graph, and the
+	// query below then reports a real "not found" instead of fabricated lineage.
 	if len(graph.Nodes) == 0 {
-		populateDefaultTraceGraph(graph, ref)
+		buildTraceGraphFromProject(graph, path)
 	}
 
 	trace, err := graph.Trace(ref)
 	if err != nil {
+		if len(graph.Nodes) == 0 {
+			err = fmt.Errorf("no traceability graph for %s: no Goals, planning decisions or documentation bindings were found under %s", ref, path)
+		} else if _, found := graph.FindNode(ref); !found {
+			known := make([]string, 0, len(graph.Nodes))
+			for id := range graph.Nodes {
+				known = append(known, id)
+			}
+			sort.Strings(known)
+			err = fmt.Errorf("trace node %q not found in project; known nodes: %s", ref, strings.Join(known, ", "))
+		}
 		if asJSON {
 			return printEnvelope(protocol.ErrEnvelope(protocol.Diagnostic{
 				Code:    "trace_not_found",
@@ -169,17 +184,180 @@ func runJournal(asJSON bool, args []string) int {
 	return exitOK
 }
 
-func populateDefaultTraceGraph(g *traceability.Graph, targetRef string) {
-	_ = g.AddNode(traceability.Node{ID: "req-core", Kind: traceability.NodeRequirement, Title: "Provider Neutral Core Policy", Ref: "AGENTS.md"})
-	_ = g.AddNode(traceability.Node{ID: "dec-clean-arch", Kind: traceability.NodeDecision, Title: "Internal Clean Code Boundaries", Ref: "docs/architecture/dependency-rules.md"})
-	_ = g.AddNode(traceability.Node{ID: "goal-m8", Kind: traceability.NodeGoal, Title: "Milestone M8 History and Traceability", Ref: "M8"})
-	_ = g.AddNode(traceability.Node{ID: "code-trace", Kind: traceability.NodeCode, Title: "Traceability Engine", Ref: "internal/traceability/graph.go"})
-	_ = g.AddNode(traceability.Node{ID: "test-trace", Kind: traceability.NodeTest, Title: "Traceability Verification Suite", Ref: "internal/traceability/trace_test.go"})
-	_ = g.AddNode(traceability.Node{ID: "doc-exit-m8", Kind: traceability.NodeDoc, Title: "M8 Exit Gate", Ref: "docs/governance/m8-exit-gate.md"})
+// buildTraceGraphFromProject derives a traceability graph from the project's own
+// canonical state: Goals under .ai/goals, planning decisions under .ai/plan,
+// harness evidence under .prumo/runtime, and documentation bindings.
+//
+// It deliberately invents nothing. Every node it adds corresponds to a record
+// that exists on disk, because a projection must never contribute project facts
+// of its own. A project with no recorded state yields an empty graph, and the
+// caller reports that honestly instead of answering with invented lineage.
+func buildTraceGraphFromProject(g *traceability.Graph, root string) {
+	goalIDs := map[string]bool{}
 
-	_ = g.AddEdge(traceability.Edge{From: "dec-clean-arch", To: "req-core", Kind: string(traceability.EdgeSatisfies)})
-	_ = g.AddEdge(traceability.Edge{From: "goal-m8", To: "dec-clean-arch", Kind: string(traceability.EdgeDerivesFrom)})
-	_ = g.AddEdge(traceability.Edge{From: "code-trace", To: "goal-m8", Kind: string(traceability.EdgeImplements)})
-	_ = g.AddEdge(traceability.Edge{From: "test-trace", To: "code-trace", Kind: string(traceability.EdgeVerifies)})
-	_ = g.AddEdge(traceability.Edge{From: "doc-exit-m8", To: "goal-m8", Kind: string(traceability.EdgeDocuments)})
+	root = filepath.Clean(root)
+	_ = filepath.Walk(filepath.Join(root, ".ai", "goals"), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() || !strings.Contains(filepath.Base(path), ".goal.") {
+			return nil
+		}
+		record, readErr := readJSONObject(path)
+		if readErr != nil {
+			return nil
+		}
+		id := stringField(record, "id")
+		if id == "" {
+			return nil
+		}
+		title := stringField(record, "title")
+		if title == "" {
+			title = id
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			rel = path
+		}
+		goalIDs[id] = true
+		_ = g.AddNode(traceability.Node{
+			ID: id, Kind: traceability.NodeGoal, Title: title, Ref: filepath.ToSlash(rel),
+			Metadata: map[string]string{
+				"state": stringField(record, "state"),
+				"phase": stringField(record, "phase"),
+			},
+		})
+		return nil
+	})
+
+	// Goal dependencies are real declared edges, so they become real graph edges.
+	_ = filepath.Walk(filepath.Join(root, ".ai", "goals"), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() || !strings.Contains(filepath.Base(path), ".goal.") {
+			return nil
+		}
+		record, readErr := readJSONObject(path)
+		if readErr != nil {
+			return nil
+		}
+		id := stringField(record, "id")
+		if id == "" {
+			return nil
+		}
+		for _, dep := range stringSliceField(record, "dependencies") {
+			_ = g.AddEdge(traceability.Edge{From: id, To: dep, Kind: string(traceability.EdgeDerivesFrom)})
+		}
+		for _, ev := range objectSliceField(record, "evidence") {
+			evID := stringField(ev, "id")
+			if evID == "" {
+				continue
+			}
+			_ = g.AddNode(traceability.Node{
+				ID: evID, Kind: traceability.NodeEvidence, Title: evID, Ref: stringField(ev, "artifact"),
+				Metadata: map[string]string{"type": stringField(ev, "type")},
+			})
+			_ = g.AddEdge(traceability.Edge{From: id, To: evID, Kind: string(traceability.EdgeEvidencedBy)})
+		}
+		return nil
+	})
+
+	// Planning decisions belong to the Goal their session is scoped to.
+	_ = filepath.Walk(filepath.Join(root, ".ai", "plan", "sessions"), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() || !strings.HasSuffix(path, ".json") {
+			return nil
+		}
+		record, readErr := readJSONObject(path)
+		if readErr != nil {
+			return nil
+		}
+		goal := stringField(record, "goal")
+		for _, decision := range objectSliceField(record, "decisions") {
+			dID := stringField(decision, "id")
+			if dID == "" {
+				continue
+			}
+			statement := stringField(decision, "statement")
+			_ = g.AddNode(traceability.Node{
+				ID: dID, Kind: traceability.NodeDecision, Title: statement, Ref: filepath.ToSlash(path),
+				Metadata: map[string]string{
+					"authority": stringField(decision, "authority"),
+					"status":    stringField(decision, "status"),
+				},
+			})
+			if goal != "" && goalIDs[goal] {
+				_ = g.AddEdge(traceability.Edge{From: goal, To: dID, Kind: string(traceability.EdgeDerivesFrom)})
+			}
+		}
+		return nil
+	})
+
+	// Documentation contracts are the requirement side of the graph; a binding
+	// ties a contract to the canonical documents that satisfy it.
+	bindings, bindErr := docengine.LoadBindings(root)
+	if bindErr != nil {
+		return
+	}
+	for _, binding := range bindings {
+		reqID := "contract:" + binding.ContractID
+		_ = g.AddNode(traceability.Node{
+			ID: reqID, Kind: traceability.NodeRequirement, Title: binding.ContractID,
+			Ref:      binding.ContractID,
+			Metadata: map[string]string{"authority": binding.Authority, "ownership": binding.Ownership},
+		})
+		for _, source := range binding.Sources {
+			docID := "doc:" + source
+			_ = g.AddNode(traceability.Node{ID: docID, Kind: traceability.NodeDoc, Title: filepath.Base(source), Ref: source})
+			_ = g.AddEdge(traceability.Edge{From: reqID, To: docID, Kind: string(traceability.EdgeSatisfies)})
+		}
+	}
+}
+
+func readJSONObject(path string) (map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func stringField(record map[string]any, key string) string {
+	if record == nil {
+		return ""
+	}
+	value, _ := record[key].(string)
+	return strings.TrimSpace(value)
+}
+
+func stringSliceField(record map[string]any, key string) []string {
+	if record == nil {
+		return nil
+	}
+	raw, ok := record[key].([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(raw))
+	for _, item := range raw {
+		if value := strings.TrimSpace(fmt.Sprint(item)); value != "" && value != "<nil>" {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func objectSliceField(record map[string]any, key string) []map[string]any {
+	if record == nil {
+		return nil
+	}
+	raw, ok := record[key].([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]map[string]any, 0, len(raw))
+	for _, item := range raw {
+		if object, ok := item.(map[string]any); ok {
+			out = append(out, object)
+		}
+	}
+	return out
 }
