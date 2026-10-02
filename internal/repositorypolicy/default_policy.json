@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "repository": {"default_branch": "main", "provider": "github", "governance_profile": "solo"},
+  "branches": {
+    "allowed_categories": ["feat", "fix", "docs", "refactor", "test", "chore", "release", "hotfix"],
+    "patterns": {
+      "feat": "^feat/[a-z0-9._-]+$",
+      "fix": "^fix/[a-z0-9._-]+$",
+      "docs": "^docs/[a-z0-9._-]+$",
+      "refactor": "^refactor/[a-z0-9._-]+$",
+      "test": "^test/[a-z0-9._-]+$",
+      "chore": "^chore/[a-z0-9._-]+$",
+      "release": "^release/[a-z0-9._-]+$",
+      "hotfix": "^hotfix/[a-z0-9._-]+$"
+    },
+    "automation_prefixes": ["dependabot/"]
+  },
+  "commits": {
+    "types": ["feat", "fix", "refactor", "perf", "test", "docs", "build", "ci", "chore", "revert"],
+    "subject_required": true,
+    "format": "type(scope): imperative summary"
+  },
+  "pushes": {"direct_main": "require_pr", "force_main": "deny", "work_branch_force_with_lease": "conditional"},
+  "issues": {"blank_allowed": false, "security_reporting": "security_policy"},
+  "pull_requests": {"required_for_main": true, "title_format": "type(scope): summary", "auto_merge": "disabled", "delete_branch_after_merge": true},
+  "reviews": {"profile": "solo", "required_approvals": 0, "independent_verifier_for": ["high", "critical"]},
+  "merge": {"strategy": "squash", "linear_history": true, "conversation_resolution": true},
+  "agents": {
+    "default_permissions": {"git_read": "allow", "local_branch": "allow", "local_commit": "allow", "push_work_branch": "allow_with_log", "create_issue_pr": "allow_with_log", "merge_main": "explicit_capability", "modify_ruleset": "privileged", "publish_release": "privileged"},
+    "forbidden_operations": ["force_push_main", "delete_main", "rewrite_release_tag", "delete_release_tag"]
+  },
+  "releases": {"tag_pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+([.-].*)?$", "immutable": true},
+  "tags": {"release_patterns": ["v*.*.*"], "deletion": "deny", "rewrite": "deny"},
+  "github": {"repository": "raillen/prumo", "rulesets": true, "required_checks": ["go-test"]},
+  "emergency_bypass": {"enabled": true, "required_fields": ["reason", "actor", "timestamp", "operation", "scope", "risk", "evidence", "post_event_review"]}
+}

@@ -12,6 +12,12 @@ import (
 	"github.com/raillen/prumo/internal/protocol/evidence"
 )
 
+// amendableFields are the Goal fields a formal amendment may rewrite. The lock
+// digest covers exactly these, so an amendment that changes one of them
+// re-locks the Goal against the new content; a field outside this set can never
+// be changed by an amendment.
+var amendableFields = []string{"objective", "acceptance", "constraints", "non_goals", "gates", "dependencies", "context"}
+
 func loadGoal(path string) (Goal, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -22,6 +28,59 @@ func loadGoal(path string) (Goal, error) {
 		return nil, err
 	}
 	return goal, nil
+}
+
+func AppendRunEvidence(root, goalText, runEvidencePath, phase string) error {
+	needle := strings.TrimSpace(goalText)
+	if needle == "" || runEvidencePath == "" {
+		return nil
+	}
+	base := filepath.Join(root, ".ai", "goals")
+	var linkedErr error
+	matched := false
+	_ = filepath.Walk(base, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || matched {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".goal.json") && !strings.HasSuffix(path, ".goal.yaml") && !strings.HasSuffix(path, ".goal.yml") {
+			return nil
+		}
+		goal, err := loadGoal(path)
+		if err != nil {
+			return nil
+		}
+		// Only an exact link — the run's goal must name this goal's objective or
+		// id. Matching on a substring would attach unrelated runs to the wrong
+		// goal, so when nothing matches the run simply stays unlinked and the
+		// evidence remains only in the runtime store.
+		objective := strings.TrimSpace(fmt.Sprint(goal["objective"]))
+		id := strings.TrimSpace(fmt.Sprint(goal["id"]))
+		if objective != needle && id != needle {
+			return nil
+		}
+		verified := strings.EqualFold(phase, "complete") || strings.EqualFold(phase, "completed")
+		evSlice, _ := goal["evidence"].([]any)
+		for _, raw := range evSlice {
+			ev, ok := raw.(map[string]any)
+			if ok && fmt.Sprint(ev["artifact"]) == runEvidencePath {
+				matched = true // already recorded
+				return nil
+			}
+		}
+		evSlice = append(evSlice, map[string]any{
+			"id":       fmt.Sprintf("ev-run-%d", time.Now().UnixNano()),
+			"type":     "harness_run",
+			"verified": verified,
+			"artifact": runEvidencePath,
+		})
+		goal["evidence"] = evSlice
+		if err := saveGoal(path, goal); err != nil {
+			linkedErr = err
+		}
+		matched = true
+		return nil
+	})
+	return linkedErr
 }
 
 func saveGoal(path string, goal Goal) error {
@@ -192,14 +251,22 @@ func AmendGoal(path string, amendment map[string]any) (Goal, error) {
 	}
 	newRev := revision + 1
 	goal["revision"] = newRev
+	// An amendment may carry its edits either under a "changes" object or
+	// directly at the top level, because that is how a developer naturally
+	// writes one and how the goal schema itself is shaped. Reading only
+	// "changes" silently dropped a flat payload and then re-locked the goal
+	// against its own unmodified content, which looked like the amendment had
+	// been accepted.
 	changes, _ := amendment["changes"].(map[string]any)
 	if changes == nil {
 		changes = map[string]any{}
-		if raw, ok := amendment["changes"]; ok && raw != nil {
-			_ = raw
+		for _, key := range amendableFields {
+			if value, ok := amendment[key]; ok {
+				changes[key] = value
+			}
 		}
 	}
-	for _, key := range []string{"objective", "acceptance", "constraints", "non_goals", "gates"} {
+	for _, key := range amendableFields {
 		if value, ok := changes[key]; ok {
 			goal[key] = value
 		}

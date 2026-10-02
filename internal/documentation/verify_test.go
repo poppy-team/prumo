@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/raillen/prumo/internal/protocol"
@@ -150,6 +151,59 @@ func TestVerifyStrictRequiresSemanticReadiness(t *testing.T) {
 func hasVerifyFinding(findings []VerifyFinding, kind string) bool {
 	for _, f := range findings {
 		if f.Kind == kind {
+			return true
+		}
+	}
+	return false
+}
+
+// TestVerifyDetectsBrokenBindingSource is the regression test for the finding
+// that deleting a document named by a binding produced an identical verify
+// report: the control plane reported healthy coverage for knowledge that was no
+// longer in the repository.
+func TestVerifyDetectsBrokenBindingSource(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"docs/contracts/builtin.json":  `[{"id":"product.vision","version":1,"role":"product-vision"}]`,
+		"docs/profiles/builtin.json":   `[{"id":"core-software","version":1,"capabilities":["core"],"contracts":["product.vision"]}]`,
+		"docs/contracts/bindings.json": `[{"contract_id":"product.vision","sources":["docs/product/vision.md"],"ownership":"human","authority":"canonical"}]`,
+		"docs/AUTHORITY_MAP.json":      `{"version":1,"current_version":"0.6.0","documents":[{"path":"docs/**","role":"canonical"}]}`,
+		"docs/product/vision.md":       "# Vision\n\nTarget users and primary outcome.\n",
+	}
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	clean, err := VerifyDocs(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasBindingFinding(clean.Findings) {
+		t.Fatalf("intact bindings must not produce a binding finding: %+v", clean.Findings)
+	}
+
+	// Remove the bound document: the check has to notice.
+	if err := os.Remove(filepath.Join(dir, "docs/product/vision.md")); err != nil {
+		t.Fatal(err)
+	}
+	broken, err := VerifyDocs(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasBindingFinding(broken.Findings) {
+		t.Fatalf("removing a bound document must produce a binding finding, got: %+v", broken.Findings)
+	}
+}
+
+func hasBindingFinding(findings []VerifyFinding) bool {
+	for _, f := range findings {
+		if strings.HasPrefix(f.Kind, "binding:") {
 			return true
 		}
 	}

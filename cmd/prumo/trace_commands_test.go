@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,26 +21,43 @@ func TestRunTraceMissingRef(t *testing.T) {
 }
 
 func TestRunTraceHuman(t *testing.T) {
+	root := t.TempDir()
+	goalDir := filepath.Join(root, ".ai", "goals")
+	if err := os.MkdirAll(goalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	goalJSON := `{"id":"G-CORE","title":"Core Engine","phase":"P00","state":"LOCKED","objective":"Build engine."}`
+	if err := os.WriteFile(filepath.Join(goalDir, "G-CORE.goal.json"), []byte(goalJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	code, out := captureOutput(func() int {
-		return run([]string{"trace", "code-trace"})
+		return run([]string{"trace", "G-CORE", "--path", root})
 	})
 	if code != exitOK {
 		t.Fatalf("expected exitOK (%d), got %d; out: %s", exitOK, code, out)
 	}
-	if !strings.Contains(out, "PRUMO TRACEABILITY: Traceability Engine") {
+	if !strings.Contains(out, "PRUMO TRACEABILITY: Core Engine") {
 		t.Errorf("expected header in trace output, got:\n%s", out)
 	}
-	if !strings.Contains(out, "Upstream Lineage") {
-		t.Errorf("expected Upstream Lineage in trace output")
-	}
-	if !strings.Contains(out, "Downstream Lineage") {
-		t.Errorf("expected Downstream Lineage in trace output")
+	if !strings.Contains(out, "Node ID:   G-CORE") {
+		t.Errorf("expected G-CORE node ID, got:\n%s", out)
 	}
 }
 
 func TestRunTraceJSON(t *testing.T) {
+	root := t.TempDir()
+	goalDir := filepath.Join(root, ".ai", "goals")
+	if err := os.MkdirAll(goalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	goalJSON := `{"id":"G-CORE","title":"Core Engine","phase":"P00","state":"LOCKED","objective":"Build engine."}`
+	if err := os.WriteFile(filepath.Join(goalDir, "G-CORE.goal.json"), []byte(goalJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	code, out := captureOutput(func() int {
-		return run([]string{"--json", "trace", "code-trace"})
+		return run([]string{"--json", "trace", "G-CORE", "--path", root})
 	})
 	if code != exitOK {
 		t.Fatalf("expected exitOK (%d), got %d; out: %s", exitOK, code, out)
@@ -57,6 +75,27 @@ func TestRunTraceJSON(t *testing.T) {
 	}
 	if dataMap["root"] == nil {
 		t.Errorf("expected root node in trace envelope")
+	}
+}
+
+func TestRunTraceMissingNodeHonestError(t *testing.T) {
+	root := t.TempDir()
+	goalDir := filepath.Join(root, ".ai", "goals")
+	if err := os.MkdirAll(goalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(goalDir, "G-EXISTS.goal.json"), []byte(`{"id":"G-EXISTS","title":"Exists"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	code, out := captureOutput(func() int {
+		return run([]string{"--json", "trace", "G-NONEXISTENT", "--path", root})
+	})
+	if code != exitValidation {
+		t.Fatalf("expected exitValidation (%d), got %d", exitValidation, code)
+	}
+	if !strings.Contains(out, "G-NONEXISTENT") || !strings.Contains(out, "G-EXISTS") {
+		t.Errorf("expected error naming missing node and known nodes, got: %s", out)
 	}
 }
 

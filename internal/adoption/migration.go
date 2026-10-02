@@ -267,11 +267,13 @@ func GenerateMigrationProposals(report AdoptionReport) []AdoptionMigrationPropos
 
 	// Doc bindings proposal
 	if len(report.DocBindings) > 0 {
-		bindingsData := map[string]interface{}{
-			"version":  1,
-			"bindings": report.DocBindings,
-		}
-		bBytes, _ := json.MarshalIndent(bindingsData, "", "  ")
+		// bindings.json is a JSON array of binding objects. The documentation
+		// engine (LoadBindings) and the documented schema both expect a bare
+		// array; an {version, bindings} envelope here desynchronized the
+		// adoption writer from every documentation reader, so `adopt --apply`
+		// made `docs audit` fail with an unmarshal error on a greenfield
+		// project. Write the canonical array.
+		bBytes, _ := json.MarshalIndent(report.DocBindings, "", "  ")
 
 		p := AdoptionMigrationProposal{
 			ID:             "amp-doc-bindings",

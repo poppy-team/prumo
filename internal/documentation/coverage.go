@@ -88,17 +88,39 @@ type ReadinessReport struct {
 	Coverage            []Coverage `json:"coverage"`
 }
 
+// LoadBindings reads docs/contracts/bindings.json. The canonical on-disk form
+// is a bare JSON array of binding objects. An earlier adoption release wrote an
+// envelope ({version, bindings}); readers accept it too so a project that
+// already applied that proposal keeps working instead of failing every
+// documentation command with an unmarshal error.
 func LoadBindings(root string) ([]Binding, error) {
 	data, err := os.ReadFile(filepath.Join(root, "docs", "contracts", "bindings.json"))
 	if err != nil {
 		return nil, err
 	}
-	var bindings []Binding
-	if err := json.Unmarshal(data, &bindings); err != nil {
+	bindings, err := decodeBindings(data)
+	if err != nil {
 		return nil, err
 	}
 	sort.Slice(bindings, func(i, j int) bool { return bindings[i].ContractID < bindings[j].ContractID })
 	return bindings, nil
+}
+
+func decodeBindings(data []byte) ([]Binding, error) {
+	var bindings []Binding
+	if err := json.Unmarshal(data, &bindings); err == nil {
+		return bindings, nil
+	}
+	var envelope struct {
+		Bindings []Binding `json:"bindings"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, err
+	}
+	if envelope.Bindings == nil {
+		return nil, fmt.Errorf("bindings.json is neither an array of bindings nor an object with a bindings array")
+	}
+	return envelope.Bindings, nil
 }
 func Capabilities(root string) map[string]bool {
 	capabilities := map[string]bool{"core": true}

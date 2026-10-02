@@ -1,6 +1,7 @@
 package docengine
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -294,4 +295,33 @@ func hasFinding(findings []SemanticFinding, kind string) bool {
 		}
 	}
 	return false
+}
+
+// TestLoadBindingsAcceptsBothOnDiskShapes pins the contract that the adoption
+// writer and the documentation reader agree on one format. The canonical form is
+// a bare array; the {version, bindings} envelope an earlier adoption release
+// wrote is still read, because a project that already applied that proposal
+// must not lose every documentation command to an unmarshal error.
+func TestLoadBindingsAcceptsBothOnDiskShapes(t *testing.T) {
+	canonical := `[{"contract_id":"product.vision","sources":["docs/product/vision.md"],"ownership":"human","authority":"canonical"}]`
+	envelope := `{"version":1,"bindings":[{"contract_id":"product.vision","sources":["docs/product/vision.md"],"ownership":"human","authority":"canonical"}]}`
+	for name, content := range map[string]string{"canonical array": canonical, "legacy envelope": envelope} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			dir := filepath.Join(root, "docs", "contracts")
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "bindings.json"), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			bindings, err := LoadBindings(root)
+			if err != nil {
+				t.Fatalf("LoadBindings: %v", err)
+			}
+			if len(bindings) != 1 || bindings[0].ContractID != "product.vision" {
+				t.Fatalf("unexpected bindings: %+v", bindings)
+			}
+		})
+	}
 }

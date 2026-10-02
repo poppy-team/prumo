@@ -3,9 +3,12 @@ package docengine
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+
+	prumo "github.com/raillen/prumo"
 )
 
 type Contract struct {
@@ -43,28 +46,49 @@ func LoadRegistry(root string) (Registry, error) {
 	registry := Registry{Contracts: map[string]Contract{}, Profiles: map[string]Profile{}}
 	contractsPath := filepath.Join(root, "docs", "contracts", "builtin.json")
 	profilesPath := filepath.Join(root, "docs", "profiles", "builtin.json")
-	if _, err := os.Stat(contractsPath); err != nil {
+
+	var contractsData, profilesData []byte
+
+	// 1. Project-local overrides win if present.
+	if _, err := os.Stat(contractsPath); err == nil {
+		contractsData, _ = os.ReadFile(contractsPath)
+		profilesData, _ = os.ReadFile(profilesPath)
+	}
+
+	// 2. An explicit environment override allows testing custom registries.
+	if len(contractsData) == 0 {
 		if envRoot := os.Getenv("PRUMO_REPO_ROOT"); envRoot != "" {
-			cand := filepath.Join(envRoot, "docs", "contracts", "builtin.json")
-			if _, err := os.Stat(cand); err == nil {
-				contractsPath = cand
-				profilesPath = filepath.Join(envRoot, "docs", "profiles", "builtin.json")
-			}
-		} else if home, err := os.UserHomeDir(); err == nil {
-			cand := filepath.Join(home, "Documentos", "Projetos", "prumo", "docs", "contracts", "builtin.json")
-			if _, err := os.Stat(cand); err == nil {
-				contractsPath = cand
-				profilesPath = filepath.Join(home, "Documentos", "Projetos", "prumo", "docs", "profiles", "builtin.json")
+			candContracts := filepath.Join(envRoot, "docs", "contracts", "builtin.json")
+			candProfiles := filepath.Join(envRoot, "docs", "profiles", "builtin.json")
+			if _, err := os.Stat(candContracts); err == nil {
+				contractsData, _ = os.ReadFile(candContracts)
+				profilesData, _ = os.ReadFile(candProfiles)
 			}
 		}
 	}
-	contractsData, err := os.ReadFile(contractsPath)
-	if err != nil {
-		return registry, err
+
+	// 3. The embedded framework registry is authoritative across any environment.
+	// A hardcoded personal developer path was deleted here: shipping a personal
+	// home path in production code meant the control plane only worked on the
+	// original author's machine.
+	if len(contractsData) == 0 {
+		cFS := prumo.EmbeddedDocContracts()
+		pFS := prumo.EmbeddedDocProfiles()
+		if data, err := fs.ReadFile(cFS, "builtin.json"); err == nil {
+			contractsData = data
+		}
+		if data, err := fs.ReadFile(pFS, "builtin.json"); err == nil {
+			profilesData = data
+		}
 	}
+
+	if len(contractsData) == 0 {
+		return registry, fmt.Errorf("documentation contract registry not found; expected docs/contracts/builtin.json or embedded registry")
+	}
+
 	var contracts []Contract
 	if err := json.Unmarshal(contractsData, &contracts); err != nil {
-		return registry, err
+		return registry, fmt.Errorf("parse documentation contracts: %w", err)
 	}
 	for _, contract := range contracts {
 		if contract.ID == "" || contract.Version < 1 {
@@ -75,13 +99,12 @@ func LoadRegistry(root string) (Registry, error) {
 		}
 		registry.Contracts[contract.ID] = contract
 	}
-	profilesData, err := os.ReadFile(profilesPath)
-	if err != nil {
-		return registry, err
+	if len(profilesData) == 0 {
+		return registry, fmt.Errorf("documentation profile registry not found; expected docs/profiles/builtin.json or embedded registry")
 	}
 	var profiles []Profile
 	if err := json.Unmarshal(profilesData, &profiles); err != nil {
-		return registry, err
+		return registry, fmt.Errorf("parse documentation profiles: %w", err)
 	}
 	for _, profile := range profiles {
 		if profile.ID == "" || profile.Version < 1 {

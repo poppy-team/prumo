@@ -3,10 +3,13 @@ package resolver
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	prumo "github.com/raillen/prumo"
 )
 
 type Profile struct {
@@ -131,12 +134,35 @@ func anyMatch(values any, actual map[string]bool) bool {
 
 type Catalog struct{ Sections map[string][]map[string]any }
 
+// LoadCatalog reads the workforce catalog. The binary embeds the catalog, so a
+// missing local directory is a fallback to the embedded copy rather than a
+// failure: reading only from disk meant `prumo init` could not run outside the
+// framework source tree, which is where every user actually runs it.
 func LoadCatalog(repoRoot string) (Catalog, error) {
 	base := filepath.Join(repoRoot, "src", "prumo", "resources", "catalog")
+	if _, err := os.Stat(filepath.Join(base, "catalog.json")); err != nil {
+		return loadCatalogFromFS(prumo.EmbeddedCatalog())
+	}
 	manifestBytes, err := os.ReadFile(filepath.Join(base, "catalog.json"))
 	if err != nil {
 		return Catalog{}, err
 	}
+	return parseCatalog(manifestBytes, func(name string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(base, name))
+	})
+}
+
+func loadCatalogFromFS(fsys fs.FS) (Catalog, error) {
+	manifestBytes, err := fs.ReadFile(fsys, "catalog.json")
+	if err != nil {
+		return Catalog{}, err
+	}
+	return parseCatalog(manifestBytes, func(name string) ([]byte, error) {
+		return fs.ReadFile(fsys, name)
+	})
+}
+
+func parseCatalog(manifestBytes []byte, read func(string) ([]byte, error)) (Catalog, error) {
 	var manifest struct {
 		Sections map[string]string `json:"sections"`
 	}
@@ -145,7 +171,7 @@ func LoadCatalog(repoRoot string) (Catalog, error) {
 	}
 	catalog := Catalog{Sections: map[string][]map[string]any{}}
 	for section, file := range manifest.Sections {
-		data, err := os.ReadFile(filepath.Join(base, file))
+		data, err := read(file)
 		if err != nil {
 			return Catalog{}, err
 		}

@@ -3,16 +3,85 @@ package antigravity
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	prumo "github.com/raillen/prumo"
 	"github.com/raillen/prumo/internal/connectors"
 	"github.com/raillen/prumo/internal/harness/doccompile"
 	"github.com/raillen/prumo/internal/install"
 	"github.com/raillen/prumo/internal/protocol"
 )
+
+// agentDoc pairs the file an Antigravity workspace expects with the workforce
+// agent whose real contract belongs in it. The file names are the established
+// ones a workspace already refers to; only the content is corrected.
+type agentDoc struct {
+	file string
+	id   string
+}
+
+// defaultAgents is the roster emitted when neither the caller nor the project
+// manifest names one. It is the workforce default, not an ad-hoc list: an
+// Antigravity workspace with no selection still gets working agents, each with
+// its real contract, instead of a one-line stub or an empty subagents directory.
+var defaultAgents = []agentDoc{
+	{"architect.md", "architect"},
+	{"executor.md", "implementer"},
+	{"verifier.md", "quality-reviewer"},
+	{"systems-architect.md", "systems-architect"},
+	{"isolation-auditor.md", "isolation-auditor"},
+	{"brand-designer.md", "brand-designer"},
+	{"creative-director.md", "creative-director"},
+	{"svg-artist.md", "svg-artist"},
+	{"advertising-designer.md", "advertising-designer"},
+	{"motion-designer.md", "motion-designer"},
+	{"ui-component-engineer.md", "ui-component-engineer"},
+	{"visual-identity-auditor.md", "visual-identity-auditor"},
+	{"prototyper.md", "prototyper"},
+}
+
+// selectedAgentIDs resolves which workforce agents this compile should emit:
+// the caller's explicit selection first, then the project manifest.
+func selectedAgentIDs(opts connectors.CompileOptions, projectRoot string) []string {
+	if len(opts.Agents) > 0 {
+		return opts.Agents
+	}
+	return readProjectAgents(projectRoot)
+}
+
+// readProjectAgents reads the selected agent ids from the project's manifest.
+func readProjectAgents(projectRoot string) []string {
+	data, err := os.ReadFile(filepath.Join(projectRoot, ".ai", "agents", "manifest.json"))
+	if err != nil {
+		return nil
+	}
+	var doc struct {
+		Agents []string `json:"agents"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	return doc.Agents
+}
+
+// readAgentContract returns the full AGENT.md contract for one agent, preferring
+// the project-local workforce copy and falling back to the embedded one.
+func readAgentContract(repoRoot, id string) string {
+	local := filepath.Join(repoRoot, "src", "prumo", "resources", "workforce", "agents", id, "AGENT.md")
+	if data, err := os.ReadFile(local); err == nil {
+		return string(data)
+	}
+	data, err := fs.ReadFile(prumo.EmbeddedWorkforce(), path.Join("agents", id, "AGENT.md"))
+	if err == nil {
+		return string(data)
+	}
+	return ""
+}
 
 func init() {
 	connectors.Register(NewConnector())
@@ -149,28 +218,28 @@ This project uses Prumo v0.6 with Google Antigravity.
 		created = append(created, rulePath)
 	}
 
-	// 4. Subagents
-	subagents := map[string]string{
-		"architect.md":               "# Architect Subagent\nRole: Architecture, Boundaries & Schema Design\n",
-		"executor.md":                "# Executor Subagent\nRole: Implementation, Refactoring & Clean Code\n",
-		"verifier.md":                "# Verifier Subagent\nRole: Exhaustive Testing, Security & Quality Gates\n",
-		"systems-architect.md":       "# Systems Architect Subagent\nRole: Low-Level Systems, Memory Models, Hardware Budgets & Compiler Invariants\n",
-		"isolation-auditor.md":       "# Isolation Auditor Subagent\nRole: Multi-Tenant Isolation, Sandboxing & Adversarial Abuse Verification\n",
-		"brand-designer.md":          "# Brand Designer Subagent\nRole: Brand Identity, Typography Hierarchy & OKLCH Color Systems\n",
-		"creative-director.md":       "# Creative Director Subagent\nRole: Aesthetic Strategy, Semiotic Integrity & Design Critique\n",
-		"svg-artist.md":              "# SVG Artist Subagent\nRole: Vector Math, Generative SVG Art, Filter Pipelines & Icon Systems\n",
-		"advertising-designer.md":    "# Advertising Designer Subagent\nRole: AIDA Advertising Creatives, Conversion Layouts & Marketing Collateral\n",
-		"motion-designer.md":         "# Motion Designer Subagent\nRole: Motion Physics, Spring Curves, CSS Choreography & Microinteractions\n",
-		"ui-component-engineer.md":   "# UI Component Engineer Subagent\nRole: Atomic UI Components, Headless Primitives & Accessible State Machines\n",
-		"visual-identity-auditor.md": "# Visual Identity Auditor Subagent\nRole: Visual Brand Consistency, Multi-surface QA & Token Conformance\n",
-		"prototyper.md":              "# Prototyper Subagent\nRole: Rapid Interactive Prototyping, FSM Modeling & Usability Testing\n",
-	}
-	for name, content := range subagents {
-		subPath := filepath.Join(agentsDir, "subagents", name)
-		if err := writeText(subPath, content); err != nil {
-			return nil, err
+	// 4. Subagents carry the full runtime contract, not a one-line stub.
+	docs := make([]agentDoc, 0, len(defaultAgents))
+	if ids := selectedAgentIDs(opts, projectRoot); len(ids) > 0 {
+		for _, id := range ids {
+			docs = append(docs, agentDoc{file: id + ".md", id: id})
 		}
-		created = append(created, subPath)
+	} else {
+		docs = defaultAgents
+	}
+	emitted := map[string]bool{}
+	for _, doc := range docs {
+		if emitted[doc.file] {
+			continue
+		}
+		emitted[doc.file] = true
+		if content := readAgentContract(opts.RepoRoot, doc.id); content != "" {
+			subPath := filepath.Join(agentsDir, "subagents", doc.file)
+			if err := writeText(subPath, content); err != nil {
+				return nil, err
+			}
+			created = append(created, subPath)
+		}
 	}
 
 	// 5. Hooks configuration (.agents/hooks.json)

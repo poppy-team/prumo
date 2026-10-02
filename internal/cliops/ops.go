@@ -12,6 +12,7 @@ import (
 	"github.com/raillen/prumo/internal/protocol"
 	"github.com/raillen/prumo/internal/protocol/evidence"
 	"github.com/raillen/prumo/internal/protocol/goals"
+	"github.com/raillen/prumo/internal/repositorypolicy"
 	"github.com/raillen/prumo/internal/resolver"
 	"github.com/raillen/prumo/internal/validation"
 )
@@ -128,7 +129,15 @@ func (s *Service) InitWithProfile(root string, profile resolver.Profile) (resolv
 	if err != nil {
 		return resolver.Resolution{}, err
 	}
-	config := map[string]any{"version": 3, "protocol": map[string]any{"version": 3, "compatible": ">=3 <4"}, "framework": map[string]any{"name": "prumo", "version": protocol.CLIVersion}, "project": project, "stack": profile.Raw["stack"], "features": profile.Raw["features"], "risk": profile.Raw["risk"], "quality": profile.Raw["quality"], "documentation": map[string]any{"entrypoint": "docs/PRUMO.md", "canonical_format": "markdown", "site": map[string]any{"enabled": true, "source": "docs", "generated": true, "public_internal_views": true}, "audiences": []string{"user", "developer", "operations", "agent"}, "virtual_chunking": true}, "context": contextPolicy(), "intelligence": map[string]any{"enabled": true, "path": ".prumo/history/project-intelligence.json", "task_reports": true, "track_input_tokens": true, "track_output_tokens": true, "track_cost": true, "distinguish_observed_estimated": true}, "orchestration": map[string]any{"protocol": "POP", "orchestrator": orchestrator, "autonomy": autonomy}, "goals": map[string]any{"active_phase": "P00", "active_goal": nil}, "ai": profile.Raw["ai"]}
+	config := map[string]any{"version": 3, "protocol": map[string]any{"version": 3, "compatible": ">=3 <4"}, "framework": map[string]any{"name": "prumo", "version": protocol.CLIVersion}, "project": project, "documentation": map[string]any{"entrypoint": "docs/PRUMO.md", "canonical_format": "markdown", "site": map[string]any{"enabled": true, "source": "docs", "generated": true, "public_internal_views": true}, "audiences": []string{"user", "developer", "operations", "agent"}, "virtual_chunking": true}, "context": contextPolicy(), "intelligence": map[string]any{"enabled": true, "path": ".prumo/history/project-intelligence.json", "task_reports": true, "track_input_tokens": true, "track_output_tokens": true, "track_cost": true, "distinguish_observed_estimated": true}, "orchestration": map[string]any{"protocol": "POP", "orchestrator": orchestrator, "autonomy": autonomy}, "goals": map[string]any{"active_phase": "P00", "active_goal": nil}, "ai": profile.Raw["ai"]}
+	// Copy the optional sections only when the profile actually declares them.
+	// Writing an explicit null made a freshly initialized project fail its own
+	// schema validation, because prumo.schema.json types these as objects.
+	for _, key := range []string{"stack", "features", "risk", "quality"} {
+		if value := profile.Raw[key]; value != nil {
+			config[key] = value
+		}
+	}
 	if err := writeJSON(filepath.Join(root, "prumo.json"), config); err != nil {
 		return resolver.Resolution{}, err
 	}
@@ -189,6 +198,12 @@ func (s *Service) InitWithProfile(root string, profile resolver.Profile) (resolv
 		return resolver.Resolution{}, err
 	}
 	if err := scaffoldBaselineDocuments(root, projectName); err != nil {
+		return resolver.Resolution{}, err
+	}
+	if err := scaffoldDocumentationControlPlane(root); err != nil {
+		return resolver.Resolution{}, err
+	}
+	if _, err := repositorypolicy.EnsurePolicyForInit(root); err != nil {
 		return resolver.Resolution{}, err
 	}
 	return resolution, nil
@@ -289,15 +304,17 @@ func (s *Service) Validate(root string) []string {
 		if _, err := os.Stat(instanceFile); err != nil {
 			return
 		}
-		schemaFile := filepath.Join(s.SchemaDir(), schemaName)
-		if _, err := os.Stat(schemaFile); err != nil {
+		// A schema that is neither on disk nor embedded is a real gap in the
+		// framework, not a reason to silently pass the file: skipping here is
+		// what let an invalid prumo.json through outside the source tree.
+		if _, ok := registry.Schema(schemaName); !ok {
+			out = append(out, instancePath+": schema not available: "+schemaName)
 			return
 		}
 		for _, message := range validation.ValidateFile(instanceFile, schemaName, s.SchemaDir()) {
 			rel := strings.TrimPrefix(strings.TrimPrefix(message, root+"/"), root+string(os.PathSeparator))
 			out = append(out, rel)
 		}
-		_ = registry
 	}
 	check("prumo.json", "prumo.schema.json")
 	check(".ai/orchestration/model-policy.json", "model-policy.schema.json")
@@ -424,13 +441,22 @@ func (s *Service) GoalAmend(root, id, file, reason, approvedBy string) (goals.Go
 	if err != nil {
 		return nil, err
 	}
-	amend := map[string]any{"reason": reason, "approved_by": approvedBy, "changes": map[string]any{}}
+	amend := map[string]any{}
 	if file != "" {
 		var err error
 		amend, err = readJSON(file)
 		if err != nil {
 			return nil, err
 		}
+	}
+	// Explicit flags win over the file: previously the file replaced the whole
+	// amendment record, so --reason and --approved-by were silently dropped and
+	// the history recorded the generic "Formal amendment"/"human" fallbacks.
+	if strings.TrimSpace(reason) != "" {
+		amend["reason"] = strings.TrimSpace(reason)
+	}
+	if strings.TrimSpace(approvedBy) != "" {
+		amend["approved_by"] = strings.TrimSpace(approvedBy)
 	}
 	return goals.AmendGoal(match, amend)
 }
@@ -439,6 +465,18 @@ func (s *Service) GoalList(root string) ([]map[string]any, error) {
 	for _, p := range listGoals(root) {
 		v, e := readJSON(p)
 		if e != nil {
+			// A corrupt goal must stay visible: silently dropping it made the goal
+			// vanish from `goal list` with success, while drift or truncation was
+			// the only signal a doctor could give. Surface it as a marked row.
+			out = append(out, map[string]any{
+				"id":       strings.TrimSuffix(filepath.Base(p), ".goal.json"),
+				"title":    "\u26a0 corrupt or unreadable goal file",
+				"phase":    "??",
+				"state":    "CORRUPT",
+				"revision": "?",
+				"path":     strings.TrimPrefix(p, root+string(os.PathSeparator)),
+			})
+			fmt.Fprintf(os.Stderr, "warning: goal file %s is corrupt/unreadable: %v\n", p, e)
 			continue
 		}
 		out = append(out, map[string]any{"id": v["id"], "title": v["title"], "phase": v["phase"], "state": v["state"], "revision": v["revision"], "path": strings.TrimPrefix(p, root+string(os.PathSeparator))})
