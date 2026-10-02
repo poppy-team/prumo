@@ -18,7 +18,12 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          # go.mod is the single source of truth for the toolchain. Pinning a
+          # version here looked harmless because older setup-go releases silently
+          # downloaded the toolchain go.mod asked for anyway, but that fallback
+          # is gone: setup-go now honours GOTOOLCHAIN=local, so a stale pin
+          # fails the job with "go.mod requires go >= X" instead of building.
+          go-version-file: go.mod
       - name: Validate governance policy
         run: go test ./internal/repositorypolicy ./internal/scm/github
       - name: Validate repository policy file
